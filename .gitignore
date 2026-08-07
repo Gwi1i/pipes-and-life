@@ -1,0 +1,5 @@
+# Configuración local del IDE
+.idea/
+
+# Configuración local de Claude Code (no es del proyecto)
+.claude/settings.local.json

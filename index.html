@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Red Hidráulica — Proyecto y Explotación</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ============ BARRA SUPERIOR ============ -->
+  <header class="superior">
+    <div class="marca">
+      <span class="marca-titulo">Red Hidráulica</span>
+      <span class="marca-sub">Proyecto y explotación</span>
+    </div>
+
+    <div class="hud">
+      <div class="hud-item"><span class="e">Caja</span><span class="v dinero" id="hud-dinero">—</span></div>
+      <div class="hud-item"><span class="e">Abastecidas</span><span class="v" id="hud-abastecidas">—</span></div>
+      <div class="hud-item"><span class="e">Caudal</span><span class="v agua" id="hud-caudal">—</span></div>
+      <div class="hud-item"><span class="e">Bombeo</span><span class="v alarma" id="hud-energia">—</span></div>
+      <div class="hud-item"><span class="e">Nudos / tramos</span><span class="v" id="hud-nodos">—</span></div>
+      <div class="hud-item"><span class="e">Habitantes</span><span class="v" id="hud-habitantes">—</span></div>
+      <div class="hud-item"><span class="e">Hora · mes</span><span class="v" id="hud-reloj">—</span></div>
+      <div class="hud-item"><span class="e">Punta</span><span class="v" id="hud-punta">—</span></div>
+      <div class="hud-item"><span class="e">Recurso</span><span class="v" id="hud-recurso">—</span></div>
+    </div>
+
+    <div class="acciones">
+      <button id="btn-encuadrar" title="Encuadrar todo (F)">Encuadrar</button>
+      <button id="btn-guardar">Guardar</button>
+      <button id="btn-reiniciar">Reiniciar</button>
+    </div>
+  </header>
+
+  <!-- ============ CUERPO ============ -->
+  <div class="cuerpo">
+
+    <!-- Panel izquierdo: construcción -->
+    <aside class="lateral izquierda">
+      <section class="bloque" id="panel-averias" style="display:none">
+        <h2>Averías</h2>
+        <button class="btn-reparar" id="btn-reparar">
+          <span class="rep-txt"><b id="averias-txt">—</b>
+          <em>Reparar toda la red</em></span>
+          <b id="averias-coste">—</b>
+        </button>
+      </section>
+
+      <section class="bloque">
+        <h2>Servicio provisional</h2>
+        <button class="btn-cubas" id="btn-cubas">
+          <svg viewBox="0 0 48 32" aria-hidden="true">
+            <g fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 22 H6"/><path d="M14 22 H26"/><path d="M34 22 H45"/>
+              <rect x="6" y="10" width="20" height="12" rx="5"/>
+              <path d="M28 22 V12 H36 L42 17 V22"/>
+              <circle cx="10" cy="24.5" r="3"/><circle cx="30" cy="24.5" r="3"/>
+              <path d="M12 10 V22 M20 10 V22"/>
+            </g>
+          </svg>
+          <span class="cubas-txt">
+            <b id="cubas-texto">Servir cuba</b>
+            <em id="cubas-sub">—</em>
+          </span>
+        </button>
+      </section>
+
+      <section class="bloque">
+        <h2>Construcción</h2>
+        <div id="herramientas" class="rejilla-herramientas"></div>
+        <div id="panel-diametros" style="display:none">
+          <h3>Diámetro del tramo</h3>
+          <div id="diametros" class="rejilla-diametros"></div>
+        </div>
+        <p class="ayuda" id="ayuda"></p>
+      </section>
+
+      <section class="bloque">
+        <h2>Controles</h2>
+        <ul class="atajos">
+          <li><kbd>Arrastrar</kbd> mover el mapa</li>
+          <li><kbd>Rueda</kbd> acercar y alejar</li>
+          <li><kbd>WASD</kbd> desplazarse</li>
+          <li><kbd>1</kbd>–<kbd>4</kbd> diámetro</li>
+          <li><kbd>Esc</kbd> cancelar herramienta</li>
+          <li><kbd>F</kbd> encuadrar todo</li>
+          <li><kbd>Supr</kbd> borrar seleccionado</li>
+        </ul>
+      </section>
+    </aside>
+
+    <!-- Mapa -->
+    <main class="mapa">
+      <canvas id="lienzo"></canvas>
+      <div id="aviso" class="aviso-flotante"></div>
+    </main>
+
+    <!-- Panel derecho: información -->
+    <aside class="lateral derecha">
+      <section class="bloque">
+        <h2>Elemento seleccionado</h2>
+        <div id="detalle" class="detalle"></div>
+      </section>
+
+      <section class="bloque">
+        <h2>Incidencias</h2>
+        <div id="incidencias" class="incidencias"></div>
+      </section>
+
+      <section class="bloque">
+        <h2>Cómo empezar</h2>
+        <div class="explica">
+          <p><b>1. Busca el agua.</b> Las líneas azules del mapa son cauces, y
+             los puntos turquesa son manantiales. La captación solo se puede
+             poner ahí.</p>
+          <p><b>2. Instala el bombeo EN la captación.</b> Selecciónala y pulsa
+             "Instalar grupo de bombeo". Cada grupo sube 65 m la altura
+             piezométrica.</p>
+          <p><b>3. Depósito en alto y reparto.</b> Tiende tubería desde la
+             captación al depósito, y del depósito a cada núcleo.</p>
+          <p><b>Mientras tanto</b>, sirve cubas a mano: da poco, pero es lo que
+             te financia los primeros tramos.</p>
+          <p><b>Y esto no se acaba.</b> Los núcleos bien servidos crecen y piden
+             más; el consumo tiene punta de mañana y de tarde; en verano los
+             cauces bajan; y las tuberías revientan, sobre todo si van con
+             demasiada presión.</p>
+        </div>
+      </section>
+
+      <section class="bloque">
+        <h2>Reglas</h2>
+        <div class="explica">
+          <p><b>El agua no sube sola.</b> Un depósito da presión por gravedad:
+             cuanto más alto lo coloques, más presión tendrán los núcleos
+             situados por debajo. Es gratis y para siempre.</p>
+          <p><b>Bombear cuesta.</b> Si el origen está por debajo del destino,
+             necesitas un bombeo, y pagas energía cada hora mientras funcione.</p>
+          <p><b>La tubería pierde carga.</b> Cuanto más larga, más caudal y menos
+             diámetro, más presión se pierde por el camino.</p>
+          <p><b>Cada población exige un mínimo.</b> Si no llega con presión
+             suficiente, no paga. Y por encima del máximo, revienta.</p>
+        </div>
+      </section>
+    </aside>
+
+  </div>
+</div>
+
+<script type="module" src="src/main.js"></script>
+</body>
+</html>
