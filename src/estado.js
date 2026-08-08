@@ -1,39 +1,30 @@
 /**
- * ESTADO — dinero, tiempo, resultado del solver y persistencia.
+ * ESTADO — dinero, agua, tiempo y persistencia.
  *
- * Aquí no hay geometría ni dibujo: solo el estado de la partida y las
- * reglas económicas. Guardar un grafo obliga a serializarlo a mano,
- * porque un Map no se convierte solo a JSON.
+ * Solo datos y las reglas de la caja. Ni geometría ni dibujo. La lógica de qué
+ * hacer con estos números vive en `simulacion.js`.
  */
 
 import { CONFIG } from './config.js';
-import { Grafo } from './grafo.js';
 
 export class Estado {
 
   constructor(){
     this.dinero = CONFIG.economia.dineroInicial;
-    this.horas = 0;
-    this.m3Servidos = 0;
-    this.resultado = { abastecidas: 0, totales: 0, caudalTotal: 0,
-                       energiaKwh: 0, incidencias: [] };
+    this.agua = 0;                 // litros almacenados ahora mismo
+    this.horas = 0;                // tiempo de explotación transcurrido
+    this.m3Servidos = 0;           // total histórico facturado
+    this.tieneDeposito = false;    // la primera mejora
+
+    this.poblacion = {
+      nombre: CONFIG.poblacion.nombre,
+      habitantes: CONFIG.poblacion.habitantes,
+      abastecida: false,
+      servicio: 0                  // 0..1, lo rellena la simulación
+    };
+
     this.registro = [];
-    this.ultimoInstante = Date.now();
-  }
-
-  /** Un paso de economía. `horas` es tiempo simulado. */
-  avanzar(horas){
-    const e = CONFIG.economia;
-    const r = this.resultado;
-
-    // Solo se factura el agua que llega con presión suficiente
-    const m3 = r.caudalTotal * 3.6 * horas;         // L/s → m³/h
-    const ingresos = m3 * e.tarifa;
-    const gastos = r.energiaKwh * horas * e.costeEnergiaKwh;
-
-    this.dinero += ingresos - gastos;
-    this.m3Servidos += m3;
-    this.horas += horas;
+    this.ultimoInstante = Date.now();   // para el progreso offline (Hito 3)
   }
 
   puedePagar(coste){ return this.dinero >= coste; }
@@ -46,34 +37,38 @@ export class Estado {
 
   /* ---------------- PERSISTENCIA ---------------- */
 
-  guardar(grafo){
+  guardar(){
     this.ultimoInstante = Date.now();
     const datos = {
-      dinero: this.dinero, horas: this.horas, m3Servidos: this.m3Servidos,
-      ultimoInstante: this.ultimoInstante,
-      grafo: grafo.aObjeto()
+      dinero: this.dinero, agua: this.agua, horas: this.horas,
+      m3Servidos: this.m3Servidos, tieneDeposito: this.tieneDeposito,
+      habitantes: this.poblacion.habitantes,
+      ultimoInstante: this.ultimoInstante
     };
     try{
       localStorage.setItem(CONFIG.guardado.clave, JSON.stringify(datos));
       return true;
     }catch(e){
-      return false;   // modo incógnito, cuota llena, o file:// restringido
+      return false;   // modo incógnito o cuota llena
     }
   }
 
-  /** Devuelve el grafo restaurado, o null si no había partida. */
+  /** Restaura la partida sobre `estado`. Devuelve true si había algo guardado. */
   static cargar(estado){
     try{
       const bruto = localStorage.getItem(CONFIG.guardado.clave);
-      if(!bruto) return null;
+      if(!bruto) return false;
       const d = JSON.parse(bruto);
-      estado.dinero = d.dinero;
-      estado.horas = d.horas;
-      estado.m3Servidos = d.m3Servidos;
-      estado.ultimoInstante = d.ultimoInstante || Date.now();
-      return Grafo.desdeObjeto(d.grafo);
+      estado.dinero = d.dinero ?? estado.dinero;
+      estado.agua = d.agua ?? 0;
+      estado.horas = d.horas ?? 0;
+      estado.m3Servidos = d.m3Servidos ?? 0;
+      estado.tieneDeposito = d.tieneDeposito ?? false;
+      estado.poblacion.habitantes = d.habitantes ?? estado.poblacion.habitantes;
+      estado.ultimoInstante = d.ultimoInstante ?? Date.now();
+      return true;
     }catch(e){
-      return null;
+      return false;
     }
   }
 

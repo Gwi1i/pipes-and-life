@@ -1,5 +1,5 @@
 /* ==========================================================================
-   RED HIDRÁULICA — hoja de estilos
+   RED HIDRÁULICA — hoja de estilos (versión clicker)
    Paleta de sala de control: el color codifica estado, no decora.
    ========================================================================== */
 
@@ -8,13 +8,13 @@
   --linea:#203547; --linea-viva:#2f5170;
   --texto:#cfdce8; --tenue:#6f8aa1; --apagado:#4d657c;
   --dinero:#a3e635; --agua:#38bdf8; --ok:#4ade80;
-  --alarma:#f5a524; --critico:#ef4444; --valvula:#a78bfa;
+  --alarma:#f5a524; --critico:#ef4444;
   --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
   --sans:'IBM Plex Sans',system-ui,-apple-system,sans-serif;
 }
 
-*{box-sizing:border-box;margin:0;padding:0;}
-html,body{height:100%;overflow:hidden;}
+*{box-sizing:border-box; margin:0; padding:0;}
+html,body{height:100%; overflow:hidden;}
 body{
   background:var(--fondo); color:var(--texto);
   font-family:var(--sans); font-size:13px; line-height:1.5;
@@ -42,7 +42,7 @@ body{
 
 .hud{display:flex; gap:1px; background:var(--linea); flex:1;
      border:1px solid var(--linea); min-width:300px;}
-.hud-item{background:var(--panel-alto); padding:5px 12px; flex:1; min-width:88px;}
+.hud-item{background:var(--panel-alto); padding:5px 12px; flex:1; min-width:96px;}
 .hud-item .e{display:block; font-family:var(--mono); font-size:8px;
   letter-spacing:.15em; text-transform:uppercase; color:var(--apagado);}
 .hud-item .v{font-family:var(--mono); font-size:15px; font-weight:600;}
@@ -57,239 +57,116 @@ body{
   font-family:var(--mono); font-size:9px; letter-spacing:.12em;
   text-transform:uppercase; transition:.15s;
 }
-.acciones button:hover{border-color:var(--agua); color:var(--agua);}
+.acciones button:hover{border-color:var(--critico); color:var(--critico);}
 .acciones button:focus-visible{outline:2px solid var(--agua); outline-offset:2px;}
 
 /* ---------- CUERPO ---------- */
 .cuerpo{display:flex; flex:1; min-height:0;}
 .lateral{
-  width:262px; flex:none; overflow-y:auto; padding:11px;
+  width:290px; flex:none; overflow-y:auto; padding:11px;
   background:var(--fondo); display:flex; flex-direction:column; gap:11px;
 }
-.izquierda{border-right:1px solid var(--linea);}
 .derecha{border-left:1px solid var(--linea);}
 
-.mapa{flex:1; position:relative; min-width:0; background:#040a10;}
-#lienzo{display:block; width:100%; height:100%; cursor:crosshair;}
+.mapa{flex:1; position:relative; min-width:0; display:flex; flex-direction:column;
+      background:#040a10;}
+.lienzo-caja{position:relative; flex:1; min-height:0;}
+#escena{display:block; width:100%; height:100%; cursor:pointer;}
 
+/* Barra de agua superpuesta abajo del lienzo */
+.barra-agua-caja{position:absolute; left:16px; right:16px; bottom:12px; pointer-events:none;}
+.barra-agua-fondo{
+  height:8px; background:rgba(8,18,28,.8); border:1px solid var(--linea-viva);
+  border-radius:5px; overflow:hidden;
+}
+.barra-agua-relleno{
+  height:100%; width:0%;
+  background:linear-gradient(90deg,#0e5a86,#38bdf8);
+  transition:width .12s linear;
+}
+
+/* ---------- BOTÓN DE BOMBEO (el clic principal) ---------- */
+.btn-bombear{
+  flex:none; margin:0; cursor:pointer; user-select:none;
+  display:flex; flex-direction:column; align-items:center; gap:1px;
+  padding:12px 10px;
+  background:linear-gradient(180deg,#1d3a52,#0e2434);
+  border:none; border-top:2px solid var(--agua); color:var(--texto);
+  font-family:inherit; transition:transform .05s, background .2s;
+}
+.btn-bombear:hover{background:linear-gradient(180deg,#24506f,#0e2434);}
+.btn-bombear:active{transform:scale(.985);}
+.btn-bombear:focus-visible{outline:2px solid var(--agua); outline-offset:-2px;}
+.bb-icono{font-size:20px; line-height:1;}
+.bb-txt{font-family:var(--mono); font-size:15px; font-weight:700;
+  letter-spacing:.22em; color:var(--agua);}
+.bb-sub{font-family:var(--mono); font-size:9px; letter-spacing:.06em; color:var(--tenue);}
+
+/* ---------- BLOQUES DE PANEL ---------- */
 .bloque{border:1px solid var(--linea); background:var(--panel);}
 .bloque h2{
   font-family:var(--mono); font-size:9px; font-weight:600; letter-spacing:.17em;
   text-transform:uppercase; color:var(--tenue); padding:7px 11px;
   border-bottom:1px solid var(--linea); background:var(--panel-alto);
 }
-.bloque h3{
-  font-family:var(--mono); font-size:8.5px; letter-spacing:.15em;
-  text-transform:uppercase; color:var(--apagado); padding:9px 11px 5px;
-}
-.bloque > div, .bloque > p, .bloque > ul{padding:9px 11px;}
+.bloque > div{padding:9px 11px;}
 
-/* ---------- HERRAMIENTAS ---------- */
-.rejilla-herramientas{display:grid; grid-template-columns:1fr 1fr; gap:5px;}
-.herramienta{
-  display:flex; flex-direction:column; gap:2px; align-items:flex-start;
+/* ---------- TIENDA / MEJORAS ---------- */
+.tienda{display:grid; gap:7px;}
+.mejora{
+  display:grid; gap:3px; text-align:left; cursor:pointer;
   background:var(--panel-alto); border:1px solid var(--linea-viva);
-  border-left:3px solid var(--tono); border-radius:3px;
-  padding:7px 8px; cursor:pointer; color:var(--texto);
-  font-family:inherit; transition:.15s;
+  border-left:3px solid var(--agua); border-radius:3px;
+  padding:9px 10px; color:var(--texto); font-family:inherit; transition:.15s;
 }
-.herramienta:hover{background:color-mix(in srgb,var(--tono) 15%,var(--panel-alto));}
-.herramienta.activa{
-  background:color-mix(in srgb,var(--tono) 26%,var(--panel-alto));
-  border-color:var(--tono); box-shadow:0 0 16px -6px var(--tono);
-}
-.herramienta:focus-visible{outline:2px solid var(--tono); outline-offset:2px;}
-.h-nom{font-family:var(--mono); font-size:10px; font-weight:600;
-  letter-spacing:.05em; text-transform:uppercase; color:var(--tono);}
-.h-coste{font-family:var(--mono); font-size:10px; color:var(--dinero);}
+.mejora:hover:not(:disabled){background:rgba(56,189,248,.12); border-color:var(--agua);}
+.mejora:focus-visible{outline:2px solid var(--agua); outline-offset:2px;}
+.mejora.inalcanzable{opacity:.55;}
+.mejora.comprada{border-left-color:var(--ok); opacity:.7; cursor:default;}
+.m-nom{font-family:var(--mono); font-size:11px; font-weight:600;
+  letter-spacing:.04em; text-transform:uppercase; color:var(--agua);}
+.mejora.comprada .m-nom{color:var(--ok);}
+.m-desc{font-size:10.5px; color:var(--tenue); line-height:1.4;}
+.m-coste{font-family:var(--mono); font-size:12px; font-weight:600; color:var(--dinero);}
+.mejora.comprada .m-coste{color:var(--ok);}
 
-.rejilla-diametros{display:grid; grid-template-columns:1fr 1fr; gap:5px; padding:0 11px 9px;}
-.diam{
-  position:relative; background:var(--panel-alto); border:1px solid var(--linea-viva);
-  border-radius:3px; padding:6px 8px; cursor:pointer; color:var(--texto);
-  font-family:inherit; text-align:left; transition:.15s;
-}
-.diam:hover{border-color:var(--agua);}
-.diam.activa{border-color:var(--agua); background:rgba(56,189,248,.16);}
-.d-nom{display:block; font-family:var(--mono); font-size:10px; font-weight:600;}
-.d-coste{display:block; font-family:var(--mono); font-size:9px; color:var(--tenue);}
-.d-tecla{position:absolute; top:4px; right:6px; font-family:var(--mono);
-  font-size:8px; color:var(--apagado);}
-
-.ayuda{font-size:11.5px; color:var(--tenue); line-height:1.5; min-height:34px;}
-
-/* ---------- ATAJOS ---------- */
-.atajos{list-style:none; display:grid; gap:4px;}
-.atajos li{font-size:11.5px; color:var(--tenue);}
-kbd{
-  display:inline-block; font-family:var(--mono); font-size:9.5px;
-  background:var(--panel-alto); border:1px solid var(--linea-viva);
-  border-radius:2px; padding:1px 5px; margin-right:5px; color:var(--texto);
-}
-
-/* ---------- DETALLE ---------- */
+/* ---------- DETALLE POBLACIÓN ---------- */
 .detalle{display:grid; gap:5px;}
-.detalle .vacio{color:var(--apagado); font-size:11.5px; font-style:italic;}
-.d-cabecera{border-left:3px solid var(--tono); padding-left:8px; margin-bottom:4px;}
-.d-tipo{display:block; font-family:var(--mono); font-size:8.5px;
-  letter-spacing:.15em; text-transform:uppercase; color:var(--tono);}
-.d-nombre{font-family:var(--mono); font-size:13px; font-weight:600;}
 .d-fila{display:flex; justify-content:space-between; gap:10px;
   font-size:11.5px; padding:3px 0; border-bottom:1px solid var(--linea);}
 .d-fila span{color:var(--tenue);}
 .d-fila b{font-family:var(--mono); font-weight:600;}
 .d-fila b.ok{color:var(--ok);} .d-fila b.alarma{color:var(--alarma);}
 .d-fila b.critico{color:var(--critico);}
-.d-desc{font-size:11px; color:var(--tenue); line-height:1.5; margin-top:6px;
-  padding-top:7px; border-top:1px solid var(--linea);}
 
-/* ---------- INCIDENCIAS ---------- */
-.incidencias{display:grid; gap:4px;}
-.inc{font-size:11.5px; padding:6px 8px; border-left:3px solid; line-height:1.4;}
-.inc.ok{border-color:var(--ok); background:rgba(74,222,128,.07); color:var(--ok);}
-.inc.alarma{border-color:var(--alarma); background:rgba(245,165,36,.08); color:var(--alarma);}
-.inc.critico{border-color:var(--critico); background:rgba(239,68,68,.08); color:var(--critico);}
+/* ---------- REGISTRO ---------- */
+.registro{display:grid; gap:4px;}
+.reg{font-size:11px; padding:5px 8px; border-left:3px solid var(--linea-viva);
+  line-height:1.4; color:var(--texto); background:var(--panel-alto);}
+.reg em{font-style:normal; color:var(--apagado); font-family:var(--mono);
+  font-size:9px; margin-right:4px;}
+.reg.ok{border-color:var(--ok);} .reg.alarma{border-color:var(--alarma);}
+.reg.critico{border-color:var(--critico);}
+.reg.vacio{color:var(--apagado); font-style:italic; background:none; border:none;}
 
 /* ---------- EXPLICACIÓN ---------- */
 .explica{font-size:11.5px; color:var(--tenue); line-height:1.55; display:grid; gap:7px;}
 .explica b{color:var(--agua); font-weight:600;}
 
-/* ---------- MÓVIL ---------- */
-@media(max-width:1000px){
-  .cuerpo{flex-direction:column;}
-  .lateral{width:100%; max-height:34vh; border:none;
-           border-top:1px solid var(--linea);}
-  .izquierda{order:2;} .mapa{order:1; min-height:46vh;} .derecha{order:3;}
-  .rejilla-herramientas{grid-template-columns:repeat(3,1fr);}
-}
-
-/* ---------- AVISO FLOTANTE SOBRE EL MAPA ---------- */
+/* ---------- AVISO FLOTANTE SOBRE LA ESCENA ---------- */
 .aviso-flotante{
   position:absolute; left:50%; top:22px; transform:translateX(-50%) translateY(-14px);
   background:rgba(15,28,40,.97); border:1px solid var(--alarma);
   border-left:4px solid var(--alarma); color:var(--alarma);
   padding:10px 16px; border-radius:3px; font-size:12.5px; font-weight:500;
   pointer-events:none; opacity:0; transition:opacity .2s, transform .2s;
-  box-shadow:0 8px 32px -10px rgba(0,0,0,.9); max-width:min(460px,80%);
-  z-index:10;
+  box-shadow:0 8px 32px -10px rgba(0,0,0,.9); max-width:min(460px,80%); z-index:10;
 }
 .aviso-flotante.visible{opacity:1; transform:translateX(-50%) translateY(0);}
 
-/* ---------- SERVICIO DE CUBAS (la parte manual) ---------- */
-.btn-cubas{
-  position:relative; overflow:hidden; width:100%; cursor:pointer;
-  display:flex; align-items:center; gap:11px; text-align:left;
-  background:linear-gradient(150deg,#1d3a52,#12283a 65%);
-  border:1px solid var(--agua); border-radius:3px;
-  padding:11px 12px; margin:9px 11px; width:calc(100% - 22px);
-  color:var(--texto); font-family:inherit;
-  box-shadow:0 0 24px -12px rgba(56,189,248,.9);
-  transition:transform .06s, box-shadow .2s, opacity .3s;
+/* ---------- MÓVIL ---------- */
+@media(max-width:900px){
+  .cuerpo{flex-direction:column;}
+  .lateral{width:100%; max-height:38vh; border:none; border-top:1px solid var(--linea);}
+  .mapa{min-height:44vh;}
 }
-.btn-cubas:hover:not(.agotado){box-shadow:0 0 32px -8px rgba(56,189,248,1);}
-.btn-cubas:active:not(.agotado){transform:scale(.98);}
-.btn-cubas:focus-visible{outline:2px solid var(--agua); outline-offset:2px;}
-.btn-cubas.agotado{opacity:.42; border-color:var(--linea-viva); cursor:default;
-                   box-shadow:none;}
-.btn-cubas svg{width:40px; height:27px; flex:none; color:var(--agua);}
-.cubas-txt{display:flex; flex-direction:column; gap:1px; min-width:0;}
-.cubas-txt b{font-family:var(--mono); font-size:11.5px; font-weight:600;
-             letter-spacing:.04em; text-transform:uppercase;}
-.cubas-txt em{font-style:normal; font-size:10.5px; color:var(--tenue);}
-.btn-cubas.pulsado::after{
-  content:''; position:absolute; inset:0;
-  background:radial-gradient(circle at 50% 50%, rgba(125,211,252,.45), transparent 60%);
-  animation:destelloCuba .45s ease-out;
-}
-@keyframes destelloCuba{from{opacity:1;} to{opacity:0;}}
-.flotante{
-  position:absolute; pointer-events:none; font-family:var(--mono);
-  font-size:15px; font-weight:700; color:var(--dinero);
-  text-shadow:0 0 12px rgba(163,230,53,.8); z-index:5;
-  animation:subirCuba .95s cubic-bezier(.2,.7,.3,1) forwards;
-}
-@keyframes subirCuba{
-  0%{opacity:0; transform:translate(-50%,0) scale(.7);}
-  18%{opacity:1; transform:translate(-50%,-9px) scale(1.12);}
-  100%{opacity:0; transform:translate(-50%,-48px) scale(1);}
-}
-
-/* ---------- INSTALAR BOMBEO ---------- */
-.btn-instalar{
-  width:100%; margin-top:9px; cursor:pointer;
-  display:flex; justify-content:space-between; align-items:center; gap:8px;
-  background:rgba(249,115,22,.10); border:1px solid #f97316;
-  border-radius:3px; padding:8px 10px; color:#f97316; font-family:var(--mono);
-  font-size:10.5px; font-weight:600; letter-spacing:.05em; text-transform:uppercase;
-  transition:.15s;
-}
-.btn-instalar:hover{background:rgba(249,115,22,.22);}
-.btn-instalar:focus-visible{outline:2px solid #f97316; outline-offset:2px;}
-.btn-instalar b{font-size:11.5px;}
-.d-nota{font-size:10.5px; color:var(--tenue); line-height:1.45; margin-top:6px;}
-.d-fila b.bombeo{color:#f97316;}
-.d-fila b.tenue{color:var(--apagado); font-weight:400;}
-
-/* ---------- VÁLVULA REDUCTORA ---------- */
-.btn-valvula{
-  width:100%; margin-top:9px; cursor:pointer;
-  display:flex; justify-content:space-between; align-items:center; gap:8px;
-  background:rgba(167,139,250,.10); border:1px solid var(--valvula);
-  border-radius:3px; padding:8px 10px; color:var(--valvula); font-family:var(--mono);
-  font-size:10.5px; font-weight:600; letter-spacing:.05em; text-transform:uppercase;
-  transition:.15s;
-}
-.btn-valvula:hover{background:rgba(167,139,250,.22);}
-.btn-valvula:focus-visible{outline:2px solid var(--valvula); outline-offset:2px;}
-.btn-valvula b{font-size:11.5px;}
-.d-fila b.valvula{color:var(--valvula);}
-
-.ctrl-valvula{
-  display:flex; align-items:stretch; gap:5px; margin-top:9px;
-}
-.ctrl-valvula .v-paso{
-  flex:none; width:30px; cursor:pointer;
-  background:rgba(167,139,250,.12); border:1px solid var(--valvula);
-  border-radius:3px; color:var(--valvula);
-  font-family:var(--mono); font-size:15px; font-weight:700; line-height:1;
-  transition:.15s;
-}
-.ctrl-valvula .v-paso:hover{background:rgba(167,139,250,.3);}
-.ctrl-valvula .v-paso:focus-visible{outline:2px solid var(--valvula); outline-offset:2px;}
-.ctrl-valvula .v-valor{
-  flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
-  background:var(--panel-alto); border:1px solid var(--linea-viva); border-radius:3px;
-  font-family:var(--mono); font-size:15px; font-weight:600; color:var(--valvula);
-  padding:3px 0;
-}
-.ctrl-valvula .v-valor em{
-  font-style:normal; font-size:8px; letter-spacing:.14em;
-  text-transform:uppercase; color:var(--apagado);
-}
-.ctrl-valvula .v-quitar{
-  flex:none; cursor:pointer; padding:0 9px;
-  background:none; border:1px solid var(--linea-viva); border-radius:3px;
-  color:var(--tenue); font-family:var(--mono); font-size:9px;
-  letter-spacing:.1em; text-transform:uppercase; transition:.15s;
-}
-.ctrl-valvula .v-quitar:hover{border-color:var(--critico); color:var(--critico);}
-.ctrl-valvula .v-quitar:focus-visible{outline:2px solid var(--critico); outline-offset:2px;}
-
-/* ---------- AVERÍAS ---------- */
-.btn-reparar{
-  width:calc(100% - 22px); margin:9px 11px; cursor:pointer;
-  display:flex; align-items:center; justify-content:space-between; gap:10px;
-  background:rgba(239,68,68,.12); border:1px solid var(--critico);
-  border-radius:3px; padding:9px 11px; color:var(--critico);
-  font-family:var(--mono); text-align:left; transition:.15s;
-  animation:latirAveria 1.6s ease-in-out infinite;
-}
-.btn-reparar:hover{background:rgba(239,68,68,.24);}
-.btn-reparar:focus-visible{outline:2px solid var(--critico); outline-offset:2px;}
-@keyframes latirAveria{
-  0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0);}
-  50%{box-shadow:0 0 18px -4px rgba(239,68,68,.75);}
-}
-.rep-txt{display:flex; flex-direction:column; gap:1px;}
-.rep-txt b{font-size:11px; font-weight:600; letter-spacing:.05em; text-transform:uppercase;}
-.rep-txt em{font-style:normal; font-size:10px; color:var(--tenue);}

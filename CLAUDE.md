@@ -10,13 +10,18 @@ Esto vale también para los archivos nuevos.
 
 ## Qué es el proyecto
 
-Red Hidráulica es un juego de **proyecto y explotación de una red de
-abastecimiento de agua**. Sobre un terreno generado por procedimiento, el
-jugador coloca captaciones, depósitos y bombeos, tiende tuberías y tiene que
-llevar agua con presión suficiente a cuatro núcleos de población, gestionando a
-la vez la economía, el estiaje, el crecimiento de la población y las averías.
+Red Hidráulica es un juego de abastecimiento de agua. Hay **dos versiones** en
+ramas distintas:
 
-Técnicamente:
+- **`master`** — la versión de **estrategia**: sobre un terreno generado por
+  procedimiento, el jugador coloca captaciones, depósitos y bombeos, tiende
+  tuberías y lleva agua con presión suficiente a cuatro núcleos, con un solver
+  hidráulico, terreno con hidrología, economía, estiaje, crecimiento y averías.
+- **`clicker`** (esta rama) — la versión **incremental/clicker**: se bombea a
+  golpe de clic, se acumula en un depósito y se abastece a una población. El
+  mapa se sustituye por una **escena decorativa animada**.
+
+Técnicamente, ambas comparten:
 
 - **JavaScript con módulos ES** (`import` / `export`)
 - **Sin dependencias externas.** No hay `package.json`, ni `node_modules`, ni
@@ -37,129 +42,92 @@ Y abrir `http://localhost:8000`.
 
 **No funciona abriendo `index.html` con doble clic.** El proyecto usa módulos
 ES, y los navegadores los bloquean sobre el protocolo `file://` por seguridad.
-Hace falta un servidor local, aunque sea el más tonto posible.
+Hace falta un servidor local.
 
 Sin proceso de build: se edita un archivo, se recarga el navegador y ya está.
+Aviso: el navegador **cachea los módulos ES** con agresividad. Si un cambio en un
+`.js` no se refleja, fuerza recarga sin caché (`Ctrl`+`F5`).
 
-## Arquitectura
+## Arquitectura (rama clicker)
 
 ```
 red-hidraulica/
-├── index.html          Estructura de la página: lienzo y paneles
+├── index.html          Estructura de la página: escena y paneles
 ├── css/estilos.css     Aspecto
 └── src/
     ├── config.js       TODOS los parámetros ajustables
-    ├── util.js         Funciones puras: azar sembrado, interpolación, color
-    ├── terreno.js      Modelo de elevaciones, hidrología y curvas de nivel
-    ├── camara.js       Zoom, desplazamiento, mundo ↔ pantalla
-    ├── grafo.js        Nodos, aristas, adyacencia, recorrido BFS
-    ├── hidraulica.js   Solver: conectividad, caudales, presiones
-    ├── render.js       Dibujo en canvas
-    ├── ui.js           DOM fuera del lienzo: barra, HUD, paneles
-    ├── entrada.js      Ratón, tacto, teclado, herramientas
-    ├── estado.js       Economía y persistencia
+    ├── util.js         Funciones puras: formato, interpolación, color
+    ├── estado.js       Dinero, agua, tiempo y persistencia
+    ├── simulacion.js   El motor: balance de agua, consumo y facturación
+    ├── escena.js       El diorama animado (canvas)
+    ├── entrada.js      Ratón, tacto, teclado → acciones
+    ├── ui.js           DOM fuera de la escena: HUD, tienda, paneles
     └── main.js         Ensamblado y bucle principal
 ```
 
-**Cada módulo de `src/` tiene una responsabilidad única y no invade las demás.**
-Los límites concretos que hay que respetar:
+**Cada módulo tiene una responsabilidad única y no invade las demás.** Los
+límites que hay que respetar:
 
-- **`render.js` solo lee estado, nunca lo modifica.** Si el render tocara datos,
-  sería imposible saber por qué algo cambia. Todo lo que dibuja lo recibe por
-  parámetro.
-- **`entrada.js` no toca el grafo.** Traduce eventos del navegador a
-  *intenciones* y las encola como acciones; `main.js` es quien las ejecuta y
-  modifica el grafo. Así la lógica de juego queda en un solo sitio.
+- **`escena.js` solo lee estado, nunca lo modifica.** Todo lo que dibuja lo
+  recibe por parámetro. Lo único que guarda es su propio reloj de animación y
+  los efectos pasajeros (destellos de clic, aparición del depósito), que no son
+  estado de juego.
+- **`entrada.js` no toca el estado.** Traduce eventos del navegador a acciones y
+  las encola; `main.js` es quien las ejecuta. La lógica de juego queda en un
+  solo sitio.
 - **`config.js` no importa nada de nadie.** Es una hoja del árbol de
   dependencias: solo exporta datos.
-- `hidraulica.js` no sabe dibujar ni de interfaz.
-- `ui.js` toca el DOM; `render.js` toca el canvas. No se mezclan.
+- `simulacion.js` no sabe dibujar ni de interfaz.
+- `ui.js` toca el DOM; `escena.js` toca el canvas. No se mezclan.
 
 Flujo del bucle principal (`main.js`):
 
 ```
-entrada → acciones → solver → economía → render
+entrada → acciones → simulación → economía → escena + ui
 ```
 
 ## Regla de oro: los números van en config.js
 
 **TODOS los números ajustables van en `config.js`. Nunca metas constantes
-numéricas en la lógica.**
+numéricas en la lógica.** Un coste, un umbral, una tasa, un color, una velocidad:
+se crea en `config.js` con su nombre y su comentario, y se importa.
 
-Si necesitas un número nuevo —un coste, un umbral, una tasa, un color, una
-velocidad— créalo en `config.js` con su nombre y su comentario, e impórtalo. El
-motor y los datos están separados a propósito: se puede reequilibrar el juego
-entero sin abrir un solo archivo de lógica.
+Excepción razonable: constantes matemáticas y de conversión que no son
+ajustables (los 86400 s de un día, etc.). Esas no son parámetros de juego.
 
-Excepción razonable: constantes matemáticas y físicas que no son ajustables
-(`Math.PI`, los 9,81 m/s² de la gravedad, los 86400 s de un día, los factores de
-conversión de unidades). Esos no son parámetros de juego.
+## Notas de la simulación
 
-## Notas del solver
+`simulacion.js` hace un balance de agua muy simple, sin red ni presiones:
 
-`hidraulica.js` resuelve en tres pasadas sobre el árbol de expansión que
-devuelve el BFS de `grafo.js`:
+1. **Entra** agua con cada `bombear()`, hasta el tope de `capacidad()`.
+2. `capacidad()` vale poco sin depósito (el jugador tiene que clicar sin parar)
+   y mucho con él. Ese contraste es lo que hace que el primer depósito se note.
+3. `avanzar(dtHoras)` resta el consumo de la población, sirve lo que hay, y
+   **factura solo lo servido**. Devuelve un resultado efímero (nivel de
+   servicio, m³ servidos) que UI y escena leen; NO lo guarda en el estado.
 
-1. **Conectividad** — BFS desde depósitos y captaciones
-2. **Caudales** — se recorre el orden de descubrimiento *al revés*, de hojas a
-   raíz, acumulando la demanda aguas abajo
-3. **Presiones** — en orden normal, de raíz a hojas, restando las pérdidas
-
-Los dos equipos que alteran la altura piezométrica son **propiedades de un
-nodo**, no nodos aparte: `nodo.bombeos` (un contador) y `nodo.valvula`
-(`{ consigna }` o `null`). En una red real el grupo de impulsión va dentro de
-la captación o del depósito, y la VRP va intercalada en la conducción; ninguno
-de los dos es un punto de la red por sí mismo. Ambos se aplican en la tercera
-pasada, **el bombeo primero y la válvula después** —una VRP recorta lo que le
-llegue, incluido lo que acabe de meter una bomba— y como el recorte se hace
-antes de que los hijos lean la piezométrica de su padre, se propaga solo a toda
-la rama de aguas abajo.
-
-La válvula **solo puede reducir**. Si la presión ya es menor que la consigna, no
-hace nada. Cualquier cambio que la deje subiendo presión está mal.
-
-**No es un modelo hidráulico real** y no pretende serlo. Supone que la red es un
-**árbol** y resuelve de una sola pasada; las fórmulas de pérdida de carga están
-inspiradas en Hazen-Williams pero con constantes elegidas para que se note
-jugando. No intentes validarlas contra un cálculo real. Las mallas cerradas
-(varios caminos hasta un mismo punto) quedan fuera: soportarlas es reescribir el
-solver.
-
-El solver solo se ejecuta cuando la red cambia (bandera `recalcular` en
-`main.js`), no en cada fotograma.
+La demanda de la población se calcula SOLO en `demandaMedia()`. En la versión de
+estrategia, duplicar esa fórmula ya provocó una vez que la demanda cambiara sola
+a los dos segundos de partida. No la repitas en línea.
 
 ## Trampas conocidas
 
-- `entrada.emitir(tipo, datos)` hace `push({ tipo, ...datos })`. Si en `datos`
-  metes una clave `tipo`, **sobrescribe el tipo de la acción** y el `switch` de
-  `main.js` no la reconoce: fallo silencioso, sin error y sin efecto. Por eso la
-  acción `colocar` usa la clave `elemento` y no `tipo`.
-- El terreno se dibuja **una sola vez** a un lienzo aparte
-  (`terreno.dibujarCapa()`). No lo repintes en el bucle.
-- `Grafo` usa `Map`, que no se serializa solo a JSON: hay que pasar por
-  `aObjeto()` / `desdeObjeto()`.
-- La demanda de una población se calcula en `main.js` con `demandaMedia()`, y
-  es la **media**: la punta la aplica el solver con `curvaDiaria`. Tener la
-  fórmula duplicada ya provocó una vez que la demanda se dividiera sola entre
-  1,6 a los dos segundos de partida. No la repitas en línea.
-- Los botones del panel de detalle se recrean enteros en cada `mostrarNodo()`,
-  así que van por delegación: el nombre de la acción viaja en el propio botón
-  (`data-accion`, `data-id`, `data-delta`) y `main.js` lo emite tal cual. Para
-  añadir un equipo nuevo no hace falta tocar el listener.
-- El mundo se genera a partir de `mundo.semilla`. La misma semilla da siempre
-  el mismo mapa; es lo que hace depurable la generación de terreno.
+- El navegador cachea los módulos ES: si un cambio no aparece, recarga sin caché.
+- `localStorage` guarda bajo `CONFIG.guardado.clave`. La clave de la versión
+  clicker (`redHidraulica_clicker_v1`) es distinta de la de estrategia a
+  propósito, para que las dos versiones no se pisen la partida. Si un cambio
+  rompe el formato guardado, hay que borrarla (botón *Reiniciar*).
+- Los botones de la tienda se recrean con el panel: van por delegación, con el
+  nombre de la acción en `data-accion`. Añadir una mejora no obliga a tocar el
+  listener de `entrada.js`.
 
 ## Depuración
 
-`main.js` expone `window.juego` con `grafo`, `estado`, `camara`, `terreno`,
-`entrada` y `CONFIG`. Desde la consola del navegador:
+`main.js` expone `window.juego` con `estado`, `entrada`, `escena` y `CONFIG`.
+Desde la consola del navegador:
 
-- `juego.recalcular()` fuerza una pasada del solver si tocas el grafo a mano
-- `juego.dinero(n)` fija el saldo para probar sin construir la economía
-
-La partida se guarda en `localStorage` bajo la clave de `CONFIG.guardado.clave`.
-Si un cambio rompe el formato guardado, hay que borrarla (botón *Reiniciar*) o
-la carga fallará en silencio y arrancará una partida nueva.
+- `juego.dinero(n)` fija el saldo para probar sin clicar
+- `juego.agua(n)` fija el agua almacenada
 
 ## Estilo
 
