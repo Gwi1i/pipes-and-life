@@ -69,12 +69,19 @@ red-hidraulica/
 límites que hay que respetar:
 
 - **`escena.js` solo lee estado, nunca lo modifica.** Dibuja el pueblo ACTIVO y
-  el cauce común, con estilo cartoon (Canvas 2D a mano: sin sprites ni
-  dependencias). Lo único que guarda es su reloj de animación y los efectos
+  el cauce común, con estilo cartoon y "falso 3D" (Canvas 2D a mano: sin sprites
+  ni dependencias). Lo único que guarda es su reloj de animación y los efectos
   pasajeros (clima, destellos, aparición de estructuras). El contexto del
-  fotograma se cachea en `this._W/_H/_p/_res/luz/est/suciedad` para no pasarlo a
-  cada método. `estacion(horas)` da la paleta interpolada y el clima; las
-  partículas de clima (lluvia/nieve/flores) se reciclan por tipo.
+  fotograma se cachea en `this._W/_H/_p/_res/luz/est/suciedad/bruma` para no
+  pasarlo a cada método. `estacion(horas)` da la paleta interpolada y el clima;
+  las partículas de clima (lluvia/nieve/flores) se reciclan por tipo.
+  El volumen ("falso 3D") sale de: luz direccional con caras iluminadas/en
+  sombra (`oscurecer`/`aclarar` sobre el color base), cilindros (depósito,
+  clarificadores), casas en vista 3/4 (`casa3d`: cara frontal + lateral +
+  tejado a dos aguas), sombras arrojadas (`sombraSuelo`) y perspectiva
+  atmosférica (mezcla hacia `this.bruma` según lejanía). Si hace falta más
+  detalle sin perder fluidez, pre-renderiza a un canvas oculto (como hacía el
+  terreno en `master`).
 - **`entrada.js` no toca el estado.** Traduce eventos del navegador a acciones y
   las encola; `main.js` es quien las ejecuta. La lógica de juego queda en un
   solo sitio.

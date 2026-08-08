@@ -156,6 +156,10 @@ export const CONFIG = {
     velocidadLluvia: 560,    // px/s
     velocidadNieve: 70
   },
+  // La escena da sensación de volumen ("falso 3D") con luz direccional,
+  // cilindros, casas en 3/4, sombras arrojadas y bruma en la lejanía. Los
+  // colores base están arriba (color/estaciones); las intensidades de sombreado
+  // son detalle de dibujo y viven en escena.js.
 
   /* ---------- AVERÍAS (por pueblo) ---------- */
   averias: {
