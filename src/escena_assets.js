@@ -26,17 +26,17 @@ export class EscenaAssets extends Escena {
     this._img = {};   // clave → { img, ok, fallo }
   }
 
-  /** Imagen del asset, o null si no ha cargado (o no existe → fallback al A). */
+  /** Entrada del asset { img, bbox } o null si no ha cargado (→ fallback al A). */
   asset(nombre){
     let e = this._img[nombre];
     if(!e){
-      e = { img: new Image(), ok: false, fallo: false };
-      e.img.onload  = () => { e.ok = true; };
+      e = { img: new Image(), ok: false, fallo: false, bbox: null };
+      e.img.onload  = () => { e.bbox = recorteOpaco(e.img); e.ok = true; };
       e.img.onerror = () => { e.fallo = true; };   // archivo ausente: se usará el A
       e.img.src = 'assets/' + nombre;
       this._img[nombre] = e;
     }
-    return e.ok ? e.img : null;
+    return e.ok ? e : null;
   }
 
   /* ---------------- CAPTACIÓN ---------------- */
@@ -165,16 +165,46 @@ export class EscenaAssets extends Escena {
   }
 
   /**
-   * Dibuja un sprite manteniendo su proporción real dentro de la caja (w×h),
-   * anclado al suelo ('suelo') o centrado ('centro'). Así da igual que el arte
-   * venga cuadrado o no: nunca se deforma.
+   * Dibuja un sprite usando SOLO su caja opaca (recorta márgenes y halos que la
+   * IA hornea alrededor del objeto), manteniendo su proporción real dentro de la
+   * caja destino (w×h) y anclándolo al suelo ('suelo') o centrado ('centro').
+   * Así da igual el encuadre del PNG: el objeto llena su hueco y se apoya bien.
    */
-  dibujarSprite(img, cx, anclaY, w, h, ancla){
-    const rel = img.naturalWidth && img.naturalHeight ? img.naturalWidth / img.naturalHeight : 1;
+  dibujarSprite(entrada, cx, anclaY, w, h, ancla){
+    const img = entrada.img, b = entrada.bbox;
+    const rel = b.w / b.h;
     let dw = w, dh = w / rel;
     if(dh > h){ dh = h; dw = h * rel; }
     const x = cx - dw / 2;
     const y = ancla === 'suelo' ? anclaY - dh : anclaY - dh / 2;
-    this.ctx.drawImage(img, x, y, dw, dh);
+    this.ctx.drawImage(img, b.x, b.y, b.w, b.h, x, y, dw, dh);
   }
+}
+
+/**
+ * Caja delimitadora de los píxeles OPACOS de una imagen (alpha por encima de un
+ * umbral, para ignorar halos/sombras suaves). Se calcula una vez al cargar.
+ */
+function recorteOpaco(img){
+  const W = img.naturalWidth, H = img.naturalHeight;
+  const lienzo = document.createElement('canvas');
+  lienzo.width = W; lienzo.height = H;
+  const ctx = lienzo.getContext('2d');
+  ctx.drawImage(img, 0, 0);
+  let datos;
+  try { datos = ctx.getImageData(0, 0, W, H).data; }
+  catch(e){ return { x: 0, y: 0, w: W, h: H }; }   // por si acaso
+  const UMBRAL = 24;   // alpha mínimo para contar como "objeto"
+  let minX = W, minY = H, maxX = 0, maxY = 0, hay = false;
+  for(let y = 0; y < H; y++){
+    for(let x = 0; x < W; x++){
+      if(datos[(y * W + x) * 4 + 3] > UMBRAL){
+        hay = true;
+        if(x < minX) minX = x; if(x > maxX) maxX = x;
+        if(y < minY) minY = y; if(y > maxY) maxY = y;
+      }
+    }
+  }
+  if(!hay) return { x: 0, y: 0, w: W, h: H };
+  return { x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1 };
 }
