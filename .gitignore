@@ -3,3 +3,8 @@
 
 # Configuración local de Claude Code (no es del proyecto)
 .claude/settings.local.json
+
+# Paisajes originales en alta (7 MB): la versión en uso es assets/paisaje.png,
+# reescalada. Se dejan fuera del repo para no engordarlo.
+assets/fondo1.png
+assets/fondo2.png

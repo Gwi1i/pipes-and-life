@@ -180,7 +180,7 @@ export class EscenaAssets extends Escena {
     ctx.globalAlpha = 1;
     this.sombraSuelo(cx, baseY + 3, w * 0.6);
     ctx.save(); ctx.translate(cx, baseY); ctx.scale(sx, sy); ctx.translate(-cx, -baseY);
-    this.dibujarSprite(spr, cx, baseY, w, h, 'suelo');
+    this.dibujarSprite(spr, cx, baseY, w, h, 'suelo', 3);
     ctx.restore();
     this.etiqueta(auto ? 'BOMBEO · AUTO' : 'BOMBEO', cx, baseY + 17, auto ? C.captacion : C.texto);
   }
@@ -195,7 +195,7 @@ export class EscenaAssets extends Escena {
     const esc = 0.6 + 0.4 * a;
     this.sombraSuelo(cx, baseY + 2, w * 0.7);
     ctx.save(); ctx.globalAlpha = a; ctx.translate(cx, baseY); ctx.scale(esc, esc); ctx.translate(-cx, -baseY);
-    this.dibujarSprite(spr, cx, baseY, w, h, 'suelo');
+    this.dibujarSprite(spr, cx, baseY, w, h, 'suelo', 3);
     ctx.restore();
     ctx.globalAlpha = 1;
 
@@ -233,7 +233,7 @@ export class EscenaAssets extends Escena {
     const x = W * 0.80, base = this.sueloY, w = W * 0.16, h = w * 0.7;
     this.sombraSuelo(x, base + 2, w * 0.5);
     ctx.save(); ctx.globalAlpha = a; ctx.translate(x, base); ctx.scale(0.6 + 0.4 * a, 0.6 + 0.4 * a); ctx.translate(-x, -base);
-    this.dibujarSprite(spr, x, base, w, h, 'suelo');
+    this.dibujarSprite(spr, x, base, w, h, 'suelo', 3);
     ctx.restore(); ctx.globalAlpha = 1;
     this.etiqueta(`DEPURADORA Nv${p.mejoras.depuradora}`, x, base + 16, C.depuradora, 9);
   }
@@ -250,8 +250,10 @@ export class EscenaAssets extends Escena {
     if(asent){
       const esc = limitar(0.8 + p.habitantes / 8000, 0.8, 1.4);
       const dw = zonaW * esc, dh = dw * 0.72;
-      this.sombraSuelo(cxZona, this.sueloY + 2, dw * 0.42);
-      this.dibujarSprite(asent, cxZona, this.sueloY, dw, dh, 'suelo');
+      // hundir la tile para tragarse el canto de su parcela (si no, flota)
+      const hundir = dh * 0.16;
+      this.sombraSuelo(cxZona, this.sueloY + 5, dw * 0.5);
+      this.dibujarSprite(asent, cxZona, this.sueloY, dw, dh, 'suelo', hundir);
       if(seco){
         ctx.fillStyle = 'rgba(30,40,50,0.42)';
         ctx.fillRect(cxZona - dw / 2, this.sueloY - dh, dw, dh);
@@ -272,7 +274,7 @@ export class EscenaAssets extends Escena {
       const cx = zonaX + (i + 0.5) * (zonaW / n);
       const dw = casaW * 2.0, dh = dw;
       this.sombraSuelo(cx, this.sueloY + 2, casaW);
-      this.dibujarSprite(spr, cx, this.sueloY, dw, dh, 'suelo');
+      this.dibujarSprite(spr, cx, this.sueloY, dw, dh, 'suelo', 3);
       // sin servicio: velo gris sobre la casa
       if(seco){
         ctx.fillStyle = 'rgba(30,40,50,0.5)';
@@ -297,37 +299,38 @@ export class EscenaAssets extends Escena {
 
   /* ---------------- ÁRBOLES ----------------
      Pocos y a los lados, para dar vida sin tapar las estructuras ni competir
-     con la vegetación del fondo. Solo en el "plano de fondo". */
+     con la vegetación del fondo. Con paisaje de IA no se dibujan (el propio
+     paisaje ya trae vegetación y quedaban despegados). */
   arboles(fondo){
-    if(!fondo) return;   // nada de árboles en primer plano
-    const ctx = this.ctx, W = this._W;
-    const inv = this.est.i === 3;
-    const spr = (inv && this.asset('arbol_invierno.png')) || this.asset('arbol.png');
-    if(!spr) return super.arboles(fondo);
-    const xs = [0.05, 0.95];
-    for(let k = 0; k < xs.length; k++){
-      const x = W * xs[k], baseY = this.sueloY + 4, esc = 0.6;
-      const sway = Math.sin(this.tiempo * 1.2 + k) * 2;
-      const dw = 42 * esc, dh = 56 * esc;
-      this.sombraSuelo(x, baseY + 2, dw * 0.3);
-      this.dibujarSprite(spr, x + sway * 0.4, baseY, dw, dh, 'suelo');
-    }
+    if(this.hayPaisaje()) return;   // el paisaje ya tiene su verde
+    super.arboles(fondo);
   }
 
   /**
    * Dibuja un sprite usando SOLO su caja opaca (recorta márgenes y halos que la
    * IA hornea alrededor del objeto), manteniendo su proporción real dentro de la
    * caja destino (w×h) y anclándolo al suelo ('suelo') o centrado ('centro').
-   * Así da igual el encuadre del PNG: el objeto llena su hueco y se apoya bien.
+   *
+   * `hundir` mete la base ESE tanto por debajo de la línea de suelo, para que el
+   * objeto no "flote" (útil sobre todo con las tiles de pueblo, que traen una
+   * parcela con canto). Además aplica una "respiración" sutil anclada a la base:
+   * da vida al PNG sin despegarlo del suelo.
    */
-  dibujarSprite(entrada, cx, anclaY, w, h, ancla){
-    const img = entrada.img, b = entrada.bbox;
+  dibujarSprite(entrada, cx, anclaY, w, h, ancla, hundir = 0){
+    const ctx = this.ctx, img = entrada.img, b = entrada.bbox;
     const rel = b.w / b.h;
     let dw = w, dh = w / rel;
     if(dh > h){ dh = h; dw = h * rel; }
-    const x = cx - dw / 2;
-    const y = ancla === 'suelo' ? anclaY - dh : anclaY - dh / 2;
-    this.ctx.drawImage(img, b.x, b.y, b.w, b.h, x, y, dw, dh);
+    const baseY = (ancla === 'suelo' ? anclaY : anclaY + dh / 2) + hundir;
+    const x = cx - dw / 2, y = baseY - dh;
+    // respiración: escala mínima pivotando en la base (fase por posición)
+    const fase = cx * 0.013 + (ancla === 'suelo' ? 0 : 1.7);
+    const sy = 1 + Math.sin(this.tiempo * 1.5 + fase) * 0.012;
+    const sx = 1 - Math.sin(this.tiempo * 1.5 + fase) * 0.006;
+    ctx.save();
+    ctx.translate(cx, baseY); ctx.scale(sx, sy); ctx.translate(-cx, -baseY);
+    ctx.drawImage(img, b.x, b.y, b.w, b.h, x, y, dw, dh);
+    ctx.restore();
   }
 }
 
