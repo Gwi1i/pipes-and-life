@@ -17,7 +17,7 @@
 import { CONFIG } from './config.js';
 import { capacidad, fraccionTratada } from './simulacion.js';
 import { limitar } from './util.js';
-import { Escena } from './escena.js';
+import { Escena, mezclarColor } from './escena.js';
 
 export class EscenaAssets extends Escena {
 
@@ -37,6 +37,53 @@ export class EscenaAssets extends Escena {
       this._img[nombre] = e;
     }
     return e.ok ? e : null;
+  }
+
+  /* ---------------- FONDO (paisaje de IA) ----------------
+     Si existe assets/fondo.png, sustituye el cielo y las colinas de código por
+     el paisaje ilustrado (mismo estilo que las estructuras, así todo pega). El
+     sol/luna, el clima y el primer plano (suelo + río) se pintan encima para
+     que siga vivo y con día/noche. */
+  fondoBackdrop(){
+    const f = this.asset('fondo.png');
+    if(!f) return false;
+    const ctx = this.ctx, W = this._W, C = CONFIG.color, img = f.img;
+    // Relleno de respaldo: si el PNG del fondo no llega a los bordes, que se vea
+    // cielo (arriba) y verde (abajo), no el vacío transparente del lienzo.
+    const cieloArriba = mezclarColor(C.cieloNoche[0], C.cielo[0], this.luz);
+    const cieloAbajo  = mezclarColor(C.cieloNoche[2], C.cielo[2], this.luz);
+    const g = ctx.createLinearGradient(0, 0, 0, this.sueloY);
+    g.addColorStop(0, cieloArriba); g.addColorStop(0.65, cieloAbajo);
+    g.addColorStop(1, mezclarColor('#2f5a30', this.est.hierba, 0.6));
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, this.sueloY + 4);
+
+    // OJO: el fondo actual trae el "checkerboard" de transparencia HORNEADO como
+    // píxeles opacos en su tercio inferior (fallo de exportación). Usamos solo su
+    // parte SUPERIOR limpia (cielo + montañas + colinas) como telón, estirada a lo
+    // ancho; el primer plano (suelo + río) lo pone el juego. Si algún día el fondo
+    // llena todo el cuadro sin checkerboard, sube `CORTE` a 1.
+    const iw = img.naturalWidth, ih = img.naturalHeight;
+    const CORTE = 0.50;
+    ctx.drawImage(img, 0, 0, iw, ih * CORTE, 0, 0, W, this.sueloY + this._H * 0.05);
+    // Atenuación día/noche sobre el fondo
+    const oscuro = 1 - this.luz;
+    if(oscuro > 0.01){ ctx.fillStyle = `rgba(6,14,26,${oscuro * 0.5})`; ctx.fillRect(0, 0, W, this.sueloY + 4); }
+    return true;
+  }
+  cielo(){ if(!this.fondoBackdrop()) super.cielo(); }
+  colinas(){ if(!this.asset('fondo.png')) super.colinas(); }
+  nubesDibujar(dt){ if(!this.asset('fondo.png')) super.nubesDibujar(dt); }
+  brumaHorizonte(){ if(!this.asset('fondo.png')) super.brumaHorizonte(); }
+
+  /** Etiqueta con "pastilla" translúcida, para que el texto lea sobre cualquier fondo. */
+  etiqueta(texto, cx, y, color, tam = 10){
+    const ctx = this.ctx;
+    ctx.font = `700 ${tam}px IBM Plex Mono, ui-monospace, monospace`;
+    ctx.textAlign = 'center';
+    const w = ctx.measureText(texto).width, padX = 7, hh = tam + 7;
+    ctx.fillStyle = 'rgba(8,16,26,0.5)';
+    ctx.beginPath(); ctx.roundRect(cx - w / 2 - padX, y - tam - 2, w + padX * 2, hh, 5); ctx.fill();
+    ctx.fillStyle = color; ctx.fillText(texto, cx, y);
   }
 
   /* ---------------- CAPTACIÓN ---------------- */
@@ -67,9 +114,7 @@ export class EscenaAssets extends Escena {
     ctx.save(); ctx.translate(cx, baseY); ctx.scale(sx, sy); ctx.translate(-cx, -baseY);
     this.dibujarSprite(spr, cx, baseY, w, h, 'suelo');
     ctx.restore();
-    ctx.font = '700 10px IBM Plex Mono, ui-monospace, monospace'; ctx.textAlign = 'center';
-    ctx.fillStyle = auto ? C.captacion : C.tenue;
-    ctx.fillText(auto ? 'BOMBEO · AUTO' : 'BOMBEO', cx, baseY + 16);
+    this.etiqueta(auto ? 'BOMBEO · AUTO' : 'BOMBEO', cx, baseY + 17, auto ? C.captacion : C.texto);
   }
 
   /* ---------------- DEPÓSITO (con indicador de nivel) ---------------- */
@@ -86,14 +131,29 @@ export class EscenaAssets extends Escena {
     ctx.restore();
     ctx.globalAlpha = 1;
 
-    // Medidor de nivel a la derecha del depósito (funciona con cualquier arte)
+    // Nivel del depósito: pastilla con gota que se llena, integrada con el arte
     const frac = limitar(p.agua / capacidad(p), 0, 1);
-    const gx = cx + w * 0.52, gy0 = baseY - h * 0.85, gy1 = baseY - h * 0.15, gw = 6;
-    ctx.fillStyle = 'rgba(8,18,28,0.8)'; ctx.fillRect(gx, gy0, gw, gy1 - gy0);
-    ctx.fillStyle = C.agua; ctx.fillRect(gx, gy1 - (gy1 - gy0) * frac, gw, (gy1 - gy0) * frac);
-    ctx.strokeStyle = C.deposito; ctx.lineWidth = 1; ctx.strokeRect(gx, gy0, gw, gy1 - gy0);
-    ctx.font = '700 11px IBM Plex Mono, ui-monospace, monospace'; ctx.textAlign = 'center';
-    ctx.fillStyle = C.deposito; ctx.fillText(Math.round(frac * 100) + '%', cx, gy0 - 6);
+    this.pastillaNivel(cx, baseY - h - 2, frac);
+  }
+
+  /** Indicador de nivel: gota rellenándose + porcentaje, en una pastilla. */
+  pastillaNivel(cx, y, frac){
+    const ctx = this.ctx, C = CONFIG.color;
+    const txt = Math.round(frac * 100) + '%';
+    ctx.font = '700 11px IBM Plex Mono, ui-monospace, monospace'; ctx.textAlign = 'left';
+    const w = ctx.measureText(txt).width, r = 6, gap = 6, padX = 8, hh = 20;
+    const total = r * 2 + gap + w, x0 = cx - total / 2 - padX;
+    ctx.fillStyle = 'rgba(8,16,26,0.5)';
+    ctx.beginPath(); ctx.roundRect(x0, y - hh, total + padX * 2, hh, 6); ctx.fill();
+    // gota (contorno + relleno por nivel)
+    const gx = x0 + padX + r, gy = y - hh / 2;
+    ctx.beginPath(); ctx.arc(gx, gy, r, 0, 7);
+    ctx.fillStyle = 'rgba(56,189,248,0.18)'; ctx.fill();
+    ctx.save(); ctx.clip();
+    ctx.fillStyle = C.agua; ctx.fillRect(gx - r, gy + r - 2 * r * frac, r * 2, 2 * r * frac);
+    ctx.restore();
+    ctx.strokeStyle = C.deposito; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.arc(gx, gy, r, 0, 7); ctx.stroke();
+    ctx.fillStyle = C.texto; ctx.fillText(txt, gx + r + gap, y - hh / 2 + 4);
   }
 
   /* ---------------- DEPURADORA ---------------- */
@@ -107,8 +167,7 @@ export class EscenaAssets extends Escena {
     ctx.save(); ctx.globalAlpha = a; ctx.translate(x, base); ctx.scale(0.6 + 0.4 * a, 0.6 + 0.4 * a); ctx.translate(-x, -base);
     this.dibujarSprite(spr, x, base, w, h, 'suelo');
     ctx.restore(); ctx.globalAlpha = 1;
-    ctx.font = '700 9px IBM Plex Mono, ui-monospace, monospace'; ctx.textAlign = 'center';
-    ctx.fillStyle = C.depuradora; ctx.fillText(`DEPURADORA Nv${p.mejoras.depuradora}`, x, base + 15);
+    this.etiqueta(`DEPURADORA Nv${p.mejoras.depuradora}`, x, base + 16, C.depuradora, 9);
   }
 
   /* ---------------- PUEBLO ---------------- */
@@ -142,25 +201,25 @@ export class EscenaAssets extends Escena {
       ctx.fillStyle = C.critico; ctx.font = 'bold 22px IBM Plex Sans, system-ui, sans-serif';
       ctx.textAlign = 'center'; ctx.fillText('!', bx, by); ctx.globalAlpha = 1;
     }
-    ctx.font = '700 11px IBM Plex Mono, ui-monospace, monospace'; ctx.textAlign = 'center';
-    ctx.fillStyle = C.texto; ctx.fillText(p.nombre, zonaX + zonaW * 0.5, this.sueloY + 15);
+    this.etiqueta(p.nombre, zonaX + zonaW * 0.5, this.sueloY + 16, C.texto, 11);
   }
 
-  /* ---------------- ÁRBOLES ---------------- */
+  /* ---------------- ÁRBOLES ----------------
+     Pocos y a los lados, para dar vida sin tapar las estructuras ni competir
+     con la vegetación del fondo. Solo en el "plano de fondo". */
   arboles(fondo){
+    if(!fondo) return;   // nada de árboles en primer plano
     const ctx = this.ctx, W = this._W;
     const inv = this.est.i === 3;
     const spr = (inv && this.asset('arbol_invierno.png')) || this.asset('arbol.png');
     if(!spr) return super.arboles(fondo);
-    const xs = fondo ? [0.28, 0.44, 0.68, 0.90] : [0.10, 0.72];
+    const xs = [0.05, 0.95];
     for(let k = 0; k < xs.length; k++){
-      const x = W * xs[k], baseY = this.sueloY + (fondo ? -2 : 8), esc = fondo ? 0.72 : 1.05;
-      const sway = Math.sin(this.tiempo * 1.2 + k) * 3 * esc;
-      const dw = 48 * esc, dh = 62 * esc;
+      const x = W * xs[k], baseY = this.sueloY + 4, esc = 0.6;
+      const sway = Math.sin(this.tiempo * 1.2 + k) * 2;
+      const dw = 42 * esc, dh = 56 * esc;
       this.sombraSuelo(x, baseY + 2, dw * 0.3);
-      ctx.globalAlpha = fondo ? 0.9 : 1;
       this.dibujarSprite(spr, x + sway * 0.4, baseY, dw, dh, 'suelo');
-      ctx.globalAlpha = 1;
     }
   }
 
