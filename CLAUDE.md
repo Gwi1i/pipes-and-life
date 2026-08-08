@@ -131,6 +131,26 @@ servicio sostenido (un corte la resetea), mengua si va mal servida, y se queda
 igual en la zona templada. Al crecer sube la demanda, lo que realimenta la
 necesidad de más mejoras.
 
+**Ciclo del mundo.** `coefHora()` modula el consumo por la hora del día
+(`curvaDiaria`) y `factorEstiaje()` modula la captación por la estación
+(`estiaje`, sobre `tiempo.horasPorAño`). Se aplican dentro de `avanzar()`.
+
+**Averías.** Viven FUERA de `avanzar()`, en `tickAverias()` de `main.js`, que
+solo corre en la partida viva (nunca offline: sería injusto). Una avería es
+`estado.averia = { desde }`; mientras exista, `avanzar()` corta la producción
+automática (el clic manual sigue). Se repara pagando (`repararAveria`) o sola si
+`mejoras.mantenimiento > 0`, tras un tiempo que baja con el nivel.
+
+**Auto-bombeo = función especial, no una mejora.** Vive en `CONFIG.premium`, no
+en `CONFIG.mejoras`. Es un booleano (`estado.autobombaActivo`), no un nivel. Se
+activa con `requisitosAutobomba()` + pago alto. El campo `desbloqueoExterno` es
+el gancho para una futura vía de anuncio/pago: NO hay pago ni anuncio real
+implementado, y no se debe simular uno falso.
+
+**Offline.** `progresoOffline()` en `main.js` simula el tiempo ausente a pasos
+(la curva diaria y el estiaje cambian por el camino) con tope `offline.maxHoras`.
+Usa `estado.ultimoInstante`, que `guardar()` sella en cada guardado.
+
 ## Trampas conocidas
 
 - El navegador cachea los módulos ES: si un cambio no aparece, recarga sin caché.

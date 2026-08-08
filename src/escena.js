@@ -68,6 +68,9 @@ export class Escena {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     const W = this.ancho, H = this.alto;
 
+    // Hora del día para el ciclo día/noche del cielo
+    this.hora = ((estado.horas % 24) + 24) % 24;
+
     // Coordenadas de referencia de la escena
     const sueloY = H * 0.74;
 
@@ -78,6 +81,7 @@ export class Escena {
     this.bombaEdificio(estado, W, H, sueloY);
     if(estado.mejoras.deposito > 0) this.depositoTanque(estado, W, H, sueloY);
     this.pueblo(estado, resultado, W, H, sueloY);
+    if(resultado.averiada) this.averiaIndicador(W, H, sueloY);
     this.destellosClic(W, H);
   }
 
@@ -88,25 +92,48 @@ export class Escena {
     }
   }
 
-  /* ---------- cielo, sol y tierra ---------- */
+  /* ---------- cielo, astro y tierra ----------
+     El cielo pasa de noche a día según la hora: se pinta la base nocturna y
+     encima la diurna con opacidad = cuánta luz hay. Y el sol/luna cruza el
+     cielo en arco. Es el latido que hace que se note el paso del tiempo. */
   fondo(W, H, sueloY){
     const ctx = this.ctx, C = CONFIG.color;
-    const cielo = ctx.createLinearGradient(0, 0, 0, sueloY);
-    cielo.addColorStop(0, C.cielo[0]);
-    cielo.addColorStop(0.6, C.cielo[1]);
-    cielo.addColorStop(1, C.cielo[2]);
-    ctx.fillStyle = cielo;
+    const h = this.hora ?? 12;
+    // 0 de noche cerrada, 1 a mediodía; dista de 0 en amanecer/atardecer
+    const luz = Math.max(0, Math.sin(((h - 6) / 12) * Math.PI));
+
+    // Base nocturna
+    const noche = ctx.createLinearGradient(0, 0, 0, sueloY);
+    noche.addColorStop(0, C.cieloNoche[0]);
+    noche.addColorStop(0.6, C.cieloNoche[1]);
+    noche.addColorStop(1, C.cieloNoche[2]);
+    ctx.fillStyle = noche;
     ctx.fillRect(0, 0, W, sueloY);
 
-    // Sol bajo, cálido: da el aire de atardecer de la paleta
-    const sx = W * 0.84, sy = H * 0.20, r = Math.min(W, H) * 0.06;
-    const halo = ctx.createRadialGradient(sx, sy, 0, sx, sy, r * 3.2);
-    halo.addColorStop(0, 'rgba(245,196,81,0.5)');
-    halo.addColorStop(1, 'rgba(245,196,81,0)');
+    // Día por encima, tan opaco como luz haya
+    const dia = ctx.createLinearGradient(0, 0, 0, sueloY);
+    dia.addColorStop(0, C.cielo[0]);
+    dia.addColorStop(0.6, C.cielo[1]);
+    dia.addColorStop(1, C.cielo[2]);
+    ctx.globalAlpha = luz;
+    ctx.fillStyle = dia;
+    ctx.fillRect(0, 0, W, sueloY);
+    ctx.globalAlpha = 1;
+
+    // Astro: sol de día (5-19 h), luna el resto, cruzando en arco
+    const esDia = h >= 5 && h < 19;
+    const fx = esDia ? (h - 5) / 14 : (((h < 5 ? h + 24 : h) - 19) / 10);
+    const ax = W * (0.10 + 0.80 * fx);
+    const ay = H * (0.34 - Math.sin(Math.max(0, Math.min(1, fx)) * Math.PI) * 0.22);
+    const r = Math.min(W, H) * 0.055;
+    const tono = esDia ? '245,196,81' : '203,213,225';
+    const halo = ctx.createRadialGradient(ax, ay, 0, ax, ay, r * 3.2);
+    halo.addColorStop(0, `rgba(${tono},0.5)`);
+    halo.addColorStop(1, `rgba(${tono},0)`);
     ctx.fillStyle = halo;
-    ctx.beginPath(); ctx.arc(sx, sy, r * 3.2, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = C.sol;
-    ctx.beginPath(); ctx.arc(sx, sy, r, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(ax, ay, r * 3.2, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = esDia ? C.sol : C.luna;
+    ctx.beginPath(); ctx.arc(ax, ay, r, 0, Math.PI * 2); ctx.fill();
 
     // Tierra
     const tierra = ctx.createLinearGradient(0, sueloY, 0, H);
@@ -362,6 +389,22 @@ export class Escena {
     ctx.textAlign = 'center';
     ctx.fillStyle = C.tenue;
     ctx.fillText(estado.poblacion.nombre, zonaX + zonaW * 0.5, sueloY + 16);
+  }
+
+  /* ---------- indicador de avería sobre la bomba ---------- */
+  averiaIndicador(W, H, sueloY){
+    const ctx = this.ctx, C = CONFIG.color;
+    const x = W * 0.26, y = sueloY - H * 0.20;
+    const pulso = 0.55 + Math.sin(this.tiempo * 6) * 0.45;
+    ctx.globalAlpha = pulso;
+    ctx.fillStyle = C.critico;
+    ctx.beginPath(); ctx.arc(x, y, Math.min(W, H) * 0.028, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.font = `bold ${Math.round(Math.min(W, H) * 0.03)}px IBM Plex Sans, system-ui, sans-serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('!', x, y + 1);
+    ctx.textBaseline = 'alphabetic';
+    ctx.globalAlpha = 1;
   }
 
   /* ---------- ondas donde se pincha ---------- */

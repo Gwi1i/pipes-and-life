@@ -12,7 +12,7 @@ import { Estado } from './estado.js';
 import { Entrada } from './entrada.js';
 import { UI } from './ui.js';
 import { Escena } from './escena.js';
-import { avanzar, bombear, costeMejora } from './simulacion.js';
+import { avanzar, bombear, costeMejora, requisitosAutobomba } from './simulacion.js';
 import { formatear } from './util.js';
 
 const lienzo  = document.getElementById('escena');
@@ -25,6 +25,8 @@ const escena  = new Escena(lienzo);
 if(!habiaPartida){
   estado.anotar(`Nueva concesión. ${estado.poblacion.nombre} espera agua: ` +
                 `dale a BOMBEAR.`, 'info');
+} else {
+  progresoOffline();   // acreditar el tiempo ausente
 }
 
 /* ==================================================================
@@ -58,8 +60,102 @@ function procesarAcciones(){
         if(a.clave === 'captacion' && estado.mejoras.captacion === 1) escena.aparecerCaptacion();
         break;
       }
+
+      case 'activarAutobomba': {
+        if(estado.autobombaActivo) break;
+        const P = CONFIG.premium.autobomba;
+        // GANCHO de monetización futura: si algún día se decide desbloquear por
+        // anuncio o pago, se comprobaría aquí (P.desbloqueoExterno). De momento
+        // solo hay una vía: cumplir requisitos y pagar en el juego.
+        if(!requisitosAutobomba(estado).cumple){
+          avisar('Aún no cumples los requisitos para el auto-bombeo.');
+          break;
+        }
+        if(!estado.puedePagar(P.coste)){
+          avisar(`El auto-bombeo cuesta ${formatear(P.coste)} €.`);
+          break;
+        }
+        estado.pagar(P.coste);
+        estado.autobombaActivo = true;
+        estado.anotar('¡Auto-bombeo activado! La bomba trabaja sola.', 'ok');
+        break;
+      }
+
+      case 'repararAveria': {
+        if(!estado.averia) break;
+        const coste = CONFIG.averias.costeReparacionManual;
+        if(!estado.puedePagar(coste)){
+          avisar(`La reparación cuesta ${formatear(coste)} € y no hay fondos.`);
+          break;
+        }
+        estado.pagar(coste);
+        estado.averia = null;
+        estado.anotar(`Avería reparada a mano por ${formatear(coste)} €.`, 'ok');
+        break;
+      }
     }
   }
+}
+
+/* ==================================================================
+   AVERÍAS — solo en la partida viva, nunca offline
+   ================================================================== */
+
+function tickAverias(dtHoras){
+  const A = CONFIG.averias;
+
+  // Reparación automática si hay personal de mantenimiento contratado
+  if(estado.averia){
+    const nivel = estado.mejoras.mantenimiento;
+    if(nivel > 0){
+      const tiempo = A.reparacionAutoHoras * Math.pow(A.reparacionAutoFactor, nivel - 1);
+      if(estado.horas - estado.averia.desde >= tiempo){
+        estado.averia = null;
+        estado.anotar('El equipo de mantenimiento repara la avería.', 'ok');
+      }
+    }
+    return;   // mientras esté rota, no puede volver a romperse
+  }
+
+  // Riesgo de nueva avería: más máquina en marcha, más desgaste
+  let riesgo = A.probBasePorHora * dtHoras;
+  riesgo *= 1 + A.factorDesgaste *
+            (estado.mejoras.captacion + (estado.autobombaActivo ? A.riesgoAutobomba : 0));
+  if(Math.random() < riesgo){
+    estado.averia = { desde: estado.horas };
+    avisar('¡Avería! La producción automática se ha parado.');
+    estado.anotar('Avería en la instalación: la producción automática está parada.', 'critico');
+  }
+}
+
+/* ==================================================================
+   PROGRESO OFFLINE — acreditar el tiempo ausente al cargar
+   ================================================================== */
+
+function progresoOffline(){
+  const O = CONFIG.offline;
+  const seg = (Date.now() - estado.ultimoInstante) / 1000;
+  if(seg <= O.minSegundos) return;
+
+  const aSimular = Math.min(seg, O.maxHoras * 3600);   // segundos reales, con tope
+  const dineroAntes = estado.dinero;
+  const habAntes = Math.floor(estado.poblacion.habitantes);
+
+  // Se avanza a pasos: la curva diaria y el estiaje cambian por el camino, así
+  // que un único salto grande daría un resultado sesgado.
+  let restante = aSimular;
+  const paso = 30;   // segundos reales por paso
+  while(restante > 0){
+    avanzar(estado, Math.min(paso, restante));
+    restante -= paso;
+  }
+
+  const dinero = estado.dinero - dineroAntes;
+  const habAhora = Math.floor(estado.poblacion.habitantes);
+  const minutos = Math.round(aSimular / 60);
+  let txt = `Mientras no estabas (${minutos} min): ${dinero >= 0 ? '+' : ''}${formatear(dinero)} €`;
+  if(habAhora !== habAntes) txt += `, población ${habAhora.toLocaleString('es-ES')}`;
+  estado.anotar(txt + '.', 'info');
 }
 
 /**
@@ -104,6 +200,7 @@ function bucle(ahora){
   // (clics, auto-bombeo) y qué es tiempo de juego (consumo, captación).
   const habAntes = Math.floor(estado.poblacion.habitantes);
   resultado = avanzar(estado, dt);
+  tickAverias(dt * CONFIG.economia.horasPorSegundo);
   anotarCrecimiento(habAntes);
 
   acumHUD += dt;

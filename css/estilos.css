@@ -134,6 +134,59 @@ body{
 .mejora.comprada .m-coste{color:var(--ok);}
 .mejora.inalcanzable .m-coste{color:var(--critico);}
 
+/* ---------- FUNCIÓN ESPECIAL (auto-bombeo premium) ---------- */
+.premium{
+  display:grid; gap:5px; width:100%; text-align:left; cursor:pointer;
+  background:linear-gradient(150deg, rgba(192,132,252,.16), rgba(56,189,248,.06));
+  border:1px solid var(--premium); border-radius:4px;
+  padding:10px 11px; color:var(--texto); font-family:inherit; transition:.15s;
+  box-shadow:0 0 20px -10px var(--premium);
+}
+.premium.lista{animation:latirPremium 1.8s ease-in-out infinite;}
+.premium.bloqueada{opacity:.75; cursor:default; box-shadow:none;}
+.premium.activa{border-color:var(--ok); background:rgba(74,222,128,.10); cursor:default;}
+.premium:focus-visible{outline:2px solid var(--premium); outline-offset:2px;}
+@keyframes latirPremium{
+  0%,100%{box-shadow:0 0 20px -10px var(--premium);}
+  50%{box-shadow:0 0 26px -6px var(--premium);}
+}
+.p-cab{display:flex; align-items:baseline; justify-content:space-between; gap:8px;}
+.p-nom{font-family:var(--mono); font-size:12px; font-weight:700;
+  letter-spacing:.05em; text-transform:uppercase; color:var(--premium);}
+.premium.activa .p-nom{color:var(--ok);}
+.p-etq{font-family:var(--mono); font-size:8px; font-weight:600; letter-spacing:.14em;
+  padding:2px 6px; border-radius:10px; border:1px solid currentColor; color:var(--premium);}
+.premium.bloqueada .p-etq{color:var(--tenue);}
+.premium.activa .p-etq{color:var(--ok);}
+.p-desc{font-size:10.5px; color:var(--tenue); line-height:1.4;}
+.p-reqs{display:grid; gap:2px; margin:2px 0;}
+.p-req{font-family:var(--mono); font-size:10px; color:var(--tenue);}
+.p-req.ok{color:var(--ok);}
+.p-coste{font-family:var(--mono); font-size:12px; font-weight:600; color:var(--dinero);}
+.premium.activa .p-coste{color:var(--ok);}
+.premium.bloqueada .p-coste{color:var(--tenue);}
+
+/* ---------- AVERÍAS ---------- */
+#panel-averias h2{color:var(--critico); border-color:var(--critico);}
+.averias{display:grid; gap:8px;}
+.averia-estado{font-size:11.5px; color:var(--alarma); line-height:1.4;}
+.btn-reparar{
+  width:100%; cursor:pointer;
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  background:rgba(239,68,68,.14); border:1px solid var(--critico);
+  border-radius:3px; padding:9px 11px; color:var(--critico);
+  font-family:var(--mono); font-size:10.5px; font-weight:600;
+  letter-spacing:.05em; text-transform:uppercase; text-align:left; transition:.15s;
+  animation:latirAveria 1.6s ease-in-out infinite;
+}
+.btn-reparar:hover{background:rgba(239,68,68,.26);}
+.btn-reparar:focus-visible{outline:2px solid var(--critico); outline-offset:2px;}
+.btn-reparar b{font-size:11.5px;}
+@keyframes latirAveria{
+  0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0);}
+  50%{box-shadow:0 0 18px -4px rgba(239,68,68,.75);}
+}
+
 /* ---------- DETALLE POBLACIÓN ---------- */
 .detalle{display:grid; gap:5px;}
 .d-fila{display:flex; justify-content:space-between; gap:10px;

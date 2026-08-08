@@ -23,6 +23,8 @@ export class Estado {
     this.m3Servidos = 0;           // total histórico facturado
 
     this.mejoras = mejorasACero(); // nivel de cada vía de la tienda
+    this.autobombaActivo = false;  // función especial (ver CONFIG.premium)
+    this.averia = null;            // null | { desde: horas } mientras esté rota
 
     this.poblacion = {
       nombre: CONFIG.poblacion.nombre,
@@ -51,6 +53,7 @@ export class Estado {
     const datos = {
       dinero: this.dinero, agua: this.agua, horas: this.horas,
       m3Servidos: this.m3Servidos, mejoras: this.mejoras,
+      autobombaActivo: this.autobombaActivo, averia: this.averia,
       habitantes: this.poblacion.habitantes, racha: this.poblacion.racha,
       ultimoInstante: this.ultimoInstante
     };
@@ -74,6 +77,8 @@ export class Estado {
       estado.m3Servidos = d.m3Servidos ?? 0;
       // Mezcla con las claves actuales: si se añade una mejora nueva, arranca a 0
       estado.mejoras = { ...mejorasACero(), ...(d.mejoras || {}) };
+      estado.autobombaActivo = d.autobombaActivo ?? false;
+      estado.averia = d.averia ?? null;
       estado.poblacion.habitantes = d.habitantes ?? estado.poblacion.habitantes;
       estado.poblacion.racha = d.racha ?? 0;
       estado.ultimoInstante = d.ultimoInstante ?? Date.now();

@@ -85,24 +85,32 @@ del dinero entre mejoras.
 
 ---
 
-## Estado actual (Hito 2)
+## Estado actual (Hitos 1-4)
 
 **Funciona:**
 
 - Clic de bombeo, consumo continuo, facturación.
-- **Cuatro vías de mejora** que compiten por el dinero (ahí está la estrategia):
-  potencia de bomba, depósito, captación (producción pasiva) y auto-bombeo.
-- **La población crece o mengua** según lo bien que la sirvas: bien abastecida y
-  sin cortes, crece y pide más agua; mal servida, se despuebla.
-- Escena animada: agua en el depósito, gotas por las tuberías, captación en el
-  río, la bomba trabajando sola en modo AUTO, y el pueblo reaccionando.
+- **Vías de mejora** que compiten por el dinero: potencia de bomba, depósito,
+  captación (producción pasiva) y personal de mantenimiento.
+- **Auto-bombeo como función especial**: no es una mejora más, sino un aliciente
+  que se gana cumpliendo requisitos (niveles + población) y pagando caro. El
+  código deja un gancho documentado (`CONFIG.premium.autobomba.desbloqueoExterno`)
+  para, en el futuro, permitir desbloquearlo por otra vía (anuncio o pago). Ese
+  pago/anuncio real NO está implementado.
+- **La población crece o mengua** según el servicio: bien abastecida y sin cortes,
+  crece y pide más agua; mal servida, se despuebla.
+- **El año vivo**: el consumo sube y baja con la hora del día (punta de mañana y
+  tarde) y la captación con la estación (en verano, estiaje). El cielo de la
+  escena hace su ciclo día/noche.
+- **Averías**: la instalación se rompe y para la producción automática (el clic
+  manual sigue). Se repara a mano pagando, o sola si tienes personal de
+  mantenimiento.
+- **Progreso offline**: al volver, se acredita (con tope) lo producido mientras
+  no estabas.
+- Escena animada: depósito con lámina de agua, gotas por las tuberías, captación
+  en el río, bomba en modo AUTO, ciclo día/noche e indicador de avería.
 
-**Siguientes hitos previstos:**
-
-3. **El año vivo.** Estiaje (menos caudal en verano) y curva de consumo diaria;
-   progreso *offline* al volver a la partida.
-4. **Averías y mantenimiento.** Roturas que bajan la producción; reparar a mano
-   o contratar personal que lo haga solo.
+**Siguientes ideas:** varias poblaciones, más funciones especiales, eventos.
 
 ---
 

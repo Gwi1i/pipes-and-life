@@ -44,12 +44,16 @@ export class Entrada {
       }
     });
 
-    // Tienda: cada botón lleva su acción en `data-accion` y, si aplica, la
-    // mejora concreta en `data-clave`. Añadir mejoras no obliga a tocar esto.
-    const tienda = document.getElementById('tienda');
-    if(tienda) tienda.addEventListener('click', e => {
-      const b = e.target.closest('[data-accion]');
-      if(b) this.emitir(b.dataset.accion, { clave: b.dataset.clave });
-    });
+    // Paneles con botones de acción (tienda, función especial, averías). Cada
+    // botón lleva su acción en `data-accion` y, si aplica, la clave concreta en
+    // `data-clave`. Añadir botones no obliga a tocar esto: basta con que estén
+    // dentro de uno de estos contenedores.
+    for(const id of ['tienda', 'premium', 'panel-averias']){
+      const cont = document.getElementById(id);
+      if(cont) cont.addEventListener('click', e => {
+        const b = e.target.closest('[data-accion]');
+        if(b) this.emitir(b.dataset.accion, { clave: b.dataset.clave });
+      });
+    }
   }
 }
