@@ -29,8 +29,8 @@ import { Escena, mezclarColor } from './escena.js';
 
 // Dónde cae el "suelo" (donde se apoyan las estructuras) y el río DENTRO del
 // paisaje a pantalla completa, en fracción de alto. Se ajustan al arte real.
-const NIVEL_SUELO = 0.66;
-const NIVEL_RIO = 0.86;
+const NIVEL_SUELO = 0.74;   // pradera del paisaje donde se apoyan las estructuras
+const NIVEL_RIO = 0.84;     // borde del río del paisaje (captación y vertido)
 
 // Niveles de población: una imagen de asentamiento por tamaño. Cambia sola al
 // crecer. Si falta la imagen, se recurre a las casas sueltas (casa1-3).
