@@ -6,7 +6,7 @@
  */
 
 import { CONFIG } from './config.js';
-import { capacidad, demandaMedia } from './simulacion.js';
+import { capacidad, demandaMedia, caudalCaptacion, costeMejora } from './simulacion.js';
 import { formatear } from './util.js';
 
 export class UI {
@@ -14,36 +14,52 @@ export class UI {
   constructor(entrada){
     this.entrada = entrada;
     this.cache = {};
+    // Mejoras ordenadas por su campo `orden`, para que la tienda no dependa
+    // del orden en que estén escritas en config.
+    this.mejoras = Object.entries(CONFIG.mejoras)
+      .sort((a, b) => (a[1].orden || 0) - (b[1].orden || 0));
     this.construirTienda();
   }
 
   /* ---------------- TIENDA / MEJORAS ---------------- */
 
   construirTienda(){
-    // De momento una sola mejora. El data-accion la conecta con main.js.
     const cont = document.getElementById('tienda');
-    cont.innerHTML = `
-      <button class="mejora" data-accion="comprarDeposito" id="mejora-deposito">
-        <span class="m-nom">Depósito de reserva</span>
-        <span class="m-desc">Acumula agua: ${formatear(CONFIG.deposito.capacidad)} L.
-          Bombea a ratos y deja que la reserva abastezca.</span>
-        <span class="m-coste">${formatear(CONFIG.deposito.coste)} €</span>
-      </button>`;
+    cont.innerHTML = this.mejoras.map(([clave, m]) => `
+      <button class="mejora" data-accion="mejorar" data-clave="${clave}" id="mejora-${clave}">
+        <span class="m-cab">
+          <span class="m-nom">${m.nombre}</span>
+          <span class="m-nivel" id="nivel-${clave}"></span>
+        </span>
+        <span class="m-desc">${m.desc}</span>
+        <span class="m-coste" id="coste-${clave}">—</span>
+      </button>`).join('');
   }
 
   refrescarTienda(estado){
-    const b = document.getElementById('mejora-deposito');
-    if(!b) return;
-    if(estado.tieneDeposito){
-      b.classList.add('comprada');
-      b.disabled = true;
-      b.querySelector('.m-coste').textContent = 'Construido ✓';
-    } else {
-      b.classList.toggle('inalcanzable', !estado.puedePagar(CONFIG.deposito.coste));
+    for(const [clave, m] of this.mejoras){
+      const nivel = estado.mejoras[clave];
+      const bt = document.getElementById('mejora-' + clave);
+      const elN = document.getElementById('nivel-' + clave);
+      const elC = document.getElementById('coste-' + clave);
+      if(!bt) continue;
+
+      elN.textContent = nivel > 0 ? 'Nv ' + nivel : '';
+
+      if(nivel >= m.nivelMax){
+        elC.textContent = 'AL MÁXIMO';
+        bt.classList.add('comprada');
+        bt.classList.remove('inalcanzable');
+        bt.disabled = true;
+        continue;
+      }
+      const coste = costeMejora(clave, nivel);
+      elC.textContent = formatear(coste) + ' €';
+      bt.classList.toggle('inalcanzable', !estado.puedePagar(coste));
     }
   }
 
-  /* ---------------- HUD Y PANELES ---------------- */
+  /* ---------------- HUD ---------------- */
 
   /** Solo escribe en el DOM si el valor ha cambiado. */
   fijar(id, valor, clase){
@@ -61,16 +77,17 @@ export class UI {
 
     this.fijar('hud-agua', `${formatear(estado.agua)} / ${formatear(cap)} L`,
       estado.agua < cap * 0.08 ? 'critico' : 'agua');
+    this.fijar('hud-produccion', formatear(resultado.prodLps) + ' L/s',
+      resultado.prodLps > 0 ? 'ok' : 'neutro');
     this.fijar('hud-dinero', formatear(estado.dinero) + ' €',
       estado.dinero < 0 ? 'critico' : 'dinero');
     this.fijar('hud-poblacion',
-      estado.poblacion.habitantes.toLocaleString('es-ES') + ' hab', 'neutro');
+      Math.floor(estado.poblacion.habitantes).toLocaleString('es-ES') + ' hab', 'neutro');
 
     const serv = Math.round(resultado.servicio * 100);
     this.fijar('hud-servicio', serv + ' %',
       serv >= 100 ? 'ok' : serv >= 50 ? 'alarma' : 'critico');
 
-    // Barra de agua del HUD
     const barra = document.getElementById('barra-agua');
     if(barra) barra.style.width = limitarPct(pct) + '%';
 
@@ -80,24 +97,38 @@ export class UI {
   }
 
   actualizarPanel(estado, resultado){
+    const P = CONFIG.poblacion;
     const dem = demandaMedia(estado.poblacion.habitantes);
     const consumoHora = dem * 3600 / 1000;   // m³/h
-    const estadoTxt = resultado.servicio >= 0.999 ? 'Abastecida'
-                    : resultado.servicio >= 0.5   ? 'Servicio parcial'
-                    : 'Sin agua suficiente';
-    const clase = resultado.servicio >= 0.999 ? 'ok'
-                : resultado.servicio >= 0.5   ? 'alarma' : 'critico';
+    const prodHora = caudalCaptacion(estado) * 3600 / 1000;  // m³/h pasivos de captación
 
-    // Se reconstruye entero solo si cambia el texto de estado, no cada frame.
-    const firma = estadoTxt + '|' + estado.poblacion.habitantes + '|' + estado.tieneDeposito;
+    // Tendencia demográfica, con el mismo criterio que usa la simulación
+    let tendencia, claseT;
+    if(resultado.servicio >= P.servicioBueno){
+      const listo = estado.poblacion.racha >= P.horasBuenServicioParaCrecer;
+      tendencia = listo ? 'Creciendo ▲' : 'Ganándose la confianza…';
+      claseT = listo ? 'ok' : 'neutro';
+    } else if(resultado.servicio < P.servicioMalo){
+      tendencia = 'Despoblándose ▼'; claseT = 'critico';
+    } else {
+      tendencia = 'Estable'; claseT = 'alarma';
+    }
+
+    const nivelDep = estado.mejoras.deposito;
+    const reserva = nivelDep === 0 ? 'Sin depósito' : `Nivel ${nivelDep} · ${formatear(capacidad(estado))} L`;
+
+    // Se reconstruye solo cuando cambia algo perceptible, no cada fotograma.
+    const firma = [tendencia, Math.floor(estado.poblacion.habitantes),
+                   nivelDep, estado.mejoras.captacion].join('|');
     if(this.cache.panelFirma === firma) return;
     this.cache.panelFirma = firma;
 
     document.getElementById('detalle').innerHTML = `
-      <div class="d-fila"><span>Estado</span><b class="${clase}">${estadoTxt}</b></div>
-      <div class="d-fila"><span>Habitantes</span><b>${estado.poblacion.habitantes.toLocaleString('es-ES')}</b></div>
+      <div class="d-fila"><span>Tendencia</span><b class="${claseT}">${tendencia}</b></div>
+      <div class="d-fila"><span>Habitantes</span><b>${Math.floor(estado.poblacion.habitantes).toLocaleString('es-ES')}</b></div>
       <div class="d-fila"><span>Consumo</span><b>${consumoHora.toFixed(2)} m³/h</b></div>
-      <div class="d-fila"><span>Reserva</span><b>${estado.tieneDeposito ? 'Depósito ' + formatear(CONFIG.deposito.capacidad) + ' L' : 'Sin depósito'}</b></div>`;
+      <div class="d-fila"><span>Captación</span><b>${prodHora > 0 ? prodHora.toFixed(2) + ' m³/h' : '—'}</b></div>
+      <div class="d-fila"><span>Reserva</span><b>${reserva}</b></div>`;
   }
 
   actualizarRegistro(estado){

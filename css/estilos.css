@@ -122,13 +122,17 @@ body{
 .mejora:hover:not(:disabled){background:rgba(56,189,248,.12); border-color:var(--agua);}
 .mejora:focus-visible{outline:2px solid var(--agua); outline-offset:2px;}
 .mejora.inalcanzable{opacity:.55;}
-.mejora.comprada{border-left-color:var(--ok); opacity:.7; cursor:default;}
+.mejora.comprada{border-left-color:var(--ok); opacity:.8; cursor:default;}
+.m-cab{display:flex; align-items:baseline; justify-content:space-between; gap:8px;}
 .m-nom{font-family:var(--mono); font-size:11px; font-weight:600;
   letter-spacing:.04em; text-transform:uppercase; color:var(--agua);}
 .mejora.comprada .m-nom{color:var(--ok);}
+.m-nivel{font-family:var(--mono); font-size:9px; font-weight:600;
+  color:var(--dinero); letter-spacing:.06em; white-space:nowrap;}
 .m-desc{font-size:10.5px; color:var(--tenue); line-height:1.4;}
 .m-coste{font-family:var(--mono); font-size:12px; font-weight:600; color:var(--dinero);}
 .mejora.comprada .m-coste{color:var(--ok);}
+.mejora.inalcanzable .m-coste{color:var(--critico);}
 
 /* ---------- DETALLE POBLACIÓN ---------- */
 .detalle{display:grid; gap:5px;}

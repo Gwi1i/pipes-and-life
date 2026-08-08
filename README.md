@@ -85,16 +85,20 @@ del dinero entre mejoras.
 
 ---
 
-## Estado actual (Hito 1)
+## Estado actual (Hito 2)
 
-**Funciona:** clic de bombeo, consumo continuo, facturación, depósito como
-primera mejora, y la escena animada (agua en el depósito, gotas por las
-tuberías, pueblo que reacciona al servicio).
+**Funciona:**
+
+- Clic de bombeo, consumo continuo, facturación.
+- **Cuatro vías de mejora** que compiten por el dinero (ahí está la estrategia):
+  potencia de bomba, depósito, captación (producción pasiva) y auto-bombeo.
+- **La población crece o mengua** según lo bien que la sirvas: bien abastecida y
+  sin cortes, crece y pide más agua; mal servida, se despuebla.
+- Escena animada: agua en el depósito, gotas por las tuberías, captación en el
+  río, la bomba trabajando sola en modo AUTO, y el pueblo reaccionando.
 
 **Siguientes hitos previstos:**
 
-2. **De activo a idle.** Captación con goteo pasivo, ampliar depósito y potencia
-   de bomba, auto-bombeo. Aquí nace la estrategia del reparto de dinero.
 3. **El año vivo.** Estiaje (menos caudal en verano) y curva de consumo diaria;
    progreso *offline* al volver a la partida.
 4. **Averías y mantenimiento.** Roturas que bajan la producción; reparar a mano

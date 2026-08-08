@@ -44,12 +44,12 @@ export class Entrada {
       }
     });
 
-    // Tienda: cada botón lleva su acción en `data-accion`. Añadir mejoras no
-    // obliga a tocar este archivo.
+    // Tienda: cada botón lleva su acción en `data-accion` y, si aplica, la
+    // mejora concreta en `data-clave`. Añadir mejoras no obliga a tocar esto.
     const tienda = document.getElementById('tienda');
     if(tienda) tienda.addEventListener('click', e => {
       const b = e.target.closest('[data-accion]');
-      if(b) this.emitir(b.dataset.accion);
+      if(b) this.emitir(b.dataset.accion, { clave: b.dataset.clave });
     });
   }
 }

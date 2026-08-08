@@ -12,7 +12,7 @@ import { Estado } from './estado.js';
 import { Entrada } from './entrada.js';
 import { UI } from './ui.js';
 import { Escena } from './escena.js';
-import { avanzar, bombear } from './simulacion.js';
+import { avanzar, bombear, costeMejora } from './simulacion.js';
 import { formatear } from './util.js';
 
 const lienzo  = document.getElementById('escena');
@@ -40,21 +40,40 @@ function procesarAcciones(){
         escena.destello(a.x, a.y);
         break;
 
-      case 'comprarDeposito': {
-        if(estado.tieneDeposito) break;
-        if(!estado.puedePagar(CONFIG.deposito.coste)){
-          avisar(`Sin fondos: el depósito cuesta ${formatear(CONFIG.deposito.coste)} €.`);
+      case 'mejorar': {
+        const m = CONFIG.mejoras[a.clave];
+        if(!m) break;
+        const nivel = estado.mejoras[a.clave];
+        if(nivel >= m.nivelMax){ avisar(`${m.nombre}: ya está al máximo.`); break; }
+        const coste = costeMejora(a.clave, nivel);
+        if(!estado.puedePagar(coste)){
+          avisar(`Sin fondos: ${m.nombre.toLowerCase()} cuesta ${formatear(coste)} €.`);
           break;
         }
-        estado.pagar(CONFIG.deposito.coste);
-        estado.tieneDeposito = true;
-        estado.anotar(`Depósito construido: ${formatear(CONFIG.deposito.capacidad)} L de reserva. ` +
-                      `Ahora el agua se acumula.`, 'ok');
-        escena.aparecerDeposito();
+        estado.pagar(coste);
+        estado.mejoras[a.clave]++;
+        estado.anotar(`${m.nombre} · nivel ${estado.mejoras[a.clave]}.`, 'ok');
+        // Primeras compras: animación de aparición en la escena
+        if(a.clave === 'deposito'  && estado.mejoras.deposito  === 1) escena.aparecerDeposito();
+        if(a.clave === 'captacion' && estado.mejoras.captacion === 1) escena.aparecerCaptacion();
         break;
       }
     }
   }
+}
+
+/**
+ * Anota en el registro cuando la población cruza cada centena, en un sentido u
+ * otro. Solo al cruzar, para no llenar el registro con el goteo continuo.
+ */
+function anotarCrecimiento(habAntes){
+  const habAhora = Math.floor(estado.poblacion.habitantes);
+  if(Math.floor(habAhora / 100) === Math.floor(habAntes / 100)) return;
+  const n = estado.poblacion.nombre;
+  estado.anotar(habAhora > habAntes
+    ? `${n} crece: ${habAhora.toLocaleString('es-ES')} habitantes. Revisa si la red aguanta.`
+    : `${n} pierde población: ${habAhora.toLocaleString('es-ES')} habitantes.`,
+    habAhora > habAntes ? 'ok' : 'alarma');
 }
 
 /** Aviso pasajero sobre la escena. */
@@ -80,7 +99,12 @@ function bucle(ahora){
   ultimo = ahora;
 
   procesarAcciones();
-  resultado = avanzar(estado, dt * CONFIG.economia.horasPorSegundo);
+
+  // La simulación recibe el dt REAL: dentro decide qué es ritmo humano
+  // (clics, auto-bombeo) y qué es tiempo de juego (consumo, captación).
+  const habAntes = Math.floor(estado.poblacion.habitantes);
+  resultado = avanzar(estado, dt);
+  anotarCrecimiento(habAntes);
 
   acumHUD += dt;
   if(acumHUD > 0.1){ acumHUD = 0; ui.actualizar(estado, resultado); }

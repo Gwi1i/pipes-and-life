@@ -23,6 +23,7 @@ export class Escena {
     this.tiempo = 0;
     this.pulso = 0;          // 1 justo tras un clic, decae solo: anima el bombeo
     this.aparicionDeposito = 0;  // 0..1, animación de pop-in del depósito
+    this.aparicionCaptacion = 0; // 0..1, pop-in de la captación
     this.destellos = [];     // ondas donde el jugador pincha
     this.ajustar();
     window.addEventListener('resize', () => this.ajustar());
@@ -46,6 +47,7 @@ export class Escena {
     if(x != null) this.destellos.push({ x, y, t: 0 });
   }
   aparecerDeposito(){ this.aparicionDeposito = 0.0001; }  // arranca la animación
+  aparecerCaptacion(){ this.aparicionCaptacion = 0.0001; }
 
   /* ================================================================
      DIBUJO
@@ -55,9 +57,11 @@ export class Escena {
     const ctx = this.ctx;
     this.tiempo += dt;
     this.pulso = Math.max(0, this.pulso - dt * 2.2);
-    if(this.aparicionDeposito > 0 && this.aparicionDeposito < 1){
-      this.aparicionDeposito = Math.min(1, this.aparicionDeposito + dt * 2.5);
-    }
+    // El auto-bombeo mantiene la bomba latiendo y las tuberías con gotas sin
+    // que el jugador toque nada: se ve que la instalación trabaja sola.
+    if(resultado.bombeoAuto) this.pulso = Math.max(this.pulso, 0.18);
+    this.avanzarAparicion('aparicionDeposito', dt);
+    this.avanzarAparicion('aparicionCaptacion', dt);
     this.destellos = this.destellos.filter(d => (d.t += dt) < 0.6);
 
     const dpr = window.devicePixelRatio || 1;
@@ -69,11 +73,19 @@ export class Escena {
 
     this.fondo(W, H, sueloY);
     this.rio(W, H, sueloY);
+    if(estado.mejoras.captacion > 0) this.captacionIntake(W, H, sueloY);
     this.tuberias(estado, resultado, W, H, sueloY);
-    this.bombaEdificio(W, H, sueloY);
-    if(estado.tieneDeposito) this.depositoTanque(estado, W, H, sueloY);
+    this.bombaEdificio(estado, W, H, sueloY);
+    if(estado.mejoras.deposito > 0) this.depositoTanque(estado, W, H, sueloY);
     this.pueblo(estado, resultado, W, H, sueloY);
     this.destellosClic(W, H);
+  }
+
+  /** Avanza una animación de aparición 0→1 sin pasarse. */
+  avanzarAparicion(clave, dt){
+    if(this[clave] > 0 && this[clave] < 1){
+      this[clave] = Math.min(1, this[clave] + dt * 2.5);
+    }
   }
 
   /* ---------- cielo, sol y tierra ---------- */
@@ -128,25 +140,26 @@ export class Escena {
 
   /* ---------- tuberías con gotas cuando circula agua ---------- */
   tuberias(estado, resultado, W, H, sueloY){
-    const ctx = this.ctx;
     const bombaX = W * 0.26;
     const casaX  = W * 0.80;
     const nivelTub = sueloY + (H - sueloY) * 0.45;
+    // "Entra agua" si se clica O si produce la captación/auto-bombeo
+    const entra = this.pulso > 0.02 || resultado.produciendo;
 
-    // río → bomba: activa mientras se clica
-    this.tubo(W * 0.12, nivelTub, bombaX, nivelTub, this.pulso > 0.02, false);
+    // río → bomba
+    this.tubo(W * 0.12, nivelTub, bombaX, nivelTub, entra, false);
 
-    if(estado.tieneDeposito){
+    if(estado.mejoras.deposito > 0){
       const depX = W * 0.53, depBaseY = sueloY - H * 0.02, depTapaY = sueloY - H * 0.30;
-      // bomba → depósito (sube): activa al clicar
-      this.tubo(bombaX, nivelTub, depX, nivelTub, this.pulso > 0.02, false);
-      this.tubo(depX, nivelTub, depX, depTapaY, this.pulso > 0.02, true);
+      // bomba → depósito (sube)
+      this.tubo(bombaX, nivelTub, depX, nivelTub, entra, false);
+      this.tubo(depX, nivelTub, depX, depTapaY, entra, true);
       // depósito → pueblo (baja por gravedad): activa si hay servicio
       this.tubo(depX, depBaseY, casaX, depBaseY, resultado.servicio > 0.01, false);
       this.tubo(casaX, depBaseY, casaX, nivelTub, resultado.servicio > 0.01, true);
     } else {
-      // sin depósito, la bomba va directa al pueblo: solo llega si estás clicando
-      this.tubo(bombaX, nivelTub, casaX, nivelTub, this.pulso > 0.02 && resultado.servicio > 0.01, false);
+      // sin depósito, la bomba va directa al pueblo: solo llega si entra agua
+      this.tubo(bombaX, nivelTub, casaX, nivelTub, entra && resultado.servicio > 0.01, false);
     }
   }
 
@@ -176,13 +189,38 @@ export class Escena {
     }
   }
 
+  /* ---------- captación: toma de agua en el río ---------- */
+  captacionIntake(W, H, sueloY){
+    const ctx = this.ctx, C = CONFIG.color;
+    const a = this.aparicionCaptacion === 0 ? 1 : this.aparicionCaptacion;
+    const x = W * 0.09, y = sueloY - H * 0.015;
+    const s = Math.min(W, H) * 0.03 * (0.6 + 0.4 * a);
+
+    ctx.save();
+    ctx.globalAlpha = a;
+    // Boya/toma turquesa con diana, evoca el manantial de la versión original
+    ctx.fillStyle = C.captacion;
+    ctx.globalAlpha = a * 0.3;
+    ctx.beginPath(); ctx.arc(x, y, s * 1.9, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = a;
+    ctx.beginPath(); ctx.arc(x, y, s, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#062a2c'; ctx.lineWidth = 1.6; ctx.stroke();
+    // Caña de aspiración hacia la bomba
+    ctx.strokeStyle = C.captacion; ctx.globalAlpha = a * 0.7; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(x, y - s); ctx.lineTo(x + W * 0.05, sueloY - H * 0.05); ctx.stroke();
+    ctx.restore();
+    ctx.globalAlpha = 1;
+  }
+
   /* ---------- caseta de bombeo (donde se clica) ---------- */
-  bombaEdificio(W, H, sueloY){
+  bombaEdificio(estado, W, H, sueloY){
     const ctx = this.ctx, C = CONFIG.color;
     const x = W * 0.26, w = W * 0.075, h = H * 0.13;
     const y = sueloY - h;
-    // Late suavemente, y da un golpe al bombear
-    const late = 1 + Math.sin(this.tiempo * 2) * 0.015 + this.pulso * 0.06;
+    const auto = estado.mejoras.autobomba > 0;
+    // Late suavemente, da un golpe al bombear, y late más si trabaja sola
+    const late = 1 + Math.sin(this.tiempo * (auto ? 6 : 2)) * (auto ? 0.03 : 0.015)
+                 + this.pulso * 0.06;
 
     ctx.save();
     ctx.translate(x, sueloY);
@@ -208,11 +246,11 @@ export class Escena {
     ctx.fill();
     ctx.restore();
 
-    // Etiqueta "clica aquí" sutil
+    // Etiqueta; marca AUTO cuando el auto-bombeo está en marcha
     ctx.font = '600 10px IBM Plex Mono, ui-monospace, monospace';
     ctx.textAlign = 'center';
-    ctx.fillStyle = C.tenue;
-    ctx.fillText('BOMBEO', x, sueloY + 16);
+    ctx.fillStyle = auto ? C.captacion : C.tenue;
+    ctx.fillText(auto ? 'BOMBEO · AUTO' : 'BOMBEO', x, sueloY + 16);
   }
 
   /* ---------- depósito elevado con lámina de agua ---------- */

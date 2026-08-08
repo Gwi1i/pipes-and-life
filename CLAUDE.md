@@ -110,6 +110,27 @@ La demanda de la población se calcula SOLO en `demandaMedia()`. En la versión 
 estrategia, duplicar esa fórmula ya provocó una vez que la demanda cambiara sola
 a los dos segundos de partida. No la repitas en línea.
 
+**Dos escalas de tiempo, a propósito.** `avanzar(estado, dt)` recibe el `dt`
+REAL en segundos. Dentro distingue:
+- *Flujos de mundo* (consumo, captación): en L/s de juego, escalados por las
+  horas de juego (`dt · horasPorSegundo`). El estiaje del Hito 3 los modulará.
+- *Flujos de acción* (clic manual, auto-bombeo): ritmo humano, en tiempo real,
+  como el propio clicar.
+Por eso el auto-bombeo se compara con el clic y la captación con la demanda, no
+al revés. Si mezclas las escalas, los números se van por órdenes de magnitud.
+
+**Mejoras.** La tienda se genera sola desde `CONFIG.mejoras`: cada entrada tiene
+`costeBase`, `factorCoste`, `nivelMax` y sus parámetros de efecto. El nivel vive
+en `estado.mejoras[clave]`; el coste del siguiente nivel es
+`costeBase · factorCoste^nivel` (`costeMejora()`). Añadir una vía nueva es añadir
+una entrada en config y, si necesita efecto, leerlo en `simulacion.js`. No hace
+falta tocar la UI ni `entrada.js`.
+
+**Crecimiento.** En `crecer()`: la población crece solo tras una *racha* de buen
+servicio sostenido (un corte la resetea), mengua si va mal servida, y se queda
+igual en la zona templada. Al crecer sube la demanda, lo que realimenta la
+necesidad de más mejoras.
+
 ## Trampas conocidas
 
 - El navegador cachea los módulos ES: si un cambio no aparece, recarga sin caché.

@@ -1,11 +1,18 @@
 /**
- * ESTADO — dinero, agua, tiempo y persistencia.
+ * ESTADO — dinero, agua, mejoras, tiempo y persistencia.
  *
  * Solo datos y las reglas de la caja. Ni geometría ni dibujo. La lógica de qué
  * hacer con estos números vive en `simulacion.js`.
  */
 
 import { CONFIG } from './config.js';
+
+/** Niveles de mejora a cero: una clave por cada entrada de CONFIG.mejoras. */
+function mejorasACero(){
+  const m = {};
+  for(const clave of Object.keys(CONFIG.mejoras)) m[clave] = 0;
+  return m;
+}
 
 export class Estado {
 
@@ -14,13 +21,15 @@ export class Estado {
     this.agua = 0;                 // litros almacenados ahora mismo
     this.horas = 0;                // tiempo de explotación transcurrido
     this.m3Servidos = 0;           // total histórico facturado
-    this.tieneDeposito = false;    // la primera mejora
+
+    this.mejoras = mejorasACero(); // nivel de cada vía de la tienda
 
     this.poblacion = {
       nombre: CONFIG.poblacion.nombre,
       habitantes: CONFIG.poblacion.habitantes,
       abastecida: false,
-      servicio: 0                  // 0..1, lo rellena la simulación
+      servicio: 0,                 // 0..1, lo rellena la simulación
+      racha: 0                     // horas seguidas de buen servicio (para crecer)
     };
 
     this.registro = [];
@@ -41,8 +50,8 @@ export class Estado {
     this.ultimoInstante = Date.now();
     const datos = {
       dinero: this.dinero, agua: this.agua, horas: this.horas,
-      m3Servidos: this.m3Servidos, tieneDeposito: this.tieneDeposito,
-      habitantes: this.poblacion.habitantes,
+      m3Servidos: this.m3Servidos, mejoras: this.mejoras,
+      habitantes: this.poblacion.habitantes, racha: this.poblacion.racha,
       ultimoInstante: this.ultimoInstante
     };
     try{
@@ -63,8 +72,10 @@ export class Estado {
       estado.agua = d.agua ?? 0;
       estado.horas = d.horas ?? 0;
       estado.m3Servidos = d.m3Servidos ?? 0;
-      estado.tieneDeposito = d.tieneDeposito ?? false;
+      // Mezcla con las claves actuales: si se añade una mejora nueva, arranca a 0
+      estado.mejoras = { ...mejorasACero(), ...(d.mejoras || {}) };
       estado.poblacion.habitantes = d.habitantes ?? estado.poblacion.habitantes;
+      estado.poblacion.racha = d.racha ?? 0;
       estado.ultimoInstante = d.ultimoInstante ?? Date.now();
       return true;
     }catch(e){
