@@ -10,14 +10,35 @@
  * Sin dependencias ni build: son <img> normales apuntando a archivos locales.
  *
  * NOMBRES DE ARCHIVO esperados en `assets/` (ver assets/PROMPTS.md):
+ *   paisaje.png (opcional: paisaje_noche.png, paisaje_invierno.png)
  *   bomba.png  deposito.png  depuradora.png  captacion.png
- *   casa1.png  casa2.png  casa3.png  arbol.png  arbol_invierno.png
+ *   pueblo_aldea.png  pueblo_villa.png  pueblo_ciudad.png  (o casa1-3.png)
+ *   arbol.png  arbol_invierno.png
+ *
+ * PAISAJE: si existe `paisaje.png`, se usa como telón a pantalla completa (río
+ * abajo, banda de suelo en medio, montañas y cielo arriba) y las estructuras se
+ * dibujan encima, sobre la línea de suelo `NIVEL_SUELO`. Si además hay variantes
+ * `paisaje_noche.png` / `paisaje_invierno.png`, se eligen según hora/estación;
+ * si no, la noche se resuelve oscureciendo el paisaje de día.
  */
 
 import { CONFIG } from './config.js';
 import { capacidad, fraccionTratada } from './simulacion.js';
 import { limitar } from './util.js';
 import { Escena, mezclarColor } from './escena.js';
+
+// Dónde cae el "suelo" (donde se apoyan las estructuras) y el río DENTRO del
+// paisaje a pantalla completa, en fracción de alto. Se ajustan al arte real.
+const NIVEL_SUELO = 0.66;
+const NIVEL_RIO = 0.86;
+
+// Niveles de población: una imagen de asentamiento por tamaño. Cambia sola al
+// crecer. Si falta la imagen, se recurre a las casas sueltas (casa1-3).
+const NIVELES_PUEBLO = [
+  { hasta: 600,       sprite: 'pueblo_aldea.png'  },
+  { hasta: 2500,      sprite: 'pueblo_villa.png'  },
+  { hasta: Infinity,  sprite: 'pueblo_ciudad.png' }
+];
 
 export class EscenaAssets extends Escena {
 
@@ -70,10 +91,57 @@ export class EscenaAssets extends Escena {
     if(oscuro > 0.01){ ctx.fillStyle = `rgba(6,14,26,${oscuro * 0.5})`; ctx.fillRect(0, 0, W, this.sueloY + 4); }
     return true;
   }
-  cielo(){ if(!this.fondoBackdrop()) super.cielo(); }
-  colinas(){ if(!this.asset('fondo.png')) super.colinas(); }
-  nubesDibujar(dt){ if(!this.asset('fondo.png')) super.nubesDibujar(dt); }
-  brumaHorizonte(){ if(!this.asset('fondo.png')) super.brumaHorizonte(); }
+
+  /* ---------------- PAISAJE A PANTALLA COMPLETA ----------------
+     Un único telón que ya trae río, suelo, montañas y cielo. Elige la variante
+     más específica disponible según hora y estación. */
+  paisajeAsset(){
+    const noche = this.luz < 0.32;
+    const inv = this.est.i === 3;
+    const cands = [];
+    if(inv && noche) cands.push('paisaje_invierno_noche.png');
+    if(noche) cands.push('paisaje_noche.png');
+    if(inv) cands.push('paisaje_invierno.png');
+    cands.push('paisaje.png');
+    for(const n of cands){ const f = this.asset(n); if(f) return { f, noche: n.includes('noche') }; }
+    return null;
+  }
+
+  /** ¿Hay paisaje de fondo? (cachea el resultado por fotograma para no repetir). */
+  hayPaisaje(){ return !!this.paisajeAsset(); }
+
+  /** Dibuja una imagen cubriendo todo el lienzo (como background-size: cover). */
+  dibujarCover(img){
+    const ctx = this.ctx, W = this._W, H = this._H;
+    const iw = img.naturalWidth, ih = img.naturalHeight;
+    const s = Math.max(W / iw, H / ih);
+    const dw = iw * s, dh = ih * s;
+    ctx.drawImage(img, (W - dw) / 2, (H - dh) / 2, dw, dh);
+  }
+
+  /* --- Anulaciones del entorno cuando hay paisaje: el telón manda --- */
+  cielo(){
+    const pj = this.paisajeAsset();
+    if(pj){
+      // recolocar suelo/río a la composición del paisaje (afecta a lo que sigue)
+      this.sueloY = this._H * NIVEL_SUELO;
+      this.rioY = this._H * NIVEL_RIO;
+      this.dibujarCover(pj.f.img);
+      if(!pj.noche && this.luz < 0.92){   // oscurecer hacia la noche si no hay variante nocturna
+        this.ctx.fillStyle = `rgba(8,14,34,${(1 - this.luz) * 0.5})`;
+        this.ctx.fillRect(0, 0, this._W, this._H);
+      }
+      return;
+    }
+    if(this.fondoBackdrop()) return;
+    super.cielo();
+  }
+  astro(){ if(!this.hayPaisaje()) super.astro(); }
+  nubesDibujar(dt){ if(!this.hayPaisaje() && !this.asset('fondo.png')) super.nubesDibujar(dt); }
+  colinas(){ if(!this.hayPaisaje() && !this.asset('fondo.png')) super.colinas(); }
+  brumaHorizonte(){ if(!this.hayPaisaje() && !this.asset('fondo.png')) super.brumaHorizonte(); }
+  suelo(){ if(!this.hayPaisaje()) super.suelo(); }
+  rio(dt){ if(!this.hayPaisaje()) super.rio(dt); }
 
   /** Etiqueta con "pastilla" translúcida, para que el texto lea sobre cualquier fondo. */
   etiqueta(texto, cx, y, color, tam = 10){
@@ -170,14 +238,33 @@ export class EscenaAssets extends Escena {
     this.etiqueta(`DEPURADORA Nv${p.mejoras.depuradora}`, x, base + 16, C.depuradora, 9);
   }
 
-  /* ---------------- PUEBLO ---------------- */
+  /* ---------------- PUEBLO (por niveles de población) ---------------- */
   pueblo(){
     const ctx = this.ctx, C = CONFIG.color, W = this._W, p = this._p, r = this._res;
-    const casas = ['casa1.png', 'casa2.png', 'casa3.png'].map(nb => this.asset(nb));
-    if(casas.every(c => !c)) return super.pueblo();   // aún no hay ninguna
     const seco = r.servicio < 0.5;
+    const zonaX = W * 0.48, zonaW = W * 0.26, cxZona = zonaX + zonaW * 0.5;
+
+    // Imagen de asentamiento según el tamaño (aldea → villa → ciudad)
+    const nivel = NIVELES_PUEBLO.find(t => p.habitantes < t.hasta) || NIVELES_PUEBLO[NIVELES_PUEBLO.length - 1];
+    const asent = this.asset(nivel.sprite);
+    if(asent){
+      const esc = limitar(0.8 + p.habitantes / 8000, 0.8, 1.4);
+      const dw = zonaW * esc, dh = dw * 0.72;
+      this.sombraSuelo(cxZona, this.sueloY + 2, dw * 0.42);
+      this.dibujarSprite(asent, cxZona, this.sueloY, dw, dh, 'suelo');
+      if(seco){
+        ctx.fillStyle = 'rgba(30,40,50,0.42)';
+        ctx.fillRect(cxZona - dw / 2, this.sueloY - dh, dw, dh);
+        this.burbujaSed(cxZona, this.sueloY - dh - 6);
+      }
+      this.etiqueta(p.nombre, cxZona, this.sueloY + 16, C.texto, 11);
+      return;
+    }
+
+    // Respaldo: casas sueltas (casa1-3) mientras no haya imágenes de nivel
+    const casas = ['casa1.png', 'casa2.png', 'casa3.png'].map(nb => this.asset(nb));
+    if(casas.every(c => !c)) return super.pueblo();
     const n = limitar(Math.round(p.habitantes / 120), 3, 8);
-    const zonaX = W * 0.48, zonaW = W * 0.26;
     const casaW = Math.min(zonaW / n * 0.72, W * 0.05);
 
     for(let i = 0; i < n; i++){
@@ -195,13 +282,17 @@ export class EscenaAssets extends Escena {
         if(brillo > 0.02){ ctx.fillStyle = `rgba(255,224,130,${brillo})`; ctx.fillRect(cx - casaW * 0.14, this.sueloY - dh * 0.42, casaW * 0.28, casaW * 0.28); }
       }
     }
-    if(seco){
-      const bx = zonaX + zonaW * 0.5, by = this.sueloY - casaW * 3;
-      ctx.globalAlpha = 0.6 + Math.sin(this.tiempo * 4) * 0.4;
-      ctx.fillStyle = C.critico; ctx.font = 'bold 22px IBM Plex Sans, system-ui, sans-serif';
-      ctx.textAlign = 'center'; ctx.fillText('!', bx, by); ctx.globalAlpha = 1;
-    }
+    if(seco) this.burbujaSed(zonaX + zonaW * 0.5, this.sueloY - casaW * 3);
     this.etiqueta(p.nombre, zonaX + zonaW * 0.5, this.sueloY + 16, C.texto, 11);
+  }
+
+  /** Signo de "!" que late, para el pueblo mal servido. */
+  burbujaSed(cx, y){
+    const ctx = this.ctx;
+    ctx.globalAlpha = 0.6 + Math.sin(this.tiempo * 4) * 0.4;
+    ctx.fillStyle = CONFIG.color.critico;
+    ctx.font = 'bold 22px IBM Plex Sans, system-ui, sans-serif';
+    ctx.textAlign = 'center'; ctx.fillText('!', cx, y); ctx.globalAlpha = 1;
   }
 
   /* ---------------- ÁRBOLES ----------------

@@ -7,6 +7,12 @@ Suelta aquí los PNG con estos nombres exactos (fondo transparente, cuadrados):
 
 | Archivo              | Qué es                    | ¿Obligatorio? |
 |----------------------|---------------------------|---------------|
+| `paisaje.png`        | Paisaje de fondo a pantalla completa (río abajo, suelo en medio, montañas y cielo arriba). **Sin transparencia.** | recomendado |
+| `paisaje_noche.png`  | Igual, de noche           | opcional (si no, se oscurece el de día) |
+| `paisaje_invierno.png`| Igual, nevado            | opcional      |
+| `pueblo_aldea.png`   | Asentamiento pequeño (fondo transparente) | opcional (si no, casa1-3) |
+| `pueblo_villa.png`   | Pueblo mediano            | opcional      |
+| `pueblo_ciudad.png`  | Ciudad                    | opcional      |
 | `bomba.png`          | Caseta de bombeo          | recomendado   |
 | `deposito.png`       | Depósito / torre de agua  | recomendado   |
 | `depuradora.png`     | Estación depuradora       | recomendado   |

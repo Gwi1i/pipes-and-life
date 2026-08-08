@@ -30,7 +30,48 @@ En inglés, por si tu herramienta responde mejor:
 
 ---
 
-## Los archivos
+## EL PAISAJE DE FONDO (nuevo, recomendado)
+
+En vez de trocear dos capas, ahora el juego admite **un único paisaje a pantalla
+completa** llamado `paisaje.png`, y dibuja las estructuras encima. Es lo que hace
+que todo pegue.
+
+**Composición (importante), de abajo a arriba:**
+- **Abajo del todo (≈15%)**: el **río**, de lado a lado (ahí caen la captación y
+  el vertido).
+- **Franja media (≈20%)**: **suelo/hierba llano** donde se apoyan los edificios.
+- **Arriba (≈65%)**: **montañas y cielo**.
+
+`paisaje.png` — prompt:
+> Paisaje de valle: río caudaloso cruzando de lado a lado en primer plano abajo,
+> una franja de pradera verde llana en medio, y montañas verdes con cielo al
+> fondo *[+ estilo común]* **PERO** que **LLENE TODO EL CUADRO, 16:9, sin fondo
+> transparente y sin cuadros grises de transparencia** (fondo sólido de borde a
+> borde).
+
+> ⚠️ El fondo que mandaste traía los "cuadros grises" (checkerboard) horneados en
+> la parte de abajo: eso pasa cuando el generador exporta la transparencia como
+> imagen. Pide "sin transparencia, cuadro completo" y ese problema desaparece.
+
+**Día/noche y estaciones (opcional, no hace falta saber nada):** por defecto el
+juego **oscurece el paisaje de día para simular la noche**. Si quieres más
+calidad, deja también:
+- `paisaje_noche.png` — el mismo valle de noche (cielo oscuro, luces).
+- `paisaje_invierno.png` — el mismo valle nevado.
+El juego elige la variante que exista; si no, se apaña con el de día.
+
+## LOS PUEBLOS POR TAMAÑO (nuevo)
+
+Tres imágenes de asentamiento; el juego elige según la población y crece sola.
+Fondo **transparente de verdad** (no las quieras a pantalla completa):
+
+- `pueblo_aldea.png` — *Grupo de 3-4 casitas de pueblo juntas, pequeñas* *[+ estilo común]*
+- `pueblo_villa.png` — *Pueblo con varias casas y una iglesia o un edificio algo mayor* *[+ estilo común]*
+- `pueblo_ciudad.png` — *Pequeña ciudad con edificios de varias plantas y alguna casa* *[+ estilo común]*
+
+Mientras no existan, el juego usa las casas sueltas (`casa1-3.png`).
+
+## Los archivos (estructuras sueltas)
 
 Genera uno por línea. El **nombre del archivo tiene que ser exacto.**
 
