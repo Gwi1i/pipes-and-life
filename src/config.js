@@ -63,6 +63,22 @@ export const CONFIG = {
       desc: 'Eleva el agua hasta una cota superior. Cuesta energía por cada ' +
             'metro cúbico y cada metro de altura.',
       alturaManometrica: 65,
+      factorCosteExtra: 1.7,  // cada grupo añadido en el mismo punto cuesta más
+      colocable: false        // se instala desde el panel del elemento
+    },
+    // La válvula reductora es el contrapeso exacto del bombeo: uno SUBE la
+    // altura piezométrica y la otra la BAJA. Se instala igual, sobre un
+    // elemento que ya existe, porque una VRP real va intercalada en la
+    // conducción y no plantada en mitad del campo.
+    valvula: {
+      nombre: 'Válvula reductora', color: '#a78bfa', radio: 11, coste: 3200,
+      desc: 'Limita la presión aguas abajo a la consigna a la que la tares. ' +
+            'Solo sabe estrangular: si la presión ya es menor, no hace nada. ' +
+            'Es el antídoto de la sobrepresión, y por tanto de las roturas.',
+      consignaInicial: 45,    // m.c.a. a los que sale tarada de fábrica
+      consignaMin: 10,        // por debajo de esto no sirve a nadie
+      consignaMax: 90,
+      pasoConsigna: 5,        // cuánto sube o baja por pulsación
       colocable: false        // se instala desde el panel del elemento
     },
     nudo: {
@@ -157,6 +173,7 @@ export const CONFIG = {
     fondo:      '#060f18',
     aguaOk:     '#38bdf8',
     aguaSeca:   '#475569',
+    dinero:     '#a3e635',   // el mismo verde que --dinero en la hoja de estilos
     alarma:     '#f5a524',
     critico:    '#ef4444',
     ok:         '#4ade80',

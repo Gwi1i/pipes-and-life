@@ -35,10 +35,12 @@ export class Grafo {
     const nodo = {
       id, tipo, x, y, cota,
       bombeos: 0,                 // grupos de impulsión instalados aquí
+      valvula: null,              // VRP instalada aquí: { consigna } en m.c.a.
       // Campos que rellena el solver hidráulico en cada pasada
       alturaPiezometrica: null,   // m sobre el nivel del mar
       presion: 0,                 // m.c.a. = piezométrica − cota
       caudal: 0,                  // L/s que pasa por aquí
+      recorteValvula: 0,          // m de presión que disipa la VRP, si la hay
       abastecido: false,
       ...extra
     };

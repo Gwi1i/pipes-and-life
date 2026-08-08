@@ -17,7 +17,7 @@ import { Entrada } from './entrada.js';
 import { Estado } from './estado.js';
 import { UI } from './ui.js';
 import { resolver, costeTramo } from './hidraulica.js';
-import { generadorAleatorio, formatear } from './util.js';
+import { generadorAleatorio, formatear, limitar } from './util.js';
 
 /* ==================================================================
    ARRANQUE
@@ -59,6 +59,21 @@ camara.encuadrarTodo();
 ui.refrescarBarra();
 ui.mostrarNodo(null, grafo);
 
+/**
+ * Demanda MEDIA de un núcleo, en L/s. La punta no se aplica aquí: la pone
+ * el solver con la curva diaria. Está en una función porque se recalcula
+ * cada vez que crece la población, y tener la fórmula en dos sitios ya
+ * provocó una vez que la demanda cambiara sola a los dos segundos de partida.
+ */
+function demandaMedia(habitantes){
+  return habitantes * CONFIG.litrosHabitanteDia / 86400;
+}
+
+/** Nombre legible de un nodo para el registro. */
+function nombreDe(nodo){
+  return nodo.nombre || 'nudo #' + nodo.id;
+}
+
 function sembrarPoblaciones(){
   const azar = generadorAleatorio(CONFIG.mundo.semilla + 999);
   const colocados = [];   // se va pasando para exigir separación mínima
@@ -67,11 +82,10 @@ function sembrarPoblaciones(){
     const punto = terreno.buscarPunto(p.preferirCota, azar, colocados);
     colocados.push(punto);
 
-    const demanda = p.habitantes * CONFIG.litrosHabitanteDia / 86400;  // L/s medio
     grafo.agregarNodo('poblacion', punto.x, punto.y, punto.cota, {
       nombre: p.nombre,
       habitantes: p.habitantes,
-      demanda: demanda * 1.6      // punta horaria
+      demanda: demandaMedia(p.habitantes)
     });
   }
 }
@@ -188,15 +202,59 @@ function procesarAcciones(){
       case 'instalarBombeo': {
         const n = grafo.nodos.get(a.id);
         if(!n || n.tipo === 'poblacion') break;
-        const coste = CONFIG.elementos.bombeo.coste * Math.pow(1.7, n.bombeos);
+        const B = CONFIG.elementos.bombeo;
+        const coste = B.coste * Math.pow(B.factorCosteExtra, n.bombeos);
         if(!estado.puedePagar(coste)){
           avisar(`Sin fondos: el grupo cuesta ${formatear(coste)} €.`);
           break;
         }
         estado.pagar(coste);
         n.bombeos++;
-        estado.anotar(`Grupo de impulsión instalado en ${n.nombre || 'nudo #' + n.id}. ` +
-                      `Ahora eleva ${CONFIG.elementos.bombeo.alturaManometrica * n.bombeos} m.`);
+        estado.anotar(`Grupo de impulsión instalado en ${nombreDe(n)}. ` +
+                      `Ahora eleva ${B.alturaManometrica * n.bombeos} m.`);
+        ui.mostrarNodo(n, grafo);
+        recalcular = true;
+        break;
+      }
+
+      /* --- VÁLVULA REDUCTORA DE PRESIÓN ---
+         Es la respuesta al aviso de sobrepresión: hasta ahora la red te
+         decía que ibas a reventar y no te daba forma de evitarlo. */
+
+      case 'instalarValvula': {
+        const n = grafo.nodos.get(a.id);
+        if(!n || n.tipo === 'poblacion') break;
+        if(n.valvula){ avisar('Este punto ya tiene válvula reductora.'); break; }
+        const V = CONFIG.elementos.valvula;
+        if(!estado.puedePagar(V.coste)){
+          avisar(`Sin fondos: la válvula cuesta ${formatear(V.coste)} €.`);
+          break;
+        }
+        estado.pagar(V.coste);
+        n.valvula = { consigna: V.consignaInicial };
+        estado.anotar(`Válvula reductora instalada en ${nombreDe(n)}, ` +
+                      `tarada a ${V.consignaInicial} m.c.a.`);
+        ui.mostrarNodo(n, grafo);
+        recalcular = true;
+        break;
+      }
+
+      case 'ajustarValvula': {
+        const n = grafo.nodos.get(a.id);
+        if(!n || !n.valvula) break;
+        const V = CONFIG.elementos.valvula;
+        n.valvula.consigna = limitar(n.valvula.consigna + a.delta * V.pasoConsigna,
+                                     V.consignaMin, V.consignaMax);
+        ui.mostrarNodo(n, grafo);
+        recalcular = true;
+        break;
+      }
+
+      case 'quitarValvula': {
+        const n = grafo.nodos.get(a.id);
+        if(!n || !n.valvula) break;
+        n.valvula = null;
+        estado.anotar(`Válvula retirada de ${nombreDe(n)}. No se devuelve nada.`);
         ui.mostrarNodo(n, grafo);
         recalcular = true;
         break;
@@ -269,7 +327,7 @@ function avanzarDinamica(horas){
     const antes = Math.floor(p.habitantes);
     p.habitantes = Math.max(60, Math.min(C.habitantesMax,
                             p.habitantes * (1 + tasa * años)));
-    p.demanda = p.habitantes * CONFIG.litrosHabitanteDia / 86400;
+    p.demanda = demandaMedia(p.habitantes);
 
     const ahora = Math.floor(p.habitantes);
     // Avisar solo al cruzar cada millar, para no llenar el registro
@@ -430,10 +488,16 @@ function bucle(ahora){
 document.getElementById('btn-cubas').addEventListener('click', servirCuba);
 document.getElementById('btn-reparar').addEventListener('click', repararTodo);
 
-// Delegación para el botón de instalar bombeo, que se recrea con el panel
+// Delegación para los botones del panel de detalle, que se recrean enteros
+// cada vez que cambia el nodo seleccionado. El nombre de la acción viaja en
+// el propio botón: así añadir un equipo nuevo no toca este archivo.
 document.getElementById('detalle').addEventListener('click', e => {
-  const b = e.target.closest('[data-instalar]');
-  if(b) entrada.emitir('instalarBombeo', { id: parseInt(b.dataset.instalar, 10) });
+  const b = e.target.closest('[data-accion]');
+  if(!b) return;
+  entrada.emitir(b.dataset.accion, {
+    id: parseInt(b.dataset.id, 10),
+    delta: parseInt(b.dataset.delta || '0', 10)
+  });
 });
 
 document.getElementById('btn-encuadrar').onclick = () => camara.encuadrarTodo();

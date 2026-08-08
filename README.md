@@ -83,7 +83,11 @@ El corazón del juego está en `hidraulica.js`:
    demanda aguas abajo. Cuando llegas a un nudo, sus descendientes ya han
    sumado.
 3. **Presiones** — se recorre en orden normal, de raíz a hojas, restando las
-   pérdidas de carga acumuladas.
+   pérdidas de carga acumuladas. Aquí es donde actúan los dos equipos que
+   alteran la altura piezométrica: el **bombeo** la sube y la **válvula
+   reductora** la recorta. Como el recorte se aplica antes de que los hijos
+   lean la piezométrica de su padre, se propaga solo a toda la rama de aguas
+   abajo, que es exactamente lo que hace una VRP real.
 
 Es el patrón clásico de acumulación sobre árboles, y aparece en muchísimos
 sitios: cálculo de caudales en redes ramificadas, agregación de superficies en
@@ -123,12 +127,10 @@ coincidan. Ahí es donde el problema se vuelve interesante de verdad.
 ## Estado actual
 
 **Funciona:** terreno, cámara, colocación, tendido de tuberías, conectividad,
-caudales, presiones, pérdidas de carga, bombeo con coste energético, economía,
-guardado.
+caudales, presiones, pérdidas de carga, bombeo con coste energético, válvulas
+reductoras de presión, economía, guardado.
 
-**Pendiente:** válvulas reductoras de presión (ahora la sobrepresión avisa pero
-no se puede corregir), mallas cerradas, roturas, depósitos con volumen real y
-curva de consumo diario, saneamiento.
+**Pendiente:** mallas cerradas, depósitos con volumen real, saneamiento.
 
 ## Qué mantiene viva la partida
 
@@ -158,9 +160,8 @@ de golpe: si te sobra dinero al terminar, baja `dineroInicial` en `config.js`.
 ## Siguientes pasos sugeridos
 
 1. Juega y ajusta `config.js` hasta que el equilibrio funcione
-2. Mete el proyecto en Git antes de tocar nada
-3. Añade válvulas reductoras: es la mejora más pequeña con más efecto
-4. Después, mallas cerradas — pero eso es reescribir el solver entero
+2. Mejora el aspecto: el mapa se lee bien, pero se ve austero
+3. Después, mallas cerradas — pero eso es reescribir el solver entero
 
 
 ---

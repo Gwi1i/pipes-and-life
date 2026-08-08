@@ -48,6 +48,7 @@ export function resolver(grafo, horas = 0){
     n.alturaPiezometrica = null;
     n.presion = 0;
     n.caudal = 0;
+    n.recorteValvula = 0;
     n.abastecido = false;
   }
   for(const ar of grafo.aristas.values()){
@@ -142,6 +143,20 @@ export function resolver(grafo, horas = 0){
       const qm3s = demandaAcumulada.get(id) / 1000;
       const kW = (1000 * 9.81 * qm3s * salto) / (CONFIG.economia.rendimientoBombeo * 1000);
       energiaKwh += kW;   // 1 s de juego = 1 h → kW ≡ kWh
+    }
+
+    // Una válvula reductora hace lo contrario que un bombeo: recorta la
+    // altura piezométrica para que de aquí hacia abajo no se supere su
+    // consigna. Solo puede REDUCIR — si la presión ya es menor, no toca
+    // nada. Como se aplica antes de que los hijos lean la piezométrica de
+    // su padre, el recorte se propaga solo a toda la rama de aguas abajo,
+    // que es justo lo que hace una VRP de verdad.
+    if(nodo.valvula){
+      const techo = nodo.cota + nodo.valvula.consigna;
+      if(nodo.alturaPiezometrica > techo){
+        nodo.recorteValvula = nodo.alturaPiezometrica - techo;
+        nodo.alturaPiezometrica = techo;
+      }
     }
 
     nodo.presion = nodo.alturaPiezometrica - nodo.cota;

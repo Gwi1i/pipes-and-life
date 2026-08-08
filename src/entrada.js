@@ -140,7 +140,13 @@ export class Entrada {
     this.mundoY = this.camara.pantallaAMundoY(py);
   }
 
-  soltar(px, py){
+  soltar(px, py, boton = 0){
+    // Solo el botón izquierdo actúa. `pulsar` ya descarta los demás, pero
+    // sin esta comprobación el `mouseup` del botón central o del derecho
+    // llegaba igual hasta aquí y colocaba el elemento de la herramienta
+    // activa: un clic que nadie había pedido.
+    if(boton !== 0) return;
+
     const eraArrastre = this.huboArrastre;
     this.arrastrando = false;
     this.huboArrastre = false;

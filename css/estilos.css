@@ -8,7 +8,7 @@
   --linea:#203547; --linea-viva:#2f5170;
   --texto:#cfdce8; --tenue:#6f8aa1; --apagado:#4d657c;
   --dinero:#a3e635; --agua:#38bdf8; --ok:#4ade80;
-  --alarma:#f5a524; --critico:#ef4444;
+  --alarma:#f5a524; --critico:#ef4444; --valvula:#a78bfa;
   --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
   --sans:'IBM Plex Sans',system-ui,-apple-system,sans-serif;
 }
@@ -228,6 +228,52 @@ kbd{
 .btn-instalar b{font-size:11.5px;}
 .d-nota{font-size:10.5px; color:var(--tenue); line-height:1.45; margin-top:6px;}
 .d-fila b.bombeo{color:#f97316;}
+.d-fila b.tenue{color:var(--apagado); font-weight:400;}
+
+/* ---------- VÁLVULA REDUCTORA ---------- */
+.btn-valvula{
+  width:100%; margin-top:9px; cursor:pointer;
+  display:flex; justify-content:space-between; align-items:center; gap:8px;
+  background:rgba(167,139,250,.10); border:1px solid var(--valvula);
+  border-radius:3px; padding:8px 10px; color:var(--valvula); font-family:var(--mono);
+  font-size:10.5px; font-weight:600; letter-spacing:.05em; text-transform:uppercase;
+  transition:.15s;
+}
+.btn-valvula:hover{background:rgba(167,139,250,.22);}
+.btn-valvula:focus-visible{outline:2px solid var(--valvula); outline-offset:2px;}
+.btn-valvula b{font-size:11.5px;}
+.d-fila b.valvula{color:var(--valvula);}
+
+.ctrl-valvula{
+  display:flex; align-items:stretch; gap:5px; margin-top:9px;
+}
+.ctrl-valvula .v-paso{
+  flex:none; width:30px; cursor:pointer;
+  background:rgba(167,139,250,.12); border:1px solid var(--valvula);
+  border-radius:3px; color:var(--valvula);
+  font-family:var(--mono); font-size:15px; font-weight:700; line-height:1;
+  transition:.15s;
+}
+.ctrl-valvula .v-paso:hover{background:rgba(167,139,250,.3);}
+.ctrl-valvula .v-paso:focus-visible{outline:2px solid var(--valvula); outline-offset:2px;}
+.ctrl-valvula .v-valor{
+  flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  background:var(--panel-alto); border:1px solid var(--linea-viva); border-radius:3px;
+  font-family:var(--mono); font-size:15px; font-weight:600; color:var(--valvula);
+  padding:3px 0;
+}
+.ctrl-valvula .v-valor em{
+  font-style:normal; font-size:8px; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--apagado);
+}
+.ctrl-valvula .v-quitar{
+  flex:none; cursor:pointer; padding:0 9px;
+  background:none; border:1px solid var(--linea-viva); border-radius:3px;
+  color:var(--tenue); font-family:var(--mono); font-size:9px;
+  letter-spacing:.1em; text-transform:uppercase; transition:.15s;
+}
+.ctrl-valvula .v-quitar:hover{border-color:var(--critico); color:var(--critico);}
+.ctrl-valvula .v-quitar:focus-visible{outline:2px solid var(--critico); outline-offset:2px;}
 
 /* ---------- AVERÍAS ---------- */
 .btn-reparar{

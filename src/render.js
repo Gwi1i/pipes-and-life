@@ -172,6 +172,9 @@ export class Render {
       // Símbolo interior
       this.dibujarSimbolo(n, px, py, r, def.color);
 
+      // Distintivos de los equipos instalados encima
+      this.dibujarEquipos(n, px, py, r);
+
       // Etiqueta
       if(cam.zoom > 0.18){
         ctx.font = '600 10px ui-monospace, Menlo, monospace';
@@ -230,6 +233,44 @@ export class Render {
         break;
     }
     ctx.stroke();
+  }
+
+  /**
+   * Insignias de los equipos instalados en un nodo: bombeo y válvula.
+   * Sin esto no hay forma de ver sobre el mapa dónde has puesto qué, y
+   * son justo los dos elementos que explican las presiones raras.
+   */
+  dibujarEquipos(n, px, py, r){
+    const ctx = this.ctx;
+    const equipos = [];
+    if(n.bombeos > 0) equipos.push({ clave: 'bombeo',  color: CONFIG.elementos.bombeo.color });
+    if(n.valvula)     equipos.push({ clave: 'valvula', color: CONFIG.elementos.valvula.color });
+    if(!equipos.length) return;
+
+    const rb = Math.max(3.5, r * 0.40);
+    let bx = px + r * 0.80, by = py - r * 0.80;
+
+    for(const eq of equipos){
+      ctx.beginPath();
+      ctx.arc(bx, by, rb, 0, Math.PI * 2);
+      ctx.fillStyle = '#0b1622'; ctx.fill();
+      ctx.strokeStyle = eq.color; ctx.lineWidth = 1.2; ctx.stroke();
+
+      const s = rb * 0.55;
+      ctx.beginPath();
+      if(eq.clave === 'bombeo'){
+        // Triángulo hacia arriba: la impulsión sube el agua
+        ctx.moveTo(bx - s, by + s); ctx.lineTo(bx + s, by + s); ctx.lineTo(bx, by - s);
+      } else {
+        // Lazo de dos triángulos: el símbolo de válvula de toda la vida
+        ctx.moveTo(bx - s, by - s); ctx.lineTo(bx - s, by + s);
+        ctx.lineTo(bx + s, by - s); ctx.lineTo(bx + s, by + s);
+      }
+      ctx.closePath();
+      ctx.fillStyle = eq.color; ctx.fill();
+
+      bx += rb * 2.2;
+    }
   }
 
   /* ---------------- HERRAMIENTA ACTIVA ---------------- */

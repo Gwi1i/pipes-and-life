@@ -9,6 +9,8 @@
 import { CONFIG } from './config.js';
 import { formatear } from './util.js';
 
+const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+
 export class UI {
 
   constructor(entrada){
@@ -100,9 +102,10 @@ export class UI {
   actualizarHUD(estado, grafo){
     const r = estado.resultado;
     const h = Math.floor(estado.horas % 24);
-    const dia = Math.floor(estado.horas / 24);
-    const mes = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
-                [Math.floor(((estado.horas % 360) / 360) * 12)];
+    // El año dura lo que diga config: si se cambia, el mes del reloj tiene
+    // que seguir cuadrando con el ciclo de estiaje, que usa el mismo dato.
+    const horasAño = CONFIG.estiaje.horasPorAño;
+    const mes = MESES[Math.floor(((estado.horas % horasAño) / horasAño) * MESES.length)];
     this.fijar('hud-reloj', `${String(h).padStart(2,'0')}:00 · ${mes}`,
       (r.punta || 1) > 1.4 ? 'alarma' : 'neutro');
     this.fijar('hud-punta', 'x' + (r.punta || 1).toFixed(2),
@@ -173,16 +176,52 @@ export class UI {
         <div class="d-fila"><span>Presión exigida</span><b>${CONFIG.hidraulica.presionMinima} m.c.a.</b></div>`;
     }
 
+    const B = CONFIG.elementos.bombeo;
+    const V = CONFIG.elementos.valvula;
+
     // Bombeo instalado aquí
     if(nodo.bombeos > 0){
-      const salto = CONFIG.elementos.bombeo.alturaManometrica * nodo.bombeos;
+      const salto = B.alturaManometrica * nodo.bombeos;
       filas += `<div class="d-fila"><span>Grupos de impulsión</span>
                   <b class="bombeo">${nodo.bombeos} · +${salto} m</b></div>`;
     }
 
-    // Se puede bombear desde cualquier punto de la red salvo el consumo
-    const admiteBombeo = nodo.tipo !== 'poblacion';
-    const costeBombeo = CONFIG.elementos.bombeo.coste * Math.pow(1.7, nodo.bombeos);
+    // Válvula reductora instalada aquí
+    if(nodo.valvula){
+      filas += `<div class="d-fila"><span>Consigna de la válvula</span>
+                  <b class="valvula">${nodo.valvula.consigna} m.c.a.</b></div>`;
+      // Solo se muestra si está estrangulando de verdad: una válvula que
+      // no recorta nada es dinero tirado, y conviene que se note.
+      filas += `<div class="d-fila"><span>Presión disipada</span>
+                  <b class="${nodo.recorteValvula > 0.05 ? 'valvula' : 'tenue'}">${
+                    nodo.recorteValvula > 0.05
+                      ? '−' + nodo.recorteValvula.toFixed(1) + ' m'
+                      : 'no actúa'}</b></div>`;
+    }
+
+    // Se puede equipar cualquier punto de la red salvo el consumo
+    const admiteEquipos = nodo.tipo !== 'poblacion';
+    const costeBombeo = B.coste * Math.pow(B.factorCosteExtra, nodo.bombeos);
+
+    const bloqueValvula = nodo.valvula ? `
+      <div class="ctrl-valvula">
+        <button class="v-paso" data-accion="ajustarValvula" data-id="${nodo.id}"
+                data-delta="-1" title="Bajar consigna">−</button>
+        <span class="v-valor">${nodo.valvula.consigna}<em>m.c.a.</em></span>
+        <button class="v-paso" data-accion="ajustarValvula" data-id="${nodo.id}"
+                data-delta="1" title="Subir consigna">+</button>
+        <button class="v-quitar" data-accion="quitarValvula" data-id="${nodo.id}"
+                title="Retirar la válvula">Retirar</button>
+      </div>
+      <div class="d-nota">Aguas abajo de este punto no se pasará de la consigna.
+      Bajarla protege la tubería; bajarla de más deja sin presión a los núcleos
+      que cuelguen de aquí.</div>` : `
+      <button class="btn-valvula" data-accion="instalarValvula" data-id="${nodo.id}">
+        <span>Instalar válvula reductora</span>
+        <b>${formatear(V.coste)} €</b>
+      </button>
+      <div class="d-nota">Limita la presión de aquí hacia abajo a ${V.consignaInicial} m.c.a.,
+      ajustables. Es la única forma de corregir una sobrepresión.</div>`;
 
     p.innerHTML = `
       <div class="d-cabecera" style="--tono:${def.color}">
@@ -191,13 +230,14 @@ export class UI {
       </div>
       ${filas}
       <div class="d-desc">${def.desc}</div>
-      ${admiteBombeo ? `
-        <button class="btn-instalar" data-instalar="${nodo.id}">
+      ${admiteEquipos ? `
+        <button class="btn-instalar" data-accion="instalarBombeo" data-id="${nodo.id}">
           <span>Instalar grupo de bombeo</span>
           <b>${formatear(costeBombeo)} €</b>
         </button>
-        <div class="d-nota">Sube ${CONFIG.elementos.bombeo.alturaManometrica} m la altura
-        piezométrica desde aquí. Consume energía mientras circule caudal.</div>` : ''}`;
+        <div class="d-nota">Sube ${B.alturaManometrica} m la altura
+        piezométrica desde aquí. Consume energía mientras circule caudal.</div>
+        ${bloqueValvula}` : ''}`;
   }
 
   /* ---------------- INCIDENCIAS ---------------- */

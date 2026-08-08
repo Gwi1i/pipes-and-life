@@ -105,6 +105,19 @@ devuelve el BFS de `grafo.js`:
    raíz, acumulando la demanda aguas abajo
 3. **Presiones** — en orden normal, de raíz a hojas, restando las pérdidas
 
+Los dos equipos que alteran la altura piezométrica son **propiedades de un
+nodo**, no nodos aparte: `nodo.bombeos` (un contador) y `nodo.valvula`
+(`{ consigna }` o `null`). En una red real el grupo de impulsión va dentro de
+la captación o del depósito, y la VRP va intercalada en la conducción; ninguno
+de los dos es un punto de la red por sí mismo. Ambos se aplican en la tercera
+pasada, **el bombeo primero y la válvula después** —una VRP recorta lo que le
+llegue, incluido lo que acabe de meter una bomba— y como el recorte se hace
+antes de que los hijos lean la piezométrica de su padre, se propaga solo a toda
+la rama de aguas abajo.
+
+La válvula **solo puede reducir**. Si la presión ya es menor que la consigna, no
+hace nada. Cualquier cambio que la deje subiendo presión está mal.
+
 **No es un modelo hidráulico real** y no pretende serlo. Supone que la red es un
 **árbol** y resuelve de una sola pasada; las fórmulas de pérdida de carga están
 inspiradas en Hazen-Williams pero con constantes elegidas para que se note
@@ -125,6 +138,14 @@ El solver solo se ejecuta cuando la red cambia (bandera `recalcular` en
   (`terreno.dibujarCapa()`). No lo repintes en el bucle.
 - `Grafo` usa `Map`, que no se serializa solo a JSON: hay que pasar por
   `aObjeto()` / `desdeObjeto()`.
+- La demanda de una población se calcula en `main.js` con `demandaMedia()`, y
+  es la **media**: la punta la aplica el solver con `curvaDiaria`. Tener la
+  fórmula duplicada ya provocó una vez que la demanda se dividiera sola entre
+  1,6 a los dos segundos de partida. No la repitas en línea.
+- Los botones del panel de detalle se recrean enteros en cada `mostrarNodo()`,
+  así que van por delegación: el nombre de la acción viaja en el propio botón
+  (`data-accion`, `data-id`, `data-delta`) y `main.js` lo emite tal cual. Para
+  añadir un equipo nuevo no hace falta tocar el listener.
 - El mundo se genera a partir de `mundo.semilla`. La misma semilla da siempre
   el mismo mapa; es lo que hace depurable la generación de terreno.
 
