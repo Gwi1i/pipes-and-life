@@ -67,8 +67,9 @@ function procesarAcciones(){
         estado.pagar(coste);
         p.mejoras[a.clave]++;
         estado.anotar(`${p.nombre} · ${m.nombre} nivel ${p.mejoras[a.clave]}.`, 'ok');
-        if(a.clave === 'deposito'  && p.mejoras.deposito  === 1) escena.aparecerDeposito();
-        if(a.clave === 'captacion' && p.mejoras.captacion === 1) escena.aparecerCaptacion();
+        if(a.clave === 'deposito'   && p.mejoras.deposito   === 1) escena.aparecerDeposito();
+        if(a.clave === 'captacion'  && p.mejoras.captacion  === 1) escena.aparecerCaptacion();
+        if(a.clave === 'depuradora' && p.mejoras.depuradora === 1) escena.aparecerDepuradora();
         break;
       }
 

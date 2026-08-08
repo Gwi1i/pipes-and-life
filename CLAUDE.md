@@ -68,10 +68,13 @@ red-hidraulica/
 **Cada módulo tiene una responsabilidad única y no invade las demás.** Los
 límites que hay que respetar:
 
-- **`escena.js` solo lee estado, nunca lo modifica.** Todo lo que dibuja lo
-  recibe por parámetro. Lo único que guarda es su propio reloj de animación y
-  los efectos pasajeros (destellos de clic, aparición del depósito), que no son
-  estado de juego.
+- **`escena.js` solo lee estado, nunca lo modifica.** Dibuja el pueblo ACTIVO y
+  el cauce común, con estilo cartoon (Canvas 2D a mano: sin sprites ni
+  dependencias). Lo único que guarda es su reloj de animación y los efectos
+  pasajeros (clima, destellos, aparición de estructuras). El contexto del
+  fotograma se cachea en `this._W/_H/_p/_res/luz/est/suciedad` para no pasarlo a
+  cada método. `estacion(horas)` da la paleta interpolada y el clima; las
+  partículas de clima (lluvia/nieve/flores) se reciclan por tipo.
 - **`entrada.js` no toca el estado.** Traduce eventos del navegador a acciones y
   las encola; `main.js` es quien las ejecuta. La lógica de juego queda en un
   solo sitio.

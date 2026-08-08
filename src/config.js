@@ -139,6 +139,24 @@ export const CONFIG = {
     factorMax: 1.25
   },
 
+  /* ---------- ESTACIONES (aspecto de la escena) ----------
+     El año se divide en cuatro. La escena interpola entre una estación y la
+     siguiente, así el paisaje cambia de forma continua. `clima` decide qué
+     partículas caen. Empieza en primavera (frac 0), como el estiaje. */
+  estaciones: [
+    { nombre: 'Primavera', follaje: '#8fce6a', hierba: '#4f9a44', tinte: 'rgba(140,200,120,0.06)', clima: 'flores' },
+    { nombre: 'Verano',    follaje: '#5fae42', hierba: '#5a9a34', tinte: 'rgba(245,196,81,0.05)', clima: 'sol' },
+    { nombre: 'Otoño',     follaje: '#d98a3c', hierba: '#7c7a3a', tinte: 'rgba(180,120,60,0.07)', clima: 'lluvia' },
+    { nombre: 'Invierno',  follaje: '#dfeaf2', hierba: '#9fb2bb', tinte: 'rgba(150,180,210,0.10)', clima: 'nieve' }
+  ],
+  clima: {
+    densidadLluvia: 110,     // gotas en pantalla
+    densidadNieve: 90,       // copos
+    densidadFlores: 34,      // pétalos de primavera
+    velocidadLluvia: 560,    // px/s
+    velocidadNieve: 70
+  },
+
   /* ---------- AVERÍAS (por pueblo) ---------- */
   averias: {
     probBasePorHora: 0.006,

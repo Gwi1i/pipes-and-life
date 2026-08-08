@@ -116,9 +116,13 @@ del dinero entre mejoras.
   mantenimiento.
 - **Progreso offline**: al volver, se acredita (con tope) lo producido mientras
   no estabas.
-- Escena animada: depósito con lámina de agua, gotas por las tuberías, captación
-  en el río, bomba en modo AUTO, ciclo día/noche, cauce que se enturbia con la
-  contaminación e indicador de avería. Muestra el pueblo activo.
+- **Escena "dibujos animados"**: muestra el CICLO DEL AGUA completo del pueblo
+  activo (río → captación → bombeo → depósito → pueblo → saneamiento →
+  depuradora → de vuelta al cauce). Con estilo cartoon (contornos, sombreado
+  plano, rebote al clicar), **clima por estación** (sol, lluvia, nieve, flores),
+  **árboles** con follaje estacional, colinas y nubes con parallax, ciclo
+  día/noche, y el cauce que se enturbia con la contaminación. El vertido se ve
+  sucio si no hay depuradora y limpio si la hay.
 
 **Siguientes ideas:** más pueblos, más funciones especiales, eventos.
 
