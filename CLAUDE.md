@@ -60,7 +60,8 @@ red-hidraulica/
     ├── estado.js       Dinero, agua, tiempo y persistencia
     ├── simulacion.js   El motor: balance de agua, consumo y facturación
     ├── escena.js       El diorama animado (canvas), estilo A: "falso 3D"
-    ├── escena_svg.js   Estilo B alternativo: sprites SVG (hereda de escena.js)
+    ├── escena_svg.js   Estilo B: sprites SVG dibujados a mano (hereda de escena)
+    ├── escena_assets.js Estilo C: imágenes PNG de assets/ (hereda de escena)
     ├── entrada.js      Ratón, tacto, teclado → acciones
     ├── ui.js           DOM fuera de la escena: HUD, tienda, paneles
     └── main.js         Ensamblado y bucle principal
@@ -83,17 +84,21 @@ límites que hay que respetar:
   atmosférica (mezcla hacia `this.bruma` según lejanía). Si hace falta más
   detalle sin perder fluidez, pre-renderiza a un canvas oculto (como hacía el
   terreno en `master`).
-- **Dos estilos visuales intercambiables.** `escena.js` es el estilo A (todo por
-  código). `escena_svg.js` (`EscenaSVG`) es el estilo B: HEREDA de `Escena` y
-  solo sobrescribe las estructuras (bomba, depósito, depuradora, casas, árboles,
-  captación) por sprites SVG dibujados a mano (con sombra suave y degradados),
-  reutilizando el resto del entorno. Ambas clases comparten interfaz
-  (`dibujar`, `destello`, `aparecer*`, `destelloCauce`, `ajustar`). `main.js`
-  elige una u otra con `crearEscena()` según `localStorage.rh_estilo`, y el
-  botón *Estilo* de la barra superior alterna en caliente. Mientras un sprite no
-  ha cargado, `EscenaSVG` recurre al método del padre (`super.metodo()`), así no
-  desaparece nada. Los helpers `mezclarColor`/`oscurecer`/`aclarar` se exportan
-  desde `escena.js` para que `escena_svg.js` los reutilice.
+- **Tres estilos visuales intercambiables**, todos con la MISMA interfaz
+  (`dibujar`, `destello`, `aparecer*`, `destelloCauce`, `ajustar`):
+  - **A** — `escena.js` (`Escena`): todo por código ("falso 3D").
+  - **B** — `escena_svg.js` (`EscenaSVG`): hereda de `Escena` y sustituye las
+    estructuras por sprites SVG dibujados a mano.
+  - **C** — `escena_assets.js` (`EscenaAssets`): hereda de `Escena` y sustituye
+    las estructuras por imágenes PNG cargadas desde `assets/` (arte generado con
+    IA; ver `assets/PROMPTS.md`). `dibujarSprite()` respeta la proporción real de
+    cada PNG y lo ancla al suelo; el nivel del depósito se muestra con un medidor
+    lateral (funciona con cualquier arte).
+  B y C, mientras un sprite no ha cargado —o el archivo no existe—, recurren al
+  método del padre (`super.metodo()`), así nunca desaparece nada y puedes añadir
+  imágenes de una en una. `main.js` elige con `crearEscena()` según
+  `localStorage.rh_estilo` y el botón *Estilo* cicla A→B→C en caliente. Los
+  helpers `mezclarColor`/`oscurecer`/`aclarar` se exportan desde `escena.js`.
 - **`entrada.js` no toca el estado.** Traduce eventos del navegador a acciones y
   las encola; `main.js` es quien las ejecuta. La lógica de juego queda en un
   solo sitio.

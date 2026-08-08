@@ -11,6 +11,7 @@ import { Entrada } from './entrada.js';
 import { UI } from './ui.js';
 import { Escena } from './escena.js';
 import { EscenaSVG } from './escena_svg.js';
+import { EscenaAssets } from './escena_assets.js';
 import { avanzar, bombear, costeMejora, requisitosAutobomba } from './simulacion.js';
 import { formatear } from './util.js';
 
@@ -20,10 +21,15 @@ const habiaPartida = Estado.cargar(estado);
 const entrada = new Entrada(lienzo);
 const ui      = new UI(entrada);
 
-// Estilo visual: A (Canvas "falso 3D") o B (sprites SVG). Se recuerda la
-// elección; el botón de la barra superior alterna entre ambos para compararlos.
-let estiloEscena = localStorage.getItem('rh_estilo') === 'b' ? 'b' : 'a';
-function crearEscena(){ return estiloEscena === 'b' ? new EscenaSVG(lienzo) : new Escena(lienzo); }
+// Estilo visual: A (Canvas "falso 3D"), B (sprites SVG) o C (imágenes de IA en
+// assets/). Se recuerda la elección; el botón de la barra superior cicla A→B→C.
+const ESTILOS = ['a', 'b', 'c'];
+let estiloEscena = ESTILOS.includes(localStorage.getItem('rh_estilo')) ? localStorage.getItem('rh_estilo') : 'a';
+function crearEscena(){
+  if(estiloEscena === 'b') return new EscenaSVG(lienzo);
+  if(estiloEscena === 'c') return new EscenaAssets(lienzo);
+  return new Escena(lienzo);
+}
 let escena = crearEscena();
 
 if(!habiaPartida){
@@ -272,9 +278,10 @@ document.getElementById('btn-reiniciar').onclick = () => {
 
 // Alternar estilo visual A/B para compararlos, sin recargar
 const btnEstilo = document.getElementById('btn-estilo');
-function etiquetaEstilo(){ btnEstilo.textContent = 'Estilo: ' + (estiloEscena === 'b' ? 'B · SVG' : 'A · 3D'); }
+const ETIQUETAS = { a: 'A · 3D', b: 'B · SVG', c: 'C · IA' };
+function etiquetaEstilo(){ btnEstilo.textContent = 'Estilo: ' + ETIQUETAS[estiloEscena]; }
 btnEstilo.onclick = () => {
-  estiloEscena = estiloEscena === 'a' ? 'b' : 'a';
+  estiloEscena = ESTILOS[(ESTILOS.indexOf(estiloEscena) + 1) % ESTILOS.length];
   localStorage.setItem('rh_estilo', estiloEscena);
   escena = crearEscena();
   if(window.juego) window.juego.escena = escena;   // mantener la referencia de depuración
