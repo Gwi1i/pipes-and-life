@@ -33,9 +33,20 @@ export function coefHora(horas){
 
 export function factorEstiaje(horas){
   const e = CONFIG.estiaje, T = CONFIG.tiempo;
-  const fase = ((horas % T.horasPorAño) / T.horasPorAño) * Math.PI * 2;
-  const t = (Math.cos(fase) + 1) / 2;
+  const frac = ((horas % T.horasPorAño) / T.horasPorAño + 1) % 1;
+  // El desfase de 1/8 de año alinea el MÍNIMO con la mitad del verano (frac
+  // 0,375) y el máximo con el deshielo de finales de invierno. Sin él, el
+  // estiaje mínimo caía al empezar el otoño: el panel decía "verano" mientras
+  // la escena ya llovía y tenía el follaje ocre.
+  const t = (Math.cos((frac + 0.125) * Math.PI * 2) + 1) / 2;
   return e.factorMin + (e.factorMax - e.factorMin) * t;
+}
+
+/** Nombre de la estación actual, tomado de la misma tabla que usa la escena. */
+export function nombreEstacion(horas){
+  const E = CONFIG.estaciones, T = CONFIG.tiempo;
+  const frac = ((horas % T.horasPorAño) / T.horasPorAño + 1) % 1;
+  return E[Math.floor(frac * E.length) % E.length].nombre;
 }
 
 export function litrosPorClic(pueblo){
@@ -61,6 +72,40 @@ export function clicsAutoPorSeg(pueblo){
 export function fraccionTratada(pueblo){
   const d = CONFIG.mejoras.depuradora;
   return Math.min(d.fraccionMax, pueblo.mejoras.depuradora * d.fraccionPorNivel);
+}
+
+/** Caudal máximo que la depuradora puede tratar, en L/h. Lo que exceda se alivia. */
+export function capacidadTratamiento(pueblo){
+  return pueblo.mejoras.depuradora * CONFIG.mejoras.depuradora.caudalPorNivel;
+}
+
+/** Fracción de escorrentía de lluvia que la red de pluviales saca del colector. */
+export function fraccionSeparada(pueblo){
+  const r = CONFIG.mejoras.pluviales;
+  return Math.min(r.fraccionMax, pueblo.mejoras.pluviales * r.fraccionPorNivel);
+}
+
+/** Litros que puede retener el tanque de tormentas. */
+export function capacidadTanque(pueblo){
+  return pueblo.mejoras.tanque * CONFIG.mejoras.tanque.capacidadPorNivel;
+}
+
+/**
+ * Intensidad de lluvia (0..1) según la estación. Usa la misma fórmula de fase
+ * que la escena, así lo que ves llover es exactamente lo que moja la ciudad.
+ */
+export function factorLluvia(horas){
+  const L = CONFIG.lluvia.porEstacion, T = CONFIG.tiempo;
+  const frac = ((horas % T.horasPorAño) / T.horasPorAño + 1) % 1;
+  return L[Math.floor(frac * L.length) % L.length];
+}
+
+/** Calidad del pueblo (multiplica el crecimiento): la sube el saneamiento fino. */
+export function calidadServicio(pueblo){
+  const Q = CONFIG.calidad;
+  return Math.min(Q.max, Q.base
+    + pueblo.mejoras.tanque * Q.bonusTanque
+    + pueblo.mejoras.pluviales * Q.bonusPluviales);
 }
 
 export function costeMejora(clave, nivelActual){
@@ -95,7 +140,7 @@ export function bombear(pueblo){
  * Devuelve { residual, res } donde `residual` son los litros crudos que vierte
  * al cauce (ya descontada su depuradora) y `res` es el estado efímero para pintar.
  */
-function avanzarPueblo(estado, p, dt, dtHoras, punta, estiaje, frenoCrec){
+function avanzarPueblo(estado, p, dt, dtHoras, punta, estiaje, frenoCrec, lluvia){
   const S = CONFIG.saneamiento;
   const cap = capacidad(p);
   const factorAveria = p.averia ? (1 - CONFIG.averias.recorteProduccion) : 1;
@@ -127,13 +172,43 @@ function avanzarPueblo(estado, p, dt, dtHoras, punta, estiaje, frenoCrec){
     p.saneamientoActivo = true;
     recienSaneamiento = true;
   }
-  let residual = 0;
+  let residual = 0, alivio = 0, aprovechado = 0;
   if(p.saneamientoActivo){
+    // 1. Lo que entra al colector: aguas residuales + la lluvia NO separada.
     const aguasResiduales = servido * S.fraccionResidual;
-    residual = aguasResiduales * (1 - fraccionTratada(p));   // lo que llega crudo al cauce
+    const escorrentia = p.habitantes * CONFIG.lluvia.litrosPorHabHora * lluvia * dtHoras;
+    const separada = escorrentia * fraccionSeparada(p);
+    // La red de pluviales, además de aliviar el colector, recoge agua limpia
+    aprovechado = separada * CONFIG.pluviales.fraccionAprovechada;
+    if(aprovechado > 0) p.agua = Math.min(cap, p.agua + aprovechado);
+    let carga = aguasResiduales + (escorrentia - separada);
+
+    // 2. La depuradora trata hasta su caudal máximo; el resto es exceso.
+    const capacidadPaso = capacidadTratamiento(p) * dtHoras;
+    let aTratar = Math.min(carga, capacidadPaso);
+    let exceso = carga - aTratar;
+
+    // 3. El tanque de tormentas retiene el exceso; si sobra capacidad de
+    //    tratamiento, se vacía poco a poco hacia la depuradora. Es exactamente
+    //    para lo que sirve uno de verdad: cortar la punta y tratarla luego.
+    if(exceso > 0){
+      const hueco = Math.max(0, capacidadTanque(p) - p.tanqueAgua);
+      const retenido = Math.min(exceso, hueco);
+      p.tanqueAgua += retenido;
+      exceso -= retenido;
+    } else {
+      const libre = capacidadPaso - carga;
+      const vaciado = Math.min(p.tanqueAgua, libre);
+      p.tanqueAgua -= vaciado;
+      aTratar += vaciado;
+    }
+
+    // 4. Lo tratado sale casi limpio; lo aliviado va crudo al cauce.
+    alivio = exceso;
+    residual = aTratar * (1 - fraccionTratada(p)) + alivio;
   }
 
-  crecer(p, servicio, dtHoras, frenoCrec);
+  crecer(p, servicio, dtHoras, frenoCrec, calidadServicio(p));
 
   return {
     residual, recienSaneamiento,
@@ -143,7 +218,11 @@ function avanzarPueblo(estado, p, dt, dtHoras, punta, estiaje, frenoCrec){
       produciendo: entrada > 0.0001,
       bombeoAuto: prodAuto > 0.0001,
       averiada: !!p.averia,
-      saneamiento: p.saneamientoActivo
+      saneamiento: p.saneamientoActivo,
+      lluvia, aliviando: alivio > 0.0001,
+      tanqueFrac: capacidadTanque(p) > 0 ? p.tanqueAgua / capacidadTanque(p) : 0,
+      aprovechadoLh: dtHoras > 0 ? aprovechado / dtHoras : 0,
+      calidad: calidadServicio(p)
     }
   };
 }
@@ -159,6 +238,7 @@ export function avanzar(estado, dt){
   const estiaje = factorEstiaje(estado.horas);
   const suciedad = estado.contaminacion / K.contaminacionMax;   // 0..1
   const frenoCrec = 1 - suciedad * K.frenoCrecimiento;
+  const lluvia = factorLluvia(estado.horas);
 
   let totalResidual = 0;
   let activoRes = null;
@@ -167,7 +247,7 @@ export function avanzar(estado, dt){
   for(let i = 0; i < estado.pueblos.length; i++){
     const p = estado.pueblos[i];
     if(!p.desbloqueado) continue;
-    const out = avanzarPueblo(estado, p, dt, dtHoras, punta, estiaje, frenoCrec);
+    const out = avanzarPueblo(estado, p, dt, dtHoras, punta, estiaje, frenoCrec, lluvia);
     totalResidual += out.residual;
     if(out.recienSaneamiento) saneamientoNuevo.push(p.nombre);
     if(i === estado.puebloActivo) activoRes = out.res;
@@ -185,17 +265,22 @@ export function avanzar(estado, dt){
 
   return {
     ...(activoRes || { servicio: 0, prodLps: 0, produciendo: false,
-                       bombeoAuto: false, averiada: false, punta, estiaje }),
+                       bombeoAuto: false, averiada: false, punta, estiaje,
+                       lluvia, aliviando: false, tanqueFrac: 0, calidad: 1 }),
     contaminacion: estado.contaminacion,
     suciedad,
     multa,
     frenoCrec,
+    lluvia,
     saneamientoNuevo
   };
 }
 
-/** Crecimiento / despoblación de un pueblo. El freno del cauce reduce lo que crece. */
-function crecer(p, servicio, dtHoras, frenoCrec){
+/**
+ * Crecimiento / despoblación de un pueblo. El freno del cauce reduce lo que
+ * crece; la calidad (pluviales y tanque de tormentas) lo empuja.
+ */
+function crecer(p, servicio, dtHoras, frenoCrec, calidad = 1){
   const P = CONFIG.poblacion;
   const años = dtHoras / CONFIG.tiempo.horasPorAño;
 
@@ -203,7 +288,7 @@ function crecer(p, servicio, dtHoras, frenoCrec){
     p.racha += dtHoras;
     if(p.racha >= P.horasBuenServicioParaCrecer){
       p.habitantes = Math.min(P.habitantesMax,
-        p.habitantes * (1 + P.tasaCrecimientoAnual * frenoCrec * años));
+        p.habitantes * (1 + P.tasaCrecimientoAnual * frenoCrec * calidad * años));
     }
   } else if(servicio < P.servicioMalo){
     p.racha = 0;

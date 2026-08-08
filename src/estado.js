@@ -28,7 +28,8 @@ function crearPueblo(def){
     mejoras: mejorasACero(),
     autobombaActivo: false,
     averia: null,               // null | { desde: horas }
-    saneamientoActivo: false    // se activa al superar el umbral de habitantes
+    saneamientoActivo: false,   // se activa al superar el umbral de habitantes
+    tanqueAgua: 0               // litros retenidos ahora en el tanque de tormentas
   };
 }
 
@@ -40,6 +41,7 @@ export class Estado {
     this.horas = 0;
     this.m3Servidos = 0;
     this.contaminacion = 0;     // del cauce, 0..CONFIG.cauce.contaminacionMax
+    this.pluvialesActivas = false;   // se abre al desbloquear el tercer pueblo
 
     // Pueblos y cuál se está mirando
     this.pueblos = CONFIG.poblaciones.map(crearPueblo);
@@ -66,6 +68,7 @@ export class Estado {
     const datos = {
       dinero: this.dinero, horas: this.horas, m3Servidos: this.m3Servidos,
       contaminacion: this.contaminacion, puebloActivo: this.puebloActivo,
+      pluvialesActivas: this.pluvialesActivas,
       pueblos: this.pueblos, ultimoInstante: this.ultimoInstante
     };
     try{
@@ -86,6 +89,7 @@ export class Estado {
       estado.horas = d.horas ?? 0;
       estado.m3Servidos = d.m3Servidos ?? 0;
       estado.contaminacion = d.contaminacion ?? 0;
+      estado.pluvialesActivas = d.pluvialesActivas ?? false;
       estado.puebloActivo = d.puebloActivo ?? 0;
       estado.ultimoInstante = d.ultimoInstante ?? Date.now();
 

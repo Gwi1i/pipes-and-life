@@ -165,14 +165,27 @@ function tickAverias(dtHoras){
    ================================================================== */
 
 function comprobarDesbloqueo(){
-  const primero = estado.pueblos[0];
+  // Habitantes TOTALES de la mancomunidad (solo los pueblos ya abiertos)
+  const total = estado.pueblos.reduce(
+    (s, p) => s + (p.desbloqueado ? Math.floor(p.habitantes) : 0), 0);
+
   for(let i = 1; i < estado.pueblos.length; i++){
     const p = estado.pueblos[i];
-    if(!p.desbloqueado && Math.floor(primero.habitantes) >= CONFIG.desbloqueo.segundoPuebloEn){
-      p.desbloqueado = true;
-      estado.anotar(`¡La mancomunidad se amplía! Nuevo pueblo: ${p.nombre}.`, 'ok');
-      avisar(`Nuevo pueblo disponible: ${p.nombre}. Ábrelo en las pestañas.`);
-      ui.reconstruirPestanas(estado);
+    const def = CONFIG.poblaciones[i];
+    if(p.desbloqueado || !def.desbloqueaEn || total < def.desbloqueaEn) continue;
+
+    p.desbloqueado = true;
+    estado.anotar(`¡La mancomunidad se amplía! Nuevo pueblo: ${p.nombre}.`, 'ok');
+    avisar(`Nuevo pueblo disponible: ${p.nombre}. Ábrelo en las pestañas.`);
+    ui.reconstruirPestanas(estado);
+
+    // El TERCER pueblo trae consigo la gestión de aguas pluviales
+    if(i >= 2 && !estado.pluvialesActivas){
+      estado.pluvialesActivas = true;
+      estado.anotar('Nueva competencia: red de pluviales y tanques de tormenta. ' +
+                    'Separa la lluvia del saneamiento para no aliviar al cauce.', 'ok');
+      avisar('¡Desbloqueadas la red de pluviales y el tanque de tormentas!');
+      ui.invalidarCache();
     }
   }
 }

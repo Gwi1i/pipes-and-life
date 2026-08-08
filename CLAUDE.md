@@ -139,8 +139,22 @@ La UI muestra SIEMPRE el pueblo activo (`estado.activo`, índice en
 detalle, las averías y el premium se refieren al activo. El cauce y la caja son
 comunes. `ui.invalidarCache()` fuerza redibujar todo al cambiar de pueblo.
 
-El segundo pueblo arranca `desbloqueado:false` y se abre en `comprobarDesbloqueo()`
-de `main.js` cuando el primero supera `CONFIG.desbloqueo.segundoPuebloEn`.
+Los pueblos 2 y 3 arrancan `desbloqueado:false` y se abren en
+`comprobarDesbloqueo()` de `main.js` al superar los habitantes TOTALES de la
+mancomunidad su `desbloqueaEn` (en `CONFIG.poblaciones`). Abrir el TERCERO activa
+además `estado.pluvialesActivas`, que desbloquea las mejoras marcadas con
+`requiere: 'pluviales'` (la UI las oculta hasta entonces).
+
+**Lluvia, pluviales y tanque de tormentas.** `factorLluvia(horas)` da la
+intensidad por estación (misma fórmula de fase que usa la escena, para que lo
+que ves llover sea lo que moja la ciudad). Con saneamiento activo, la
+escorrentía urbana entra al colector; la **red de pluviales** separa una
+fracción (que además se aprovecha en parte para el depósito) y el resto se suma
+a las aguas residuales. La **depuradora** trata hasta `capacidadTratamiento()`
+L/h; lo que excede lo retiene el **tanque de tormentas** (`pueblo.tanqueAgua`) y
+se trata luego, cuando sobra capacidad. Lo que ni se trata ni se retiene es un
+**alivio**: va crudo al cauce. Pluviales y tanque suben además
+`calidadServicio()`, que multiplica el crecimiento.
 
 ## Notas de la simulación
 
@@ -190,6 +204,12 @@ necesidad de más mejoras.
 **Ciclo del mundo.** `coefHora()` modula el consumo por la hora del día
 (`curvaDiaria`) y `factorEstiaje()` modula la captación por la estación
 (`estiaje`, sobre `tiempo.horasPorAño`). Se aplican dentro de `avanzar()`.
+
+Las tres curvas del año —estaciones de la escena, estiaje y lluvia— comparten la
+misma fase. `factorEstiaje()` lleva un desfase de 1/8 de año a propósito para que
+su mínimo caiga en pleno VERANO; sin él, el panel decía "estiaje (verano)"
+mientras la escena ya pintaba otoño lloviendo. Si tocas una curva, comprueba las
+otras dos: `nombreEstacion()` es la fuente única del nombre.
 
 **Averías.** Por pueblo. Viven FUERA de `avanzar()`, en `tickAverias()` de
 `main.js`, que recorre los pueblos y solo corre en la partida viva (nunca

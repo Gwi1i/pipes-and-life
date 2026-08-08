@@ -101,6 +101,11 @@ del dinero entre mejoras.
 - **Saneamiento y cauce**: al crecer, un pueblo genera aguas residuales. Sin
   depurar ensucian el cauce común → **multa** y **freno al crecimiento** de todos.
   Se limpia a mano (botón LIMPIAR CAUCE) o, mejor, con la depuradora de cada pueblo.
+- **Lluvia, pluviales y tormentas** (con el tercer pueblo): la lluvia moja la
+  ciudad y su escorrentía entra al colector, que revienta a la depuradora en
+  otoño. La **red de pluviales** la separa (y aprovecha parte para tu depósito)
+  y el **tanque de tormentas** retiene la punta para tratarla con calma. Los dos
+  suben la **calidad** del pueblo, que multiplica su crecimiento.
 - **Auto-bombeo como función especial**: no es una mejora más, sino un aliciente
   que se gana cumpliendo requisitos (niveles + población) y pagando caro. El
   código deja un gancho documentado (`CONFIG.premium.autobomba.desbloqueoExterno`)

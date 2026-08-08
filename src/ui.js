@@ -11,7 +11,7 @@
 
 import { CONFIG } from './config.js';
 import { capacidad, demandaMedia, caudalCaptacion, costeMejora,
-         requisitosAutobomba } from './simulacion.js';
+         requisitosAutobomba, capacidadTanque, nombreEstacion } from './simulacion.js';
 import { formatear } from './util.js';
 
 const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
@@ -69,6 +69,13 @@ export class UI {
       const elN = document.getElementById('nivel-' + clave);
       const elC = document.getElementById('coste-' + clave);
       if(!bt) continue;
+
+      // Mejoras que aún no están desbloqueadas para la mancomunidad
+      if(m.requiere === 'pluviales' && !estado.pluvialesActivas){
+        bt.style.display = 'none';
+        continue;
+      }
+      bt.style.display = '';
 
       elN.textContent = nivel > 0 ? 'Nv ' + nivel : '';
 
@@ -255,16 +262,31 @@ export class UI {
       tendencia = 'Despoblándose ▼'; claseT = 'critico';
     } else { tendencia = 'Estable'; claseT = 'alarma'; }
 
-    const estacion = (resultado.estiaje || 1) < 0.7 ? 'Estiaje (verano)'
-                   : (resultado.estiaje || 1) > 1.1 ? 'Deshielo' : 'Normal';
+    // El nombre sale de la MISMA tabla que pinta la escena; el paréntesis
+    // describe cómo va el caudal, para que nunca se contradigan.
+    const est = resultado.estiaje || 1;
+    const estacion = nombreEstacion(estado.horas) +
+      (est < 0.7 ? ' · estiaje' : est > 1.1 ? ' · deshielo' : '');
     const nivelDep = p.mejoras.deposito;
     const reserva = nivelDep === 0 ? 'Sin depósito' : `Nivel ${nivelDep} · ${formatear(capacidad(p))} L`;
     const sane = p.saneamientoActivo
       ? (p.mejoras.depuradora > 0 ? `Depuradora Nv ${p.mejoras.depuradora}` : 'SIN depurar ⚠')
       : 'Aún no genera';
 
+    // Lluvia y tormentas (solo cuando la mancomunidad ya gestiona pluviales)
+    const lluviaPct = Math.round((resultado.lluvia || 0) * 100);
+    const tanquePct = Math.round((resultado.tanqueFrac || 0) * 100);
+    const filaLluvia = estado.pluvialesActivas ? `
+      <div class="d-fila"><span>Lluvia</span><b class="${lluviaPct > 50 ? 'agua' : ''}">${lluviaPct} %</b></div>
+      <div class="d-fila"><span>Pluviales</span><b>${p.mejoras.pluviales > 0 ? 'Nivel ' + p.mejoras.pluviales : 'Sin separar ⚠'}</b></div>
+      <div class="d-fila"><span>Tanque tormentas</span><b class="${resultado.aliviando ? 'critico' : ''}">${
+        capacidadTanque(p) > 0 ? tanquePct + ' % lleno' : '—'}${resultado.aliviando ? ' · ALIVIANDO' : ''}</b></div>
+      <div class="d-fila"><span>Calidad</span><b class="${(resultado.calidad || 1) > 1.05 ? 'ok' : ''}">×${(resultado.calidad || 1).toFixed(2)}</b></div>` : '';
+
     const firma = [p.nombre, tendencia, Math.floor(p.habitantes),
-                   nivelDep, p.mejoras.captacion, estacion, sane].join('|');
+                   nivelDep, p.mejoras.captacion, estacion, sane,
+                   estado.pluvialesActivas, lluviaPct, tanquePct,
+                   resultado.aliviando, p.mejoras.pluviales, p.mejoras.tanque].join('|');
     if(this.cache.panelFirma === firma) return;
     this.cache.panelFirma = firma;
 
@@ -276,7 +298,8 @@ export class UI {
       <div class="d-fila"><span>Captación</span><b>${prodAhora > 0 ? prodAhora.toFixed(2) + ' m³/h' : '—'}</b></div>
       <div class="d-fila"><span>Estación</span><b>${estacion}</b></div>
       <div class="d-fila"><span>Reserva</span><b>${reserva}</b></div>
-      <div class="d-fila"><span>Saneamiento</span><b class="${p.saneamientoActivo && p.mejoras.depuradora === 0 ? 'alarma' : ''}">${sane}</b></div>`;
+      <div class="d-fila"><span>Saneamiento</span><b class="${p.saneamientoActivo && p.mejoras.depuradora === 0 ? 'alarma' : ''}">${sane}</b></div>
+      ${filaLluvia}`;
   }
 
   actualizarRegistro(estado){

@@ -17,11 +17,12 @@ export const CONFIG = {
      desbloqueado; los demás se abren al cumplir el hito de crecimiento. */
   poblaciones: [
     { nombre: 'Villagua',  habitantes: 300, desbloqueada: true  },
-    { nombre: 'Riolindo',  habitantes: 180, desbloqueada: false }
+    { nombre: 'Riolindo',  habitantes: 180, desbloqueada: false, desbloqueaEn: 900  },
+    { nombre: 'Valdeagua', habitantes: 220, desbloqueada: false, desbloqueaEn: 2200 }
   ],
-  desbloqueo: {
-    segundoPuebloEn: 900   // habitantes del primer pueblo para abrir el segundo
-  },
+  // `desbloqueaEn` son habitantes TOTALES de la mancomunidad (solo cuentan los
+  // pueblos ya abiertos). Al abrir el TERCERO se desbloquea además la red de
+  // pluviales y el tanque de tormentas para toda la mancomunidad.
 
   /* ---------- PARÁMETROS COMUNES DE POBLACIÓN ----------
      Se aplican igual a cada pueblo. Su tamaño de arranque está en la lista. */
@@ -73,10 +74,30 @@ export const CONFIG = {
       desc: 'Trata las aguas residuales antes de devolverlas al cauce. Cada nivel, más limpio.',
       costeBase: 2000, factorCoste: 1.8, nivelMax: 6,
       fraccionPorNivel: 0.22,   // fracción de residual que trata cada nivel
-      fraccionMax: 0.96         // ni la mejor depuradora deja el agua perfecta
+      fraccionMax: 0.96,        // ni la mejor depuradora deja el agua perfecta
+      caudalPorNivel: 2500      // L/h que es capaz de tratar cada nivel (lo que
+                                // exceda se ALIVIA crudo al cauce)
+    },
+    // --- Solo cuando se abre el tercer pueblo (requiere: 'pluviales') ---
+    pluviales: {
+      nombre: 'Red de pluviales', orden: 5,
+      desc: 'Separa el agua de lluvia del saneamiento: alivia la depuradora y ' +
+            'aprovecha parte de la lluvia para tu depósito.',
+      costeBase: 3000, factorCoste: 1.7, nivelMax: 5,
+      requiere: 'pluviales',
+      fraccionPorNivel: 0.20,   // fracción de escorrentía que saca del colector
+      fraccionMax: 0.85
+    },
+    tanque: {
+      nombre: 'Tanque de tormentas', orden: 6,
+      desc: 'Retiene la punta de lluvia para no aliviar crudo al cauce, y la ' +
+            'trata luego con calma. Mejora la calidad del pueblo.',
+      costeBase: 4500, factorCoste: 1.8, nivelMax: 5,
+      requiere: 'pluviales',
+      capacidadPorNivel: 30000  // litros de retención por nivel
     },
     mantenimiento: {
-      nombre: 'Personal de mantenimiento', orden: 5,
+      nombre: 'Personal de mantenimiento', orden: 7,
       desc: 'Repara las averías de este pueblo solo. Cada nivel, más rápido.',
       costeBase: 1500, factorCoste: 1.8, nivelMax: 8
     }
@@ -105,6 +126,24 @@ export const CONFIG = {
     habitantesUmbral: 500,   // a partir de aquí el pueblo genera aguas residuales
     fraccionResidual: 0.80   // fracción del agua servida que vuelve como residual
   },
+  /* ---------- LLUVIA Y PLUVIALES ----------
+     La lluvia deja de ser solo decorado: moja la ciudad y esa escorrentía entra
+     al colector, que es lo que revienta a la depuradora en tormenta. La red de
+     pluviales la separa; el tanque de tormentas amortigua la punta. */
+  lluvia: {
+    // Intensidad 0..1 por estación, en el mismo orden que `estaciones`
+    porEstacion: [0.45, 0.05, 1.00, 0.30],   // primavera, verano, otoño, invierno
+    litrosPorHabHora: 6      // escorrentía urbana por habitante y hora, a lluvia máxima
+  },
+  pluviales: {
+    fraccionAprovechada: 0.35   // de lo separado, cuánto se recoge para el depósito
+  },
+  /* ---------- CALIDAD DEL PUEBLO ----------
+     Multiplica el crecimiento: un pueblo con buen saneamiento crece mejor. */
+  calidad: {
+    base: 1.0, bonusTanque: 0.10, bonusPluviales: 0.05, max: 1.6
+  },
+
   cauce: {
     contaminacionMax: 100,
     porLitroResidual: 0.0006,   // cuánto sube la contaminación por litro crudo vertido
@@ -193,6 +232,8 @@ export const CONFIG = {
     deposito:   '#7dd3fc',
     captacion:  '#5eead4',
     depuradora: '#34d399',
+    pluviales:  '#22d3ee',
+    tanque:     '#818cf8',
     casa:       '#facc15',
     casaSeca:   '#6f8aa1',
     ok:         '#4ade80',

@@ -17,7 +17,7 @@
  */
 
 import { CONFIG } from './config.js';
-import { capacidad, fraccionTratada } from './simulacion.js';
+import { capacidad, fraccionTratada, capacidadTanque } from './simulacion.js';
 import { limitar } from './util.js';
 
 export class Escena {
@@ -109,6 +109,7 @@ export class Escena {
     if(p.mejoras.deposito > 0) this.deposito();
     if(p.mejoras.depuradora > 0) this.depuradora();
     this.tuberiaAbastecimiento();
+    if(p.mejoras.tanque > 0) this.tanqueTormentas();
     this.pueblo();
     this.arboles(false);
     this.vertido();
@@ -439,12 +440,65 @@ export class Escena {
     }
   }
 
+  /* ---------- tanque de tormentas ----------
+     Cilindro enterrado a medias junto al pueblo, con el nivel de lo retenido.
+     Late en rojo cuando está aliviando: se ve que se ha quedado corto. */
+  tanqueTormentas(){
+    const ctx = this.ctx, C = CONFIG.color, W = this._W, H = this._H, p = this._p, r = this._res;
+    const cx = W * 0.685, baseY = this.sueloY + (this.rioY - this.sueloY) * 0.30;
+    const rx = W * 0.028, ry = rx * 0.42, alto = H * 0.055;
+    const topY = baseY - alto;
+    const frac = capacidadTanque(p) > 0 ? limitar(p.tanqueAgua / capacidadTanque(p), 0, 1) : 0;
+
+    // cuerpo
+    const g = ctx.createLinearGradient(cx - rx, 0, cx + rx, 0);
+    g.addColorStop(0, oscurecer(C.tanque, 0.45)); g.addColorStop(0.55, oscurecer(C.tanque, 0.15));
+    g.addColorStop(1, oscurecer(C.tanque, 0.4));
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.moveTo(cx - rx, topY); ctx.lineTo(cx - rx, baseY);
+    ctx.ellipse(cx, baseY, rx, ry, 0, Math.PI, 0, true); ctx.lineTo(cx + rx, topY);
+    ctx.ellipse(cx, topY, rx, ry, 0, 0, Math.PI, true); ctx.closePath(); ctx.fill();
+    // lo retenido
+    if(frac > 0.01){
+      const aguaTop = baseY - (baseY - topY) * frac;
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(cx - rx, topY); ctx.lineTo(cx - rx, baseY);
+      ctx.ellipse(cx, baseY, rx, ry, 0, Math.PI, 0, true); ctx.lineTo(cx + rx, topY);
+      ctx.closePath(); ctx.clip();
+      ctx.fillStyle = mezclarColor('#6b7a3a', C.agua, 0.35);
+      ctx.fillRect(cx - rx, aguaTop, rx * 2, baseY - aguaTop);
+      ctx.restore();
+      ctx.fillStyle = aclarar(mezclarColor('#6b7a3a', C.agua, 0.35), 0.2);
+      ctx.beginPath(); ctx.ellipse(cx, aguaTop, rx, ry, 0, 0, 7); ctx.fill();
+    }
+    // boca
+    ctx.strokeStyle = r.aliviando
+      ? `rgba(239,68,68,${0.5 + Math.sin(this.tiempo * 7) * 0.45})` : C.tanque;
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.ellipse(cx, topY, rx, ry, 0, 0, 7); ctx.stroke();
+
+    ctx.font = '700 8px IBM Plex Mono, ui-monospace, monospace';
+    ctx.textAlign = 'center'; ctx.fillStyle = r.aliviando ? C.critico : C.tanque;
+    ctx.fillText(r.aliviando ? 'ALIVIANDO' : 'TORMENTAS', cx, baseY + 11);
+  }
+
   /* ---------- tubería de saneamiento (retorno al cauce) ---------- */
   tuberiaSaneamiento(){
-    const W = this._W, p = this._p;
+    const W = this._W, p = this._p, r = this._res;
     if(!p.saneamientoActivo) return;
     const yS = this.sueloY + (this.rioY - this.sueloY) * 0.55;
     const xPueblo = W * 0.60, xDepu = W * 0.80, xVert = W * 0.92;
+
+    // Red de pluviales: canal aparte que lleva la lluvia limpia al cauce sin
+    // pasar por la depuradora. Solo "fluye" cuando de verdad está lloviendo.
+    if(p.mejoras.pluviales > 0){
+      const yP = yS + (this.rioY - yS) * 0.45, xP = W * 0.30;
+      const llueve = (r.lluvia || 0) > 0.05;
+      this.tubo(W * 0.52, yP, xP, yP, llueve, CONFIG.color.pluviales);
+      this.tubo(xP, yP, xP, this.rioY + 4, llueve, CONFIG.color.pluviales);
+    }
     const suciedad = 1 - fraccionTratada(p);
     const colSucio = mezclarColor('#38bdf8', '#7a5a2a', 0.85);
     if(p.mejoras.depuradora > 0){
