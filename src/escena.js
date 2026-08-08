@@ -656,10 +656,10 @@ function parseRGB(c){
   if(c[0] === '#'){ const n = parseInt(c.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; }
   const m = c.match(/(\d+)/g); return [ +m[0], +m[1], +m[2] ];
 }
-function mezclarColor(a, b, t){
+export function mezclarColor(a, b, t){
   t = t < 0 ? 0 : t > 1 ? 1 : t;
   const A = parseRGB(a), B = parseRGB(b);
   return `rgb(${Math.round(A[0] + (B[0] - A[0]) * t)},${Math.round(A[1] + (B[1] - A[1]) * t)},${Math.round(A[2] + (B[2] - A[2]) * t)})`;
 }
-const oscurecer = (c, k) => mezclarColor(c, '#000000', k);
-const aclarar   = (c, k) => mezclarColor(c, '#ffffff', k);
+export const oscurecer = (c, k) => mezclarColor(c, '#000000', k);
+export const aclarar   = (c, k) => mezclarColor(c, '#ffffff', k);

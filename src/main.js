@@ -10,6 +10,7 @@ import { Estado } from './estado.js';
 import { Entrada } from './entrada.js';
 import { UI } from './ui.js';
 import { Escena } from './escena.js';
+import { EscenaSVG } from './escena_svg.js';
 import { avanzar, bombear, costeMejora, requisitosAutobomba } from './simulacion.js';
 import { formatear } from './util.js';
 
@@ -18,7 +19,12 @@ const estado  = new Estado();
 const habiaPartida = Estado.cargar(estado);
 const entrada = new Entrada(lienzo);
 const ui      = new UI(entrada);
-const escena  = new Escena(lienzo);
+
+// Estilo visual: A (Canvas "falso 3D") o B (sprites SVG). Se recuerda la
+// elección; el botón de la barra superior alterna entre ambos para compararlos.
+let estiloEscena = localStorage.getItem('rh_estilo') === 'b' ? 'b' : 'a';
+function crearEscena(){ return estiloEscena === 'b' ? new EscenaSVG(lienzo) : new Escena(lienzo); }
+let escena = crearEscena();
 
 if(!habiaPartida){
   estado.anotar(`Nueva mancomunidad. ${estado.activo.nombre} espera agua: dale a BOMBEAR.`, 'info');
@@ -263,6 +269,18 @@ document.getElementById('btn-reiniciar').onclick = () => {
   Estado.borrar();
   location.reload();
 };
+
+// Alternar estilo visual A/B para compararlos, sin recargar
+const btnEstilo = document.getElementById('btn-estilo');
+function etiquetaEstilo(){ btnEstilo.textContent = 'Estilo: ' + (estiloEscena === 'b' ? 'B · SVG' : 'A · 3D'); }
+btnEstilo.onclick = () => {
+  estiloEscena = estiloEscena === 'a' ? 'b' : 'a';
+  localStorage.setItem('rh_estilo', estiloEscena);
+  escena = crearEscena();
+  if(window.juego) window.juego.escena = escena;   // mantener la referencia de depuración
+  etiquetaEstilo();
+};
+etiquetaEstilo();
 
 // Depuración: `juego` en la consola. `juego.dinero(n)` fija el saldo.
 window.juego = {

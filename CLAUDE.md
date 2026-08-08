@@ -59,7 +59,8 @@ red-hidraulica/
     ├── util.js         Funciones puras: formato, interpolación, color
     ├── estado.js       Dinero, agua, tiempo y persistencia
     ├── simulacion.js   El motor: balance de agua, consumo y facturación
-    ├── escena.js       El diorama animado (canvas)
+    ├── escena.js       El diorama animado (canvas), estilo A: "falso 3D"
+    ├── escena_svg.js   Estilo B alternativo: sprites SVG (hereda de escena.js)
     ├── entrada.js      Ratón, tacto, teclado → acciones
     ├── ui.js           DOM fuera de la escena: HUD, tienda, paneles
     └── main.js         Ensamblado y bucle principal
@@ -82,6 +83,17 @@ límites que hay que respetar:
   atmosférica (mezcla hacia `this.bruma` según lejanía). Si hace falta más
   detalle sin perder fluidez, pre-renderiza a un canvas oculto (como hacía el
   terreno en `master`).
+- **Dos estilos visuales intercambiables.** `escena.js` es el estilo A (todo por
+  código). `escena_svg.js` (`EscenaSVG`) es el estilo B: HEREDA de `Escena` y
+  solo sobrescribe las estructuras (bomba, depósito, depuradora, casas, árboles,
+  captación) por sprites SVG dibujados a mano (con sombra suave y degradados),
+  reutilizando el resto del entorno. Ambas clases comparten interfaz
+  (`dibujar`, `destello`, `aparecer*`, `destelloCauce`, `ajustar`). `main.js`
+  elige una u otra con `crearEscena()` según `localStorage.rh_estilo`, y el
+  botón *Estilo* de la barra superior alterna en caliente. Mientras un sprite no
+  ha cargado, `EscenaSVG` recurre al método del padre (`super.metodo()`), así no
+  desaparece nada. Los helpers `mezclarColor`/`oscurecer`/`aclarar` se exportan
+  desde `escena.js` para que `escena_svg.js` los reutilice.
 - **`entrada.js` no toca el estado.** Traduce eventos del navegador a acciones y
   las encola; `main.js` es quien las ejecuta. La lógica de juego queda en un
   solo sitio.
