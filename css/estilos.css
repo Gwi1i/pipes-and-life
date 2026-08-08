@@ -71,6 +71,22 @@ body{
 .mapa{flex:1; position:relative; min-width:0; display:flex; flex-direction:column;
       background:#040a10;}
 .lienzo-caja{position:relative; flex:1; min-height:0;}
+
+/* ---------- PESTAÑAS DE PUEBLOS ---------- */
+.pestanas{display:flex; gap:2px; padding:6px 8px 0; background:#040a10; flex:none;}
+.pestana{
+  cursor:pointer; font-family:var(--mono); font-size:11px; font-weight:600;
+  letter-spacing:.06em; padding:7px 14px; color:var(--tenue);
+  background:var(--panel); border:1px solid var(--linea);
+  border-bottom:none; border-radius:5px 5px 0 0; transition:.15s;
+}
+.pestana:hover{color:var(--texto); background:var(--panel-alto);}
+.pestana.activa{color:var(--agua); background:var(--panel-alto);
+  border-color:var(--linea-viva); box-shadow:inset 0 2px 0 var(--agua);}
+.pestana.con-averia{color:var(--critico); border-color:var(--critico);}
+.pestana.bloqueada{color:var(--apagado); background:transparent;
+  border-style:dashed; cursor:default;}
+.pestana:focus-visible{outline:2px solid var(--agua); outline-offset:2px;}
 #escena{display:block; width:100%; height:100%; cursor:pointer;}
 
 /* Barra de agua superpuesta abajo del lienzo */
@@ -186,6 +202,33 @@ body{
   0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0);}
   50%{box-shadow:0 0 18px -4px rgba(239,68,68,.75);}
 }
+
+/* ---------- CAUCE (común) ---------- */
+#panel-cauce h2{color:var(--ok);}
+.cauce{display:grid; gap:8px;}
+.cauce-cab{display:flex; align-items:baseline; justify-content:space-between;}
+.cauce-cab .v{font-family:var(--mono); font-size:14px; font-weight:600;}
+.cauce-multa{font-size:10.5px; color:var(--tenue);}
+.cauce-multa b{font-family:var(--mono); color:var(--alarma);}
+.barra-cauce-fondo{
+  height:9px; background:rgba(8,18,28,.8); border:1px solid var(--linea-viva);
+  border-radius:5px; overflow:hidden;
+}
+.barra-cauce-relleno{height:100%; width:0%; transition:width .15s linear, background .3s;}
+.barra-cauce-relleno.ok{background:linear-gradient(90deg,#0e5a86,#38bdf8);}
+.barra-cauce-relleno.alarma{background:linear-gradient(90deg,#a3781f,#f5a524);}
+.barra-cauce-relleno.critico{background:linear-gradient(90deg,#7a2f2f,#ef4444);}
+.btn-limpiar{
+  width:100%; cursor:pointer; display:flex; flex-direction:column; gap:1px;
+  align-items:center; background:rgba(52,211,153,.12); border:1px solid var(--ok);
+  border-radius:3px; padding:8px 10px; color:var(--ok); font-family:var(--mono);
+  transition:transform .05s, background .15s;
+}
+.btn-limpiar span{font-size:11px; font-weight:700; letter-spacing:.1em;}
+.btn-limpiar em{font-style:normal; font-size:9.5px; color:var(--tenue);}
+.btn-limpiar:hover{background:rgba(52,211,153,.24);}
+.btn-limpiar:active{transform:scale(.98);}
+.btn-limpiar:focus-visible{outline:2px solid var(--ok); outline-offset:2px;}
 
 /* ---------- DETALLE POBLACIÓN ---------- */
 .detalle{display:grid; gap:5px;}

@@ -3,6 +3,10 @@
  *
  * El canvas se repinta 60 veces por segundo; el DOM solo se toca cuando algo
  * cambia de verdad, porque tocarlo es caro. De ahí el pequeño caché.
+ *
+ * Multi-pueblo: las pestañas cambian el pueblo activo; la tienda, el panel de
+ * detalle y las averías se refieren SIEMPRE al pueblo activo. La caja, el reloj
+ * y el cauce (contaminación) son comunes a la mancomunidad.
  */
 
 import { CONFIG } from './config.js';
@@ -23,7 +27,26 @@ export class UI {
     this.construirPremium();
   }
 
-  /* ---------------- TIENDA / MEJORAS ---------------- */
+  /** Fuerza que el próximo refresco reconstruya todo (al cambiar de pueblo). */
+  invalidarCache(){ this.cache = {}; }
+
+  /* ---------------- PESTAÑAS DE PUEBLOS ---------------- */
+
+  reconstruirPestanas(estado){
+    const cont = document.getElementById('pestanas');
+    if(!cont) return;
+    cont.innerHTML = estado.pueblos.map((p, i) => {
+      if(!p.desbloqueado){
+        return `<span class="pestana bloqueada" title="Se abre al crecer el primer pueblo">🔒 ?</span>`;
+      }
+      const activa = i === estado.puebloActivo ? ' activa' : '';
+      const alerta = p.averia ? ' con-averia' : '';
+      return `<button class="pestana${activa}${alerta}" data-accion="cambiarPueblo" data-clave="${i}">
+        ${p.nombre}${p.averia ? ' ⚠' : ''}</button>`;
+    }).join('');
+  }
+
+  /* ---------------- TIENDA (del pueblo activo) ---------------- */
 
   construirTienda(){
     const cont = document.getElementById('tienda');
@@ -39,8 +62,9 @@ export class UI {
   }
 
   refrescarTienda(estado){
+    const p = estado.activo;
     for(const [clave, m] of this.mejoras){
-      const nivel = estado.mejoras[clave];
+      const nivel = p.mejoras[clave];
       const bt = document.getElementById('mejora-' + clave);
       const elN = document.getElementById('nivel-' + clave);
       const elC = document.getElementById('coste-' + clave);
@@ -54,13 +78,15 @@ export class UI {
         bt.disabled = true;
         continue;
       }
+      bt.disabled = false;
       const coste = costeMejora(clave, nivel);
       elC.textContent = formatear(coste) + ' €';
+      bt.classList.remove('comprada');
       bt.classList.toggle('inalcanzable', !estado.puedePagar(coste));
     }
   }
 
-  /* ---------------- FUNCIÓN ESPECIAL: AUTO-BOMBEO ---------------- */
+  /* ---------------- FUNCIÓN ESPECIAL: AUTO-BOMBEO (del pueblo activo) ------ */
 
   construirPremium(){
     const P = CONFIG.premium.autobomba;
@@ -78,47 +104,42 @@ export class UI {
 
   refrescarPremium(estado){
     const P = CONFIG.premium.autobomba;
+    const p = estado.activo;
     const bt = document.getElementById('premium-autobomba');
     const etq = document.getElementById('premium-etq');
     const reqs = document.getElementById('premium-reqs');
     const coste = document.getElementById('premium-coste');
     if(!bt) return;
 
-    if(estado.autobombaActivo){
-      const firma = 'activo';
-      if(this.cache.premiumFirma === firma) return;
-      this.cache.premiumFirma = firma;
-      bt.classList.add('activa'); bt.disabled = true;
+    if(p.autobombaActivo){
       etq.textContent = 'ACTIVO';
       reqs.innerHTML = '';
       coste.textContent = 'La bomba trabaja sola ✓';
+      bt.classList.add('activa'); bt.classList.remove('lista', 'bloqueada');
+      bt.disabled = true;
       return;
     }
 
-    const req = requisitosAutobomba(estado);
+    const req = requisitosAutobomba(p);
     const puede = req.cumple && estado.puedePagar(P.coste);
-    const firma = 'r' + req.lista.map(f => f.ok ? 1 : 0).join('') + (estado.puedePagar(P.coste) ? 'p' : '');
-    if(this.cache.premiumFirma === firma) return;
-    this.cache.premiumFirma = firma;
-
     etq.textContent = req.cumple ? 'DISPONIBLE' : 'BLOQUEADO';
     reqs.innerHTML = req.lista.map(f =>
       `<span class="p-req ${f.ok ? 'ok' : ''}">${f.ok ? '✓' : '○'} ${f.txt}</span>`).join('');
-    coste.textContent = req.cumple ? `Activar · ${formatear(P.coste)} €` : 'Cumple los requisitos para activarlo';
+    coste.textContent = req.cumple ? `Activar · ${formatear(P.coste)} €`
+                                   : 'Cumple los requisitos para activarlo';
+    bt.classList.remove('activa');
     bt.classList.toggle('lista', puede);
     bt.classList.toggle('bloqueada', !req.cumple);
     bt.disabled = !req.cumple;
   }
 
-  /* ---------------- AVERÍAS ---------------- */
+  /* ---------------- AVERÍAS (del pueblo activo) ---------------- */
 
   refrescarAverias(estado){
+    const p = estado.activo;
     const panel = document.getElementById('panel-averias');
-    const hayAveria = !!estado.averia;
-    const tieneEquipo = estado.mejoras.mantenimiento > 0;
-    const firma = hayAveria + '|' + tieneEquipo;
-    if(this.cache.averiaFirma === firma){ return; }
-    this.cache.averiaFirma = firma;
+    const hayAveria = !!p.averia;
+    const tieneEquipo = p.mejoras.mantenimiento > 0;
 
     panel.style.display = hayAveria ? '' : 'none';
     if(!hayAveria) return;
@@ -130,6 +151,29 @@ export class UI {
     btn.style.display = tieneEquipo ? 'none' : '';
     document.getElementById('averia-coste').textContent =
       formatear(CONFIG.averias.costeReparacionManual) + ' €';
+  }
+
+  /* ---------------- CAUCE (común) ---------------- */
+
+  refrescarCauce(estado, resultado){
+    const panel = document.getElementById('panel-cauce');
+    // Solo tiene sentido cuando algún pueblo ya vierte, o si hay suciedad
+    const algunoVierte = estado.pueblos.some(p => p.desbloqueado && p.saneamientoActivo);
+    const visible = algunoVierte || estado.contaminacion > 0.5;
+    panel.style.display = visible ? '' : 'none';
+    if(!visible) return;
+
+    const pct = Math.round((resultado.suciedad || 0) * 100);
+    const barra = document.getElementById('barra-cauce');
+    if(barra){
+      barra.style.width = pct + '%';
+      barra.className = 'barra-cauce-relleno ' +
+        (pct >= 66 ? 'critico' : pct >= 33 ? 'alarma' : 'ok');
+    }
+    this.fijar('cauce-pct', pct + '% sucio',
+      pct >= 66 ? 'critico' : pct >= 33 ? 'alarma' : 'ok');
+    this.fijar('cauce-multa',
+      (resultado.multaHora !== undefined ? resultado.multaHora : 0).toFixed(0));
   }
 
   /* ---------------- HUD ---------------- */
@@ -144,23 +188,27 @@ export class UI {
   }
 
   actualizar(estado, resultado){
-    const cap = capacidad(estado);
-    const pct = Math.round((estado.agua / cap) * 100);
+    const p = estado.activo;
+    const cap = capacidad(p);
+    const pct = Math.round((p.agua / cap) * 100);
 
-    this.fijar('hud-agua', `${formatear(estado.agua)} / ${formatear(cap)} L`,
-      estado.agua < cap * 0.08 ? 'critico' : 'agua');
+    this.fijar('hud-agua', `${formatear(p.agua)} / ${formatear(cap)} L`,
+      p.agua < cap * 0.08 ? 'critico' : 'agua');
     this.fijar('hud-produccion', formatear(resultado.prodLps) + ' L/s',
       resultado.averiada ? 'critico' : (resultado.prodLps > 0 ? 'ok' : 'neutro'));
     this.fijar('hud-dinero', formatear(estado.dinero) + ' €',
       estado.dinero < 0 ? 'critico' : 'dinero');
     this.fijar('hud-poblacion',
-      Math.floor(estado.poblacion.habitantes).toLocaleString('es-ES') + ' hab', 'neutro');
+      Math.floor(p.habitantes).toLocaleString('es-ES') + ' hab', 'neutro');
 
     const serv = Math.round(resultado.servicio * 100);
     this.fijar('hud-servicio', serv + ' %',
       serv >= 100 ? 'ok' : serv >= 50 ? 'alarma' : 'critico');
 
-    // Reloj: hora del día y mes del año de juego
+    const suc = Math.round((resultado.suciedad || 0) * 100);
+    this.fijar('hud-cauce', suc + ' %',
+      suc >= 66 ? 'critico' : suc >= 33 ? 'alarma' : 'ok');
+
     const h = Math.floor(estado.horas % 24);
     const horasAño = CONFIG.tiempo.horasPorAño;
     const mes = MESES[Math.floor(((estado.horas % horasAño) / horasAño) * MESES.length)];
@@ -170,23 +218,37 @@ export class UI {
     const barra = document.getElementById('barra-agua');
     if(barra) barra.style.width = limitarPct(pct) + '%';
 
+    // Multa por hora, para el panel de cauce
+    resultado.multaHora = (resultado.suciedad || 0) * CONFIG.cauce.multaMaxPorHora;
+
     this.refrescarTienda(estado);
     this.refrescarPremium(estado);
     this.refrescarAverias(estado);
+    this.refrescarCauce(estado, resultado);
+    this.marcarPestanaAveria(estado);
     this.actualizarPanel(estado, resultado);
     this.actualizarRegistro(estado);
   }
 
+  /** Pinta una alerta en la pestaña de cualquier pueblo con avería. */
+  marcarPestanaAveria(estado){
+    const firma = estado.pueblos.map(p => (p.averia ? 1 : 0)).join('') + '|' + estado.puebloActivo;
+    if(this.cache.pestanaFirma === firma) return;
+    this.cache.pestanaFirma = firma;
+    this.reconstruirPestanas(estado);
+  }
+
   actualizarPanel(estado, resultado){
+    const p = estado.activo;
     const P = CONFIG.poblacion;
-    const dem = demandaMedia(estado.poblacion.habitantes);
-    const consumoAhora = dem * (resultado.punta || 1) * 3600 / 1000;      // m³/h ahora
-    const prodAhora = caudalCaptacion(estado) * (resultado.estiaje || 1) * 3600 / 1000; // m³/h
+    const dem = demandaMedia(p.habitantes);
+    const consumoAhora = dem * (resultado.punta || 1) * 3600 / 1000;
+    const prodAhora = caudalCaptacion(p) * (resultado.estiaje || 1) * 3600 / 1000;
 
     let tendencia, claseT;
-    if(estado.averia){ tendencia = 'Avería activa'; claseT = 'critico'; }
+    if(p.averia){ tendencia = 'Avería activa'; claseT = 'critico'; }
     else if(resultado.servicio >= P.servicioBueno){
-      const listo = estado.poblacion.racha >= P.horasBuenServicioParaCrecer;
+      const listo = p.racha >= P.horasBuenServicioParaCrecer;
       tendencia = listo ? 'Creciendo ▲' : 'Ganándose la confianza…';
       claseT = listo ? 'ok' : 'neutro';
     } else if(resultado.servicio < P.servicioMalo){
@@ -195,22 +257,26 @@ export class UI {
 
     const estacion = (resultado.estiaje || 1) < 0.7 ? 'Estiaje (verano)'
                    : (resultado.estiaje || 1) > 1.1 ? 'Deshielo' : 'Normal';
+    const nivelDep = p.mejoras.deposito;
+    const reserva = nivelDep === 0 ? 'Sin depósito' : `Nivel ${nivelDep} · ${formatear(capacidad(p))} L`;
+    const sane = p.saneamientoActivo
+      ? (p.mejoras.depuradora > 0 ? `Depuradora Nv ${p.mejoras.depuradora}` : 'SIN depurar ⚠')
+      : 'Aún no genera';
 
-    const firma = [tendencia, Math.floor(estado.poblacion.habitantes),
-                   estado.mejoras.deposito, estado.mejoras.captacion, estacion].join('|');
+    const firma = [p.nombre, tendencia, Math.floor(p.habitantes),
+                   nivelDep, p.mejoras.captacion, estacion, sane].join('|');
     if(this.cache.panelFirma === firma) return;
     this.cache.panelFirma = firma;
 
-    const nivelDep = estado.mejoras.deposito;
-    const reserva = nivelDep === 0 ? 'Sin depósito' : `Nivel ${nivelDep} · ${formatear(capacidad(estado))} L`;
-
     document.getElementById('detalle').innerHTML = `
+      <div class="d-fila"><span>Pueblo</span><b>${p.nombre}</b></div>
       <div class="d-fila"><span>Tendencia</span><b class="${claseT}">${tendencia}</b></div>
-      <div class="d-fila"><span>Habitantes</span><b>${Math.floor(estado.poblacion.habitantes).toLocaleString('es-ES')}</b></div>
+      <div class="d-fila"><span>Habitantes</span><b>${Math.floor(p.habitantes).toLocaleString('es-ES')}</b></div>
       <div class="d-fila"><span>Consumo ahora</span><b>${consumoAhora.toFixed(2)} m³/h</b></div>
       <div class="d-fila"><span>Captación</span><b>${prodAhora > 0 ? prodAhora.toFixed(2) + ' m³/h' : '—'}</b></div>
       <div class="d-fila"><span>Estación</span><b>${estacion}</b></div>
-      <div class="d-fila"><span>Reserva</span><b>${reserva}</b></div>`;
+      <div class="d-fila"><span>Reserva</span><b>${reserva}</b></div>
+      <div class="d-fila"><span>Saneamiento</span><b class="${p.saneamientoActivo && p.mejoras.depuradora === 0 ? 'alarma' : ''}">${sane}</b></div>`;
   }
 
   actualizarRegistro(estado){

@@ -26,6 +26,7 @@
       <div class="hud-item"><span class="e">Caja</span><span class="v dinero" id="hud-dinero">—</span></div>
       <div class="hud-item"><span class="e">Población</span><span class="v" id="hud-poblacion">—</span></div>
       <div class="hud-item"><span class="e">Servicio</span><span class="v" id="hud-servicio">—</span></div>
+      <div class="hud-item"><span class="e">Cauce</span><span class="v" id="hud-cauce">—</span></div>
       <div class="hud-item"><span class="e">Hora · mes</span><span class="v" id="hud-reloj">—</span></div>
     </div>
 
@@ -39,6 +40,7 @@
 
     <!-- Escena central -->
     <main class="mapa">
+      <div id="pestanas" class="pestanas"></div>
       <div class="lienzo-caja">
         <canvas id="escena"></canvas>
         <div id="aviso" class="aviso-flotante"></div>
@@ -71,6 +73,21 @@
         <div id="tienda" class="tienda"></div>
       </section>
 
+      <section class="bloque" id="panel-cauce" style="display:none">
+        <h2>Cauce (común)</h2>
+        <div class="cauce">
+          <div class="cauce-cab">
+            <span class="v" id="cauce-pct">—</span>
+            <span class="cauce-multa">multa: <b id="cauce-multa">0</b> €/h</span>
+          </div>
+          <div class="barra-cauce-fondo"><div class="barra-cauce-relleno" id="barra-cauce"></div></div>
+          <button class="btn-limpiar" data-accion="limpiarCauce">
+            <span>LIMPIAR CAUCE</span>
+            <em>a mano, hasta que las depuradoras lo dominen</em>
+          </button>
+        </div>
+      </section>
+
       <section class="bloque">
         <h2>Función especial</h2>
         <div id="premium"></div>
@@ -100,6 +117,12 @@
              producción. Repárala a mano, o contrata personal que lo haga solo.</p>
           <p><b>5. Haz crecer el pueblo.</b> Bien servido y sin cortes, crece y
              pide más agua. Mal servido, se despuebla. No te duermas.</p>
+          <p><b>6. Depura antes de verter.</b> Al crecer, el pueblo genera aguas
+             residuales. Sin depuradora ensucian el cauce común: multa y menos
+             crecimiento. Limpia a mano o construye la depuradora.</p>
+          <p><b>7. Amplía la mancomunidad.</b> Cuando el primer pueblo crece
+             bastante, se abre un segundo con su propio sistema. Cambia entre
+             ellos con las pestañas de arriba.</p>
         </div>
       </section>
     </aside>

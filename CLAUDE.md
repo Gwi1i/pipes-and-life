@@ -95,16 +95,45 @@ se crea en `config.js` con su nombre y su comentario, y se importa.
 Excepción razonable: constantes matemáticas y de conversión que no son
 ajustables (los 86400 s de un día, etc.). Esas no son parámetros de juego.
 
+## Modelo multi-pueblo (mancomunidad)
+
+Una MANCOMUNIDAD gestiona varios pueblos. Lo que es de cada pueblo y lo que es
+común está separado a propósito:
+
+- **Por pueblo** (`estado.pueblos[i]`): agua, habitantes, servicio, racha,
+  `mejoras{}` (bomba, depósito, captación, depuradora, mantenimiento),
+  `autobombaActivo`, `averia`, `saneamientoActivo`, `desbloqueado`. Casi todas
+  las funciones de `simulacion.js` reciben un `pueblo`.
+- **Común** (`estado`): `dinero` (una sola caja), `horas` (un reloj), y
+  `contaminacion` (un solo cauce).
+
+La UI muestra SIEMPRE el pueblo activo (`estado.activo`, índice en
+`estado.puebloActivo`); las pestañas cambian cuál. La tienda, el panel de
+detalle, las averías y el premium se refieren al activo. El cauce y la caja son
+comunes. `ui.invalidarCache()` fuerza redibujar todo al cambiar de pueblo.
+
+El segundo pueblo arranca `desbloqueado:false` y se abre en `comprobarDesbloqueo()`
+de `main.js` cuando el primero supera `CONFIG.desbloqueo.segundoPuebloEn`.
+
 ## Notas de la simulación
 
 `simulacion.js` hace un balance de agua muy simple, sin red ni presiones:
 
-1. **Entra** agua con cada `bombear()`, hasta el tope de `capacidad()`.
-2. `capacidad()` vale poco sin depósito (el jugador tiene que clicar sin parar)
-   y mucho con él. Ese contraste es lo que hace que el primer depósito se note.
-3. `avanzar(dtHoras)` resta el consumo de la población, sirve lo que hay, y
-   **factura solo lo servido**. Devuelve un resultado efímero (nivel de
-   servicio, m³ servidos) que UI y escena leen; NO lo guarda en el estado.
+1. **Entra** agua con cada `bombear(pueblo)`, hasta el tope de `capacidad(pueblo)`.
+2. `capacidad(pueblo)` vale poco sin depósito (hay que clicar sin parar) y mucho
+   con él. Ese contraste es lo que hace que el primer depósito se note.
+3. `avanzar(estado, dt)` recorre los pueblos desbloqueados: cada uno produce,
+   consume, **factura solo lo servido** a la caja común, y vierte sus aguas
+   residuales sin depurar al cauce común. Devuelve el resultado efímero del
+   pueblo ACTIVO más los datos del cauce (contaminación, multa); NO lo guarda.
+
+**Saneamiento y cauce.** Al superar `saneamiento.habitantesUmbral`, el pueblo
+activa `saneamientoActivo` y genera aguas residuales (`fraccionResidual` del agua
+servida). La depuradora (`fraccionTratada(pueblo)`) trata un %; lo que llega
+crudo sube `estado.contaminacion`. La contaminación cuesta una multa (a la caja)
+y multiplica a la baja el crecimiento de TODOS los pueblos (`frenoCrec`). Baja
+sola despacio (`recuperacionNatural`) y de golpe con el botón LIMPIAR CAUCE
+(acción `limpiarCauce`). Los umbrales, tasas y multa están en `CONFIG.cauce`.
 
 La demanda de la población se calcula SOLO en `demandaMedia()`. En la versión de
 estrategia, duplicar esa fórmula ya provocó una vez que la demanda cambiara sola
@@ -121,7 +150,7 @@ al revés. Si mezclas las escalas, los números se van por órdenes de magnitud.
 
 **Mejoras.** La tienda se genera sola desde `CONFIG.mejoras`: cada entrada tiene
 `costeBase`, `factorCoste`, `nivelMax` y sus parámetros de efecto. El nivel vive
-en `estado.mejoras[clave]`; el coste del siguiente nivel es
+en `pueblo.mejoras[clave]` (por pueblo); el coste del siguiente nivel es
 `costeBase · factorCoste^nivel` (`costeMejora()`). Añadir una vía nueva es añadir
 una entrada en config y, si necesita efecto, leerlo en `simulacion.js`. No hace
 falta tocar la UI ni `entrada.js`.
@@ -135,17 +164,18 @@ necesidad de más mejoras.
 (`curvaDiaria`) y `factorEstiaje()` modula la captación por la estación
 (`estiaje`, sobre `tiempo.horasPorAño`). Se aplican dentro de `avanzar()`.
 
-**Averías.** Viven FUERA de `avanzar()`, en `tickAverias()` de `main.js`, que
-solo corre en la partida viva (nunca offline: sería injusto). Una avería es
-`estado.averia = { desde }`; mientras exista, `avanzar()` corta la producción
-automática (el clic manual sigue). Se repara pagando (`repararAveria`) o sola si
-`mejoras.mantenimiento > 0`, tras un tiempo que baja con el nivel.
+**Averías.** Por pueblo. Viven FUERA de `avanzar()`, en `tickAverias()` de
+`main.js`, que recorre los pueblos y solo corre en la partida viva (nunca
+offline: sería injusto). Una avería es `pueblo.averia = { desde }`; mientras
+exista, `avanzar()` corta la producción automática de ESE pueblo (el clic manual
+sigue). Se repara pagando (`repararAveria`, sobre el activo) o sola si
+`pueblo.mejoras.mantenimiento > 0`, tras un tiempo que baja con el nivel.
 
 **Auto-bombeo = función especial, no una mejora.** Vive en `CONFIG.premium`, no
-en `CONFIG.mejoras`. Es un booleano (`estado.autobombaActivo`), no un nivel. Se
-activa con `requisitosAutobomba()` + pago alto. El campo `desbloqueoExterno` es
-el gancho para una futura vía de anuncio/pago: NO hay pago ni anuncio real
-implementado, y no se debe simular uno falso.
+en `CONFIG.mejoras`. Es un booleano por pueblo (`pueblo.autobombaActivo`), no un
+nivel. Se activa con `requisitosAutobomba(pueblo)` + pago alto. El campo
+`desbloqueoExterno` es el gancho para una futura vía de anuncio/pago: NO hay pago
+ni anuncio real implementado, y no se debe simular uno falso.
 
 **Offline.** `progresoOffline()` en `main.js` simula el tiempo ausente a pasos
 (la curva diaria y el estiaje cambian por el camino) con tope `offline.maxHoras`.
@@ -154,21 +184,24 @@ Usa `estado.ultimoInstante`, que `guardar()` sella en cada guardado.
 ## Trampas conocidas
 
 - El navegador cachea los módulos ES: si un cambio no aparece, recarga sin caché.
-- `localStorage` guarda bajo `CONFIG.guardado.clave`. La clave de la versión
-  clicker (`redHidraulica_clicker_v1`) es distinta de la de estrategia a
-  propósito, para que las dos versiones no se pisen la partida. Si un cambio
-  rompe el formato guardado, hay que borrarla (botón *Reiniciar*).
-- Los botones de la tienda se recrean con el panel: van por delegación, con el
-  nombre de la acción en `data-accion`. Añadir una mejora no obliga a tocar el
-  listener de `entrada.js`.
+- `localStorage` guarda bajo `CONFIG.guardado.clave`. La clave clicker
+  (`redHidraulica_clicker_v2`, subida al pasar a multi-pueblo) es distinta de la
+  de estrategia a propósito. Si un cambio rompe el formato guardado, hay que
+  borrarla (botón *Reiniciar*). `Estado.cargar()` reconstruye los pueblos desde
+  la definición actual y vuelca lo guardado encima, así añadir una mejora o un
+  pueblo no rompe una partida vieja.
+- Los botones van por delegación (`data-accion`, y `data-clave` para la mejora o
+  el índice de pueblo). `entrada.js` escucha varios contenedores: `tienda`,
+  `premium`, `panel-averias`, `pestanas`, `panel-cauce`. Añadir un botón dentro
+  de uno de ellos no obliga a tocar el listener.
 
 ## Depuración
 
 `main.js` expone `window.juego` con `estado`, `entrada`, `escena` y `CONFIG`.
 Desde la consola del navegador:
 
-- `juego.dinero(n)` fija el saldo para probar sin clicar
-- `juego.agua(n)` fija el agua almacenada
+- `juego.dinero(n)` fija el saldo (común) para probar sin clicar
+- `juego.agua(n)` fija el agua del pueblo activo
 
 ## Estilo
 

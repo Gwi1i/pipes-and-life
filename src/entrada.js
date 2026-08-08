@@ -48,7 +48,7 @@ export class Entrada {
     // botón lleva su acción en `data-accion` y, si aplica, la clave concreta en
     // `data-clave`. Añadir botones no obliga a tocar esto: basta con que estén
     // dentro de uno de estos contenedores.
-    for(const id of ['tienda', 'premium', 'panel-averias']){
+    for(const id of ['tienda', 'premium', 'panel-averias', 'pestanas', 'panel-cauce']){
       const cont = document.getElementById(id);
       if(cont) cont.addEventListener('click', e => {
         const b = e.target.closest('[data-accion]');

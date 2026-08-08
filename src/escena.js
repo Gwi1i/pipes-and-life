@@ -48,6 +48,7 @@ export class Escena {
   }
   aparecerDeposito(){ this.aparicionDeposito = 0.0001; }  // arranca la animación
   aparecerCaptacion(){ this.aparicionCaptacion = 0.0001; }
+  destelloCauce(){ this.cauceFlash = 1; }   // parpadeo al limpiar el cauce
 
   /* ================================================================
      DIBUJO
@@ -62,6 +63,7 @@ export class Escena {
     if(resultado.bombeoAuto) this.pulso = Math.max(this.pulso, 0.18);
     this.avanzarAparicion('aparicionDeposito', dt);
     this.avanzarAparicion('aparicionCaptacion', dt);
+    this.cauceFlash = Math.max(0, (this.cauceFlash || 0) - dt * 2.5);
     this.destellos = this.destellos.filter(d => (d.t += dt) < 0.6);
 
     const dpr = window.devicePixelRatio || 1;
@@ -71,16 +73,19 @@ export class Escena {
     // Hora del día para el ciclo día/noche del cielo
     this.hora = ((estado.horas % 24) + 24) % 24;
 
-    // Coordenadas de referencia de la escena
+    // Se dibuja el pueblo ACTIVO; el cauce (río) es común y refleja la suciedad.
+    const p = estado.activo;
+    const suciedad = resultado.suciedad ??
+                     (estado.contaminacion / CONFIG.cauce.contaminacionMax);
     const sueloY = H * 0.74;
 
     this.fondo(W, H, sueloY);
-    this.rio(W, H, sueloY);
-    if(estado.mejoras.captacion > 0) this.captacionIntake(W, H, sueloY);
-    this.tuberias(estado, resultado, W, H, sueloY);
-    this.bombaEdificio(estado, W, H, sueloY);
-    if(estado.mejoras.deposito > 0) this.depositoTanque(estado, W, H, sueloY);
-    this.pueblo(estado, resultado, W, H, sueloY);
+    this.rio(W, H, sueloY, suciedad);
+    if(p.mejoras.captacion > 0) this.captacionIntake(W, H, sueloY);
+    this.tuberias(p, resultado, W, H, sueloY);
+    this.bombaEdificio(p, W, H, sueloY);
+    if(p.mejoras.deposito > 0) this.depositoTanque(p, W, H, sueloY);
+    this.pueblo(p, resultado, W, H, sueloY);
     if(resultado.averiada) this.averiaIndicador(W, H, sueloY);
     this.destellosClic(W, H);
   }
@@ -143,14 +148,17 @@ export class Escena {
     ctx.fillRect(0, sueloY, W, H - sueloY);
   }
 
-  /* ---------- río en la orilla izquierda ---------- */
-  rio(W, H, sueloY){
+  /* ---------- río en la orilla izquierda ----------
+     El cauce es común a la mancomunidad: su color va del azul limpio al verde
+     turbio según la contaminación (`suciedad`, 0..1). */
+  rio(W, H, sueloY, suciedad = 0){
     const ctx = this.ctx, C = CONFIG.color;
     const x0 = 0, x1 = W * 0.16;
-    ctx.fillStyle = C.aguaProfunda;
+    const limpio = this.cauceFlash ? Math.max(0, suciedad - this.cauceFlash * 0.3) : suciedad;
+    ctx.fillStyle = mezclarColor(C.aguaProfunda, C.aguaSucia, limpio);
     ctx.fillRect(x0, sueloY, x1, H - sueloY);
     // Superficie ondulada
-    ctx.strokeStyle = C.agua;
+    ctx.strokeStyle = mezclarColor(C.agua, C.aguaSucia, limpio);
     ctx.globalAlpha = 0.5;
     ctx.lineWidth = 2;
     for(let k = 0; k < 3; k++){
@@ -166,7 +174,7 @@ export class Escena {
   }
 
   /* ---------- tuberías con gotas cuando circula agua ---------- */
-  tuberias(estado, resultado, W, H, sueloY){
+  tuberias(p, resultado, W, H, sueloY){
     const bombaX = W * 0.26;
     const casaX  = W * 0.80;
     const nivelTub = sueloY + (H - sueloY) * 0.45;
@@ -176,7 +184,7 @@ export class Escena {
     // río → bomba
     this.tubo(W * 0.12, nivelTub, bombaX, nivelTub, entra, false);
 
-    if(estado.mejoras.deposito > 0){
+    if(p.mejoras.deposito > 0){
       const depX = W * 0.53, depBaseY = sueloY - H * 0.02, depTapaY = sueloY - H * 0.30;
       // bomba → depósito (sube)
       this.tubo(bombaX, nivelTub, depX, nivelTub, entra, false);
@@ -240,11 +248,11 @@ export class Escena {
   }
 
   /* ---------- caseta de bombeo (donde se clica) ---------- */
-  bombaEdificio(estado, W, H, sueloY){
+  bombaEdificio(p, W, H, sueloY){
     const ctx = this.ctx, C = CONFIG.color;
     const x = W * 0.26, w = W * 0.075, h = H * 0.13;
     const y = sueloY - h;
-    const auto = estado.mejoras.autobomba > 0;
+    const auto = p.autobombaActivo;
     // Late suavemente, da un golpe al bombear, y late más si trabaja sola
     const late = 1 + Math.sin(this.tiempo * (auto ? 6 : 2)) * (auto ? 0.03 : 0.015)
                  + this.pulso * 0.06;
@@ -281,7 +289,7 @@ export class Escena {
   }
 
   /* ---------- depósito elevado con lámina de agua ---------- */
-  depositoTanque(estado, W, H, sueloY){
+  depositoTanque(p, W, H, sueloY){
     const ctx = this.ctx, C = CONFIG.color;
     const x = W * 0.53, w = W * 0.11, h = H * 0.26;
     const topeY = sueloY - h * 1.05;
@@ -305,7 +313,7 @@ export class Escena {
 
     const cuerpoH = baseY - topeY;
     // Agua dentro, proporcional al llenado
-    const frac = limitar(estado.agua / capacidad(estado), 0, 1);
+    const frac = limitar(p.agua / capacidad(p), 0, 1);
     const aguaH = cuerpoH * frac;
     const aguaY = baseY - aguaH;
     const grad = ctx.createLinearGradient(0, aguaY, 0, baseY);
@@ -341,12 +349,12 @@ export class Escena {
   }
 
   /* ---------- el pueblo ---------- */
-  pueblo(estado, resultado, W, H, sueloY){
+  pueblo(p, resultado, W, H, sueloY){
     const ctx = this.ctx, C = CONFIG.color;
     const seco = resultado.servicio < 0.5;
     const col = seco ? C.casaSeca : C.casa;
     // Una casa por cada ~90 habitantes, entre 3 y 7
-    const n = limitar(Math.round(estado.poblacion.habitantes / 90), 3, 7);
+    const n = limitar(Math.round(p.habitantes / 90), 3, 7);
     const zonaX = W * 0.72, zonaW = W * 0.24;
     const casaW = Math.min(zonaW / n * 0.8, W * 0.04);
 
@@ -388,7 +396,7 @@ export class Escena {
     ctx.font = '600 11px IBM Plex Mono, ui-monospace, monospace';
     ctx.textAlign = 'center';
     ctx.fillStyle = C.tenue;
-    ctx.fillText(estado.poblacion.nombre, zonaX + zonaW * 0.5, sueloY + 16);
+    ctx.fillText(p.nombre, zonaX + zonaW * 0.5, sueloY + 16);
   }
 
   /* ---------- indicador de avería sobre la bomba ---------- */
@@ -421,4 +429,13 @@ export class Escena {
     }
     ctx.globalAlpha = 1;
   }
+}
+
+/** Mezcla dos colores hex (#rrggbb) según t (0..1). Devuelve 'rgb(...)'. */
+function mezclarColor(hexA, hexB, t){
+  t = t < 0 ? 0 : t > 1 ? 1 : t;
+  const a = parseInt(hexA.slice(1), 16), b = parseInt(hexB.slice(1), 16);
+  const ar = a >> 16, ag = (a >> 8) & 255, ab = a & 255;
+  const br = b >> 16, bg = (b >> 8) & 255, bb = b & 255;
+  return `rgb(${Math.round(ar + (br - ar) * t)},${Math.round(ag + (bg - ag) * t)},${Math.round(ab + (bb - ab) * t)})`;
 }

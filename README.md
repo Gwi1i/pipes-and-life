@@ -1,7 +1,9 @@
 # Red Hidráulica — versión clicker
 
-Juego incremental de abastecimiento de agua. Bombea a golpe de clic, construye
-un depósito para acumular reserva y mantén a tu población servida.
+Juego incremental de abastecimiento de agua. Eres una **mancomunidad**: bombea a
+golpe de clic, construye depósitos para acumular reserva, mantén servidos a tus
+pueblos, depura las aguas antes de devolverlas al cauce y ve creciendo hasta
+gestionar varios núcleos.
 
 > Esta es la rama `clicker`. La versión original —de estrategia sobre terreno
 > generado por procedimiento, con red de tuberías y solver hidráulico— vive en
@@ -85,13 +87,20 @@ del dinero entre mejoras.
 
 ---
 
-## Estado actual (Hitos 1-4)
+## Estado actual (Hitos 1-5)
 
 **Funciona:**
 
 - Clic de bombeo, consumo continuo, facturación.
 - **Vías de mejora** que compiten por el dinero: potencia de bomba, depósito,
-  captación (producción pasiva) y personal de mantenimiento.
+  captación (producción pasiva), depuradora y personal de mantenimiento.
+- **Multi-pueblo (mancomunidad)**: al crecer el primer pueblo se desbloquea un
+  segundo. Cada pueblo es un sistema propio (bomba, depósito, captación,
+  depuradora, mantenimiento, auto-bombeo), y se alterna con pestañas. La **caja**,
+  el **reloj/estación** y el **cauce** son comunes a la mancomunidad.
+- **Saneamiento y cauce**: al crecer, un pueblo genera aguas residuales. Sin
+  depurar ensucian el cauce común → **multa** y **freno al crecimiento** de todos.
+  Se limpia a mano (botón LIMPIAR CAUCE) o, mejor, con la depuradora de cada pueblo.
 - **Auto-bombeo como función especial**: no es una mejora más, sino un aliciente
   que se gana cumpliendo requisitos (niveles + población) y pagando caro. El
   código deja un gancho documentado (`CONFIG.premium.autobomba.desbloqueoExterno`)
@@ -108,9 +117,10 @@ del dinero entre mejoras.
 - **Progreso offline**: al volver, se acredita (con tope) lo producido mientras
   no estabas.
 - Escena animada: depósito con lámina de agua, gotas por las tuberías, captación
-  en el río, bomba en modo AUTO, ciclo día/noche e indicador de avería.
+  en el río, bomba en modo AUTO, ciclo día/noche, cauce que se enturbia con la
+  contaminación e indicador de avería. Muestra el pueblo activo.
 
-**Siguientes ideas:** varias poblaciones, más funciones especiales, eventos.
+**Siguientes ideas:** más pueblos, más funciones especiales, eventos.
 
 ---
 
