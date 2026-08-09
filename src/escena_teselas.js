@@ -516,16 +516,6 @@ export class EscenaTeselas extends Escena {
     ctx.fillStyle = color; ctx.fillText(texto, cx, y + tam + 1);
   }
 
-  /* ---------- velos de ambiente: noche y contaminación ---------- */
-  velosDeAmbiente(){
-    const ctx = this.ctx, W = this._W, H = this._H;
-    const oscuro = (1 - this.luz) * 0.45;
-    if(oscuro > 0.01){ ctx.fillStyle = `rgba(8,14,34,${oscuro})`; ctx.fillRect(0, 0, W, H); }
-    if(this.suciedad > 0.05){
-      ctx.fillStyle = `rgba(120,130,60,${this.suciedad * 0.14})`;
-      ctx.fillRect(0, 0, W, H);
-    }
-  }
 }
 
 /**

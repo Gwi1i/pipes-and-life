@@ -259,6 +259,42 @@ export const CONFIG = {
     maxHoras: 8
   },
 
+  /* ---------- EL MUNDO: mapa grande de exploración ----------
+     Mucho mayor que la pantalla y casi todo tapado. Se destapa a clics, y
+     cuanto más lejos del pueblo de origen, más cuesta. */
+  mapaMundo: {
+    cols: 40, filas: 28,
+    semilla: 20260809,
+    origen: { col: 20, fila: 14 },   // aquí está tu pueblo inicial
+    radioInicial: 3,                 // casillas ya abiertas al empezar
+    tamTesela: 74,                   // píxeles por casilla al zoom 1
+
+    // Coste en clics: base + distancia^exponente * factor
+    clicsBase: 3,
+    exponenteDistancia: 1.4,
+    factorDistancia: 1.0
+  },
+
+  /* ---------- TERRENOS ----------
+     `costeExtra` multiplica los clics necesarios para abrir la casilla. */
+  terrenos: {
+    hierba:  { nombre: 'Prado',   color: '#4f9a44', costeExtra: 1.0 },
+    bosque:  { nombre: 'Bosque',  color: '#2f6b39', costeExtra: 1.4 },
+    montana: { nombre: 'Montaña', color: '#7b7f86', costeExtra: 2.0 },
+    agua:    { nombre: 'Río',     color: '#2b7fa8', costeExtra: 1.2 },
+    lago:    { nombre: 'Lago',    color: '#1d5f80', costeExtra: 1.2 }
+  },
+
+  /* ---------- HALLAZGOS ----------
+     Lo que se encuentra explorando. Las ruinas son instalaciones abandonadas:
+     se pueden reparar en el sitio o llevarse al inventario para colocarlas
+     donde convenga. */
+  hallazgos: {
+    pueblos: 7, ruinas: 14, yacimientos: 10,
+    distanciaMinima: 4,      // nada de hallazgos pegados al origen
+    color: { pueblo: '#facc15', ruina: '#c084fc', yacimiento: '#38bdf8' }
+  },
+
   /* ---------- MAPA DE TESELAS (estilo D, vista cenital) ----------
      Cuadrícula ortogonal vista desde arriba, al estilo de los idle builders:
      cada elemento ocupa su celda y las tuberías se trazan entre ellas. El río

@@ -20,12 +20,38 @@ export class Entrada {
   conectar(){
     const l = this.lienzo;
 
-    // Pinchar en cualquier parte de la escena bombea. Es un clicker: cuanto
-    // más grande el objetivo, mejor. La posición viaja para dibujar la onda.
+    // Ratón sobre la escena. Hay que distinguir ARRASTRAR (mover el mapa) de
+    // CLICAR (destapar una casilla): se mide el recorrido total desde que se
+    // pulsa, no el de cada fotograma, porque el temblor normal de la mano al
+    // hacer clic ya movía la vista y se comía el clic.
+    let pulsado = false, recorrido = 0, ultX = 0, ultY = 0;
+
     l.addEventListener('pointerdown', e => {
       const r = l.getBoundingClientRect();
-      this.emitir('bombear', { x: e.clientX - r.left, y: e.clientY - r.top });
+      pulsado = true; recorrido = 0;
+      ultX = e.clientX; ultY = e.clientY;
+      this.emitir('pulsar', { x: e.clientX - r.left, y: e.clientY - r.top });
     });
+
+    l.addEventListener('pointermove', e => {
+      const r = l.getBoundingClientRect();
+      this.emitir('senalar', { x: e.clientX - r.left, y: e.clientY - r.top });
+      if(!pulsado) return;
+      const dx = e.clientX - ultX, dy = e.clientY - ultY;
+      recorrido += Math.abs(dx) + Math.abs(dy);
+      ultX = e.clientX; ultY = e.clientY;
+      if(recorrido > 8) this.emitir('arrastrar', { dx, dy });
+    });
+
+    const soltar = e => {
+      if(!pulsado) return;
+      pulsado = false;
+      if(recorrido > 8) return;              // fue un arrastre, no un clic
+      const r = l.getBoundingClientRect();
+      this.emitir('clicEscena', { x: e.clientX - r.left, y: e.clientY - r.top });
+    };
+    l.addEventListener('pointerup', soltar);
+    l.addEventListener('pointerleave', () => { pulsado = false; });
 
     // Botón grande dedicado (accesible y para móvil)
     const btn = document.getElementById('btn-bombear');

@@ -13,6 +13,8 @@ import { Escena } from './escena.js';
 import { EscenaSVG } from './escena_svg.js';
 import { EscenaAssets } from './escena_assets.js';
 import { EscenaTeselas } from './escena_teselas.js';
+import { EscenaMapa } from './escena_mapa.js';
+import { celdaEn, clicarCasilla, clicsParaDestapar } from './mapa.js';
 import { avanzar, bombear, costeMejora, requisitosAutobomba, engrasar } from './simulacion.js';
 import { formatear } from './util.js';
 
@@ -24,14 +26,15 @@ const ui      = new UI(entrada);
 
 // Estilo visual: A (Canvas "falso 3D"), B (sprites SVG) o C (imágenes de IA en
 // assets/). Se recuerda la elección; el botón de la barra superior cicla A→B→C.
-const ESTILOS = ['a', 'b', 'c', 'd'];
-// El estilo D (teselas) es el camino elegido, así que es el de por defecto:
-// aterrizar en el A hacía pensar que el juego se había roto.
-let estiloEscena = ESTILOS.includes(localStorage.getItem('rh_estilo')) ? localStorage.getItem('rh_estilo') : 'd';
+// 'm' (el mapa) es la vista principal del juego; el resto quedan como estilos
+// antiguos de la parcela, accesibles con el botón para comparar.
+const ESTILOS = ['m', 'd', 'a', 'b', 'c'];
+let estiloEscena = ESTILOS.includes(localStorage.getItem('rh_estilo')) ? localStorage.getItem('rh_estilo') : 'm';
 function crearEscena(){
   if(estiloEscena === 'b') return new EscenaSVG(lienzo);
   if(estiloEscena === 'c') return new EscenaAssets(lienzo);
   if(estiloEscena === 'd') return new EscenaTeselas(lienzo);
+  if(estiloEscena === 'm') return new EscenaMapa(lienzo);
   return new Escena(lienzo);
 }
 let escena = crearEscena();
@@ -59,6 +62,47 @@ function procesarAcciones(){
         if(recogerOperario(a.x, a.y)) break;
         bombear(estado.activo);
         escena.destello(a.x, a.y);
+        break;
+      }
+
+      /* --- EL MAPA: arrastrar para mirar, clicar para destapar --- */
+
+      case 'arrastrar':
+        if(escena instanceof EscenaMapa){
+          estado.camara.x -= a.dx;
+          estado.camara.y -= a.dy;
+        }
+        break;
+
+      case 'senalar':
+        if(escena instanceof EscenaMapa){
+          escena.resaltada = escena.celdaEnPantalla(estado, a.x, a.y);
+        }
+        break;
+
+      case 'clicEscena': {
+        // En el mapa el clic explora; en las vistas de parcela, bombea.
+        if(!(escena instanceof EscenaMapa)){
+          if(recogerOperario(a.x, a.y)) break;
+          bombear(estado.activo);
+          escena.destello(a.x, a.y);
+          break;
+        }
+        if(recogerOperario(a.x, a.y)) break;
+        const { col, fila } = escena.celdaEnPantalla(estado, a.x, a.y);
+        const celda = celdaEn(estado.mapa, col, fila);
+        if(!celda) break;
+
+        if(celda.oculta){
+          const r = clicarCasilla(estado.mapa, col, fila);
+          if(r === null){ avisar('Ahí no llegas todavía: abre primero una casilla de al lado.'); break; }
+          escena.destello(a.x, a.y);
+          if(r === 'descubierta') anunciarHallazgo(celda, col, fila);
+        } else {
+          // Casilla ya abierta: por ahora, bombear sigue siendo el clic útil
+          bombear(estado.activo);
+          escena.destello(a.x, a.y);
+        }
         break;
       }
 
@@ -139,6 +183,24 @@ function procesarAcciones(){
     }
   }
 }
+
+/**
+ * Al destapar una casilla se cuenta lo que había. Los hallazgos son el motivo
+ * de explorar: sin esto, ampliar terreno sería solo gastar clics.
+ */
+function anunciarHallazgo(celda, col, fila){
+  estado.descubiertas++;
+  if(!celda.hallazgo) return;
+  const textos = {
+    pueblo:     `¡Un pueblo sin abastecer! Está a ${Math.round(distancia(col, fila))} casillas.`,
+    ruina:      'Instalación abandonada. Se podrá reparar o llevar al inventario.',
+    yacimiento: 'Yacimiento localizado.'
+  };
+  estado.anotar(textos[celda.hallazgo], 'ok');
+  avisar(textos[celda.hallazgo]);
+}
+const distancia = (c, f) =>
+  Math.hypot(c - CONFIG.mapaMundo.origen.col, f - CONFIG.mapaMundo.origen.fila);
 
 /* ==================================================================
    EL OPERARIO — aparece de vez en cuando y hay que pillarlo
@@ -358,7 +420,7 @@ document.getElementById('btn-reiniciar').onclick = () => {
 
 // Alternar estilo visual A/B para compararlos, sin recargar
 const btnEstilo = document.getElementById('btn-estilo');
-const ETIQUETAS = { a: 'A · 3D', b: 'B · SVG', c: 'C · IA', d: 'D · Teselas' };
+const ETIQUETAS = { m: 'Mapa', d: 'Parcela', a: 'A · 3D', b: 'B · SVG', c: 'C · IA' };
 function etiquetaEstilo(){ btnEstilo.textContent = 'Estilo: ' + ETIQUETAS[estiloEscena]; }
 btnEstilo.onclick = () => {
   estiloEscena = ESTILOS[(ESTILOS.indexOf(estiloEscena) + 1) % ESTILOS.length];

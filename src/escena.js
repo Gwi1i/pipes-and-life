@@ -59,6 +59,20 @@ export class Escena {
   destelloMantenimiento(){ this.mantFlash = 1; }
 
   /**
+   * Velos que tiñen la escena entera: la noche y la contaminación del cauce.
+   * Vive en la clase base porque lo usan todas las vistas cenitales.
+   */
+  velosDeAmbiente(){
+    const ctx = this.ctx, W = this._W, H = this._H;
+    const oscuro = (1 - this.luz) * 0.45;
+    if(oscuro > 0.01){ ctx.fillStyle = `rgba(8,14,34,${oscuro})`; ctx.fillRect(0, 0, W, H); }
+    if(this.suciedad > 0.05){
+      ctx.fillStyle = `rgba(120,130,60,${this.suciedad * 0.14})`;
+      ctx.fillRect(0, 0, W, H);
+    }
+  }
+
+  /**
    * El operario que asoma de vez en cuando (lo coloca main.js en `this.operario`
    * con coordenadas en fracción del lienzo). Se dibuja igual en todos los
    * estilos, con un halo que late para que se vea, y un aro que se cierra

@@ -7,6 +7,7 @@
  */
 
 import { CONFIG } from './config.js';
+import { generarMapa, comprimir, aplicarGuardado } from './mapa.js';
 
 /** Niveles de mejora a cero: una clave por cada entrada de CONFIG.mejoras. */
 function mejorasACero(){
@@ -48,6 +49,12 @@ export class Estado {
     this.pueblos = CONFIG.poblaciones.map(crearPueblo);
     this.puebloActivo = 0;
 
+    // El territorio: mapa de exploración, cámara e inventario de piezas
+    this.mapa = generarMapa();
+    this.camara = { x: 0, y: 0 };   // píxeles; lo centra la escena al arrancar
+    this.inventario = [];           // instalaciones recuperadas de las ruinas
+    this.descubiertas = 0;          // casillas abiertas, para el HUD
+
     this.registro = [];
     this.ultimoInstante = Date.now();
   }
@@ -70,7 +77,10 @@ export class Estado {
       dinero: this.dinero, horas: this.horas, m3Servidos: this.m3Servidos,
       contaminacion: this.contaminacion, puebloActivo: this.puebloActivo,
       pluvialesActivas: this.pluvialesActivas,
-      pueblos: this.pueblos, ultimoInstante: this.ultimoInstante
+      pueblos: this.pueblos, ultimoInstante: this.ultimoInstante,
+      // El terreno se regenera de la semilla: solo se guarda lo que has tocado
+      mapa: comprimir(this.mapa),
+      inventario: this.inventario, camara: this.camara
     };
     try{
       localStorage.setItem(CONFIG.guardado.clave, JSON.stringify(datos));
@@ -106,6 +116,10 @@ export class Estado {
         };
       });
       if(estado.puebloActivo >= estado.pueblos.length) estado.puebloActivo = 0;
+
+      aplicarGuardado(estado.mapa, d.mapa);
+      estado.inventario = d.inventario || [];
+      if(d.camara) estado.camara = d.camara;
       return true;
     }catch(e){
       return false;
