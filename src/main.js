@@ -14,7 +14,8 @@ import { EscenaSVG } from './escena_svg.js';
 import { EscenaAssets } from './escena_assets.js';
 import { EscenaTeselas } from './escena_teselas.js';
 import { EscenaMapa } from './escena_mapa.js';
-import { celdaEn, clicarCasilla, clicsParaDestapar } from './mapa.js';
+import { celdaEn, clicarCasilla, clicsParaDestapar,
+         puedeColocar, rutaTuberia } from './mapa.js';
 import { avanzar, bombear, costeMejora, requisitosAutobomba, engrasar,
          poderExpansion } from './simulacion.js';
 import { formatear } from './util.js';
@@ -81,6 +82,31 @@ function procesarAcciones(){
         }
         break;
 
+      /* --- MODO CONSTRUCCIÓN --- */
+
+      case 'elegirConstruible': {
+        const def = CONFIG.construibles[a.clave];
+        if(!def) break;
+        // volver a pulsar el mismo botón cancela
+        estado.modo = estado.modo.elemento === a.clave
+          ? { tipo: null, elemento: null, origen: null }
+          : { tipo: 'colocar', elemento: a.clave, origen: null };
+        ui.refrescarConstruccion(estado);
+        break;
+      }
+
+      case 'modoTuberia':
+        estado.modo = estado.modo.tipo === 'tuberia'
+          ? { tipo: null, elemento: null, origen: null }
+          : { tipo: 'tuberia', elemento: null, origen: null };
+        ui.refrescarConstruccion(estado);
+        break;
+
+      case 'cancelarModo':
+        estado.modo = { tipo: null, elemento: null, origen: null };
+        ui.refrescarConstruccion(estado);
+        break;
+
       case 'clicEscena': {
         // En el mapa el clic explora; en las vistas de parcela, bombea.
         if(!(escena instanceof EscenaMapa)){
@@ -93,6 +119,10 @@ function procesarAcciones(){
         const { col, fila } = escena.celdaEnPantalla(estado, a.x, a.y);
         const celda = celdaEn(estado.mapa, col, fila);
         if(!celda) break;
+
+        // Con una herramienta activa, el clic construye en vez de explorar
+        if(estado.modo.tipo === 'colocar'){ colocarElemento(col, fila); break; }
+        if(estado.modo.tipo === 'tuberia'){ clicTuberia(col, fila); break; }
 
         if(celda.oculta){
           const r = clicarCasilla(estado.mapa, col, fila, poderExpansion(estado));
@@ -183,6 +213,55 @@ function procesarAcciones(){
         break;
     }
   }
+}
+
+/* ==================================================================
+   CONSTRUIR SOBRE EL MAPA
+   ================================================================== */
+
+function colocarElemento(col, fila){
+  const clave = estado.modo.elemento;
+  const def = CONFIG.construibles[clave];
+  const veredicto = puedeColocar(estado.mapa, estado.construcciones, clave, col, fila);
+  if(!veredicto.ok){ avisar(veredicto.motivo); return; }
+  if(!estado.puedePagar(def.coste)){
+    avisar(`Sin fondos: ${def.nombre.toLowerCase()} cuesta ${formatear(def.coste)} €.`);
+    return;
+  }
+  estado.pagar(def.coste);
+  estado.construcciones.push({ tipo: clave, col, fila });
+  estado.anotar(`${def.nombre} construido por ${formatear(def.coste)} €.`, 'ok');
+  // Se queda la herramienta puesta: normalmente se colocan varias seguidas
+  ui.refrescarConstruccion(estado);
+}
+
+/**
+ * Tender tubería: primer clic marca el origen, el segundo el destino. Entre
+ * medias se busca la ruta MÁS BARATA, que no es la más corta: rodear un bosque
+ * puede salir mejor que desbrozarlo, y esa es justo la decisión interesante.
+ */
+function clicTuberia(col, fila){
+  const celda = celdaEn(estado.mapa, col, fila);
+  if(!celda || celda.oculta){ avisar('Ahí no hay nada descubierto todavía.'); return; }
+
+  if(!estado.modo.origen){
+    estado.modo.origen = { col, fila };
+    avisar('Origen marcado. Ahora elige a dónde llevarla.');
+    return;
+  }
+  const origen = estado.modo.origen;
+  if(origen.col === col && origen.fila === fila){ estado.modo.origen = null; return; }
+
+  const ruta = rutaTuberia(estado.mapa, origen, { col, fila });
+  if(!ruta){ avisar('No hay paso por terreno descubierto.'); return; }
+  if(!estado.puedePagar(ruta.coste)){
+    avisar(`Ese trazado cuesta ${formatear(ruta.coste)} € y no hay fondos.`);
+    return;
+  }
+  estado.pagar(ruta.coste);
+  estado.tuberias.push(ruta);
+  estado.anotar(`Tubería de ${ruta.camino.length} casillas tendida por ${formatear(ruta.coste)} €.`, 'ok');
+  estado.modo.origen = null;
 }
 
 /**

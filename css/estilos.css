@@ -178,6 +178,16 @@ body{
 .mejora.comprada .m-coste{color:var(--ok);}
 .mejora.inalcanzable .m-coste{color:var(--critico);}
 
+/* Herramientas de construcción sobre el mapa */
+.mejora.obra{border-left-color:var(--tono);}
+.mejora.obra .m-nom{color:var(--tono);}
+.mejora.obra:hover{background:color-mix(in srgb,var(--tono) 14%,var(--panel-alto));}
+.mejora.obra.activa{
+  background:color-mix(in srgb,var(--tono) 26%,var(--panel-alto));
+  border-color:var(--tono); box-shadow:0 0 16px -6px var(--tono);
+}
+.mejora.obra.activa .m-coste::after{content:'  · ESC para salir'; color:var(--tenue);}
+
 /* ---------- FUNCIÓN ESPECIAL (auto-bombeo premium) ---------- */
 .premium{
   display:grid; gap:5px; width:100%; text-align:left; cursor:pointer;

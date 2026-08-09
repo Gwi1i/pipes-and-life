@@ -210,6 +210,16 @@ cada `CONFIG.visita` segundos, y `recogerOperario()` intercepta el clic de
 bombear si cae encima. Da prima y deja el desgaste a cero. La escena solo lo
 pinta (`escena.operario`).
 
+**Construir sobre el mapa.** `CONFIG.construibles` dice dónde puede ir cada
+pieza (`terreno`, `junto`, `lejosDeAgua`) y `puedeColocar()` lo comprueba
+devolviendo SIEMPRE un motivo legible: si el jugador no entiende por qué no le
+deja, la regla parece un fallo. Las tuberías se trazan con `rutaTuberia()`, un
+A* que minimiza el COSTE (no la distancia) usando `CONFIG.tuberia.costePorCasilla`,
+así rodear un bosque o pagar por atravesarlo es una decisión del terreno y no
+una regla artificial. La heurística usa el coste mínimo por casilla: si algún
+día se abarata un terreno por debajo de ese mínimo, hay que revisarla o A*
+dejará de dar la ruta óptima.
+
 **El mapa y el abastecimiento son UN SOLO bucle.** `poderExpansion(estado)` sale
 de la población, el nivel de servicio, el desgaste y las averías, y DIVIDE el
 coste en clics de destapar casillas (`clicsParaDestapar`). Es lo que impide que

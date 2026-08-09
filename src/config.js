@@ -300,6 +300,55 @@ export const CONFIG = {
     lago:    { nombre: 'Lago',    color: '#1d5f80', costeExtra: 1.2 }
   },
 
+  /* ---------- QUÉ SE PUEDE CONSTRUIR Y DÓNDE ----------
+     Cada pieza pide su sitio, y eso es lo que convierte el mapa en un problema
+     y no en un lienzo: el depósito quiere altura (montaña), la captación va en
+     el agua, y lo que trata o impulsa tiene que estar junto al cauce.
+     `terreno` = casillas donde puede ir. `junto` = además, debe tocar una de
+     esas. `lejosDeAgua` = solo si NO hay agua a esa distancia (el acuífero). */
+  construibles: {
+    captacion: {
+      nombre: 'Captación', coste: 300, orden: 1, color: '#5eead4',
+      terreno: ['agua', 'lago'],
+      desc: 'Toma el agua del cauce. Va sobre el río o un lago.'
+    },
+    bomba: {
+      nombre: 'Bombeo', coste: 250, orden: 2, color: '#7aa7c7',
+      terreno: ['hierba'], junto: ['agua', 'lago'],
+      desc: 'Impulsa el agua. En tierra llana, pegado al agua.'
+    },
+    deposito: {
+      nombre: 'Depósito', coste: 400, orden: 3, color: '#7dd3fc',
+      terreno: ['montana'],
+      desc: 'Guarda agua EN ALTO para que baje por gravedad: por eso va en montaña.'
+    },
+    depuradora: {
+      nombre: 'Depuradora', coste: 2000, orden: 4, color: '#34d399',
+      terreno: ['hierba'], junto: ['agua', 'lago'],
+      desc: 'Trata las aguas residuales antes de devolverlas al cauce.'
+    },
+    tanque: {
+      nombre: 'Tanque de tormentas', coste: 1500, orden: 5, color: '#818cf8',
+      terreno: ['hierba', 'bosque'],
+      desc: 'Retiene la punta de lluvia. En llano o desbrozando bosque.'
+    },
+    acuifero: {
+      nombre: 'Sondeo a acuífero', coste: 5000, orden: 6, color: '#a78bfa',
+      terreno: ['hierba', 'bosque', 'montana'], lejosDeAgua: 4,
+      desc: 'El recurso de última hora: perfora y saca agua del subsuelo. ' +
+            'Solo tiene sentido lejos del cauce, y sale caro.'
+    }
+  },
+
+  /* ---------- TUBERÍAS ----------
+     No van por donde quieran: cada casilla cuesta según lo que haya que hacer
+     para atravesarla. Rodear un bosque o pagar por desbrozarlo es la decisión. */
+  tuberia: {
+    costePorCasilla: { hierba: 12, bosque: 45, montana: 120, agua: 70, lago: 70 },
+    nombreObra: { hierba: 'zanja', bosque: 'desbroce', montana: 'excavación',
+                  agua: 'cruce del cauce', lago: 'cruce del lago' }
+  },
+
   /* ---------- HALLAZGOS ----------
      Lo que se encuentra explorando. Las ruinas son instalaciones abandonadas:
      se pueden reparar en el sitio o llevarse al inventario para colocarlas

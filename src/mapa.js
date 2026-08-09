@@ -188,6 +188,125 @@ export function clicarCasilla(celdas, col, fila, poder = 1){
   return 'progreso';
 }
 
+/* ================================================================
+   CONSTRUCCIÓN — dónde se puede poner cada cosa
+   ================================================================ */
+
+/** Vecinas ortogonales de una casilla (las que existen). */
+export function vecinas(celdas, col, fila){
+  const v = [];
+  for(const [dc, df] of [[1,0],[-1,0],[0,1],[0,-1]]){
+    const celda = celdaEn(celdas, col + dc, fila + df);
+    if(celda) v.push({ celda, col: col + dc, fila: fila + df });
+  }
+  return v;
+}
+
+/** ¿Hay agua a `radio` casillas o menos? Lo usa el sondeo a acuífero. */
+export function hayAguaCerca(celdas, col, fila, radio){
+  for(let f = fila - radio; f <= fila + radio; f++){
+    for(let c = col - radio; c <= col + radio; c++){
+      const celda = celdaEn(celdas, c, f);
+      if(celda && (celda.tipo === 'agua' || celda.tipo === 'lago')) return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * ¿Se puede plantar `tipo` en esta casilla? Devuelve { ok, motivo } — el motivo
+ * se le enseña al jugador, que si no no entiende por qué no le deja.
+ */
+export function puedeColocar(celdas, construcciones, tipo, col, fila){
+  const def = CONFIG.construibles[tipo];
+  if(!def) return { ok: false, motivo: 'Eso no se puede construir.' };
+
+  const celda = celdaEn(celdas, col, fila);
+  if(!celda) return { ok: false, motivo: 'Fuera del mapa.' };
+  if(celda.oculta) return { ok: false, motivo: 'Primero hay que destapar esa casilla.' };
+  if(construcciones.some(o => o.col === col && o.fila === fila))
+    return { ok: false, motivo: 'Ya hay algo construido ahí.' };
+  if(celda.hallazgo === 'pueblo')
+    return { ok: false, motivo: 'Ahí está el pueblo.' };
+
+  if(!def.terreno.includes(celda.tipo)){
+    const nombres = def.terreno.map(t => CONFIG.terrenos[t].nombre.toLowerCase()).join(' o ');
+    return { ok: false, motivo: `${def.nombre} solo va en ${nombres}.` };
+  }
+  if(def.junto && !vecinas(celdas, col, fila).some(v => def.junto.includes(v.celda.tipo)))
+    return { ok: false, motivo: `${def.nombre} tiene que estar pegado al agua.` };
+  if(def.lejosDeAgua && hayAguaCerca(celdas, col, fila, def.lejosDeAgua))
+    return { ok: false, motivo: 'Hay agua cerca: sale mucho más barato captarla que perforar.' };
+
+  return { ok: true, motivo: '' };
+}
+
+/* ================================================================
+   TUBERÍAS — la ruta más barata, esquivando o pagando el terreno
+   ================================================================ */
+
+export function costeCasillaTuberia(celda){
+  return CONFIG.tuberia.costePorCasilla[celda.tipo] ?? 20;
+}
+
+/**
+ * Ruta más BARATA entre dos casillas (A* sobre la cuadrícula, en ortogonal).
+ * No busca la más corta: busca la que menos cuesta, así rodear un bosque o
+ * atravesarlo pagando el desbroce es una decisión real del terreno y no una
+ * regla artificial. Solo pasa por casillas ya descubiertas.
+ *
+ * Devuelve { camino: [{col,fila}], coste } o null si no hay paso.
+ */
+export function rutaTuberia(celdas, desde, hasta){
+  const M = CONFIG.mapaMundo;
+  const clave = (c, f) => f * M.cols + c;
+  const meta = clave(hasta.col, hasta.fila);
+
+  const coste = new Map();      // mejor coste conocido hasta cada casilla
+  const previo = new Map();
+  const abierta = [{ col: desde.col, fila: desde.fila, g: 0,
+                     f: heuristica(desde, hasta) }];
+  coste.set(clave(desde.col, desde.fila), 0);
+
+  let vueltas = 0;
+  while(abierta.length && vueltas++ < 20000){
+    // el de menor f estimado (la lista es corta: basta con buscarlo)
+    let mejor = 0;
+    for(let i = 1; i < abierta.length; i++) if(abierta[i].f < abierta[mejor].f) mejor = i;
+    const actual = abierta.splice(mejor, 1)[0];
+    const k = clave(actual.col, actual.fila);
+
+    if(k === meta){
+      // reconstruir el camino hacia atrás
+      const camino = [];
+      let cur = k;
+      while(cur !== undefined){
+        camino.unshift({ col: cur % M.cols, fila: Math.floor(cur / M.cols) });
+        cur = previo.get(cur);
+      }
+      return { camino, coste: coste.get(meta) };
+    }
+
+    for(const v of vecinas(celdas, actual.col, actual.fila)){
+      if(v.celda.oculta) continue;              // no se tiende por lo desconocido
+      const kv = clave(v.col, v.fila);
+      const g = actual.g + costeCasillaTuberia(v.celda);
+      if(coste.has(kv) && coste.get(kv) <= g) continue;
+      coste.set(kv, g); previo.set(kv, k);
+      abierta.push({ col: v.col, fila: v.fila, g,
+                     f: g + heuristica(v, hasta) });
+    }
+  }
+  return null;
+}
+
+// Distancia Manhattan por el coste más barato posible: nunca sobreestima, que
+// es lo que hace que A* siga dando la ruta óptima.
+function heuristica(a, b){
+  const minimo = Math.min(...Object.values(CONFIG.tuberia.costePorCasilla));
+  return (Math.abs(a.col - b.col) + Math.abs(a.fila - b.fila)) * minimo;
+}
+
 /* ---------- persistencia compacta ----------
    El terreno se regenera de la semilla, así que solo hace falta guardar lo que
    el jugador ha tocado: qué está descubierto, qué lleva progreso y qué

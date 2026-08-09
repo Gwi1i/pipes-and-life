@@ -54,6 +54,10 @@ export class Estado {
     this.camara = { x: 0, y: 0 };   // píxeles; lo centra la escena al arrancar
     this.inventario = [];           // instalaciones recuperadas de las ruinas
     this.descubiertas = 0;          // casillas abiertas, para el HUD
+    this.construcciones = [];       // { tipo, col, fila } puestas sobre el mapa
+    this.tuberias = [];             // { camino:[{col,fila}], coste }
+    // Modo de construcción: qué está intentando colocar el jugador ahora mismo
+    this.modo = { tipo: null, elemento: null, origen: null };
 
     this.registro = [];
     this.ultimoInstante = Date.now();
@@ -80,7 +84,8 @@ export class Estado {
       pueblos: this.pueblos, ultimoInstante: this.ultimoInstante,
       // El terreno se regenera de la semilla: solo se guarda lo que has tocado
       mapa: comprimir(this.mapa),
-      inventario: this.inventario, camara: this.camara
+      inventario: this.inventario, camara: this.camara,
+      construcciones: this.construcciones, tuberias: this.tuberias
     };
     try{
       localStorage.setItem(CONFIG.guardado.clave, JSON.stringify(datos));
@@ -119,6 +124,8 @@ export class Estado {
 
       aplicarGuardado(estado.mapa, d.mapa);
       estado.inventario = d.inventario || [];
+      estado.construcciones = d.construcciones || [];
+      estado.tuberias = d.tuberias || [];
       if(d.camara) estado.camara = d.camara;
       return true;
     }catch(e){

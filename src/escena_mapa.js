@@ -11,8 +11,10 @@
  */
 
 import { CONFIG } from './config.js';
-import { celdaEn, clicsParaDestapar, esAlcanzable } from './mapa.js';
+import { celdaEn, clicsParaDestapar, esAlcanzable,
+         puedeColocar, rutaTuberia } from './mapa.js';
 import { poderExpansion } from './simulacion.js';
+import { formatear } from './util.js';
 import { limitar } from './util.js';
 import { Escena, mezclarColor, oscurecer, aclarar } from './escena.js';
 
@@ -89,6 +91,9 @@ export class EscenaMapa extends Escena {
       }
     }
 
+    this.dibujarTuberias(estado);
+    this.dibujarConstrucciones(estado);
+    this.previsualizar(estado);
     this.marcoResaltado(estado);
     this.velosDeAmbiente();
     this.dibujarOperario();
@@ -212,6 +217,116 @@ export class EscenaMapa extends Escena {
     }
     ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = 1;
     ctx.strokeRect(x + 0.5, y + 0.5, t, t);
+  }
+
+  /* ---------- tuberías tendidas ---------- */
+  dibujarTuberias(estado){
+    const ctx = this.ctx, t = this.tam;
+    if(!estado.tuberias.length) return;
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    for(const tub of estado.tuberias){
+      const pts = tub.camino.map(p => ({
+        x: p.col * t - estado.camara.x + t / 2,
+        y: p.fila * t - estado.camara.y + t / 2
+      }));
+      ctx.strokeStyle = '#1b2836'; ctx.lineWidth = Math.max(4, t * 0.16);
+      this.trazo(pts);
+      ctx.strokeStyle = CONFIG.color.agua; ctx.lineWidth = Math.max(2, t * 0.09);
+      this.trazo(pts);
+      // gotas viajando, para que se vea que lleva agua
+      ctx.fillStyle = '#bae6fd';
+      const sep = t * 0.5, desfase = (this.tiempo * 40) % sep;
+      let acum = -desfase;
+      for(let i = 0; i < pts.length - 1; i++){
+        const a = pts[i], b = pts[i + 1];
+        const largo = Math.hypot(b.x - a.x, b.y - a.y);
+        let d = -acum % sep; if(d < 0) d += sep;
+        for(; d < largo; d += sep){
+          const k = d / largo;
+          ctx.beginPath();
+          ctx.arc(a.x + (b.x - a.x) * k, a.y + (b.y - a.y) * k, Math.max(1.5, t * 0.035), 0, 7);
+          ctx.fill();
+        }
+        acum += largo;
+      }
+    }
+  }
+
+  trazo(pts){
+    const ctx = this.ctx;
+    ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
+    for(let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+    ctx.stroke();
+  }
+
+  /* ---------- lo construido ---------- */
+  dibujarConstrucciones(estado){
+    const ctx = this.ctx, t = this.tam;
+    for(const obra of estado.construcciones){
+      const x = obra.col * t - estado.camara.x, y = obra.fila * t - estado.camara.y;
+      if(x < -t || y < -t || x > this._W || y > this._H) continue;
+      const def = CONFIG.construibles[obra.tipo];
+      const lado = t * 0.7;
+      ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      ctx.beginPath(); ctx.ellipse(x + t / 2, y + t * 0.82, lado * 0.4, lado * 0.14, 0, 0, 7); ctx.fill();
+      ctx.beginPath();
+      ctx.roundRect(x + (t - lado) / 2, y + (t - lado) / 2, lado, lado, lado * 0.2);
+      ctx.fillStyle = 'rgba(12,22,34,0.9)'; ctx.fill();
+      ctx.strokeStyle = def.color; ctx.lineWidth = 2.5; ctx.stroke();
+      // inicial de la pieza, hasta que haya arte
+      ctx.fillStyle = def.color;
+      ctx.font = `700 ${Math.round(t * 0.3)}px IBM Plex Mono, ui-monospace, monospace`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(def.nombre[0], x + t / 2, y + t / 2);
+      ctx.textBaseline = 'alphabetic';
+    }
+  }
+
+  /* ---------- previsualización de lo que vas a hacer ---------- */
+  previsualizar(estado){
+    const r = this.resaltada;
+    if(!r || !estado.modo.tipo) return;
+    const ctx = this.ctx, t = this.tam;
+    const x = r.col * t - estado.camara.x, y = r.fila * t - estado.camara.y;
+
+    if(estado.modo.tipo === 'colocar'){
+      const v = puedeColocar(estado.mapa, estado.construcciones, estado.modo.elemento, r.col, r.fila);
+      ctx.fillStyle = v.ok ? 'rgba(74,222,128,0.30)' : 'rgba(239,68,68,0.30)';
+      ctx.fillRect(x, y, t, t);
+      ctx.strokeStyle = v.ok ? CONFIG.color.ok : CONFIG.color.critico;
+      ctx.lineWidth = 3; ctx.strokeRect(x + 1.5, y + 1.5, t - 3, t - 3);
+      if(!v.ok) this.cartel(v.motivo, x + t / 2, y - 6, CONFIG.color.critico);
+      else this.cartel(formatear(CONFIG.construibles[estado.modo.elemento].coste) + ' €',
+                       x + t / 2, y - 6, CONFIG.color.ok);
+      return;
+    }
+
+    if(estado.modo.tipo === 'tuberia'){
+      const o = estado.modo.origen;
+      if(!o){ this.cartel('Elige el origen', x + t / 2, y - 6, CONFIG.color.agua); return; }
+      const ruta = rutaTuberia(estado.mapa, o, { col: r.col, fila: r.fila });
+      if(!ruta){ this.cartel('Sin paso', x + t / 2, y - 6, CONFIG.color.critico); return; }
+      // la ruta propuesta, resaltada
+      ctx.fillStyle = 'rgba(56,189,248,0.30)';
+      for(const p of ruta.camino){
+        ctx.fillRect(p.col * t - estado.camara.x, p.fila * t - estado.camara.y, t, t);
+      }
+      const puede = estado.puedePagar(ruta.coste);
+      this.cartel(`${ruta.camino.length} casillas · ${formatear(ruta.coste)} €`,
+                  x + t / 2, y - 6, puede ? CONFIG.color.agua : CONFIG.color.critico);
+    }
+  }
+
+  /** Cartelito con pastilla, para que se lea sobre cualquier terreno. */
+  cartel(texto, cx, y, color){
+    const ctx = this.ctx;
+    const tam = Math.max(10, Math.round(this.tam * 0.16));
+    ctx.font = `700 ${tam}px IBM Plex Mono, ui-monospace, monospace`;
+    ctx.textAlign = 'center';
+    const w = ctx.measureText(texto).width, pad = 7;
+    ctx.fillStyle = 'rgba(8,16,26,0.85)';
+    ctx.beginPath(); ctx.roundRect(cx - w / 2 - pad, y - tam - 6, w + pad * 2, tam + 8, 5); ctx.fill();
+    ctx.fillStyle = color; ctx.fillText(texto, cx, y - 2);
   }
 
   /* ---------- marco de la casilla bajo el cursor ---------- */

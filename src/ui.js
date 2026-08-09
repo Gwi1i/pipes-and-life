@@ -26,6 +26,40 @@ export class UI {
       .sort((a, b) => (a[1].orden || 0) - (b[1].orden || 0));
     this.construirTienda();
     this.construirPremium();
+    this.construirPaletaObra();
+  }
+
+  /* ---------------- CONSTRUIR EN EL MAPA ---------------- */
+
+  construirPaletaObra(){
+    const cont = document.getElementById('construir');
+    if(!cont) return;
+    const obras = Object.entries(CONFIG.construibles)
+      .sort((a, b) => (a[1].orden || 0) - (b[1].orden || 0));
+    cont.innerHTML = obras.map(([clave, d]) => `
+      <button class="mejora obra" data-accion="elegirConstruible" data-clave="${clave}"
+              id="obra-${clave}" style="--tono:${d.color}">
+        <span class="m-cab"><span class="m-nom">${d.nombre}</span></span>
+        <span class="m-desc">${d.desc}</span>
+        <span class="m-coste">${formatear(d.coste)} €</span>
+      </button>`).join('') + `
+      <button class="mejora obra tuberia" data-accion="modoTuberia" id="obra-tuberia"
+              style="--tono:${CONFIG.color.agua}">
+        <span class="m-cab"><span class="m-nom">Tender tubería</span></span>
+        <span class="m-desc">Une dos puntos por la ruta más barata. Rodear un
+          bosque puede salir mejor que desbrozarlo.</span>
+        <span class="m-coste">según el terreno</span>
+      </button>`;
+  }
+
+  /** Marca qué herramienta está activa. */
+  refrescarConstruccion(estado){
+    const modo = estado.modo;
+    document.querySelectorAll('#construir .obra').forEach(b => {
+      const activa = (b.dataset.accion === 'elegirConstruible' && modo.elemento === b.dataset.clave)
+                  || (b.dataset.accion === 'modoTuberia' && modo.tipo === 'tuberia');
+      b.classList.toggle('activa', activa);
+    });
   }
 
   /** Fuerza que el próximo refresco reconstruya todo (al cambiar de pueblo). */
