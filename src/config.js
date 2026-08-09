@@ -222,17 +222,19 @@ export const CONFIG = {
      cada elemento ocupa su celda y las tuberías se trazan entre ellas. El río
      va por las columnas de la derecha. Cambiar la parcela es cambiar esto. */
   mapa: {
-    filas: 7,
+    // Menos filas = teselas más grandes. Con 6 el arte de cada celda se lee;
+    // con 7 u 8 los edificios quedaban en un borrón.
+    filas: 6,
     colsMin: 11,             // el ancho real se estira hasta llenar el lienzo
     anchoRio: 2,             // columnas de agua, siempre pegadas al borde derecho
     // Posición de cada elemento. `desdeOrilla` cuenta columnas hacia la
     // IZQUIERDA desde la orilla (0 = la celda que toca el agua), para que la
     // composición quede anclada al río sea cual sea el ancho de la pantalla.
     celdas: {
-      captacion:  { desdeOrilla: 0, fila: 5 },
-      bomba:      { desdeOrilla: 2, fila: 5 },
-      deposito:   { desdeOrilla: 5, fila: 5 },
-      pueblo:     { desdeOrilla: 10, fila: 3, ancho: 2, alto: 2 },
+      captacion:  { desdeOrilla: 0, fila: 4 },
+      bomba:      { desdeOrilla: 2, fila: 4 },
+      deposito:   { desdeOrilla: 5, fila: 4 },
+      pueblo:     { desdeOrilla: 10, fila: 2, ancho: 2, alto: 2 },
       tanque:     { desdeOrilla: 5, fila: 1 },
       depuradora: { desdeOrilla: 2, fila: 1 }
     }

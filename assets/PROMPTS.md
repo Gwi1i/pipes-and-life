@@ -87,6 +87,21 @@ dibuja el borde de cada celda y las costuras se leen como líneas de cuadrícula
 Cada una viene sobre su propio cuadro de césped, del mismo verde que
 `t_hierba.png`, para que encaje con el terreno. Fondo opaco.
 
+**Dos cosas aprendidas con la primera tesela (`t_bomba.png`):**
+
+1. **Que el edificio LLENE el cuadro.** Gemini tiende a dejar un margen enorme de
+   césped y el edificio queda pequeño dentro de su celda. Añade al prompt:
+   *"el edificio ocupa casi todo el cuadro, dejando solo un margen fino de
+   césped alrededor"*.
+2. **Que el verde sea el mismo.** Si el césped de la tesela no casa con el del
+   terreno, se ve un parche cuadrado. Añade: *"césped verde intenso idéntico al
+   de una textura de hierba de videojuego"* y, si tu herramienta deja adjuntar
+   imagen, **pásale `t_hierba.png` como referencia**.
+
+*(La perspectiva en 3/4 de los edificios, que Gemini hace aunque le pidas planta
+pura, está BIEN: es la convención de estos juegos y es lo que los hace
+reconocibles. No pelees con eso.)*
+
 ### `t_captacion.png`
 > Genera una imagen cuadrada: una estación de captación de agua vista desde
 > arriba, con plataforma de hormigón, reja de toma y tuberías, construida en la

@@ -113,7 +113,18 @@ export class EscenaTeselas extends Escena {
         if(!esAgua && tHierba){
           const v = ruido(c, f);
           const img = (v > 0.78 && tMatojos) ? tMatojos : tHierba;
-          ctx.drawImage(img, x, y, t, t);
+          // Se gira cada celda un múltiplo de 90°: con una sola textura, el ojo
+          // dejaría de ver hierba y empezaría a ver un patrón repetido.
+          const giro = Math.floor(v * 4) % 4;
+          if(giro === 0){
+            ctx.drawImage(img, x, y, t, t);
+          } else {
+            ctx.save();
+            ctx.translate(x + t / 2, y + t / 2);
+            ctx.rotate(giro * Math.PI / 2);
+            ctx.drawImage(img, -t / 2, -t / 2, t, t);
+            ctx.restore();
+          }
           if(esOrilla && tOrilla) ctx.drawImage(tOrilla, x, y, t, t);
           continue;
         }
@@ -197,7 +208,8 @@ export class EscenaTeselas extends Escena {
       // Pluviales (cian): canal aparte del pueblo al río, solo si llueve
       if(p.mejoras.pluviales > 0){
         const llueve = (r.lluvia || 0) > 0.05;
-        const fila = K.pueblo.fila + K.pueblo.alto;   // justo debajo del pueblo
+        // Una fila por debajo del abastecimiento, para que no se pisen
+        const fila = K.pueblo.fila + K.pueblo.alto + 1;
         const a = this.centro(this.col(K.pueblo) + K.pueblo.ancho - 1, fila);
         const b = this.centro(this.rioDesdeCol, fila);
         this.trazo([a, b], llueve, CONFIG.color.pluviales);
