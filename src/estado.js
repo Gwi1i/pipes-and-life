@@ -29,7 +29,8 @@ function crearPueblo(def){
     autobombaActivo: false,
     averia: null,               // null | { desde: horas }
     saneamientoActivo: false,   // se activa al superar el umbral de habitantes
-    tanqueAgua: 0               // litros retenidos ahora en el tanque de tormentas
+    tanqueAgua: 0,              // litros retenidos ahora en el tanque de tormentas
+    desgaste: 0                 // 0..1; a más desgaste, menos rinde todo
   };
 }
 

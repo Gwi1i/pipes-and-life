@@ -225,6 +225,17 @@ export class UI {
     const barra = document.getElementById('barra-agua');
     if(barra) barra.style.width = limitarPct(pct) + '%';
 
+    // Desgaste: barra y aviso en el botón de engrasar
+    const des = Math.round((resultado.desgaste || 0) * 100);
+    const bd = document.getElementById('barra-desgaste');
+    if(bd){
+      bd.style.width = limitarPct(des) + '%';
+      bd.className = des >= CONFIG.desgaste.avisoEn * 100 ? 'alto' : '';
+    }
+    this.fijar('desgaste-txt', `desgaste ${des} %  ·  rinde ${Math.round((resultado.eficiencia ?? 1) * 100)} %`);
+    const btnM = document.getElementById('btn-mantener');
+    if(btnM) btnM.classList.toggle('urge', des >= CONFIG.desgaste.avisoEn * 100);
+
     // Multa por hora, para el panel de cauce
     resultado.multaHora = (resultado.suciedad || 0) * CONFIG.cauce.multaMaxPorHora;
 

@@ -13,7 +13,7 @@ import { Escena } from './escena.js';
 import { EscenaSVG } from './escena_svg.js';
 import { EscenaAssets } from './escena_assets.js';
 import { EscenaTeselas } from './escena_teselas.js';
-import { avanzar, bombear, costeMejora, requisitosAutobomba } from './simulacion.js';
+import { avanzar, bombear, costeMejora, requisitosAutobomba, engrasar } from './simulacion.js';
 import { formatear } from './util.js';
 
 const lienzo  = document.getElementById('escena');
@@ -52,10 +52,19 @@ function procesarAcciones(){
   for(const a of entrada.vaciarAcciones()){
     switch(a.tipo){
 
-      case 'bombear':
+      case 'bombear': {
+        // Si el operario está en pantalla y le has dado, se lleva el clic
+        if(recogerOperario(a.x, a.y)) break;
         bombear(estado.activo);
         escena.destello(a.x, a.y);
         break;
+      }
+
+      case 'mantener': {
+        const bajo = engrasar(estado.activo);
+        if(bajo > 0) escena.destelloMantenimiento();
+        break;
+      }
 
       case 'cambiarPueblo': {
         const i = parseInt(a.clave, 10);
@@ -127,6 +136,59 @@ function procesarAcciones(){
         break;
     }
   }
+}
+
+/* ==================================================================
+   EL OPERARIO — aparece de vez en cuando y hay que pillarlo
+   ================================================================== */
+
+let operario = null;          // { x, y, t } en píxeles del lienzo
+let proximaVisita = tiempoHastaVisita();
+
+function tiempoHastaVisita(){
+  const V = CONFIG.visita;
+  return V.cadaMinSeg + Math.random() * (V.cadaMaxSeg - V.cadaMinSeg);
+}
+
+function tickOperario(dt){
+  const V = CONFIG.visita;
+  if(operario){
+    operario.t += dt;
+    if(operario.t > V.duracionSeg){ operario = null; proximaVisita = tiempoHastaVisita(); }
+    escena.operario = operario;
+    return;
+  }
+  proximaVisita -= dt;
+  if(proximaVisita <= 0){
+    operario = { t: 0,
+      x: 0.15 + Math.random() * 0.6,   // en fracción del lienzo, para que valga
+      y: 0.25 + Math.random() * 0.5 }; // a cualquier tamaño de ventana
+    estado.anotar('¡El operario anda por la instalación! Pínchalo antes de que se vaya.', 'ok');
+  }
+  escena.operario = operario;
+}
+
+/** ¿El clic ha caído sobre el operario? Si sí, cobra la prima y engrasa. */
+function recogerOperario(px, py){
+  if(!operario || px == null) return false;
+  const caja = lienzo.getBoundingClientRect();
+  const ox = operario.x * caja.width, oy = operario.y * caja.height;
+  const radio = Math.min(caja.width, caja.height) * 0.09;
+  if(Math.hypot(px - ox, py - oy) > radio) return false;
+
+  const V = CONFIG.visita;
+  // Prima proporcional a lo que ganas ahora, para que valga en toda la partida
+  const porSegundo = (resultado.servidoM3 || 0) * CONFIG.economia.tarifa / 0.016;
+  const prima = Math.max(V.primaMinima, porSegundo * V.primaSegundos);
+  estado.dinero += prima;
+  estado.activo.desgaste = 0;
+  estado.anotar(`El operario engrasa todo y te deja ${formatear(prima)} € de prima.`, 'ok');
+  avisar(`¡+${formatear(prima)} € y la instalación como nueva!`);
+  escena.destello(ox, oy);
+  escena.destelloMantenimiento();
+  operario = null; escena.operario = null;
+  proximaVisita = tiempoHastaVisita();
+  return true;
 }
 
 /* ==================================================================
@@ -258,6 +320,7 @@ function bucle(ahora){
   procesarAcciones();
   resultado = avanzar(estado, dt);
   tickAverias(dt * CONFIG.economia.horasPorSegundo);
+  tickOperario(dt);
   comprobarDesbloqueo();
   anotarCrecimiento();
 

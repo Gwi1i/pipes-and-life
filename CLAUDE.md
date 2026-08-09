@@ -199,6 +199,24 @@ REAL en segundos. Dentro distingue:
 Por eso el auto-bombeo se compara con el clic y la captación con la demanda, no
 al revés. Si mezclas las escalas, los números se van por órdenes de magnitud.
 
+**Desgaste = la segunda tecla.** `pueblo.desgaste` (0..1) sube con el tiempo y
+con cada clic de bombeo, y `eficiencia()` recorta el clic Y la producción pasiva.
+Se baja clicando ENGRASAR (`engrasar()`, gratis) o comprando mantenimiento, que
+frena la acumulación. Existe para que el jugador alterne entre dos botones en
+vez de machacar siempre el mismo.
+
+**El operario.** Vive en `main.js` (`tickOperario`), no en el estado: aparece
+cada `CONFIG.visita` segundos, y `recogerOperario()` intercepta el clic de
+bombear si cae encima. Da prima y deja el desgaste a cero. La escena solo lo
+pinta (`escena.operario`).
+
+**Ojo con el tope de ingresos.** Solo se factura el agua SERVIDA, así que la
+recaudación está topada por la demanda del pueblo: en cuanto la superas, clicar
+más no da nada. Por eso el crecimiento de población es agresivo
+(`tasaCrecimientoAnual`): es lo que hace que la demanda te persiga y el clic
+siga teniendo sentido. Si algún día bajas el crecimiento, el juego se queda sin
+tensión a los pocos minutos.
+
 **Mejoras.** La tienda se genera sola desde `CONFIG.mejoras`: cada entrada tiene
 `costeBase`, `factorCoste`, `nivelMax` y sus parámetros de efecto. El nivel vive
 en `pueblo.mejoras[clave]` (por pueblo); el coste del siguiente nivel es

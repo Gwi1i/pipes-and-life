@@ -33,22 +33,30 @@ export const CONFIG = {
     servicioBueno: 0.99,
     servicioMalo: 0.70,
     horasBuenServicioParaCrecer: 6,
-    tasaCrecimientoAnual: 0.80,
+    // Fuerte a propósito: los ingresos están topados por la demanda del pueblo,
+    // así que si no crece deprisa, en cuanto superas su consumo el juego pierde
+    // la tensión y clicar deja de servir para nada.
+    tasaCrecimientoAnual: 2.50,
     tasaDeclineAnual: -0.40
   },
 
   /* ---------- LA BOMBA (el clic principal) ---------- */
   bomba: {
-    // Un clic tiene que MOVER la aguja: con 450 L hacían falta casi 2 clics por
-    // segundo solo para no perder servicio, y 3 en la punta de la mañana.
-    litrosPorClicBase: 1500,
-    bufferSinDeposito: 3000
+    // El clic es la identidad del juego: tiene que costar llenar y hay que
+    // clicar de continuo para que llegue agua. Lo que compensa el esfuerzo NO
+    // es que cada clic dé mucha agua, sino que el agua servida pague bien
+    // (ver economia.tarifa). Con 1500 L bastaban dos clics para llenar la barra
+    // y el juego se quedaba esperando: eso mataba la esencia.
+    litrosPorClicBase: 450,
+    bufferSinDeposito: 4000
   },
 
   /* ---------- EL DEPÓSITO ---------- */
   deposito: {
-    capacidadBase: 20000,
-    incrementoCapacidad: 25000
+    // Llenarlo tiene que costar decenas de clics y vaciarse rápido: es un
+    // respiro entre tandas de clic, no un piloto automático.
+    capacidadBase: 12000,      // ~27 clics de llenado
+    incrementoCapacidad: 14000
   },
 
   /* ---------- MEJORAS (la tienda de cada pueblo) ----------
@@ -58,7 +66,7 @@ export const CONFIG = {
       nombre: 'Potencia de bomba', orden: 1,
       desc: 'Más agua por clic. También rinde más el auto-bombeo.',
       costeBase: 140, factorCoste: 1.5, nivelMax: 25,
-      incrementoLitros: 600
+      incrementoLitros: 150
     },
     deposito: {
       nombre: 'Depósito de reserva', orden: 2,
@@ -70,10 +78,11 @@ export const CONFIG = {
     captacion: {
       nombre: 'Captación', orden: 3,
       desc: 'Extrae agua sola, sin clicar. En verano rinde menos (estiaje).',
-      // El primer ingreso pasivo es el enganche del juego: tiene que llegar en
-      // el primer minuto y medio, y en dos niveles cubrir a un pueblo chico.
-      costeBase: 200, factorCoste: 1.7, nivelMax: 20,
-      caudalPorNivel: 0.22
+      // ELEMENTO EXCLUSIVO: produce sin clicar, o sea que compra justo lo que
+      // el juego vende. Tiene que ser un objetivo caro, no un trámite del
+      // primer minuto, o el jugador deja de clicar y se acaba la gracia.
+      costeBase: 2500, factorCoste: 1.8, nivelMax: 20,
+      caudalPorNivel: 0.12
     },
     depuradora: {
       nombre: 'Estación depuradora', orden: 4,
@@ -162,7 +171,9 @@ export const CONFIG = {
   /* ---------- ECONOMÍA ---------- */
   economia: {
     dineroInicial: 25,     // anticipo de la concesión: un empujón para arrancar
-    tarifa: 6.00,
+    // Alta a propósito: el esfuerzo de clicar se paga en DINERO, no en agua
+    // regalada. Es lo que evita la desesperación de los primeros minutos.
+    tarifa: 14.00,
     horasPorSegundo: 0.4
   },
 
@@ -205,6 +216,31 @@ export const CONFIG = {
   // cilindros, casas en 3/4, sombras arrojadas y bruma en la lejanía. Los
   // colores base están arriba (color/estaciones); las intensidades de sombreado
   // son detalle de dibujo y viven en escena.js.
+
+  /* ---------- DESGASTE ----------
+     La instalación se va gastando y pierde eficacia. Es la SEGUNDA tecla del
+     juego: obliga a alternar entre el botón de bombear y el de mantenimiento,
+     en vez de machacar siempre el mismo sitio. Se puede engrasar a mano
+     (gratis, clicando) o comprar personal de mantenimiento, que lo frena. */
+  desgaste: {
+    porHoraJuego: 0.010,     // sube solo con el tiempo
+    porClic: 0.0008,         // y además usar la bomba la gasta: clicar castiga
+    efectoMax: 0.72,         // a desgaste 1 se produce solo el 28 %
+    reparaPorClic: 0.05,     // cuánto baja cada clic de mantenimiento
+    frenoPorNivelMant: 0.65, // cada nivel de mantenimiento multiplica el desgaste acumulado
+    avisoEn: 0.45            // a partir de aquí, la UI avisa
+  },
+
+  /* ---------- EL OPERARIO ----------
+     Cada cierto tiempo aparece en la escena y hay que pillarlo antes de que se
+     vaya: engrasa la instalación entera y trae una prima. Da algo que mirar
+     mientras se clica y premia estar atento. */
+  visita: {
+    cadaMinSeg: 30, cadaMaxSeg: 70,   // cada cuánto asoma (segundos reales)
+    duracionSeg: 9,                   // lo que se queda antes de irse
+    primaSegundos: 25,                // le paga al jugador lo que ganaría en X s
+    primaMinima: 40                   // ...o esto, lo que sea mayor
+  },
 
   /* ---------- AVERÍAS (por pueblo) ---------- */
   averias: {

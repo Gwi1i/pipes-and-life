@@ -49,9 +49,25 @@ export function nombreEstacion(horas){
   return E[Math.floor(frac * E.length) % E.length].nombre;
 }
 
+/**
+ * Rendimiento de la instalación según su desgaste (1 = a estrenar). Afecta al
+ * clic Y a la producción pasiva: si no la cuidas, todo rinde menos.
+ */
+export function eficiencia(pueblo){
+  return 1 - (pueblo.desgaste || 0) * CONFIG.desgaste.efectoMax;
+}
+
 export function litrosPorClic(pueblo){
-  return CONFIG.bomba.litrosPorClicBase +
-         pueblo.mejoras.bomba * CONFIG.mejoras.bomba.incrementoLitros;
+  const base = CONFIG.bomba.litrosPorClicBase +
+               pueblo.mejoras.bomba * CONFIG.mejoras.bomba.incrementoLitros;
+  return base * eficiencia(pueblo);
+}
+
+/** Engrasado a mano: lo que baja el desgaste por cada clic de mantenimiento. */
+export function engrasar(pueblo){
+  const antes = pueblo.desgaste || 0;
+  pueblo.desgaste = Math.max(0, antes - CONFIG.desgaste.reparaPorClic);
+  return antes - pueblo.desgaste;
 }
 
 export function capacidad(pueblo){
@@ -129,6 +145,7 @@ export function requisitosAutobomba(pueblo){
 export function bombear(pueblo){
   const cap = capacidad(pueblo);
   const antes = pueblo.agua;
+  pueblo.desgaste = Math.min(1, (pueblo.desgaste || 0) + CONFIG.desgaste.porClic);
   pueblo.agua = Math.min(cap, pueblo.agua + litrosPorClic(pueblo));
   return pueblo.agua - antes;
 }
@@ -146,7 +163,13 @@ function avanzarPueblo(estado, p, dt, dtHoras, punta, estiaje, frenoCrec, lluvia
   const factorAveria = p.averia ? (1 - CONFIG.averias.recorteProduccion) : 1;
 
   // Entrada: producción pasiva (parada si hay avería)
-  const prodCaptacion = caudalCaptacion(p) * estiaje * factorAveria * 3600 * dtHoras;
+  // La instalación se gasta con el tiempo; el personal de mantenimiento lo frena
+  const D = CONFIG.desgaste;
+  p.desgaste = Math.min(1, (p.desgaste || 0) +
+    D.porHoraJuego * dtHoras * Math.pow(D.frenoPorNivelMant, p.mejoras.mantenimiento));
+
+  const ef = eficiencia(p);
+  const prodCaptacion = caudalCaptacion(p) * estiaje * ef * factorAveria * 3600 * dtHoras;
   const prodAuto = clicsAutoPorSeg(p) * litrosPorClic(p) * factorAveria * dt;
   const antes = p.agua;
   p.agua = Math.min(cap, p.agua + prodCaptacion + prodAuto);
@@ -218,6 +241,8 @@ function avanzarPueblo(estado, p, dt, dtHoras, punta, estiaje, frenoCrec, lluvia
       produciendo: entrada > 0.0001,
       bombeoAuto: prodAuto > 0.0001,
       averiada: !!p.averia,
+      desgaste: p.desgaste || 0,
+      eficiencia: ef,
       saneamiento: p.saneamientoActivo,
       lluvia, aliviando: alivio > 0.0001,
       tanqueFrac: capacidadTanque(p) > 0 ? p.tanqueAgua / capacidadTanque(p) : 0,

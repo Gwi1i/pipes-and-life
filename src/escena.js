@@ -56,6 +56,50 @@ export class Escena {
   aparecerCaptacion(){ this.aparicionCaptacion = 0.0001; }
   aparecerDepuradora(){ this.aparicionDepuradora = 0.0001; }
   destelloCauce(){ this.cauceFlash = 1; }
+  destelloMantenimiento(){ this.mantFlash = 1; }
+
+  /**
+   * El operario que asoma de vez en cuando (lo coloca main.js en `this.operario`
+   * con coordenadas en fracción del lienzo). Se dibuja igual en todos los
+   * estilos, con un halo que late para que se vea, y un aro que se cierra
+   * avisando de que se va.
+   */
+  dibujarOperario(){
+    const o = this.operario;
+    if(!o) return;
+    const ctx = this.ctx, W = this._W, H = this._H;
+    const x = o.x * W, y = o.y * H;
+    const r = Math.min(W, H) * 0.055;
+    const salto = Math.abs(Math.sin(this.tiempo * 4)) * r * 0.18;
+    const cy = y - salto;
+
+    // halo llamativo
+    const halo = ctx.createRadialGradient(x, cy, 0, x, cy, r * 2.2);
+    halo.addColorStop(0, 'rgba(250,204,21,0.45)');
+    halo.addColorStop(1, 'rgba(250,204,21,0)');
+    ctx.fillStyle = halo;
+    ctx.beginPath(); ctx.arc(x, cy, r * 2.2, 0, 7); ctx.fill();
+
+    // cuerpo: casco, cara y mono de trabajo
+    ctx.fillStyle = '#1d4ed8';
+    ctx.beginPath(); ctx.roundRect(x - r * 0.45, cy - r * 0.1, r * 0.9, r * 1.0, r * 0.2); ctx.fill();
+    ctx.fillStyle = '#f7c9a0';
+    ctx.beginPath(); ctx.arc(x, cy - r * 0.35, r * 0.4, 0, 7); ctx.fill();
+    ctx.fillStyle = '#facc15';
+    ctx.beginPath(); ctx.arc(x, cy - r * 0.45, r * 0.44, Math.PI, 0); ctx.fill();
+    ctx.fillRect(x - r * 0.5, cy - r * 0.5, r, r * 0.12);
+    // llave inglesa
+    ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = Math.max(2, r * 0.12); ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(x + r * 0.4, cy + r * 0.5); ctx.lineTo(x + r * 0.8, cy - r * 0.1); ctx.stroke();
+
+    // aro de cuenta atrás
+    const queda = 1 - o.t / CONFIG.visita.duracionSeg;
+    ctx.strokeStyle = queda < 0.3 ? CONFIG.color.critico : '#facc15';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(x, cy, r * 1.35, -Math.PI / 2, -Math.PI / 2 + queda * Math.PI * 2);
+    ctx.stroke();
+  }
 
   avanzarAparicion(clave, dt){
     if(this[clave] > 0 && this[clave] < 1) this[clave] = Math.min(1, this[clave] + dt * 2.5);
@@ -127,6 +171,7 @@ export class Escena {
     this.vertido();
     this.clima(dt);
     if(resultado.averiada) this.averiaIndicador();
+    this.dibujarOperario();
     this.destellosClic();
   }
 

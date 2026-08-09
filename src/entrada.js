@@ -35,6 +35,13 @@ export class Entrada {
       this.emitir('bombear', { x: r.width * 0.26, y: r.height * 0.55 });
     });
 
+    // Botón de mantenimiento: el segundo sitio donde clicar
+    const btnM = document.getElementById('btn-mantener');
+    if(btnM) btnM.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      this.emitir('mantener');
+    });
+
     // Barra espaciadora = bombear, para quien prefiera el teclado
     window.addEventListener('keydown', e => {
       if(e.code === 'Space' && e.target === document.body){
