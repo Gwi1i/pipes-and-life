@@ -21,6 +21,11 @@ import { capacidad, capacidadTanque, fraccionTratada } from './simulacion.js';
 import { limitar } from './util.js';
 import { Escena, mezclarColor, oscurecer, aclarar } from './escena.js';
 
+// Mientras se diseña el mapa de exploración se trabaja con las teselas
+// DIBUJADAS POR CÓDIGO: son más esquemáticas y dejan ver mejor la mecánica.
+// El arte de `assets/` sigue en su sitio: basta con poner esto a `true`.
+const USAR_ARTE = false;
+
 export class EscenaTeselas extends Escena {
 
   constructor(lienzo){
@@ -35,6 +40,7 @@ export class EscenaTeselas extends Escena {
    * márgenes transparentes llene igualmente su celda.
    */
   tesela(nombre){
+    if(!USAR_ARTE) return null;
     let e = this._img[nombre];
     if(!e){
       e = { img: new Image(), ok: false, fallo: false, bbox: null };

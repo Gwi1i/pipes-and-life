@@ -25,7 +25,9 @@ const ui      = new UI(entrada);
 // Estilo visual: A (Canvas "falso 3D"), B (sprites SVG) o C (imágenes de IA en
 // assets/). Se recuerda la elección; el botón de la barra superior cicla A→B→C.
 const ESTILOS = ['a', 'b', 'c', 'd'];
-let estiloEscena = ESTILOS.includes(localStorage.getItem('rh_estilo')) ? localStorage.getItem('rh_estilo') : 'a';
+// El estilo D (teselas) es el camino elegido, así que es el de por defecto:
+// aterrizar en el A hacía pensar que el juego se había roto.
+let estiloEscena = ESTILOS.includes(localStorage.getItem('rh_estilo')) ? localStorage.getItem('rh_estilo') : 'd';
 function crearEscena(){
   if(estiloEscena === 'b') return new EscenaSVG(lienzo);
   if(estiloEscena === 'c') return new EscenaAssets(lienzo);
