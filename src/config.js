@@ -16,7 +16,7 @@ export const CONFIG = {
      Lista de núcleos que puede gestionar la mancomunidad. El primero arranca
      desbloqueado; los demás se abren al cumplir el hito de crecimiento. */
   poblaciones: [
-    { nombre: 'Villagua',  habitantes: 300, desbloqueada: true  },
+    { nombre: 'Villagua',  habitantes: 200, desbloqueada: true  },
     { nombre: 'Riolindo',  habitantes: 180, desbloqueada: false, desbloqueaEn: 900  },
     { nombre: 'Valdeagua', habitantes: 220, desbloqueada: false, desbloqueaEn: 2200 }
   ],
@@ -39,8 +39,10 @@ export const CONFIG = {
 
   /* ---------- LA BOMBA (el clic principal) ---------- */
   bomba: {
-    litrosPorClicBase: 450,
-    bufferSinDeposito: 900
+    // Un clic tiene que MOVER la aguja: con 450 L hacían falta casi 2 clics por
+    // segundo solo para no perder servicio, y 3 en la punta de la mañana.
+    litrosPorClicBase: 1500,
+    bufferSinDeposito: 3000
   },
 
   /* ---------- EL DEPÓSITO ---------- */
@@ -56,18 +58,22 @@ export const CONFIG = {
       nombre: 'Potencia de bomba', orden: 1,
       desc: 'Más agua por clic. También rinde más el auto-bombeo.',
       costeBase: 140, factorCoste: 1.5, nivelMax: 25,
-      incrementoLitros: 220
+      incrementoLitros: 600
     },
     deposito: {
       nombre: 'Depósito de reserva', orden: 2,
       desc: 'Acumula agua para no depender del clic. Cada nivel amplía la reserva.',
-      costeBase: 300, factorCoste: 1.7, nivelMax: 15
+      // Barato a propósito: es la mejora que te saca del clic continuo, y tiene
+      // que llegar en el primer medio minuto de partida.
+      costeBase: 120, factorCoste: 1.7, nivelMax: 15
     },
     captacion: {
       nombre: 'Captación', orden: 3,
       desc: 'Extrae agua sola, sin clicar. En verano rinde menos (estiaje).',
-      costeBase: 500, factorCoste: 1.7, nivelMax: 20,
-      caudalPorNivel: 0.15
+      // El primer ingreso pasivo es el enganche del juego: tiene que llegar en
+      // el primer minuto y medio, y en dos niveles cubrir a un pueblo chico.
+      costeBase: 200, factorCoste: 1.7, nivelMax: 20,
+      caudalPorNivel: 0.22
     },
     depuradora: {
       nombre: 'Estación depuradora', orden: 4,
@@ -155,8 +161,8 @@ export const CONFIG = {
 
   /* ---------- ECONOMÍA ---------- */
   economia: {
-    dineroInicial: 0,
-    tarifa: 3.60,
+    dineroInicial: 25,     // anticipo de la concesión: un empujón para arrancar
+    tarifa: 6.00,
     horasPorSegundo: 0.4
   },
 
