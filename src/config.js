@@ -217,6 +217,27 @@ export const CONFIG = {
     maxHoras: 8
   },
 
+  /* ---------- MAPA DE TESELAS (estilo D, vista cenital) ----------
+     Cuadrícula ortogonal vista desde arriba, al estilo de los idle builders:
+     cada elemento ocupa su celda y las tuberías se trazan entre ellas. El río
+     va por las columnas de la derecha. Cambiar la parcela es cambiar esto. */
+  mapa: {
+    filas: 7,
+    colsMin: 11,             // el ancho real se estira hasta llenar el lienzo
+    anchoRio: 2,             // columnas de agua, siempre pegadas al borde derecho
+    // Posición de cada elemento. `desdeOrilla` cuenta columnas hacia la
+    // IZQUIERDA desde la orilla (0 = la celda que toca el agua), para que la
+    // composición quede anclada al río sea cual sea el ancho de la pantalla.
+    celdas: {
+      captacion:  { desdeOrilla: 0, fila: 5 },
+      bomba:      { desdeOrilla: 2, fila: 5 },
+      deposito:   { desdeOrilla: 5, fila: 5 },
+      pueblo:     { desdeOrilla: 10, fila: 3, ancho: 2, alto: 2 },
+      tanque:     { desdeOrilla: 5, fila: 1 },
+      depuradora: { desdeOrilla: 2, fila: 1 }
+    }
+  },
+
   /* ---------- ASPECTO ---------- */
   color: {
     cielo:      ['#0a1a2b', '#123049', '#1c4a63'],

@@ -65,7 +65,13 @@ export class Escena {
      DIBUJO
      ================================================================ */
 
-  dibujar(estado, resultado, dt){
+  /**
+   * Bookkeeping común a cualquier estilo de escena: avanza relojes y efectos y
+   * cachea el contexto del fotograma (tamaño, pueblo activo, luz, estación...).
+   * Se extrajo aquí para que otras escenas con composición distinta (la vista
+   * cenital de teselas) la reutilicen sin duplicar.
+   */
+  prepararFotograma(estado, resultado, dt){
     const ctx = this.ctx;
     this.tiempo += dt;
     this.pulso = Math.max(0, this.pulso - dt * 2.2);
@@ -88,6 +94,12 @@ export class Escena {
     this.suciedad = resultado.suciedad ?? (estado.contaminacion / CONFIG.cauce.contaminacionMax);
     // Color de bruma para la perspectiva atmosférica: claro de día, oscuro de noche
     this.bruma = mezclarColor('#28384a', '#c6d8e4', this.luz);
+    return p;
+  }
+
+  dibujar(estado, resultado, dt){
+    const p = this.prepararFotograma(estado, resultado, dt);
+    const H = this._H;
 
     this.horizonteY = H * 0.50;
     this.sueloY = H * 0.66;

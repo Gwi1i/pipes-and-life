@@ -62,6 +62,7 @@ red-hidraulica/
     ├── escena.js       El diorama animado (canvas), estilo A: "falso 3D"
     ├── escena_svg.js   Estilo B: sprites SVG dibujados a mano (hereda de escena)
     ├── escena_assets.js Estilo C: imágenes PNG de assets/ (hereda de escena)
+    ├── escena_teselas.js Estilo D: vista cenital sobre cuadrícula (hereda)
     ├── entrada.js      Ratón, tacto, teclado → acciones
     ├── ui.js           DOM fuera de la escena: HUD, tienda, paneles
     └── main.js         Ensamblado y bucle principal
@@ -94,6 +95,15 @@ límites que hay que respetar:
     IA; ver `assets/PROMPTS.md`). `dibujarSprite()` respeta la proporción real de
     cada PNG y lo ancla al suelo; el nivel del depósito se muestra con un medidor
     lateral (funciona con cualquier arte).
+  - **D** — `escena_teselas.js` (`EscenaTeselas`): vista CENITAL sobre
+    cuadrícula ortogonal, al estilo idle builder. No hay cielo ni horizonte: el
+    terreno es una rejilla y las tuberías se trazan en ortogonal entre celdas.
+    Las posiciones viven en `CONFIG.mapa.celdas`, con `desdeOrilla` contando
+    columnas hacia la izquierda desde el río, para que la composición quede
+    anclada al agua sea cual sea el ancho. El alto fija el tamaño de tesela y se
+    añaden columnas hasta llenar el lienzo. **Las teselas están dibujadas por
+    código a propósito** (prototipo): cuando haya arte, se sustituye el dibujo
+    de cada celda sin tocar posiciones ni tuberías.
   B y C, mientras un sprite no ha cargado —o el archivo no existe—, recurren al
   método del padre (`super.metodo()`), así nunca desaparece nada y puedes añadir
   imágenes de una en una. `main.js` elige con `crearEscena()` según
