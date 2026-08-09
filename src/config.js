@@ -234,7 +234,7 @@ export const CONFIG = {
       captacion:  { desdeOrilla: 0, fila: 4 },
       bomba:      { desdeOrilla: 2, fila: 4 },
       deposito:   { desdeOrilla: 5, fila: 4 },
-      pueblo:     { desdeOrilla: 10, fila: 2, ancho: 2, alto: 2 },
+      pueblo:     { desdeOrilla: 7, fila: 2, ancho: 2, alto: 2 },
       tanque:     { desdeOrilla: 5, fila: 1 },
       depuradora: { desdeOrilla: 2, fila: 1 }
     }

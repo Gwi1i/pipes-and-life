@@ -57,11 +57,17 @@ export class EscenaTeselas extends Escena {
     const rel = b.w / b.h;
     let dh = t * altoRel, dw = dh * rel;
     if(dw > t * 1.25){ dw = t * 1.25; dh = dw / rel; }   // que no invada al vecino
-    const baseY = cyCelda + t * 0.40;
-    // sombra de contacto: sin ella el edificio flota sobre la hierba
-    ctx.fillStyle = 'rgba(0,0,0,0.30)';
-    ctx.beginPath(); ctx.ellipse(cx, baseY - dh * 0.04, dw * 0.34, dh * 0.10, 0, 0, 7); ctx.fill();
-    ctx.drawImage(img, b.x, b.y, b.w, b.h, cx - dw / 2, baseY - dh, dw, dh);
+    // El sprite se centra en la celda, no se "cuelga" de su base: los edificios
+    // vienen en 3/4 y con tuberías que sobresalen, así que anclarlos por el
+    // borde inferior de su caja opaca los levantaba y parecían volar.
+    const cy = cyCelda + t * 0.06;
+    const x = cx - dw / 2, y = cy - dh / 2;
+    // Sombra elíptica pegada a la base visual del edificio, que lo asienta.
+    ctx.fillStyle = 'rgba(0,0,0,0.32)';
+    ctx.beginPath();
+    ctx.ellipse(cx, y + dh * 0.80, dw * 0.36, dh * 0.11, 0, 0, 7);
+    ctx.fill();
+    ctx.drawImage(img, b.x, b.y, b.w, b.h, x, y, dw, dh);
   }
 
   /* ================================================================
@@ -76,10 +82,16 @@ export class EscenaTeselas extends Escena {
     // el ancho, así el tablero cubre el lienzo sea cual sea la proporción.
     const margen = H * 0.03;
     this.tam = Math.floor((H - margen * 2) / M.filas);
-    this.cols = Math.max(M.colsMin, Math.ceil(W / this.tam));
+    // El tablero debe tener columnas suficientes para el elemento más alejado
+    // del río; si no, el pueblo se queda fuera de pantalla por la izquierda.
+    const necesarias = Math.max(...Object.values(M.celdas)
+      .map(c => c.desdeOrilla + (c.ancho || 1))) + M.anchoRio + 1;
+    this.cols = Math.max(M.colsMin, necesarias, Math.ceil(W / this.tam));
     this.rioDesdeCol = this.cols - M.anchoRio;
     this.orillaCol = this.rioDesdeCol - 1;
-    this.ox = Math.round(W - this.tam * this.cols);   // anclado a la derecha (al río)
+    // Anclado al río (derecha), pero sin cortar el elemento más alejado: si el
+    // tablero es más ancho que el lienzo, se desplaza lo justo para que quepa.
+    this.ox = Math.min(0, W - this.tam * this.cols);
     this.oy = Math.round((H - this.tam * M.filas) / 2);
 
     ctx.fillStyle = '#0a1420';
@@ -428,7 +440,7 @@ export class EscenaTeselas extends Escena {
     const entrada = this.tesela('t_pueblo_' + nivel + '.png');
     if(entrada){
       // Fondo transparente: se apoya sobre la hierba, ocupando su bloque 2×2
-      this.edificioTesela(entrada, x0 + w / 2, y0 + h / 2 - t * 0.10, Math.min(w, h) * 1.7, 1);
+      this.edificioTesela(entrada, x0 + w / 2, y0 + h / 2, Math.min(w, h) * 1.6, 1);
       if(seco){
         ctx.fillStyle = 'rgba(30,40,50,0.45)';
         ctx.fillRect(x0, y0, w, h);
