@@ -11,7 +11,8 @@
  */
 
 import { CONFIG } from './config.js';
-import { celdaEn, clicsParaDestapar, esAlcanzable, distanciaAlOrigen } from './mapa.js';
+import { celdaEn, clicsParaDestapar, esAlcanzable } from './mapa.js';
+import { poderExpansion } from './simulacion.js';
 import { limitar } from './util.js';
 import { Escena, mezclarColor, oscurecer, aclarar } from './escena.js';
 
@@ -67,6 +68,9 @@ export class EscenaMapa extends Escena {
 
     ctx.fillStyle = '#070d14';
     ctx.fillRect(0, 0, W, H);
+
+    // El coste de cada casilla depende de cómo lleves el abastecimiento
+    this.poder = poderExpansion(estado);
 
     const t = this.tam, M = CONFIG.mapaMundo;
     const c0 = Math.max(0, Math.floor(estado.camara.x / t));
@@ -181,7 +185,7 @@ export class EscenaMapa extends Escena {
     ctx.fillRect(x, y, t, t);
 
     if(alcanzable){
-      const faltan = clicsParaDestapar(c, f, celda.tipo);
+      const faltan = clicsParaDestapar(c, f, celda.tipo, this.poder);
       const frac = celda.progreso / faltan;
 
       if(frac > 0){   // aro de progreso

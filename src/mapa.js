@@ -150,12 +150,14 @@ export function distanciaAlOrigen(col, fila){
  * más que en línea recta, para que expandirse lejos sea una decisión y no un
  * trámite. El terreno difícil (montaña) cuesta un extra.
  */
-export function clicsParaDestapar(col, fila, tipo){
+export function clicsParaDestapar(col, fila, tipo, poder = 1){
   const M = CONFIG.mapaMundo;
   const d = distanciaAlOrigen(col, fila);
   const base = M.clicsBase + Math.pow(d, M.exponenteDistancia) * M.factorDistancia;
   const extra = CONFIG.terrenos[tipo]?.costeExtra ?? 1;
-  return Math.max(1, Math.round(base * extra));
+  // El poder de expansión (lo bien que llevas el abastecimiento) DIVIDE el
+  // coste: es lo que hace que cuidar la red abra territorio.
+  return Math.max(1, Math.round(base * extra / Math.max(0.2, poder)));
 }
 
 /** ¿Es alcanzable? Solo se puede destapar lo que toca terreno ya descubierto. */
@@ -173,13 +175,13 @@ export function esAlcanzable(celdas, col, fila){
  * Un clic sobre una casilla tapada. Devuelve 'progreso', 'descubierta' o null
  * si ese clic no valía (fuera del mapa o inalcanzable).
  */
-export function clicarCasilla(celdas, col, fila){
+export function clicarCasilla(celdas, col, fila, poder = 1){
   const celda = celdaEn(celdas, col, fila);
   if(!celda || !celda.oculta) return null;
   if(!esAlcanzable(celdas, col, fila)) return null;
 
   celda.progreso++;
-  if(celda.progreso >= clicsParaDestapar(col, fila, celda.tipo)){
+  if(celda.progreso >= clicsParaDestapar(col, fila, celda.tipo, poder)){
     celda.oculta = false;
     return 'descubierta';
   }

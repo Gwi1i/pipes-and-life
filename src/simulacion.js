@@ -19,6 +19,7 @@
  */
 
 import { CONFIG } from './config.js';
+import { limitar } from './util.js';
 
 /* ---------------- HELPERS POR PUEBLO ---------------- */
 
@@ -114,6 +115,38 @@ export function factorLluvia(horas){
   const L = CONFIG.lluvia.porEstacion, T = CONFIG.tiempo;
   const frac = ((horas % T.horasPorAño) / T.horasPorAño + 1) % 1;
   return L[Math.floor(frac * L.length) % L.length];
+}
+
+/**
+ * PODER DE EXPANSIÓN — lo que enlaza el mapa con el juego de abastecer.
+ *
+ * Sale de lo bien que lleves tu red: población servida, nivel de servicio,
+ * desgaste de la maquinaria y averías pendientes. Divide el coste en clics de
+ * destapar casillas, así que cuidar la instalación no solo produce más agua:
+ * también abre territorio. Y al revés: si desatiendes el servicio, explorar se
+ * pone cuesta arriba.
+ */
+export function poderExpansion(estado){
+  const E = CONFIG.expansion;
+  let hab = 0, servicio = 0, desgaste = 0, n = 0, averiado = false;
+  for(const p of estado.pueblos){
+    if(!p.desbloqueado) continue;
+    hab += p.habitantes;
+    servicio += p.servicio;
+    desgaste += p.desgaste || 0;
+    if(p.averia) averiado = true;
+    n++;
+  }
+  if(n === 0) return 1;
+
+  // La población de partida es el listón: crecer por encima es lo que premia
+  const porPoblacion = 1 + Math.log2(1 + hab / E.habitantesReferencia) * E.factorPoblacion;
+  const porServicio = Math.max(E.servicioMinimo, servicio / n);
+  const porDesgaste = 1 - (desgaste / n) * E.penalizacionDesgaste;
+  const porAveria = averiado ? E.penalizacionAveria : 1;
+
+  return limitar(porPoblacion * porServicio * porDesgaste * porAveria,
+                 E.poderMin, E.poderMax);
 }
 
 /** Calidad del pueblo (multiplica el crecimiento): la sube el saneamiento fino. */

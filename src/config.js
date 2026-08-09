@@ -275,6 +275,21 @@ export const CONFIG = {
     factorDistancia: 1.0
   },
 
+  /* ---------- PODER DE EXPANSIÓN ----------
+     Lo que une el mapa con el juego de siempre: explorar no cuesta lo mismo
+     según cómo lleves tu red. Una población grande y BIEN SERVIDA, con la
+     instalación cuidada, abarata las casillas de alrededor; si dejas caer el
+     servicio, se desgasta la maquinaria o hay una avería, explorar cuesta más.
+     Así abastecer sigue siendo el objetivo y no un adorno. */
+  expansion: {
+    factorPoblacion: 0.55,     // cuánto ayuda la población (crece logarítmico)
+    habitantesReferencia: 200, // la población de partida no da ventaja: es el listón
+    servicioMinimo: 0.35,      // suelo, para que un corte puntual no te bloquee
+    penalizacionDesgaste: 0.50,// cuánto castiga no engrasar
+    penalizacionAveria: 0.70,  // multiplicador si hay alguna avería sin reparar
+    poderMin: 0.35, poderMax: 6
+  },
+
   /* ---------- TERRENOS ----------
      `costeExtra` multiplica los clics necesarios para abrir la casilla. */
   terrenos: {

@@ -11,7 +11,8 @@
 
 import { CONFIG } from './config.js';
 import { capacidad, demandaMedia, caudalCaptacion, costeMejora,
-         requisitosAutobomba, capacidadTanque, nombreEstacion } from './simulacion.js';
+         requisitosAutobomba, capacidadTanque, nombreEstacion,
+         poderExpansion } from './simulacion.js';
 import { formatear } from './util.js';
 
 const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
@@ -215,6 +216,11 @@ export class UI {
     const suc = Math.round((resultado.suciedad || 0) * 100);
     this.fijar('hud-cauce', suc + ' %',
       suc >= 66 ? 'critico' : suc >= 33 ? 'alarma' : 'ok');
+
+    // Poder de expansión: lo que enlaza abastecer bien con explorar barato
+    const poder = poderExpansion(estado);
+    this.fijar('hud-expansion', '×' + poder.toFixed(2),
+      poder >= 1.5 ? 'ok' : poder >= 1 ? 'neutro' : 'critico');
 
     const h = Math.floor(estado.horas % 24);
     const horasAño = CONFIG.tiempo.horasPorAño;

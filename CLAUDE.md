@@ -210,6 +210,13 @@ cada `CONFIG.visita` segundos, y `recogerOperario()` intercepta el clic de
 bombear si cae encima. Da prima y deja el desgaste a cero. La escena solo lo
 pinta (`escena.operario`).
 
+**El mapa y el abastecimiento son UN SOLO bucle.** `poderExpansion(estado)` sale
+de la población, el nivel de servicio, el desgaste y las averías, y DIVIDE el
+coste en clics de destapar casillas (`clicsParaDestapar`). Es lo que impide que
+el mapa se convierta en un juego aparte: si desatiendes el abastecimiento,
+explorar se encarece; si lo cuidas, el territorio se abre. Cualquier mecánica
+nueva del mapa debería engancharse aquí y no vivir por su cuenta.
+
 **Ojo con el tope de ingresos.** Solo se factura el agua SERVIDA, así que la
 recaudación está topada por la demanda del pueblo: en cuanto la superas, clicar
 más no da nada. Por eso el crecimiento de población es agresivo

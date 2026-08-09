@@ -15,7 +15,8 @@ import { EscenaAssets } from './escena_assets.js';
 import { EscenaTeselas } from './escena_teselas.js';
 import { EscenaMapa } from './escena_mapa.js';
 import { celdaEn, clicarCasilla, clicsParaDestapar } from './mapa.js';
-import { avanzar, bombear, costeMejora, requisitosAutobomba, engrasar } from './simulacion.js';
+import { avanzar, bombear, costeMejora, requisitosAutobomba, engrasar,
+         poderExpansion } from './simulacion.js';
 import { formatear } from './util.js';
 
 const lienzo  = document.getElementById('escena');
@@ -94,7 +95,7 @@ function procesarAcciones(){
         if(!celda) break;
 
         if(celda.oculta){
-          const r = clicarCasilla(estado.mapa, col, fila);
+          const r = clicarCasilla(estado.mapa, col, fila, poderExpansion(estado));
           if(r === null){ avisar('Ahí no llegas todavía: abre primero una casilla de al lado.'); break; }
           escena.destello(a.x, a.y);
           if(r === 'descubierta') anunciarHallazgo(celda, col, fila);
