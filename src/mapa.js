@@ -323,7 +323,20 @@ export function construccionesConectadas(estado){
     }
   }
 
-  return estado.construcciones.filter(o => visitadas.has(clave(o.col, o.fila)));
+  // Cuenta como enganchado lo que está SOBRE la red o PEGADO a ella. Exigir que
+  // la tubería pasara justo por encima de la casilla era una trampa: llevabas la
+  // conducción hasta la puerta del pueblo, se veía conectado, y el juego decía
+  // que no. Con acometida lateral se comporta como uno espera.
+  const enRed = (c, f) => {
+    if(visitadas.has(clave(c, f))) return true;
+    for(const [dc, df] of [[1,0],[-1,0],[0,1],[0,-1]]){
+      const nc = c + dc, nf = f + df;
+      if(nc < 0 || nf < 0 || nc >= M.cols || nf >= M.filas) continue;
+      if(visitadas.has(clave(nc, nf))) return true;
+    }
+    return false;
+  };
+  return estado.construcciones.filter(o => enRed(o.col, o.fila));
 }
 
 /** Cuenta por tipo lo que hay conectado: { captacion: 2, deposito: 1, ... } */

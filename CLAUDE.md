@@ -222,7 +222,11 @@ pagar el desbroce— ES el juego. No la reintroduzcas como comportamiento por
 defecto.
 
 **Lo construido solo cuenta si está CONECTADO.** `construccionesConectadas()`
-recorre la red desde la casilla del pueblo saltando por casillas con tubería;
+recorre la red desde la casilla del pueblo saltando por casillas con tubería, y
+cuenta lo que está SOBRE la red o PEGADO a ella (acometida lateral). Exigir que
+la tubería pasara justo por encima de la casilla fue un fallo real: llevabas la
+conducción hasta la puerta del pueblo, se veía conectada, y el juego decía que
+no. No lo endurezcas otra vez;
 `avanzar()` cachea el recuento en `estado._conectado` una vez por paso y
 `capacidad`/`caudalCaptacion`/`litrosPorClic` le suman `CONFIG.aportePorPieza`.
 Una pieza suelta en mitad del campo no aporta nada: es lo que convierte el
