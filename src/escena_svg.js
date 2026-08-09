@@ -90,7 +90,7 @@ export class EscenaSVG extends Escena {
     ctx.save(); ctx.globalAlpha = a; ctx.translate(cx, baseY); ctx.scale(esc, esc); ctx.translate(-cx, -baseY);
 
     // agua (canvas) detrás del cristal del sprite
-    const frac = limitar(p.agua / capacidad(p), 0, 1);
+    const frac = limitar(p.agua / capacidad(p, this._estado), 0, 1);
     const intX = cx - w * 0.34, intW = w * 0.68;
     const intBot = baseY - h * 0.16, intTop = topeY + h * 0.12;
     const aguaTop = intBot - (intBot - intTop) * frac;

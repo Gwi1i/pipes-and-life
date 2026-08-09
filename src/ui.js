@@ -46,8 +46,9 @@ export class UI {
       <button class="mejora obra tuberia" data-accion="modoTuberia" id="obra-tuberia"
               style="--tono:${CONFIG.color.agua}">
         <span class="m-cab"><span class="m-nom">Tender tubería</span></span>
-        <span class="m-desc">Une dos puntos por la ruta más barata. Rodear un
-          bosque puede salir mejor que desbrozarlo.</span>
+        <span class="m-desc">Tú marcas el recorrido, casilla a casilla. Clic en
+          la última para rematar, en la anterior para deshacer. Cada terreno
+          cuesta lo suyo: rodear un bosque puede salir mejor que desbrozarlo.</span>
         <span class="m-coste">según el terreno</span>
       </button>`;
   }
@@ -231,7 +232,7 @@ export class UI {
 
   actualizar(estado, resultado){
     const p = estado.activo;
-    const cap = capacidad(p);
+    const cap = capacidad(p, estado);
     const pct = Math.round((p.agua / cap) * 100);
 
     this.fijar('hud-agua', `${formatear(p.agua)} / ${formatear(cap)} L`,
@@ -301,7 +302,7 @@ export class UI {
     const P = CONFIG.poblacion;
     const dem = demandaMedia(p.habitantes);
     const consumoAhora = dem * (resultado.punta || 1) * 3600 / 1000;
-    const prodAhora = caudalCaptacion(p) * (resultado.estiaje || 1) * 3600 / 1000;
+    const prodAhora = caudalCaptacion(p, estado) * (resultado.estiaje || 1) * 3600 / 1000;
 
     let tendencia, claseT;
     if(p.averia){ tendencia = 'Avería activa'; claseT = 'critico'; }
@@ -319,7 +320,7 @@ export class UI {
     const estacion = nombreEstacion(estado.horas) +
       (est < 0.7 ? ' · estiaje' : est > 1.1 ? ' · deshielo' : '');
     const nivelDep = p.mejoras.deposito;
-    const reserva = nivelDep === 0 ? 'Sin depósito' : `Nivel ${nivelDep} · ${formatear(capacidad(p))} L`;
+    const reserva = nivelDep === 0 ? 'Sin depósito' : `Nivel ${nivelDep} · ${formatear(capacidad(p, estado))} L`;
     const sane = p.saneamientoActivo
       ? (p.mejoras.depuradora > 0 ? `Depuradora Nv ${p.mejoras.depuradora}` : 'SIN depurar ⚠')
       : 'Aún no genera';

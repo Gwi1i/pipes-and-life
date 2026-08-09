@@ -319,7 +319,7 @@ export class EscenaTeselas extends Escena {
                'Nv' + p.mejoras.bomba, r.averiada, 1 + this.pulso * 0.06);
 
     if(p.mejoras.deposito > 0){
-      const frac = limitar(p.agua / capacidad(p), 0, 1);
+      const frac = limitar(p.agua / capacidad(p, this._estado), 0, 1);
       this.pieza(K.deposito, C.deposito, 'deposito', 'DEPÓSITO',
                  Math.round(frac * 100) + '%', false, 1, frac);
     }

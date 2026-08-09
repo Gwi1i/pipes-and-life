@@ -20,6 +20,7 @@
 
 import { CONFIG } from './config.js';
 import { limitar } from './util.js';
+import { inventarioConectado } from './mapa.js';
 
 /* ---------------- HELPERS POR PUEBLO ---------------- */
 
@@ -58,9 +59,17 @@ export function eficiencia(pueblo){
   return 1 - (pueblo.desgaste || 0) * CONFIG.desgaste.efectoMax;
 }
 
-export function litrosPorClic(pueblo){
-  const base = CONFIG.bomba.litrosPorClicBase +
-               pueblo.mejoras.bomba * CONFIG.mejoras.bomba.incrementoLitros;
+/**
+ * Piezas conectadas al pueblo por tubería. Se calcula una vez por fotograma y
+ * se cachea en el estado: recorrer la red en cada consulta sería absurdo.
+ * Si no hay estado (llamadas sueltas desde la UI), se supone que no hay nada.
+ */
+function piezas(estado){ return (estado && estado._conectado) || {}; }
+
+export function litrosPorClic(pueblo, estado){
+  const base = CONFIG.bomba.litrosPorClicBase
+             + pueblo.mejoras.bomba * CONFIG.mejoras.bomba.incrementoLitros
+             + (piezas(estado).bomba || 0) * CONFIG.aportePorPieza.bomba;
   return base * eficiencia(pueblo);
 }
 
@@ -71,14 +80,16 @@ export function engrasar(pueblo){
   return antes - pueblo.desgaste;
 }
 
-export function capacidad(pueblo){
+export function capacidad(pueblo, estado){
+  const extra = (piezas(estado).deposito || 0) * CONFIG.aportePorPieza.deposito;
   const n = pueblo.mejoras.deposito;
-  if(n === 0) return CONFIG.bomba.bufferSinDeposito;
-  return CONFIG.deposito.capacidadBase + (n - 1) * CONFIG.deposito.incrementoCapacidad;
+  if(n === 0) return CONFIG.bomba.bufferSinDeposito + extra;
+  return CONFIG.deposito.capacidadBase + (n - 1) * CONFIG.deposito.incrementoCapacidad + extra;
 }
 
-export function caudalCaptacion(pueblo){
-  return pueblo.mejoras.captacion * CONFIG.mejoras.captacion.caudalPorNivel;
+export function caudalCaptacion(pueblo, estado){
+  return pueblo.mejoras.captacion * CONFIG.mejoras.captacion.caudalPorNivel
+       + (piezas(estado).captacion || 0) * CONFIG.aportePorPieza.captacion;
 }
 
 export function clicsAutoPorSeg(pueblo){
@@ -175,11 +186,11 @@ export function requisitosAutobomba(pueblo){
 }
 
 /** Un golpe de bomba en un pueblo. Devuelve los litros que entraron. */
-export function bombear(pueblo){
-  const cap = capacidad(pueblo);
+export function bombear(pueblo, estado){
+  const cap = capacidad(pueblo, estado);
   const antes = pueblo.agua;
   pueblo.desgaste = Math.min(1, (pueblo.desgaste || 0) + CONFIG.desgaste.porClic);
-  pueblo.agua = Math.min(cap, pueblo.agua + litrosPorClic(pueblo));
+  pueblo.agua = Math.min(cap, pueblo.agua + litrosPorClic(pueblo, estado));
   return pueblo.agua - antes;
 }
 
@@ -192,7 +203,7 @@ export function bombear(pueblo){
  */
 function avanzarPueblo(estado, p, dt, dtHoras, punta, estiaje, frenoCrec, lluvia){
   const S = CONFIG.saneamiento;
-  const cap = capacidad(p);
+  const cap = capacidad(p, estado);
   const factorAveria = p.averia ? (1 - CONFIG.averias.recorteProduccion) : 1;
 
   // Entrada: producción pasiva (parada si hay avería)
@@ -202,8 +213,8 @@ function avanzarPueblo(estado, p, dt, dtHoras, punta, estiaje, frenoCrec, lluvia
     D.porHoraJuego * dtHoras * Math.pow(D.frenoPorNivelMant, p.mejoras.mantenimiento));
 
   const ef = eficiencia(p);
-  const prodCaptacion = caudalCaptacion(p) * estiaje * ef * factorAveria * 3600 * dtHoras;
-  const prodAuto = clicsAutoPorSeg(p) * litrosPorClic(p) * factorAveria * dt;
+  const prodCaptacion = caudalCaptacion(p, estado) * estiaje * ef * factorAveria * 3600 * dtHoras;
+  const prodAuto = clicsAutoPorSeg(p) * litrosPorClic(p, estado) * factorAveria * dt;
   const antes = p.agua;
   p.agua = Math.min(cap, p.agua + prodCaptacion + prodAuto);
   const entrada = p.agua - antes;
@@ -291,6 +302,10 @@ function avanzarPueblo(estado, p, dt, dtHoras, punta, estiaje, frenoCrec, lluvia
  */
 export function avanzar(estado, dt){
   const eco = CONFIG.economia, K = CONFIG.cauce;
+  // Qué hay enganchado a la red AHORA. Se cachea aquí, una vez por paso: cada
+  // consulta de capacidad o caudal la usa, y recorrer la red en todas sería
+  // absurdo. Una pieza sin tubería al pueblo no cuenta.
+  estado._conectado = inventarioConectado(estado);
   const dtHoras = dt * eco.horasPorSegundo;
   const punta = coefHora(estado.horas);
   const estiaje = factorEstiaje(estado.horas);

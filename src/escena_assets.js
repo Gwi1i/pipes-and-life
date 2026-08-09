@@ -200,7 +200,7 @@ export class EscenaAssets extends Escena {
     ctx.globalAlpha = 1;
 
     // Nivel del depósito: pastilla con gota que se llena, integrada con el arte
-    const frac = limitar(p.agua / capacidad(p), 0, 1);
+    const frac = limitar(p.agua / capacidad(p, this._estado), 0, 1);
     this.pastillaNivel(cx, baseY - h - 2, frac);
   }
 

@@ -340,6 +340,16 @@ export const CONFIG = {
     }
   },
 
+  /* ---------- LO QUE APORTA CADA PIEZA CONECTADA ----------
+     La tienda de mejoras sube el NIVEL (lo bien que rinde cada una); el mapa
+     decide CUÁNTAS tienes y si están enganchadas. Una pieza sin tubería al
+     pueblo no cuenta: por eso el trazado importa. */
+  aportePorPieza: {
+    captacion: 0.10,     // L/s de producción pasiva que suma cada captación
+    deposito: 9000,      // litros de capacidad que suma cada depósito
+    bomba: 220           // litros por clic que suma cada bombeo
+  },
+
   /* ---------- TUBERÍAS ----------
      No van por donde quieran: cada casilla cuesta según lo que haya que hacer
      para atravesarla. Rodear un bosque o pagar por desbrozarlo es la decisión. */

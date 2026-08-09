@@ -145,7 +145,7 @@ export class Escena {
     const W = this.ancho, H = this.alto;
 
     const p = estado.activo;
-    this._W = W; this._H = H; this._p = p; this._res = resultado;
+    this._W = W; this._H = H; this._p = p; this._res = resultado; this._estado = estado;
     this.hora = ((estado.horas % 24) + 24) % 24;
     this.luz = Math.max(0, Math.sin(((this.hora - 6) / 12) * Math.PI));
     this.est = this.estacion(estado.horas);
@@ -430,7 +430,7 @@ export class Escena {
     ctx.ellipse(cx, cuerpoTop, rx, ry, 0, 0, Math.PI, true); ctx.closePath(); ctx.fill();
 
     // agua dentro (cilindro más corto con superficie elíptica)
-    const frac = limitar(p.agua / capacidad(p), 0, 1);
+    const frac = limitar(p.agua / capacidad(p, this._estado), 0, 1);
     const aguaTop = cuerpoBot - (cuerpoBot - cuerpoTop) * frac;
     if(frac > 0.01){
       const wg = ctx.createLinearGradient(cx - rx, 0, cx + rx, 0);

@@ -250,61 +250,81 @@ export function costeCasillaTuberia(celda){
 }
 
 /**
- * Ruta más BARATA entre dos casillas (A* sobre la cuadrícula, en ortogonal).
- * No busca la más corta: busca la que menos cuesta, así rodear un bosque o
- * atravesarlo pagando el desbroce es una decisión real del terreno y no una
- * regla artificial. Solo pasa por casillas ya descubiertas.
- *
- * Devuelve { camino: [{col,fila}], coste } o null si no hay paso.
+ * ¿Se puede prolongar el trazado hasta esta casilla? El jugador dibuja la
+ * tubería a mano, casilla a casilla: aquí solo se comprueba que la jugada sea
+ * legal. Devuelve { ok, motivo }.
  */
-export function rutaTuberia(celdas, desde, hasta){
-  const M = CONFIG.mapaMundo;
-  const clave = (c, f) => f * M.cols + c;
-  const meta = clave(hasta.col, hasta.fila);
+export function puedeSeguirTrazado(celdas, trazado, col, fila){
+  const celda = celdaEn(celdas, col, fila);
+  if(!celda) return { ok: false, motivo: 'Fuera del mapa.' };
+  if(celda.oculta) return { ok: false, motivo: 'Por ahí no has explorado todavía.' };
+  if(!trazado.length) return { ok: true, motivo: '' };
 
-  const coste = new Map();      // mejor coste conocido hasta cada casilla
-  const previo = new Map();
-  const abierta = [{ col: desde.col, fila: desde.fila, g: 0,
-                     f: heuristica(desde, hasta) }];
-  coste.set(clave(desde.col, desde.fila), 0);
+  if(trazado.some(p => p.col === col && p.fila === fila))
+    return { ok: false, motivo: 'La tubería ya pasa por ahí.' };
 
-  let vueltas = 0;
-  while(abierta.length && vueltas++ < 20000){
-    // el de menor f estimado (la lista es corta: basta con buscarlo)
-    let mejor = 0;
-    for(let i = 1; i < abierta.length; i++) if(abierta[i].f < abierta[mejor].f) mejor = i;
-    const actual = abierta.splice(mejor, 1)[0];
-    const k = clave(actual.col, actual.fila);
-
-    if(k === meta){
-      // reconstruir el camino hacia atrás
-      const camino = [];
-      let cur = k;
-      while(cur !== undefined){
-        camino.unshift({ col: cur % M.cols, fila: Math.floor(cur / M.cols) });
-        cur = previo.get(cur);
-      }
-      return { camino, coste: coste.get(meta) };
-    }
-
-    for(const v of vecinas(celdas, actual.col, actual.fila)){
-      if(v.celda.oculta) continue;              // no se tiende por lo desconocido
-      const kv = clave(v.col, v.fila);
-      const g = actual.g + costeCasillaTuberia(v.celda);
-      if(coste.has(kv) && coste.get(kv) <= g) continue;
-      coste.set(kv, g); previo.set(kv, k);
-      abierta.push({ col: v.col, fila: v.fila, g,
-                     f: g + heuristica(v, hasta) });
-    }
-  }
-  return null;
+  const ultimo = trazado[trazado.length - 1];
+  const salto = Math.abs(ultimo.col - col) + Math.abs(ultimo.fila - fila);
+  if(salto !== 1) return { ok: false, motivo: 'Tiene que ser una casilla contigua.' };
+  return { ok: true, motivo: '' };
 }
 
-// Distancia Manhattan por el coste más barato posible: nunca sobreestima, que
-// es lo que hace que A* siga dando la ruta óptima.
-function heuristica(a, b){
-  const minimo = Math.min(...Object.values(CONFIG.tuberia.costePorCasilla));
-  return (Math.abs(a.col - b.col) + Math.abs(a.fila - b.fila)) * minimo;
+/** Lo que cuesta un trazado completo, sumando la obra de cada casilla. */
+export function costeTrazado(celdas, trazado){
+  let total = 0;
+  for(const p of trazado){
+    const celda = celdaEn(celdas, p.col, p.fila);
+    if(celda) total += costeCasillaTuberia(celda);
+  }
+  return total;
+}
+
+/* ================================================================
+   LA RED — qué está de verdad conectado al pueblo
+   ================================================================ */
+
+/**
+ * Devuelve el conjunto de construcciones ENGANCHADAS al pueblo por tubería.
+ * Una pieza suelta en mitad del campo no sirve de nada: hay que llevarle el
+ * agua. Es lo que convierte el trazado en una decisión y no en un adorno.
+ *
+ * Se recorre en anchura desde la casilla del pueblo, saltando de casilla a
+ * casilla por las que tienen tubería; una construcción cuenta si su casilla
+ * está en la red (o es la propia casilla del pueblo).
+ */
+export function construccionesConectadas(estado){
+  const M = CONFIG.mapaMundo;
+  const clave = (c, f) => f * M.cols + c;
+
+  // Casillas por las que pasa alguna tubería
+  const conTuberia = new Set();
+  for(const tub of estado.tuberias)
+    for(const p of tub.camino) conTuberia.add(clave(p.col, p.fila));
+
+  // Recorrido en anchura desde el pueblo, solo por casillas con tubería
+  const visitadas = new Set();
+  const cola = [clave(M.origen.col, M.origen.fila)];
+  visitadas.add(cola[0]);
+  while(cola.length){
+    const k = cola.shift();
+    const c = k % M.cols, f = Math.floor(k / M.cols);
+    for(const [dc, df] of [[1,0],[-1,0],[0,1],[0,-1]]){
+      const nc = c + dc, nf = f + df;
+      if(nc < 0 || nf < 0 || nc >= M.cols || nf >= M.filas) continue;
+      const kv = clave(nc, nf);
+      if(visitadas.has(kv) || !conTuberia.has(kv)) continue;
+      visitadas.add(kv); cola.push(kv);
+    }
+  }
+
+  return estado.construcciones.filter(o => visitadas.has(clave(o.col, o.fila)));
+}
+
+/** Cuenta por tipo lo que hay conectado: { captacion: 2, deposito: 1, ... } */
+export function inventarioConectado(estado){
+  const cuenta = {};
+  for(const o of construccionesConectadas(estado)) cuenta[o.tipo] = (cuenta[o.tipo] || 0) + 1;
+  return cuenta;
 }
 
 /* ---------- persistencia compacta ----------

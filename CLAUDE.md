@@ -213,12 +213,20 @@ pinta (`escena.operario`).
 **Construir sobre el mapa.** `CONFIG.construibles` dice dónde puede ir cada
 pieza (`terreno`, `junto`, `lejosDeAgua`) y `puedeColocar()` lo comprueba
 devolviendo SIEMPRE un motivo legible: si el jugador no entiende por qué no le
-deja, la regla parece un fallo. Las tuberías se trazan con `rutaTuberia()`, un
-A* que minimiza el COSTE (no la distancia) usando `CONFIG.tuberia.costePorCasilla`,
-así rodear un bosque o pagar por atravesarlo es una decisión del terreno y no
-una regla artificial. La heurística usa el coste mínimo por casilla: si algún
-día se abarata un terreno por debajo de ese mínimo, hay que revisarla o A*
-dejará de dar la ruta óptima.
+deja, la regla parece un fallo.
+
+**Las tuberías se trazan A MANO**, casilla a casilla (`puedeSeguirTrazado`,
+`costeTrazado`). Hubo una versión con A* que buscaba la ruta más barata sola y
+se quitó a propósito: decidir el recorrido —y si compensa rodear un bosque o
+pagar el desbroce— ES el juego. No la reintroduzcas como comportamiento por
+defecto.
+
+**Lo construido solo cuenta si está CONECTADO.** `construccionesConectadas()`
+recorre la red desde la casilla del pueblo saltando por casillas con tubería;
+`avanzar()` cachea el recuento en `estado._conectado` una vez por paso y
+`capacidad`/`caudalCaptacion`/`litrosPorClic` le suman `CONFIG.aportePorPieza`.
+Una pieza suelta en mitad del campo no aporta nada: es lo que convierte el
+trazado en una decisión y no en un adorno.
 
 **El mapa y el abastecimiento son UN SOLO bucle.** `poderExpansion(estado)` sale
 de la población, el nivel de servicio, el desgaste y las averías, y DIVIDE el
