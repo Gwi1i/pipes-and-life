@@ -31,17 +31,37 @@ export class EscenaTeselas extends Escena {
   /**
    * Tesela de `assets/`, o null si no existe todavía (entonces se dibuja por
    * código). Permite ir añadiendo arte de una en una sin romper nada.
+   * Devuelve { img, bbox } — la caja opaca sirve para que un edificio con
+   * márgenes transparentes llene igualmente su celda.
    */
   tesela(nombre){
     let e = this._img[nombre];
     if(!e){
-      e = { img: new Image(), ok: false, fallo: false };
-      e.img.onload  = () => { e.ok = true; };
+      e = { img: new Image(), ok: false, fallo: false, bbox: null };
+      e.img.onload  = () => { e.bbox = cajaOpaca(e.img); e.ok = true; };
       e.img.onerror = () => { e.fallo = true; };
       e.img.src = 'assets/' + nombre;
       this._img[nombre] = e;
     }
-    return e.ok ? e.img : null;
+    return e.ok ? e : null;
+  }
+
+  /**
+   * Dibuja un edificio (PNG con fondo transparente) sobre su celda: se escala
+   * por su caja opaca para que llene el hueco sea cual sea el margen que dejara
+   * el generador, se apoya en la parte baja de la celda y puede sobresalir un
+   * poco hacia arriba, como en cualquier tile builder.
+   */
+  edificioTesela(entrada, cx, cyCelda, t, altoRel = 1.05){
+    const ctx = this.ctx, img = entrada.img, b = entrada.bbox;
+    const rel = b.w / b.h;
+    let dh = t * altoRel, dw = dh * rel;
+    if(dw > t * 1.25){ dw = t * 1.25; dh = dw / rel; }   // que no invada al vecino
+    const baseY = cyCelda + t * 0.40;
+    // sombra de contacto: sin ella el edificio flota sobre la hierba
+    ctx.fillStyle = 'rgba(0,0,0,0.30)';
+    ctx.beginPath(); ctx.ellipse(cx, baseY - dh * 0.04, dw * 0.34, dh * 0.10, 0, 0, 7); ctx.fill();
+    ctx.drawImage(img, b.x, b.y, b.w, b.h, cx - dw / 2, baseY - dh, dw, dh);
   }
 
   /* ================================================================
@@ -93,10 +113,10 @@ export class EscenaTeselas extends Escena {
     const hierbaBase = this.est.hierba;
 
     // Teselas de arte, si ya existen (si no, se dibuja todo por código)
-    const tHierba = this.tesela('t_hierba.png');
-    const tMatojos = this.tesela('t_hierba_matojos.png');
-    const tAgua = this.tesela('t_agua.png');
-    const tOrilla = this.tesela('t_orilla.png');
+    const tHierba = this.tesela('t_hierba.png')?.img;
+    const tMatojos = this.tesela('t_hierba_matojos.png')?.img;
+    const tAgua = this.tesela('t_agua.png')?.img;
+    const tOrilla = this.tesela('t_orilla.png')?.img;
 
     for(let f = 0; f < M.filas; f++){
       for(let c = 0; c < this.cols; c++){
@@ -306,12 +326,11 @@ export class EscenaTeselas extends Escena {
     const { x, y } = this.centro(col, celda.fila);
     const lado = t * 0.78 * escala;
 
-    const img = this.tesela('t_' + tipo + '.png');
-    if(img){
-      // Las teselas de arte traen su PROPIO suelo (no dependen de transparencia,
-      // que los generadores de imagen no dan de forma fiable): ocupan la celda
-      // entera y encajan con el terreno de alrededor.
-      ctx.drawImage(img, x - t / 2, y - t / 2, t, t);
+    const entrada = this.tesela('t_' + tipo + '.png');
+    if(entrada){
+      // Los edificios vienen con fondo transparente: se dibujan sobre la hierba
+      // del terreno, escalados por su caja opaca y apoyados en la celda.
+      this.edificioTesela(entrada, x, y, t, escala * 1.05);
       if(alarma){   // aro rojo latiendo cuando hay avería o alivio
         ctx.strokeStyle = `rgba(239,68,68,${0.55 + Math.sin(this.tiempo * 7) * 0.4})`;
         ctx.lineWidth = 2.5;
@@ -406,9 +425,10 @@ export class EscenaTeselas extends Escena {
 
     // Tesela de arte según el tamaño del pueblo, si existe
     const nivel = p.habitantes > 2500 ? 'ciudad' : p.habitantes > 600 ? 'villa' : 'aldea';
-    const img = this.tesela('t_pueblo_' + nivel + '.png');
-    if(img){
-      ctx.drawImage(img, x0, y0, w, h);   // trae su propio suelo, como las demás
+    const entrada = this.tesela('t_pueblo_' + nivel + '.png');
+    if(entrada){
+      // Fondo transparente: se apoya sobre la hierba, ocupando su bloque 2×2
+      this.edificioTesela(entrada, x0 + w / 2, y0 + h / 2 - t * 0.10, Math.min(w, h) * 1.7, 1);
       if(seco){
         ctx.fillStyle = 'rgba(30,40,50,0.45)';
         ctx.fillRect(x0, y0, w, h);
@@ -485,6 +505,34 @@ export class EscenaTeselas extends Escena {
       ctx.fillRect(0, 0, W, H);
     }
   }
+}
+
+/**
+ * Caja de los píxeles OPACOS de una imagen. Sirve para que un edificio llene su
+ * celda aunque el generador le haya dejado un margen transparente enorme, sin
+ * tener que recortar los PNG a mano.
+ */
+function cajaOpaca(img){
+  const W = img.naturalWidth, H = img.naturalHeight;
+  const lienzo = document.createElement('canvas');
+  lienzo.width = W; lienzo.height = H;
+  const ctx = lienzo.getContext('2d');
+  ctx.drawImage(img, 0, 0);
+  let d;
+  try { d = ctx.getImageData(0, 0, W, H).data; }
+  catch(e){ return { x: 0, y: 0, w: W, h: H }; }
+  let minX = W, minY = H, maxX = 0, maxY = 0, hay = false;
+  for(let y = 0; y < H; y++){
+    for(let x = 0; x < W; x++){
+      if(d[(y * W + x) * 4 + 3] > 24){
+        hay = true;
+        if(x < minX) minX = x; if(x > maxX) maxX = x;
+        if(y < minY) minY = y; if(y > maxY) maxY = y;
+      }
+    }
+  }
+  return hay ? { x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1 }
+             : { x: 0, y: 0, w: W, h: H };
 }
 
 /** Ruido determinista 0..1 por celda: la misma celda siempre igual. */

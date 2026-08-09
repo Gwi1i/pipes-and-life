@@ -36,11 +36,11 @@ documento explicando lo que quieres. Para que dibujen:
 - **Luz suave y difusa**, igual en todas.
 - **Sin texto ni marcas de agua.** (El paisaje anterior traía una abajo a la
   derecha; conviene pedirlo explícito.)
-- **TODAS las teselas llevan fondo opaco y su propio suelo.** Ojo, esto es
-  importante: los generadores **no dan transparencia real** (por eso el paisaje
-  vino con los cuadros grises "pintados"). Así que cada edificio se pide *sobre
-  su cuadro de césped, llenando la imagen*. Encaja con el terreno de alrededor y
-  nos ahorra el problema entero.
+- **Terreno: fondo opaco. Edificios: fondo TRANSPARENTE.** Gemini sí da
+  transparencia real si se la pides clara ("fondo transparente… solo el
+  edificio, sin hierba ni añadidos"). Con el edificio recortado, el juego lo
+  escala y lo apoya sobre la hierba con su sombra, sin parches cuadrados.
+  Si alguna vez te lo devuelve con fondo pintado, avísame y lo recorto yo.
 
 ## Coletilla de estilo (pégala al final de CADA prompt)
 
@@ -82,83 +82,76 @@ dibuja el borde de cada celda y las costuras se leen como líneas de cuadrícula
 
 ---
 
-## 2. Teselas de instalaciones (con su césped, llenando el cuadro)
+## 2. Teselas de instalaciones (SOLO el edificio, fondo transparente)
 
-Cada una viene sobre su propio cuadro de césped, del mismo verde que
-`t_hierba.png`, para que encaje con el terreno. Fondo opaco.
+**La fórmula que funcionó** (probada con `t_bomba.png`): describe el edificio y
+cierra con *"fondo transparente, solo el edificio, sin hierba ni añadidos"*. El
+juego se encarga del resto: lo recorta por su silueta, lo escala a la celda, lo
+apoya en la hierba y le pone la sombra.
 
-**Dos cosas aprendidas con la primera tesela (`t_bomba.png`):**
+**Dos cosas que ya sabemos:**
 
-1. **Que el edificio LLENE el cuadro.** Gemini tiende a dejar un margen enorme de
-   césped y el edificio queda pequeño dentro de su celda. Añade al prompt:
-   *"el edificio ocupa casi todo el cuadro, dejando solo un margen fino de
-   césped alrededor"*.
-2. **Que el verde sea el mismo.** Si el césped de la tesela no casa con el del
-   terreno, se ve un parche cuadrado. Añade: *"césped verde intenso idéntico al
-   de una textura de hierba de videojuego"* y, si tu herramienta deja adjuntar
-   imagen, **pásale `t_hierba.png` como referencia**.
-
-*(La perspectiva en 3/4 de los edificios, que Gemini hace aunque le pidas planta
-pura, está BIEN: es la convención de estos juegos y es lo que los hace
-reconocibles. No pelees con eso.)*
+1. **La perspectiva en 3/4 está BIEN**, aunque le pidas planta pura. Es la
+   convención del género y es lo que hace reconocible cada edificio. Se probó la
+   planta cenital pura y solo se veía el tejado: mucho peor. No pelees con eso.
+2. **No hace falta que llene el cuadro.** Da igual el margen transparente que
+   deje: el juego lo recorta por su caja opaca.
 
 ### `t_captacion.png`
 > Genera una imagen cuadrada: una estación de captación de agua vista desde
 > arriba, con plataforma de hormigón, reja de toma y tuberías, construida en la
-> orilla de un río; la mitad izquierda del cuadro es césped verde y la derecha
-> agua *[+ coletilla]*
+> orilla de un río; fondo transparente, solo la instalación, sin césped ni agua alrededor *[+ coletilla]*
 
 ### `t_bomba.png`
 > Genera una imagen cuadrada: una caseta de bombeo de agua vista desde arriba,
 > edificio pequeño rectangular con tejado a dos aguas y tuberías azules
-> entrando y saliendo, en el centro de un cuadro de césped verde que llena toda
-> la imagen *[+ coletilla]*
+> entrando y saliendo, fondo transparente, solo el edificio, sin hierba ni añadidos *[+ coletilla]*
 
 ### `t_deposito.png`
 > Genera una imagen cuadrada: un depósito de agua circular visto desde arriba,
-> gran tanque cilíndrico metálico con pasarela y escalera exterior, en el centro
-> de un cuadro de césped verde que llena toda la imagen *[+ coletilla]*
+> gran tanque cilíndrico metálico con pasarela y escalera exterior, fondo transparente, solo el edificio, sin hierba ni añadidos *[+ coletilla]*
 
 ### `t_depuradora.png`
 > Genera una imagen cuadrada: una estación depuradora de aguas residuales vista
 > desde arriba, con dos tanques clarificadores circulares con brazos radiales,
-> pasarelas metálicas y una caseta, sobre un cuadro de césped verde que llena
-> toda la imagen *[+ coletilla]*
+> pasarelas metálicas y una caseta, fondo transparente, solo el edificio, sin hierba ni añadidos *[+ coletilla]*
 
 ### `t_tanque.png`
 > Genera una imagen cuadrada: un tanque de tormentas enterrado visto desde
 > arriba, gran tapa circular de hormigón con rejillas de ventilación y un
-> aliviadero, sobre un cuadro de césped verde que llena toda la imagen
+> aliviadero, fondo transparente, solo el edificio, sin hierba ni añadidos
 > *[+ coletilla]*
 
 ---
 
-## 3. Teselas de población (con su césped; ocupan 2×2 celdas)
+## 3. Teselas de población (solo edificios, fondo transparente; ocupan 2×2 celdas)
 
 Cuadradas también; el juego las estira a su bloque de 2×2.
 
 ### `t_pueblo_aldea.png`
 > Genera una imagen cuadrada: una aldea vista desde arriba, con cuatro o cinco
-> casitas de tejado rojo alrededor de un camino de tierra y algún árbol, rodeada
-> de césped verde que llega hasta los bordes *[+ coletilla]*
+> casitas de tejado rojo alrededor de un camino de tierra y algún árbol, fondo transparente, solo los edificios, sin césped alrededor *[+ coletilla]*
 
 ### `t_pueblo_villa.png`
 > Genera una imagen cuadrada: un pueblo visto desde arriba, con una docena de
 > casas de tejado rojo, calles empedradas, una plaza con fuente y una iglesia,
-> rodeado de césped verde que llega hasta los bordes *[+ coletilla]*
+> fondo transparente, solo los edificios, sin césped alrededor *[+ coletilla]*
 
 ### `t_pueblo_ciudad.png`
 > Genera una imagen cuadrada: una ciudad vista desde arriba, con manzanas de
 > edificios de varias plantas, calles en cuadrícula, una plaza central y zonas
-> verdes, llegando el suelo hasta los bordes *[+ coletilla]*
+> verdes, fondo transparente, solo los edificios, sin césped alrededor *[+ coletilla]*
 
 ---
 
 ## Consejo
 
-Genera primero **`t_hierba.png` y `t_bombeo.png`**, suéltalas y mira el tablero
-en *Estilo D*. Si el encuadre o la escala no cuadran con tu arte, dímelo y
-ajusto proporciones y márgenes en `escena_teselas.js`.
+Ya están hechas `t_hierba.png` y `t_bomba.png`. Las siguientes que más cambian
+el tablero son **`t_agua.png` y `t_orilla.png`**: con ellas el terreno queda
+entero con arte. Después, las instalaciones y los tres tamaños de pueblo.
+
+Si el encuadre o la escala no cuadran con alguna, dímelo y ajusto proporciones
+en `escena_teselas.js`.
 
 ---
 ---
