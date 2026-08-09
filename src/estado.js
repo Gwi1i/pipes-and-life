@@ -57,7 +57,8 @@ export class Estado {
     this.construcciones = [];       // { tipo, col, fila } puestas sobre el mapa
     this.tuberias = [];             // { camino:[{col,fila}], coste }
     // Modo de construcción: qué está intentando colocar el jugador ahora mismo
-    this.modo = { tipo: null, elemento: null, trazado: [] };
+    this.modo = { tipo: null, elemento: null, trazado: [], deInventario: false };
+    this.seleccion = null;          // { col, fila } de la casilla que miras
 
     this.registro = [];
     this.ultimoInstante = Date.now();

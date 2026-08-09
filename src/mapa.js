@@ -105,6 +105,12 @@ function sembrarHallazgos(celdas, azar){
       if(dist < H.distanciaMinima) continue;      // que no salga todo en la puerta
       if(!lejosDeOtros(c, f, t.separacion)) continue;
       celda.hallazgo = t.clave;
+      // Cada instalación abandonada esconde una pieza concreta, decidida aquí
+      // (con la semilla) para que sea siempre la misma en la misma partida.
+      if(t.clave === 'ruina'){
+        const lista = H.piezasRuina;
+        celda.pieza = lista[Math.floor(azar() * lista.length)];
+      }
       puestos.push({ c, f });
       puestosDeEste++;
     }
@@ -342,6 +348,9 @@ export function comprimir(celdas){
   });
   return { abiertas, progresos, resueltos };
 }
+
+/** La pieza que esconde una ruina, ya resuelta o no. */
+export function piezaDeRuina(celda){ return celda?.pieza || 'bomba'; }
 
 export function aplicarGuardado(celdas, datos){
   if(!datos) return;

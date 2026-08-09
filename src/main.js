@@ -15,7 +15,8 @@ import { EscenaAssets } from './escena_assets.js';
 import { EscenaTeselas } from './escena_teselas.js';
 import { EscenaMapa } from './escena_mapa.js';
 import { celdaEn, clicarCasilla, clicsParaDestapar, puedeColocar,
-         puedeSeguirTrazado, costeTrazado } from './mapa.js';
+         puedeSeguirTrazado, costeTrazado, construccionesConectadas,
+         piezaDeRuina } from './mapa.js';
 import { avanzar, bombear, costeMejora, requisitosAutobomba, engrasar,
          poderExpansion } from './simulacion.js';
 import { formatear } from './util.js';
@@ -82,6 +83,10 @@ function procesarAcciones(){
         }
         break;
 
+      case 'zoom':
+        if(escena instanceof EscenaMapa) escena.ampliar(estado, a.delta, a.x, a.y);
+        break;
+
       /* --- MODO CONSTRUCCIÓN --- */
 
       case 'elegirConstruible': {
@@ -129,11 +134,65 @@ function procesarAcciones(){
           if(r === null){ avisar('Ahí no llegas todavía: abre primero una casilla de al lado.'); break; }
           escena.destello(a.x, a.y);
           if(r === 'descubierta') anunciarHallazgo(celda, col, fila);
+        } else if(celda.hallazgo && !celda.resuelto){
+          // Un hallazgo sin atender se selecciona: sus acciones salen en el panel
+          estado.seleccion = { col, fila };
         } else {
-          // Casilla ya abierta: por ahora, bombear sigue siendo el clic útil
+          // Casilla ya abierta y sin nada que hacer: el clic sigue bombeando
+          estado.seleccion = null;
           bombear(estado.activo, estado);
           escena.destello(a.x, a.y);
         }
+        break;
+      }
+
+      /* --- HALLAZGOS: qué hacer con lo que encuentras --- */
+
+      case 'repararRuina':     accionRuina(false); break;
+      case 'desmontarRuina':   accionRuina(true);  break;
+
+      case 'explotarYacimiento': {
+        const celda = celdaSeleccionada();
+        if(!celda || celda.hallazgo !== 'yacimiento' || celda.resuelto) break;
+        const prima = CONFIG.hallazgos.primaYacimiento;
+        celda.resuelto = true;
+        estado.dinero += prima;
+        estado.anotar(`Yacimiento explotado: ${formatear(prima)} € en materiales.`, 'ok');
+        avisar(`+${formatear(prima)} € del yacimiento.`);
+        estado.seleccion = null;
+        break;
+      }
+
+      case 'abastecerPueblo': {
+        const celda = celdaSeleccionada();
+        if(!celda || celda.hallazgo !== 'pueblo' || celda.resuelto) break;
+        const sel = estado.seleccion;
+        if(!estaEnLaRed(sel.col, sel.fila)){
+          avisar('Primero hay que llegar hasta él con una tubería.');
+          break;
+        }
+        // Incorporarlo a la mancomunidad: abre el siguiente pueblo del config
+        const nuevo = estado.pueblos.find(p => !p.desbloqueado);
+        celda.resuelto = true;
+        if(nuevo){
+          nuevo.desbloqueado = true;
+          estado.anotar(`${nuevo.nombre} entra en la mancomunidad: ya recibe agua.`, 'ok');
+          avisar(`¡${nuevo.nombre} incorporado! Míralo en las pestañas.`);
+          ui.reconstruirPestanas(estado);
+        } else {
+          estado.anotar('Pueblo abastecido.', 'ok');
+        }
+        estado.seleccion = null;
+        break;
+      }
+
+      case 'colocarDeInventario': {
+        const i = parseInt(a.clave, 10);
+        const pieza = estado.inventario[i];
+        if(!pieza) break;
+        estado.modo = { tipo: 'colocar', elemento: pieza.tipo, trazado: [],
+                        deInventario: i };
+        ui.refrescarConstruccion(estado);
         break;
       }
 
@@ -224,15 +283,70 @@ function colocarElemento(col, fila){
   const def = CONFIG.construibles[clave];
   const veredicto = puedeColocar(estado.mapa, estado.construcciones, clave, col, fila);
   if(!veredicto.ok){ avisar(veredicto.motivo); return; }
-  if(!estado.puedePagar(def.coste)){
-    avisar(`Sin fondos: ${def.nombre.toLowerCase()} cuesta ${formatear(def.coste)} €.`);
-    return;
+
+  // Si viene del inventario ya está pagada: se rescató de una ruina
+  const deInv = estado.modo.deInventario;
+  if(deInv === false){
+    if(!estado.puedePagar(def.coste)){
+      avisar(`Sin fondos: ${def.nombre.toLowerCase()} cuesta ${formatear(def.coste)} €.`);
+      return;
+    }
+    estado.pagar(def.coste);
+    estado.anotar(`${def.nombre} construido por ${formatear(def.coste)} €.`, 'ok');
+  } else {
+    estado.inventario.splice(deInv, 1);
+    estado.anotar(`${def.nombre} del almacén, colocado.`, 'ok');
+    estado.modo = { tipo: null, elemento: null, trazado: [], deInventario: false };
   }
-  estado.pagar(def.coste);
   estado.construcciones.push({ tipo: clave, col, fila });
-  estado.anotar(`${def.nombre} construido por ${formatear(def.coste)} €.`, 'ok');
   // Se queda la herramienta puesta: normalmente se colocan varias seguidas
   ui.refrescarConstruccion(estado);
+}
+
+/* ---------- hallazgos ---------- */
+
+const celdaSeleccionada = () =>
+  estado.seleccion ? celdaEn(estado.mapa, estado.seleccion.col, estado.seleccion.fila) : null;
+
+/** ¿Esa casilla está enganchada a la red de tuberías del pueblo? */
+function estaEnLaRed(col, fila){
+  return construccionesConectadas({ ...estado,
+    construcciones: [{ tipo: '_', col, fila }] }).length > 0;
+}
+
+/**
+ * Una instalación abandonada: se puede poner en marcha donde está (más barato)
+ * o desmontarla y guardarla para levantarla donde interese (más cara, porque
+ * hay que trasladarla).
+ */
+function accionRuina(desmontar){
+  const celda = celdaSeleccionada();
+  if(!celda || celda.hallazgo !== 'ruina' || celda.resuelto) return;
+  const sel = estado.seleccion;
+  const tipo = piezaDeRuina(celda);
+  const def = CONFIG.construibles[tipo];
+  const H = CONFIG.hallazgos;
+  const coste = Math.round(def.coste * (desmontar ? H.costeDesmontar : H.costeReparar));
+
+  if(!estado.puedePagar(coste)){ avisar(`Hacen falta ${formatear(coste)} €.`); return; }
+
+  if(!desmontar){
+    // Reparar en el sitio exige que el terreno le sirva a esa pieza
+    const v = puedeColocar(estado.mapa, estado.construcciones, tipo, sel.col, sel.fila);
+    if(!v.ok){
+      avisar(`No se puede poner en marcha aquí: ${v.motivo} Prueba a desmontarla.`);
+      return;
+    }
+    estado.pagar(coste);
+    estado.construcciones.push({ tipo, col: sel.col, fila: sel.fila });
+    estado.anotar(`${def.nombre} recuperado y puesto en marcha por ${formatear(coste)} €.`, 'ok');
+  } else {
+    estado.pagar(coste);
+    estado.inventario.push({ tipo });
+    estado.anotar(`${def.nombre} desmontado y guardado en el almacén.`, 'ok');
+  }
+  celda.resuelto = true;
+  estado.seleccion = null;
 }
 
 /**

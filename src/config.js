@@ -269,6 +269,9 @@ export const CONFIG = {
     radioInicial: 3,                 // casillas ya abiertas al empezar
     tamTesela: 74,                   // píxeles por casilla al zoom 1
 
+    // Zoom con la rueda del ratón
+    zoomMin: 0.45, zoomMax: 2.2, velocidadZoom: 0.0015,
+
     // Coste en clics: base + distancia^exponente * factor
     clicsBase: 3,
     exponenteDistancia: 1.4,
@@ -366,7 +369,15 @@ export const CONFIG = {
   hallazgos: {
     pueblos: 7, ruinas: 14, yacimientos: 10,
     distanciaMinima: 4,      // nada de hallazgos pegados al origen
-    color: { pueblo: '#facc15', ruina: '#c084fc', yacimiento: '#38bdf8' }
+    color: { pueblo: '#facc15', ruina: '#c084fc', yacimiento: '#38bdf8' },
+
+    // Qué pieza puede salir de una instalación abandonada, y con qué peso
+    piezasRuina: ['bomba', 'bomba', 'deposito', 'captacion', 'depuradora', 'tanque'],
+    // Reparar en el sitio sale a cuenta; desmontarla para llevártela, también,
+    // pero cuesta más porque hay que trasladarla.
+    costeReparar: 0.35,      // fracción del precio de la pieza
+    costeDesmontar: 0.55,
+    primaYacimiento: 900     // lo que deja explotar un yacimiento
   },
 
   /* ---------- MAPA DE TESELAS (estilo D, vista cenital) ----------

@@ -14,6 +14,7 @@ import { capacidad, demandaMedia, caudalCaptacion, costeMejora,
          requisitosAutobomba, capacidadTanque, nombreEstacion,
          poderExpansion } from './simulacion.js';
 import { formatear } from './util.js';
+import { celdaEn, piezaDeRuina } from './mapa.js';
 
 const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 
@@ -51,6 +52,80 @@ export class UI {
           cuesta lo suyo: rodear un bosque puede salir mejor que desbrozarlo.</span>
         <span class="m-coste">según el terreno</span>
       </button>`;
+  }
+
+  /* ---------------- HALLAZGO SELECCIONADO Y ALMACÉN ---------------- */
+
+  /**
+   * Panel de acciones de la casilla seleccionada. Se reconstruye solo cuando
+   * cambia la selección, no en cada fotograma.
+   */
+  refrescarHallazgo(estado){
+    const panel = document.getElementById('panel-hallazgo');
+    const sel = estado.seleccion;
+    const celda = sel ? celdaEn(estado.mapa, sel.col, sel.fila) : null;
+    const firma = sel ? `${sel.col},${sel.fila},${celda?.resuelto}` : 'nada';
+    if(this.cache.hallazgoFirma === firma) return;
+    this.cache.hallazgoFirma = firma;
+
+    if(!celda || !celda.hallazgo || celda.resuelto){ panel.style.display = 'none'; return; }
+    panel.style.display = '';
+    const cont = document.getElementById('hallazgo');
+    const H = CONFIG.hallazgos;
+
+    if(celda.hallazgo === 'ruina'){
+      const tipo = piezaDeRuina(celda);
+      const def = CONFIG.construibles[tipo];
+      const reparar = Math.round(def.coste * H.costeReparar);
+      const desmontar = Math.round(def.coste * H.costeDesmontar);
+      cont.innerHTML = `
+        <p class="m-desc">Instalación abandonada: <b>${def.nombre}</b>.</p>
+        <button class="mejora obra" data-accion="repararRuina" style="--tono:${def.color}">
+          <span class="m-cab"><span class="m-nom">Poner en marcha aquí</span></span>
+          <span class="m-desc">Se queda donde está, si el terreno le sirve.</span>
+          <span class="m-coste">${formatear(reparar)} €</span>
+        </button>
+        <button class="mejora obra" data-accion="desmontarRuina" style="--tono:${H.color.ruina}">
+          <span class="m-cab"><span class="m-nom">Desmontar y guardar</span></span>
+          <span class="m-desc">Va al almacén para levantarla donde te convenga.</span>
+          <span class="m-coste">${formatear(desmontar)} €</span>
+        </button>`;
+    } else if(celda.hallazgo === 'yacimiento'){
+      cont.innerHTML = `
+        <button class="mejora obra" data-accion="explotarYacimiento" style="--tono:${H.color.yacimiento}">
+          <span class="m-cab"><span class="m-nom">Explotar el yacimiento</span></span>
+          <span class="m-desc">Materiales que se venden de una vez.</span>
+          <span class="m-coste">+${formatear(H.primaYacimiento)} €</span>
+        </button>`;
+    } else {
+      cont.innerHTML = `
+        <button class="mejora obra" data-accion="abastecerPueblo" style="--tono:${H.color.pueblo}">
+          <span class="m-cab"><span class="m-nom">Abastecer este pueblo</span></span>
+          <span class="m-desc">Hay que haberle llevado antes una tubería. Al
+            hacerlo entra en la mancomunidad.</span>
+          <span class="m-coste">se une a tu red</span>
+        </button>`;
+    }
+  }
+
+  /** El almacén: piezas rescatadas, listas para colocar sin volver a pagarlas. */
+  refrescarAlmacen(estado){
+    const firma = estado.inventario.map(p => p.tipo).join(',');
+    if(this.cache.almacenFirma === firma) return;
+    this.cache.almacenFirma = firma;
+    const panel = document.getElementById('panel-almacen');
+    panel.style.display = estado.inventario.length ? '' : 'none';
+    if(!estado.inventario.length) return;
+    document.getElementById('almacen').innerHTML = estado.inventario.map((p, i) => {
+      const def = CONFIG.construibles[p.tipo];
+      return `
+        <button class="mejora obra" data-accion="colocarDeInventario" data-clave="${i}"
+                style="--tono:${def.color}">
+          <span class="m-cab"><span class="m-nom">${def.nombre}</span></span>
+          <span class="m-desc">Rescatada. Colócala donde quieras.</span>
+          <span class="m-coste">gratis</span>
+        </button>`;
+    }).join('');
   }
 
   /** Marca qué herramienta está activa. */
@@ -280,6 +355,8 @@ export class UI {
     // Multa por hora, para el panel de cauce
     resultado.multaHora = (resultado.suciedad || 0) * CONFIG.cauce.multaMaxPorHora;
 
+    this.refrescarHallazgo(estado);
+    this.refrescarAlmacen(estado);
     this.refrescarTienda(estado);
     this.refrescarPremium(estado);
     this.refrescarAverias(estado);

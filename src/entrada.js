@@ -61,6 +61,15 @@ export class Entrada {
       this.emitir('bombear', { x: r.width * 0.26, y: r.height * 0.55 });
     });
 
+    // Rueda del ratón: zoom sobre el mapa. Se manda la posición del cursor para
+    // poder ampliar SOBRE ese punto y no sobre el centro, que es lo que hace
+    // que el zoom se sienta natural en vez de dar saltos.
+    l.addEventListener('wheel', e => {
+      e.preventDefault();
+      const r = l.getBoundingClientRect();
+      this.emitir('zoom', { delta: e.deltaY, x: e.clientX - r.left, y: e.clientY - r.top });
+    }, { passive: false });
+
     // Botón de mantenimiento: el segundo sitio donde clicar
     const btnM = document.getElementById('btn-mantener');
     if(btnM) btnM.addEventListener('pointerdown', e => {
@@ -86,7 +95,8 @@ export class Entrada {
       if(e.key === 'Escape') this.emitir('cancelarModo');
     });
 
-    for(const id of ['tienda', 'premium', 'panel-averias', 'pestanas', 'panel-cauce', 'construir']){
+    for(const id of ['tienda', 'premium', 'panel-averias', 'pestanas', 'panel-cauce',
+                     'construir', 'hallazgo', 'almacen']){
       const cont = document.getElementById(id);
       if(cont) cont.addEventListener('click', e => {
         const b = e.target.closest('[data-accion]');
