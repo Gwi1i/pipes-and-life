@@ -23,6 +23,27 @@ import { Escena, mezclarColor, oscurecer, aclarar } from './escena.js';
 
 export class EscenaTeselas extends Escena {
 
+  constructor(lienzo){
+    super(lienzo);
+    this._img = {};   // teselas de arte: nombre → { img, ok, fallo }
+  }
+
+  /**
+   * Tesela de `assets/`, o null si no existe todavía (entonces se dibuja por
+   * código). Permite ir añadiendo arte de una en una sin romper nada.
+   */
+  tesela(nombre){
+    let e = this._img[nombre];
+    if(!e){
+      e = { img: new Image(), ok: false, fallo: false };
+      e.img.onload  = () => { e.ok = true; };
+      e.img.onerror = () => { e.fallo = true; };
+      e.img.src = 'assets/' + nombre;
+      this._img[nombre] = e;
+    }
+    return e.ok ? e.img : null;
+  }
+
   /* ================================================================
      BUCLE DE DIBUJO
      ================================================================ */
@@ -71,12 +92,33 @@ export class EscenaTeselas extends Escena {
     const suc = this.suciedad;
     const hierbaBase = this.est.hierba;
 
+    // Teselas de arte, si ya existen (si no, se dibuja todo por código)
+    const tHierba = this.tesela('t_hierba.png');
+    const tMatojos = this.tesela('t_hierba_matojos.png');
+    const tAgua = this.tesela('t_agua.png');
+    const tOrilla = this.tesela('t_orilla.png');
+
     for(let f = 0; f < M.filas; f++){
       for(let c = 0; c < this.cols; c++){
         const x = this.cx(c), y = this.cy(f);
         const esAgua = c >= this.rioDesdeCol;
         const esOrilla = c === this.orillaCol;
 
+        // --- camino con arte ---
+        if(esAgua && tAgua){
+          ctx.drawImage(tAgua, x, y, t, t);
+          if(suc > 0.02){ ctx.fillStyle = `rgba(120,130,60,${suc * 0.45})`; ctx.fillRect(x, y, t, t); }
+          continue;
+        }
+        if(!esAgua && tHierba){
+          const v = ruido(c, f);
+          const img = (v > 0.78 && tMatojos) ? tMatojos : tHierba;
+          ctx.drawImage(img, x, y, t, t);
+          if(esOrilla && tOrilla) ctx.drawImage(tOrilla, x, y, t, t);
+          continue;
+        }
+
+        // --- camino por código (prototipo) ---
         if(esAgua){
           const base = mezclarColor(CONFIG.color.aguaProfunda, CONFIG.color.aguaSucia, suc);
           ctx.fillStyle = mezclarColor(base, '#000000', ((c + f) % 2) * 0.06);
@@ -252,17 +294,32 @@ export class EscenaTeselas extends Escena {
     const { x, y } = this.centro(col, celda.fila);
     const lado = t * 0.78 * escala;
 
-    // sombra
-    ctx.fillStyle = 'rgba(0,0,0,0.28)';
-    ctx.beginPath(); ctx.ellipse(x, y + lado * 0.42, lado * 0.42, lado * 0.16, 0, 0, 7); ctx.fill();
-    // plataforma
-    ctx.beginPath(); ctx.roundRect(x - lado / 2, y - lado / 2, lado, lado, lado * 0.18);
-    ctx.fillStyle = oscurecer(color, 0.62); ctx.fill();
-    ctx.strokeStyle = alarma
-      ? `rgba(239,68,68,${0.55 + Math.sin(this.tiempo * 7) * 0.4})` : oscurecer(color, 0.2);
-    ctx.lineWidth = 2; ctx.stroke();
+    const img = this.tesela('t_' + tipo + '.png');
+    if(img){
+      // Arte: sombra suave desplazada (la luz viene de arriba-izquierda)
+      ctx.save();
+      ctx.shadowColor = 'rgba(0,0,0,0.45)';
+      ctx.shadowBlur = lado * 0.16; ctx.shadowOffsetX = lado * 0.06; ctx.shadowOffsetY = lado * 0.08;
+      ctx.drawImage(img, x - lado / 2, y - lado / 2, lado, lado);
+      ctx.restore();
+      if(alarma){   // aro rojo latiendo cuando hay avería o alivio
+        ctx.strokeStyle = `rgba(239,68,68,${0.55 + Math.sin(this.tiempo * 7) * 0.4})`;
+        ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.roundRect(x - lado / 2, y - lado / 2, lado, lado, lado * 0.18); ctx.stroke();
+      }
+    } else {
+      // sombra
+      ctx.fillStyle = 'rgba(0,0,0,0.28)';
+      ctx.beginPath(); ctx.ellipse(x, y + lado * 0.42, lado * 0.42, lado * 0.16, 0, 0, 7); ctx.fill();
+      // plataforma
+      ctx.beginPath(); ctx.roundRect(x - lado / 2, y - lado / 2, lado, lado, lado * 0.18);
+      ctx.fillStyle = oscurecer(color, 0.62); ctx.fill();
+      ctx.strokeStyle = alarma
+        ? `rgba(239,68,68,${0.55 + Math.sin(this.tiempo * 7) * 0.4})` : oscurecer(color, 0.2);
+      ctx.lineWidth = 2; ctx.stroke();
 
-    this.silueta(tipo, x, y, lado, color);
+      this.silueta(tipo, x, y, lado, color);
+    }
 
     if(frac !== null){   // barra de llenado bajo la pieza
       const bw = lado * 0.8, bh = Math.max(3, lado * 0.09), bx = x - bw / 2, by = y + lado * 0.36;
@@ -337,7 +394,26 @@ export class EscenaTeselas extends Escena {
     const w = t * K.ancho, h = t * K.alto;
     const seco = r.servicio < 0.5;
 
-    // parcela
+    // Tesela de arte según el tamaño del pueblo, si existe
+    const nivel = p.habitantes > 2500 ? 'ciudad' : p.habitantes > 600 ? 'villa' : 'aldea';
+    const img = this.tesela('t_pueblo_' + nivel + '.png');
+    if(img){
+      ctx.save();
+      ctx.shadowColor = 'rgba(0,0,0,0.45)';
+      ctx.shadowBlur = t * 0.16; ctx.shadowOffsetX = t * 0.05; ctx.shadowOffsetY = t * 0.07;
+      ctx.drawImage(img, x0, y0, w, h);
+      ctx.restore();
+      if(seco){
+        ctx.fillStyle = 'rgba(30,40,50,0.45)';
+        ctx.fillRect(x0, y0, w, h);
+        this.avisoSed(x0 + w / 2, y0 + h / 2 + t * 0.18, t);
+      }
+      this.rotulo(p.nombre, Math.floor(p.habitantes).toLocaleString('es-ES') + ' hab',
+                  x0 + w / 2, y0 + h + t * 0.06, CONFIG.color.texto);
+      return;
+    }
+
+    // parcela (prototipo por código)
     ctx.fillStyle = seco ? '#3a4048' : mezclarColor('#6b7a4a', this.est.hierba, 0.4);
     ctx.beginPath(); ctx.roundRect(x0 + 3, y0 + 3, w - 6, h - 6, 6); ctx.fill();
     ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = 2; ctx.stroke();
@@ -365,15 +441,19 @@ export class EscenaTeselas extends Escena {
         }
       }
     }
-    if(seco){
-      ctx.globalAlpha = 0.6 + Math.sin(this.tiempo * 4) * 0.4;
-      ctx.fillStyle = CONFIG.color.critico;
-      ctx.font = `bold ${Math.round(t * 0.5)}px IBM Plex Sans, system-ui, sans-serif`;
-      ctx.textAlign = 'center'; ctx.fillText('!', x0 + w / 2, y0 + h / 2 + t * 0.18);
-      ctx.globalAlpha = 1;
-    }
+    if(seco) this.avisoSed(x0 + w / 2, y0 + h / 2 + t * 0.18, t);
     this.rotulo(p.nombre, Math.floor(p.habitantes).toLocaleString('es-ES') + ' hab',
                 x0 + w / 2, y0 + h + t * 0.06, CONFIG.color.texto);
+  }
+
+  /** "!" que late sobre un pueblo mal servido. */
+  avisoSed(cx, cy, t){
+    const ctx = this.ctx;
+    ctx.globalAlpha = 0.6 + Math.sin(this.tiempo * 4) * 0.4;
+    ctx.fillStyle = CONFIG.color.critico;
+    ctx.font = `bold ${Math.round(t * 0.5)}px IBM Plex Sans, system-ui, sans-serif`;
+    ctx.textAlign = 'center'; ctx.fillText('!', cx, cy);
+    ctx.globalAlpha = 1;
   }
 
   /** Rótulo con pastilla, como en el estilo C. */

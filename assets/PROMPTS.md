@@ -1,4 +1,131 @@
-# Prompts para el arte del estilo C (generado con IA)
+# Prompts para el arte generado con IA
+
+> **Estilo D (teselas)** es el camino elegido: está justo abajo.
+> Más abajo queda el material del **estilo C** (vista de alzado), por si se
+> retoma.
+
+---
+
+# ESTILO D — TESELAS (vista cenital sobre cuadrícula)
+
+El terreno es una **rejilla de celdas cuadradas vistas desde arriba**; cada
+elemento ocupa su celda y las tuberías se trazan entre ellas. Suelta los PNG en
+esta carpeta con el nombre exacto y el juego los usa solo (botón *Estilo → D*).
+Lo que falte se sigue dibujando por código, así puedes ir de una en una.
+
+**Las tuberías NO son arte**: se dibujan por código para que la animación del
+agua siga el caudal real. No hace falta generarlas.
+
+## Reglas para que todas peguen (importante)
+
+- **Vista CENITAL** (desde arriba, cámara perpendicular). No en perspectiva, no
+  isométrica, no de lado.
+- **Imagen CUADRADA** (p. ej. 512×512).
+- **Luz suave desde arriba a la izquierda**, igual en todas.
+- **Sin texto, sin marcas de agua, sin logotipos.** (El paisaje anterior traía
+  una marca de agua abajo a la derecha; conviene pedirlo explícito.)
+- **Sin sombra proyectada** en los edificios: la sombra la pone el juego.
+
+## Estilo común (pégalo al final de CADA prompt)
+
+> **, vista cenital desde arriba, estilo render 3D cartoon de juego móvil,
+> colores saturados y limpios, luz suave desde arriba a la izquierda, sin texto,
+> sin marca de agua, imagen cuadrada**
+
+En inglés:
+> **, top-down view from directly above, stylized 3D cartoon mobile game art,
+> clean saturated colors, soft light from top-left, no text, no watermark,
+> square image**
+
+---
+
+## 1. Teselas de terreno (fondo OPACO y **repetible**)
+
+Estas se repiten por todo el tablero, así que pide **textura continua
+(seamless/tileable)**. Si no salen perfectas no pasa nada: la rejilla del juego
+dibuja el borde de cada celda y las costuras se leen como líneas de cuadrícula.
+
+### `t_hierba.png`
+> Textura de césped verde corto visto desde arriba, uniforme, sin objetos,
+> textura continua repetible en mosaico (seamless tileable) *[+ estilo común]*
+
+### `t_hierba_matojos.png`
+> Textura de césped verde visto desde arriba con unos pocos arbustos y piedras
+> pequeñas repartidos, textura continua repetible (seamless tileable) *[+ estilo común]*
+
+### `t_agua.png`
+> Textura de agua de río vista desde arriba, azul turquesa con ondas suaves y
+> reflejos, textura continua repetible (seamless tileable) *[+ estilo común]*
+
+### `t_orilla.png`
+> Transición de tierra a agua vista desde arriba: césped en la mitad izquierda,
+> una franja de arena y guijarros en el centro, y agua en la mitad derecha; el
+> borde corre en vertical *[+ estilo común]*
+
+### `t_tierra.png` (opcional, para futuras ampliaciones)
+> Textura de tierra compactada y grava vista desde arriba, repetible *[+ estilo común]*
+
+---
+
+## 2. Teselas de instalaciones (fondo **TRANSPARENTE**)
+
+Que el objeto **ocupe casi toda la imagen** dejando un margen pequeño, centrado.
+
+### `t_captacion.png`
+> Estación de captación de agua vista desde arriba: plataforma de hormigón junto
+> al río con una reja de toma y tuberías *[+ estilo común]*, fondo transparente
+
+### `t_bomba.png`
+> Caseta de bombeo de agua vista desde arriba: edificio pequeño rectangular con
+> tejado a dos aguas y tuberías azules entrando y saliendo *[+ estilo común]*,
+> fondo transparente
+
+### `t_deposito.png`
+> Depósito de agua circular visto desde arriba: gran tanque cilíndrico metálico
+> con pasarela y escalera exterior *[+ estilo común]*, fondo transparente
+
+### `t_depuradora.png`
+> Estación depuradora de aguas residuales vista desde arriba: dos tanques
+> clarificadores circulares con brazos radiales, pasarelas metálicas y una
+> caseta pequeña *[+ estilo común]*, fondo transparente
+
+### `t_tanque.png`
+> Tanque de tormentas enterrado visto desde arriba: gran tapa circular de
+> hormigón con rejillas de ventilación y un aliviadero *[+ estilo común]*,
+> fondo transparente
+
+---
+
+## 3. Teselas de población (fondo **TRANSPARENTE**, ocupan 2×2 celdas)
+
+Cuadradas también; el juego las estira a su bloque de 2×2.
+
+### `t_pueblo_aldea.png`
+> Aldea vista desde arriba: cuatro o cinco casitas con tejado rojo alrededor de
+> un camino de tierra, con algún árbol *[+ estilo común]*, fondo transparente
+
+### `t_pueblo_villa.png`
+> Pueblo visto desde arriba: una docena de casas con tejado rojo, calles
+> empedradas, una plaza con fuente y una iglesia *[+ estilo común]*,
+> fondo transparente
+
+### `t_pueblo_ciudad.png`
+> Ciudad vista desde arriba: manzanas de edificios de varias plantas con azoteas,
+> calles en cuadrícula, una plaza central y zonas verdes *[+ estilo común]*,
+> fondo transparente
+
+---
+
+## Consejo
+
+Genera primero **`t_hierba.png` y `t_bombeo.png`**, suéltalas y mira el tablero
+en *Estilo D*. Si el encuadre o la escala no cuadran con tu arte, dímelo y
+ajusto proporciones y márgenes en `escena_teselas.js`.
+
+---
+---
+
+# ESTILO C — vista de alzado (material anterior)
 
 La idea: generas estas imágenes con **cualquier** generador de IA (Bing Image
 Creator / Copilot y Google Gemini son gratis y valen de sobra; también ChatGPT,

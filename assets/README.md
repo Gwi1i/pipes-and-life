@@ -1,7 +1,33 @@
 # assets/
 
-Imágenes del **estilo visual C** (generadas con IA). Ver `PROMPTS.md` para los
-prompts listos para copiar y pegar.
+Imágenes generadas con IA. Ver `PROMPTS.md` para los prompts listos para copiar
+y pegar.
+
+## Estilo D — teselas (el camino elegido)
+
+Vista cenital sobre cuadrícula. Cada archivo que falte se dibuja por código, así
+que puedes ir añadiéndolas de una en una (botón *Estilo → D · Teselas*).
+
+| Archivo | Qué es | Fondo |
+|---|---|---|
+| `t_hierba.png` | Césped, textura repetible | opaco |
+| `t_hierba_matojos.png` | Césped con arbustos y piedras | opaco |
+| `t_agua.png` | Agua del río, repetible | opaco |
+| `t_orilla.png` | Transición césped→agua (agua a la derecha) | opaco |
+| `t_tierra.png` | Tierra/grava (opcional, para ampliaciones) | opaco |
+| `t_captacion.png` | Toma de agua | transparente |
+| `t_bomba.png` | Caseta de bombeo | transparente |
+| `t_deposito.png` | Depósito circular | transparente |
+| `t_depuradora.png` | Estación depuradora | transparente |
+| `t_tanque.png` | Tanque de tormentas | transparente |
+| `t_pueblo_aldea.png` | Aldea (ocupa 2×2 celdas) | transparente |
+| `t_pueblo_villa.png` | Pueblo | transparente |
+| `t_pueblo_ciudad.png` | Ciudad | transparente |
+
+Las **tuberías no son arte**: se dibujan por código para que el agua se anime
+según el caudal real.
+
+## Estilo C — vista de alzado (material anterior)
 
 Suelta aquí los PNG con estos nombres exactos (fondo transparente, cuadrados):
 
