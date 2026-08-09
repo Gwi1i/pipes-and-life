@@ -440,7 +440,9 @@ export class EscenaTeselas extends Escena {
     const entrada = this.tesela('t_pueblo_' + nivel + '.png');
     if(entrada){
       // Fondo transparente: se apoya sobre la hierba, ocupando su bloque 2×2
-      this.edificioTesela(entrada, x0 + w / 2, y0 + h / 2, Math.min(w, h) * 1.6, 1);
+      // El bloque del pueblo es 2×2, pero el sprite se dibuja a poco más de una
+      // celda: a tamaño de bloque completo aplastaba visualmente al resto.
+      this.edificioTesela(entrada, x0 + w / 2, y0 + h / 2, t * 1.35, 1);
       if(seco){
         ctx.fillStyle = 'rgba(30,40,50,0.45)';
         ctx.fillRect(x0, y0, w, h);
