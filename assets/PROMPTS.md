@@ -16,26 +16,37 @@ Lo que falte se sigue dibujando por código, así puedes ir de una en una.
 **Las tuberías NO son arte**: se dibujan por código para que la animación del
 agua siga el caudal real. No hace falta generarlas.
 
-## Reglas para que todas peguen (importante)
+## CÓMO PEDIRLAS (esto importa tanto como el texto)
 
-- **Vista CENITAL** (desde arriba, cámara perpendicular). No en perspectiva, no
-  isométrica, no de lado.
-- **Imagen CUADRADA** (p. ej. 512×512).
-- **Luz suave desde arriba a la izquierda**, igual en todas.
-- **Sin texto, sin marcas de agua, sin logotipos.** (El paisaje anterior traía
-  una marca de agua abajo a la derecha; conviene pedirlo explícito.)
-- **Sin sombra proyectada** en los edificios: la sombra la pone el juego.
+Los chats de imagen (Gemini y compañía) responden con TEXTO si les mandas un
+documento explicando lo que quieres. Para que dibujen:
 
-## Estilo común (pégalo al final de CADA prompt)
+- **Empieza por el verbo**: "Genera una imagen cuadrada: …".
+- **Una sola frase seguida.** Nada de títulos, listas, ni nombres de archivo
+  (`t_hierba.png` no le dice nada al generador; el nombre es solo para guardar).
+- **Pocas negaciones.** "sin texto ni marca de agua" y para de contar; los "no
+  isométrica, no de lado…" se sustituyen por decir en positivo *"vista desde
+  arriba en perpendicular"*.
+- Si contesta con texto, insiste: **"Genérala como imagen"**.
 
-> **, vista cenital desde arriba, estilo render 3D cartoon de juego móvil,
-> colores saturados y limpios, luz suave desde arriba a la izquierda, sin texto,
-> sin marca de agua, imagen cuadrada**
+## Reglas para que todas peguen
 
-En inglés:
-> **, top-down view from directly above, stylized 3D cartoon mobile game art,
-> clean saturated colors, soft light from top-left, no text, no watermark,
-> square image**
+- **Vista CENITAL**: desde arriba, en perpendicular.
+- **Imagen CUADRADA** (512×512 vale de sobra).
+- **Luz suave y difusa**, igual en todas.
+- **Sin texto ni marcas de agua.** (El paisaje anterior traía una abajo a la
+  derecha; conviene pedirlo explícito.)
+- **TODAS las teselas llevan fondo opaco y su propio suelo.** Ojo, esto es
+  importante: los generadores **no dan transparencia real** (por eso el paisaje
+  vino con los cuadros grises "pintados"). Así que cada edificio se pide *sobre
+  su cuadro de césped, llenando la imagen*. Encaja con el terreno de alrededor y
+  nos ahorra el problema entero.
+
+## Coletilla de estilo (pégala al final de CADA prompt)
+
+> **, vista desde arriba en perpendicular, estilo render 3D cartoon de videojuego
+> móvil, colores saturados y limpios, luz suave y difusa, sin texto ni marca de
+> agua, imagen cuadrada**
 
 ---
 
@@ -46,73 +57,85 @@ Estas se repiten por todo el tablero, así que pide **textura continua
 dibuja el borde de cada celda y las costuras se leen como líneas de cuadrícula.
 
 ### `t_hierba.png`
-> Textura de césped verde corto visto desde arriba, uniforme, sin objetos,
-> textura continua repetible en mosaico (seamless tileable) *[+ estilo común]*
+> Genera una imagen cuadrada: textura de césped verde corto vista desde arriba
+> en perpendicular, uniforme y sin objetos, perfectamente repetible en mosaico
+> (seamless tileable) *[+ coletilla]*
 
 ### `t_hierba_matojos.png`
-> Textura de césped verde visto desde arriba con unos pocos arbustos y piedras
-> pequeñas repartidos, textura continua repetible (seamless tileable) *[+ estilo común]*
+> Genera una imagen cuadrada: textura de césped verde vista desde arriba con
+> unos pocos arbustos y piedras pequeñas repartidos, repetible en mosaico
+> (seamless tileable) *[+ coletilla]*
 
 ### `t_agua.png`
-> Textura de agua de río vista desde arriba, azul turquesa con ondas suaves y
-> reflejos, textura continua repetible (seamless tileable) *[+ estilo común]*
+> Genera una imagen cuadrada: textura de agua de río vista desde arriba, azul
+> turquesa con ondas suaves y reflejos, repetible en mosaico (seamless tileable)
+> *[+ coletilla]*
 
 ### `t_orilla.png`
-> Transición de tierra a agua vista desde arriba: césped en la mitad izquierda,
-> una franja de arena y guijarros en el centro, y agua en la mitad derecha; el
-> borde corre en vertical *[+ estilo común]*
+> Genera una imagen cuadrada: la orilla de un río vista desde arriba, con césped
+> verde en la mitad izquierda, una franja de arena y guijarros en el centro y
+> agua en la mitad derecha, con el borde recto en vertical *[+ coletilla]*
 
 ### `t_tierra.png` (opcional, para futuras ampliaciones)
-> Textura de tierra compactada y grava vista desde arriba, repetible *[+ estilo común]*
+> Genera una imagen cuadrada: textura de tierra compactada y grava vista desde
+> arriba, repetible en mosaico (seamless tileable) *[+ coletilla]*
 
 ---
 
-## 2. Teselas de instalaciones (fondo **TRANSPARENTE**)
+## 2. Teselas de instalaciones (con su césped, llenando el cuadro)
 
-Que el objeto **ocupe casi toda la imagen** dejando un margen pequeño, centrado.
+Cada una viene sobre su propio cuadro de césped, del mismo verde que
+`t_hierba.png`, para que encaje con el terreno. Fondo opaco.
 
 ### `t_captacion.png`
-> Estación de captación de agua vista desde arriba: plataforma de hormigón junto
-> al río con una reja de toma y tuberías *[+ estilo común]*, fondo transparente
+> Genera una imagen cuadrada: una estación de captación de agua vista desde
+> arriba, con plataforma de hormigón, reja de toma y tuberías, construida en la
+> orilla de un río; la mitad izquierda del cuadro es césped verde y la derecha
+> agua *[+ coletilla]*
 
 ### `t_bomba.png`
-> Caseta de bombeo de agua vista desde arriba: edificio pequeño rectangular con
-> tejado a dos aguas y tuberías azules entrando y saliendo *[+ estilo común]*,
-> fondo transparente
+> Genera una imagen cuadrada: una caseta de bombeo de agua vista desde arriba,
+> edificio pequeño rectangular con tejado a dos aguas y tuberías azules
+> entrando y saliendo, en el centro de un cuadro de césped verde que llena toda
+> la imagen *[+ coletilla]*
 
 ### `t_deposito.png`
-> Depósito de agua circular visto desde arriba: gran tanque cilíndrico metálico
-> con pasarela y escalera exterior *[+ estilo común]*, fondo transparente
+> Genera una imagen cuadrada: un depósito de agua circular visto desde arriba,
+> gran tanque cilíndrico metálico con pasarela y escalera exterior, en el centro
+> de un cuadro de césped verde que llena toda la imagen *[+ coletilla]*
 
 ### `t_depuradora.png`
-> Estación depuradora de aguas residuales vista desde arriba: dos tanques
-> clarificadores circulares con brazos radiales, pasarelas metálicas y una
-> caseta pequeña *[+ estilo común]*, fondo transparente
+> Genera una imagen cuadrada: una estación depuradora de aguas residuales vista
+> desde arriba, con dos tanques clarificadores circulares con brazos radiales,
+> pasarelas metálicas y una caseta, sobre un cuadro de césped verde que llena
+> toda la imagen *[+ coletilla]*
 
 ### `t_tanque.png`
-> Tanque de tormentas enterrado visto desde arriba: gran tapa circular de
-> hormigón con rejillas de ventilación y un aliviadero *[+ estilo común]*,
-> fondo transparente
+> Genera una imagen cuadrada: un tanque de tormentas enterrado visto desde
+> arriba, gran tapa circular de hormigón con rejillas de ventilación y un
+> aliviadero, sobre un cuadro de césped verde que llena toda la imagen
+> *[+ coletilla]*
 
 ---
 
-## 3. Teselas de población (fondo **TRANSPARENTE**, ocupan 2×2 celdas)
+## 3. Teselas de población (con su césped; ocupan 2×2 celdas)
 
 Cuadradas también; el juego las estira a su bloque de 2×2.
 
 ### `t_pueblo_aldea.png`
-> Aldea vista desde arriba: cuatro o cinco casitas con tejado rojo alrededor de
-> un camino de tierra, con algún árbol *[+ estilo común]*, fondo transparente
+> Genera una imagen cuadrada: una aldea vista desde arriba, con cuatro o cinco
+> casitas de tejado rojo alrededor de un camino de tierra y algún árbol, rodeada
+> de césped verde que llega hasta los bordes *[+ coletilla]*
 
 ### `t_pueblo_villa.png`
-> Pueblo visto desde arriba: una docena de casas con tejado rojo, calles
-> empedradas, una plaza con fuente y una iglesia *[+ estilo común]*,
-> fondo transparente
+> Genera una imagen cuadrada: un pueblo visto desde arriba, con una docena de
+> casas de tejado rojo, calles empedradas, una plaza con fuente y una iglesia,
+> rodeado de césped verde que llega hasta los bordes *[+ coletilla]*
 
 ### `t_pueblo_ciudad.png`
-> Ciudad vista desde arriba: manzanas de edificios de varias plantas con azoteas,
-> calles en cuadrícula, una plaza central y zonas verdes *[+ estilo común]*,
-> fondo transparente
+> Genera una imagen cuadrada: una ciudad vista desde arriba, con manzanas de
+> edificios de varias plantas, calles en cuadrícula, una plaza central y zonas
+> verdes, llegando el suelo hasta los bordes *[+ coletilla]*
 
 ---
 

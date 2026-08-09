@@ -15,14 +15,14 @@ que puedes ir añadiéndolas de una en una (botón *Estilo → D · Teselas*).
 | `t_agua.png` | Agua del río, repetible | opaco |
 | `t_orilla.png` | Transición césped→agua (agua a la derecha) | opaco |
 | `t_tierra.png` | Tierra/grava (opcional, para ampliaciones) | opaco |
-| `t_captacion.png` | Toma de agua | transparente |
-| `t_bomba.png` | Caseta de bombeo | transparente |
-| `t_deposito.png` | Depósito circular | transparente |
-| `t_depuradora.png` | Estación depuradora | transparente |
-| `t_tanque.png` | Tanque de tormentas | transparente |
-| `t_pueblo_aldea.png` | Aldea (ocupa 2×2 celdas) | transparente |
-| `t_pueblo_villa.png` | Pueblo | transparente |
-| `t_pueblo_ciudad.png` | Ciudad | transparente |
+| `t_captacion.png` | Toma de agua | opaco, con su césped |
+| `t_bomba.png` | Caseta de bombeo | opaco, con su césped |
+| `t_deposito.png` | Depósito circular | opaco, con su césped |
+| `t_depuradora.png` | Estación depuradora | opaco, con su césped |
+| `t_tanque.png` | Tanque de tormentas | opaco, con su césped |
+| `t_pueblo_aldea.png` | Aldea (ocupa 2×2 celdas) | opaco, con su césped |
+| `t_pueblo_villa.png` | Pueblo | opaco, con su césped |
+| `t_pueblo_ciudad.png` | Ciudad | opaco, con su césped |
 
 Las **tuberías no son arte**: se dibujan por código para que el agua se anime
 según el caudal real.

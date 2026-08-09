@@ -296,16 +296,14 @@ export class EscenaTeselas extends Escena {
 
     const img = this.tesela('t_' + tipo + '.png');
     if(img){
-      // Arte: sombra suave desplazada (la luz viene de arriba-izquierda)
-      ctx.save();
-      ctx.shadowColor = 'rgba(0,0,0,0.45)';
-      ctx.shadowBlur = lado * 0.16; ctx.shadowOffsetX = lado * 0.06; ctx.shadowOffsetY = lado * 0.08;
-      ctx.drawImage(img, x - lado / 2, y - lado / 2, lado, lado);
-      ctx.restore();
+      // Las teselas de arte traen su PROPIO suelo (no dependen de transparencia,
+      // que los generadores de imagen no dan de forma fiable): ocupan la celda
+      // entera y encajan con el terreno de alrededor.
+      ctx.drawImage(img, x - t / 2, y - t / 2, t, t);
       if(alarma){   // aro rojo latiendo cuando hay avería o alivio
         ctx.strokeStyle = `rgba(239,68,68,${0.55 + Math.sin(this.tiempo * 7) * 0.4})`;
         ctx.lineWidth = 2.5;
-        ctx.beginPath(); ctx.roundRect(x - lado / 2, y - lado / 2, lado, lado, lado * 0.18); ctx.stroke();
+        ctx.beginPath(); ctx.roundRect(x - t / 2 + 1, y - t / 2 + 1, t - 2, t - 2, 4); ctx.stroke();
       }
     } else {
       // sombra
@@ -398,11 +396,7 @@ export class EscenaTeselas extends Escena {
     const nivel = p.habitantes > 2500 ? 'ciudad' : p.habitantes > 600 ? 'villa' : 'aldea';
     const img = this.tesela('t_pueblo_' + nivel + '.png');
     if(img){
-      ctx.save();
-      ctx.shadowColor = 'rgba(0,0,0,0.45)';
-      ctx.shadowBlur = t * 0.16; ctx.shadowOffsetX = t * 0.05; ctx.shadowOffsetY = t * 0.07;
-      ctx.drawImage(img, x0, y0, w, h);
-      ctx.restore();
+      ctx.drawImage(img, x0, y0, w, h);   // trae su propio suelo, como las demás
       if(seco){
         ctx.fillStyle = 'rgba(30,40,50,0.45)';
         ctx.fillRect(x0, y0, w, h);
