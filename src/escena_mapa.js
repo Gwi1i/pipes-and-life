@@ -127,57 +127,168 @@ export class EscenaMapa extends Escena {
   }
 
   /* ---------- casilla descubierta ---------- */
+  /**
+   * Una casilla no es un cuadrado de color: lleva textura propia, un bisel de
+   * luz arriba y sombra abajo, y —lo que más se nota— ORILLA donde el agua toca
+   * la tierra. Sin la orilla el mapa parecía una hoja de cálculo pintada.
+   *
+   * Todo a mano con Canvas 2D y operaciones baratas: esto corre para cada
+   * casilla visible en cada fotograma.
+   */
   dibujarTerreno(celda, c, f, x, y, t){
     const ctx = this.ctx;
     const def = CONFIG.terrenos[celda.tipo] || CONFIG.terrenos.hierba;
     const v = ruido(c, f);
+    const esAgua = celda.tipo === 'agua' || celda.tipo === 'lago';
 
-    // color base con variación por celda, para que no parezca papel pintado
-    ctx.fillStyle = mezclarColor(def.color, v > 0.5 ? '#ffffff' : '#000000',
-                                 Math.abs(v - 0.5) * 0.16);
+    // Base con variación por celda, para que no parezca papel pintado
+    let base = mezclarColor(def.color, v > 0.5 ? '#ffffff' : '#000000',
+                            Math.abs(v - 0.5) * 0.16);
+    if(esAgua && celda.insalubre > 0)
+      base = mezclarColor(base, '#6b5a2a', Math.min(0.75, celda.insalubre));
+    ctx.fillStyle = base;
     ctx.fillRect(x, y, t, t);
 
-    if(celda.tipo === 'agua' || celda.tipo === 'lago'){
-      // Agua envenenada por los lixiviados de un vertedero: se pone turbia y
-      // parda. Tiene que verse desde lejos, porque es un daño que te has hecho
-      // tú y que además le quita caudal a tu captación.
-      if(celda.insalubre > 0){
-        ctx.fillStyle = mezclarColor(def.color, '#6b5a2a', Math.min(0.75, celda.insalubre));
-        ctx.fillRect(x, y, t, t);
-        ctx.fillStyle = `rgba(120,100,40,${0.20 * celda.insalubre})`;
-        for(const [dx, dy, r] of [[0.28, 0.34, 0.09], [0.62, 0.55, 0.07], [0.44, 0.72, 0.06]]){
-          ctx.beginPath(); ctx.arc(x + t * dx, y + t * dy, t * r, 0, 7); ctx.fill();
-        }
-      }
-      ctx.strokeStyle = 'rgba(255,255,255,0.16)'; ctx.lineWidth = 1.5;
-      for(let k = 0; k < 2; k++){
-        const yy = y + t * (0.34 + k * 0.32);
-        ctx.beginPath();
-        for(let xx = x; xx <= x + t; xx += 7){
-          ctx.lineTo(xx, yy + Math.sin(xx * 0.08 + this.tiempo * 2 + k) * 2);
-        }
-        ctx.stroke();
-      }
-    } else if(celda.tipo === 'bosque'){
-      ctx.fillStyle = oscurecer(def.color, 0.35);
-      for(const [dx, dy, r] of [[0.3, 0.42, 0.12], [0.58, 0.3, 0.1], [0.46, 0.64, 0.11]]){
+    if(esAgua) this.pintarAgua(celda, c, f, x, y, t, base);
+    else this.pintarTierra(celda, c, f, x, y, t, base, v);
+
+    // Bisel: luz por arriba, sombra por abajo. Es lo que despega la casilla del
+    // plano y hace que la cuadrícula se lea como terreno y no como tabla.
+    const bisel = Math.max(1, t * 0.055);
+    ctx.fillStyle = 'rgba(255,255,255,0.055)';
+    ctx.fillRect(x, y, t, bisel);
+    ctx.fillStyle = 'rgba(0,0,0,0.10)';
+    ctx.fillRect(x, y + t - bisel, t, bisel);
+
+    if(!esAgua) this.pintarOrilla(c, f, x, y, t);
+    if(celda.hallazgo) this.dibujarHallazgo(celda, x, y, t);
+  }
+
+  /** Agua: ondas que corren y brillo de sol. */
+  pintarAgua(celda, c, f, x, y, t, base){
+    const ctx = this.ctx;
+    // fondo más oscuro hacia abajo, para dar hondura
+    const g = ctx.createLinearGradient(0, y, 0, y + t);
+    g.addColorStop(0, mezclarColor(base, '#000000', 0.10));
+    g.addColorStop(1, mezclarColor(base, '#000000', 0.26));
+    ctx.fillStyle = g;
+    ctx.fillRect(x, y, t, t);
+
+    if(celda.insalubre > 0){
+      ctx.fillStyle = `rgba(120,100,40,${0.22 * celda.insalubre})`;
+      for(const [dx, dy, r] of [[0.28, 0.34, 0.10], [0.62, 0.55, 0.08], [0.44, 0.72, 0.07]]){
         ctx.beginPath(); ctx.arc(x + t * dx, y + t * dy, t * r, 0, 7); ctx.fill();
       }
-    } else if(celda.tipo === 'montana'){
-      ctx.fillStyle = aclarar(def.color, 0.22);
-      ctx.beginPath();
-      ctx.moveTo(x + t * 0.2, y + t * 0.72); ctx.lineTo(x + t * 0.48, y + t * 0.26);
-      ctx.lineTo(x + t * 0.76, y + t * 0.72); ctx.closePath(); ctx.fill();
-      ctx.fillStyle = '#e8eef4';
-      ctx.beginPath();
-      ctx.moveTo(x + t * 0.40, y + t * 0.38); ctx.lineTo(x + t * 0.48, y + t * 0.26);
-      ctx.lineTo(x + t * 0.56, y + t * 0.38); ctx.closePath(); ctx.fill();
     }
 
-    if(celda.hallazgo) this.dibujarHallazgo(celda, x, y, t);
+    // ondas: dos crestas desfasadas que se mueven de verdad
+    const desf = (c * 0.7 + f * 1.3);
+    for(let k = 0; k < 3; k++){
+      ctx.strokeStyle = `rgba(255,255,255,${0.13 - k * 0.035})`;
+      ctx.lineWidth = Math.max(1, t * 0.022);
+      const yy = y + t * (0.24 + k * 0.27);
+      ctx.beginPath();
+      for(let i = 0; i <= 6; i++){
+        const xx = x + (t * i) / 6;
+        const oy = Math.sin(i * 1.1 + this.tiempo * 1.6 + desf + k) * t * 0.035;
+        i ? ctx.lineTo(xx, yy + oy) : ctx.moveTo(xx, yy + oy);
+      }
+      ctx.stroke();
+    }
+  }
 
-    ctx.strokeStyle = 'rgba(255,255,255,0.06)'; ctx.lineWidth = 1;
-    ctx.strokeRect(x + 0.5, y + 0.5, t, t);
+  /** Tierra: mata de hierba, arbolado o roca, según lo que sea. */
+  pintarTierra(celda, c, f, x, y, t, base, v){
+    const ctx = this.ctx;
+
+    if(celda.tipo === 'hierba'){
+      // matojos: tres briznas por casilla, colocadas por el ruido de la celda
+      ctx.strokeStyle = mezclarColor(base, '#000000', 0.22);
+      ctx.lineWidth = Math.max(1, t * 0.022);
+      for(let k = 0; k < 3; k++){
+        const px = x + t * (0.2 + ((v * 7 + k * 0.37) % 1) * 0.6);
+        const py = y + t * (0.35 + ((v * 13 + k * 0.61) % 1) * 0.5);
+        const alto = t * 0.10;
+        ctx.beginPath();
+        ctx.moveTo(px, py);
+        ctx.quadraticCurveTo(px + alto * 0.4, py - alto * 0.6, px + alto * 0.15, py - alto);
+        ctx.stroke();
+      }
+      return;
+    }
+
+    if(celda.tipo === 'bosque'){
+      // árboles de verdad: tronco, copa en dos tonos y sombra en el suelo
+      const arboles = [[0.30, 0.60, 0.30], [0.58, 0.44, 0.26], [0.46, 0.78, 0.22]];
+      for(const [dx, dy, esc] of arboles){
+        const px = x + t * dx, py = y + t * dy, r = t * esc * 0.5;
+        ctx.fillStyle = 'rgba(0,0,0,0.22)';
+        ctx.beginPath();
+        ctx.ellipse(px + r * 0.25, py + r * 0.12, r * 0.75, r * 0.28, 0, 0, 7);
+        ctx.fill();
+        ctx.fillStyle = '#4a3524';
+        ctx.fillRect(px - r * 0.1, py - r * 0.5, r * 0.2, r * 0.6);
+        ctx.fillStyle = oscurecer(CONFIG.terrenos.bosque.color, 0.42);
+        ctx.beginPath(); ctx.arc(px, py - r * 0.75, r * 0.72, 0, 7); ctx.fill();
+        ctx.fillStyle = aclarar(CONFIG.terrenos.bosque.color, 0.10);
+        ctx.beginPath(); ctx.arc(px - r * 0.18, py - r * 0.95, r * 0.45, 0, 7); ctx.fill();
+      }
+      return;
+    }
+
+    if(celda.tipo === 'montana'){
+      // dos caras: la de la luz y la de la sombra, más el nevero
+      const cima = [x + t * 0.50, y + t * 0.22];
+      const izq = [x + t * 0.16, y + t * 0.80];
+      const der = [x + t * 0.86, y + t * 0.80];
+      ctx.fillStyle = 'rgba(0,0,0,0.25)';
+      ctx.beginPath();
+      ctx.ellipse(x + t * 0.55, y + t * 0.82, t * 0.34, t * 0.09, 0, 0, 7); ctx.fill();
+
+      ctx.fillStyle = aclarar(CONFIG.terrenos.montana.color, 0.30);
+      ctx.beginPath();
+      ctx.moveTo(...cima); ctx.lineTo(...izq); ctx.lineTo(x + t * 0.50, y + t * 0.80);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = oscurecer(CONFIG.terrenos.montana.color, 0.22);
+      ctx.beginPath();
+      ctx.moveTo(...cima); ctx.lineTo(...der); ctx.lineTo(x + t * 0.50, y + t * 0.80);
+      ctx.closePath(); ctx.fill();
+
+      ctx.fillStyle = '#eef4fa';
+      ctx.beginPath();
+      ctx.moveTo(...cima);
+      ctx.lineTo(x + t * 0.38, y + t * 0.40);
+      ctx.lineTo(x + t * 0.46, y + t * 0.36);
+      ctx.lineTo(x + t * 0.54, y + t * 0.43);
+      ctx.lineTo(x + t * 0.62, y + t * 0.40);
+      ctx.closePath(); ctx.fill();
+    }
+  }
+
+  /**
+   * LA ORILLA. Donde la tierra da al agua se pinta una franja de arena por el
+   * lado que toca. Es un detalle pequeño y es, con diferencia, lo que más cambia
+   * la cara del mapa: sin él, el río es un rectángulo azul recortado con tijera.
+   */
+  pintarOrilla(c, f, x, y, t){
+    const ctx = this.ctx;
+    const mapa = this._estado && this._estado.mapa;
+    if(!mapa) return;
+    const ancho = Math.max(2, t * 0.13);
+    const arena = 'rgba(214,196,150,0.55)';
+    const lados = [
+      [0, -1, x, y, t, ancho],                    // arriba
+      [0,  1, x, y + t - ancho, t, ancho],        // abajo
+      [-1, 0, x, y, ancho, t],                    // izquierda
+      [1,  0, x + t - ancho, y, ancho, t]         // derecha
+    ];
+    for(const [dc, df, rx, ry, rw, rh] of lados){
+      const vec = celdaEn(mapa, c + dc, f + df);
+      if(!vec || vec.oculta) continue;
+      if(vec.tipo !== 'agua' && vec.tipo !== 'lago') continue;
+      ctx.fillStyle = arena;
+      ctx.fillRect(rx, ry, rw, rh);
+    }
   }
 
   /* ---------- lo que esconde una casilla ---------- */
@@ -224,16 +335,32 @@ export class EscenaMapa extends Escena {
   }
 
   /* ---------- casilla tapada ---------- */
+  /**
+   * La niebla no es un cuadrado gris: es bruma posada sobre terreno que aún no
+   * has pisado. Se pintan tres borrones por celda con el ruido de la propia
+   * casilla, así el frente de exploración tiene bordes irregulares en vez de
+   * parecer un muro de ladrillos.
+   */
   dibujarNiebla(estado, celda, c, f, x, y, t){
     const ctx = this.ctx;
     const alcanzable = esAlcanzable(estado.mapa, c, f);
-
-    ctx.fillStyle = alcanzable ? '#243244' : '#141d28';
-    ctx.fillRect(x, y, t, t);
-    // textura de niebla, para que no sea un plano liso
     const v = ruido(c, f);
-    ctx.fillStyle = `rgba(255,255,255,${0.02 + v * 0.03})`;
+
+    ctx.fillStyle = alcanzable ? '#1e2b3c' : '#121a24';
     ctx.fillRect(x, y, t, t);
+
+    // borrones de bruma: dan volumen y rompen la cuadrícula
+    const tono = alcanzable ? 255 : 200;
+    for(let k = 0; k < 3; k++){
+      const px = x + t * (0.22 + ((v * 11 + k * 0.41) % 1) * 0.56);
+      const py = y + t * (0.24 + ((v * 17 + k * 0.73) % 1) * 0.52);
+      const r = t * (0.20 + ((v * 5 + k * 0.29) % 1) * 0.16);
+      const g = ctx.createRadialGradient(px, py, 0, px, py, r);
+      g.addColorStop(0, `rgba(${tono},${tono},${tono},${alcanzable ? 0.075 : 0.035})`);
+      g.addColorStop(1, `rgba(${tono},${tono},${tono},0)`);
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(px, py, r, 0, 7); ctx.fill();
+    }
 
     if(alcanzable){
       const faltan = clicsParaDestapar(c, f, celda.tipo, this.poder);
@@ -242,11 +369,13 @@ export class EscenaMapa extends Escena {
       if(frac > 0){   // aro de progreso
         const r = t * 0.3;
         ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.lineWidth = Math.max(3, t * 0.07);
+        ctx.lineCap = 'round';
         ctx.beginPath(); ctx.arc(x + t / 2, y + t / 2, r, 0, 7); ctx.stroke();
         ctx.strokeStyle = CONFIG.color.agua;
         ctx.beginPath();
         ctx.arc(x + t / 2, y + t / 2, r, -Math.PI / 2, -Math.PI / 2 + frac * Math.PI * 2);
         ctx.stroke();
+        ctx.lineCap = 'butt';
       }
       // clics que quedan
       ctx.font = `700 ${Math.round(t * 0.2)}px IBM Plex Mono, ui-monospace, monospace`;
@@ -261,8 +390,19 @@ export class EscenaMapa extends Escena {
       ctx.fillText('?', x + t / 2, y + t / 2);
       ctx.textBaseline = 'alphabetic';
     }
-    ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = 1;
-    ctx.strokeRect(x + 0.5, y + 0.5, t, t);
+
+    // La frontera con lo ya explorado se marca sola: un filo claro por el lado
+    // que da a terreno abierto. Es lo que hace que se vea "hasta dónde llegas".
+    const mapa = estado.mapa;
+    const filo = Math.max(1, t * 0.045);
+    const lados = [[0, -1, x, y, t, filo], [0, 1, x, y + t - filo, t, filo],
+                   [-1, 0, x, y, filo, t], [1, 0, x + t - filo, y, filo, t]];
+    for(const [dc, df, rx, ry, rw, rh] of lados){
+      const vec = celdaEn(mapa, c + dc, f + df);
+      if(!vec || vec.oculta) continue;
+      ctx.fillStyle = 'rgba(150,180,210,0.22)';
+      ctx.fillRect(rx, ry, rw, rh);
+    }
   }
 
   /* ---------- tuberías tendidas ---------- */
@@ -311,39 +451,174 @@ export class EscenaMapa extends Escena {
   }
 
   /* ---------- lo construido ---------- */
+  /**
+   * Cada pieza tiene su SILUETA, dibujada a mano. Antes eran todas el mismo
+   * recuadro con una letra dentro, y una depuradora se distinguía de un depósito
+   * por leer la inicial: eso no es un mapa, es una leyenda.
+   *
+   * Todas comparten la misma luz —clara arriba, oscura al lado derecho— y su
+   * sombra en el suelo, que es lo que las asienta sobre el terreno.
+   */
   dibujarConstrucciones(estado){
     const ctx = this.ctx, t = this.tam;
     for(const obra of estado.construcciones){
       const x = obra.col * t - estado.camara.x, y = obra.fila * t - estado.camara.y;
       if(x < -t || y < -t || x > this._W || y > this._H) continue;
       const def = CONFIG.construibles[obra.tipo];
-      const lado = t * 0.7;
-      ctx.fillStyle = 'rgba(0,0,0,0.3)';
-      ctx.beginPath(); ctx.ellipse(x + t / 2, y + t * 0.82, lado * 0.4, lado * 0.14, 0, 0, 7); ctx.fill();
+
+      // sombra arrojada: sin esto las piezas flotan sobre la casilla
+      ctx.fillStyle = 'rgba(0,0,0,0.30)';
       ctx.beginPath();
-      ctx.roundRect(x + (t - lado) / 2, y + (t - lado) / 2, lado, lado, lado * 0.2);
-      ctx.fillStyle = 'rgba(12,22,34,0.9)'; ctx.fill();
-      ctx.strokeStyle = def.color; ctx.lineWidth = 2.5; ctx.stroke();
-      // inicial de la pieza, hasta que haya arte
-      ctx.fillStyle = def.color;
-      ctx.font = `700 ${Math.round(t * 0.3)}px IBM Plex Mono, ui-monospace, monospace`;
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(def.nombre[0], x + t / 2, y + t / 2);
-      ctx.textBaseline = 'alphabetic';
+      ctx.ellipse(x + t * 0.52, y + t * 0.80, t * 0.30, t * 0.10, 0, 0, 7);
+      ctx.fill();
+
+      this.silueta(obra.tipo, x, y, t, def.color);
 
       // El vertedero enseña cuánto vaso le queda: cuando se llena deja de
       // tragar, y eso hay que verlo venir sin abrir ningún panel.
       if(obra.tipo === 'vertedero'){
         const frac = llenadoVaso(obra);
-        const bx = x + (t - lado) / 2, by = y + t * 0.80, bw = lado, bh = Math.max(3, t * 0.07);
+        const bw = t * 0.62, bx = x + (t - bw) / 2, by = y + t * 0.86;
+        const bh = Math.max(3, t * 0.07);
         ctx.fillStyle = 'rgba(6,15,24,0.75)';
         ctx.fillRect(bx, by, bw, bh);
         ctx.fillStyle = frac >= 1 ? CONFIG.color.critico
-                      : (frac > 0.8 ? CONFIG.color.alarma : '#a8896a');
+                      : (frac > 0.8 ? CONFIG.color.alarma : '#c9a97f');
         ctx.fillRect(bx, by, bw * frac, bh);
         ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 1;
         ctx.strokeRect(bx + 0.5, by + 0.5, bw - 1, bh - 1);
       }
+    }
+  }
+
+  /** Caja con volumen: cara frontal, lateral en sombra y tapa iluminada. */
+  caja3d(x, y, an, al, prof, color){
+    const ctx = this.ctx;
+    ctx.fillStyle = color;
+    ctx.fillRect(x, y, an, al);                                   // frente
+    ctx.fillStyle = oscurecer(color, 0.35);
+    ctx.beginPath();                                              // lateral
+    ctx.moveTo(x + an, y); ctx.lineTo(x + an + prof, y - prof);
+    ctx.lineTo(x + an + prof, y + al - prof); ctx.lineTo(x + an, y + al);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = aclarar(color, 0.28);
+    ctx.beginPath();                                              // tapa
+    ctx.moveTo(x, y); ctx.lineTo(x + prof, y - prof);
+    ctx.lineTo(x + an + prof, y - prof); ctx.lineTo(x + an, y);
+    ctx.closePath(); ctx.fill();
+  }
+
+  /** Cilindro en pie: depósitos, tanques y decantadores. */
+  cilindro(cx, baseY, r, alto, color){
+    const ctx = this.ctx;
+    const ry = r * 0.34;
+    ctx.fillStyle = color;
+    ctx.fillRect(cx - r, baseY - alto, r * 2, alto);
+    ctx.fillStyle = oscurecer(color, 0.30);
+    ctx.fillRect(cx + r * 0.35, baseY - alto, r * 0.65, alto);
+    ctx.beginPath(); ctx.ellipse(cx, baseY, r, ry, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = aclarar(color, 0.30);
+    ctx.beginPath(); ctx.ellipse(cx, baseY - alto, r, ry, 0, 0, 7); ctx.fill();
+  }
+
+  /** La forma concreta de cada pieza. */
+  silueta(tipo, x, y, t, color){
+    const ctx = this.ctx;
+    const cx = x + t * 0.5, suelo = y + t * 0.78;
+
+    switch(tipo){
+      case 'deposito':        // depósito elevado sobre patas
+        ctx.strokeStyle = oscurecer(color, 0.45);
+        ctx.lineWidth = Math.max(1.5, t * 0.035);
+        ctx.beginPath();
+        ctx.moveTo(cx - t * 0.14, suelo); ctx.lineTo(cx - t * 0.08, suelo - t * 0.24);
+        ctx.moveTo(cx + t * 0.14, suelo); ctx.lineTo(cx + t * 0.08, suelo - t * 0.24);
+        ctx.stroke();
+        this.cilindro(cx, suelo - t * 0.20, t * 0.20, t * 0.26, color);
+        break;
+
+      case 'bomba': {         // caseta de bombeo con su tubo de impulsión
+        this.caja3d(cx - t * 0.20, suelo - t * 0.30, t * 0.36, t * 0.30, t * 0.09, color);
+        ctx.strokeStyle = aclarar(color, 0.35);
+        ctx.lineWidth = Math.max(2, t * 0.055);
+        ctx.beginPath();
+        ctx.moveTo(cx - t * 0.24, suelo - t * 0.06);
+        ctx.lineTo(cx - t * 0.24, suelo - t * 0.34);
+        ctx.lineTo(cx - t * 0.06, suelo - t * 0.34);
+        ctx.stroke();
+        break;
+      }
+
+      case 'captacion': {     // toma sobre el agua: plataforma sobre pilotes
+        ctx.fillStyle = oscurecer(color, 0.40);
+        ctx.fillRect(cx - t * 0.06, suelo - t * 0.10, t * 0.05, t * 0.20);
+        ctx.fillRect(cx + t * 0.02, suelo - t * 0.10, t * 0.05, t * 0.20);
+        this.caja3d(cx - t * 0.18, suelo - t * 0.26, t * 0.32, t * 0.18, t * 0.07, color);
+        ctx.strokeStyle = oscurecer(color, 0.5); ctx.lineWidth = 1;
+        for(let i = 1; i < 4; i++){
+          const px = cx - t * 0.18 + (t * 0.32 * i) / 4;
+          ctx.beginPath();
+          ctx.moveTo(px, suelo - t * 0.26); ctx.lineTo(px, suelo - t * 0.08);
+          ctx.stroke();
+        }
+        break;
+      }
+
+      case 'depuradora':      // dos decantadores circulares con su puente
+        for(const dx of [-0.15, 0.15]){
+          const px = cx + t * dx;
+          ctx.fillStyle = oscurecer(color, 0.35);
+          ctx.beginPath(); ctx.ellipse(px, suelo - t * 0.08, t * 0.13, t * 0.07, 0, 0, 7); ctx.fill();
+          ctx.fillStyle = mezclarColor(color, '#0b2a1c', 0.45);
+          ctx.beginPath(); ctx.ellipse(px, suelo - t * 0.09, t * 0.10, t * 0.05, 0, 0, 7); ctx.fill();
+          ctx.strokeStyle = aclarar(color, 0.35); ctx.lineWidth = Math.max(1, t * 0.022);
+          ctx.beginPath();
+          ctx.moveTo(px - t * 0.13, suelo - t * 0.09); ctx.lineTo(px + t * 0.13, suelo - t * 0.09);
+          ctx.stroke();
+        }
+        break;
+
+      case 'tanque':          // tanque de tormentas: cilindro ancho y bajo
+        this.cilindro(cx, suelo, t * 0.26, t * 0.20, color);
+        break;
+
+      case 'acuifero':        // sondeo: castillete sobre la boca del pozo
+        ctx.strokeStyle = color; ctx.lineWidth = Math.max(1.5, t * 0.035);
+        ctx.beginPath();
+        ctx.moveTo(cx - t * 0.16, suelo); ctx.lineTo(cx, suelo - t * 0.34);
+        ctx.lineTo(cx + t * 0.16, suelo);
+        ctx.moveTo(cx - t * 0.09, suelo - t * 0.15); ctx.lineTo(cx + t * 0.09, suelo - t * 0.15);
+        ctx.stroke();
+        ctx.fillStyle = oscurecer(color, 0.3);
+        ctx.beginPath(); ctx.ellipse(cx, suelo, t * 0.10, t * 0.04, 0, 0, 7); ctx.fill();
+        break;
+
+      case 'vertedero': {     // montera de basura por capas
+        const capas = [[0.30, 0.00], [0.22, 0.09], [0.13, 0.16]];
+        for(let i = 0; i < capas.length; i++){
+          const an = capas[i][0], sub = capas[i][1];
+          ctx.fillStyle = i % 2 ? oscurecer(color, 0.22) : color;
+          ctx.beginPath();
+          ctx.ellipse(cx, suelo - t * sub, t * an, t * (an * 0.42), 0, Math.PI, 0);
+          ctx.closePath(); ctx.fill();
+        }
+        break;
+      }
+
+      case 'reciclaje': {     // nave con el triángulo de las flechas
+        this.caja3d(cx - t * 0.22, suelo - t * 0.28, t * 0.40, t * 0.28, t * 0.08, color);
+        ctx.strokeStyle = '#0b1a12'; ctx.lineWidth = Math.max(1.5, t * 0.03);
+        const r = t * 0.09, cy = suelo - t * 0.15;
+        ctx.beginPath();
+        ctx.moveTo(cx - t * 0.02, cy - r);
+        ctx.lineTo(cx - t * 0.02 + r * 0.87, cy + r * 0.5);
+        ctx.lineTo(cx - t * 0.02 - r * 0.87, cy + r * 0.5);
+        ctx.closePath(); ctx.stroke();
+        break;
+      }
+
+      default:
+        this.caja3d(cx - t * 0.18, suelo - t * 0.28, t * 0.34, t * 0.28, t * 0.08, color);
     }
   }
 

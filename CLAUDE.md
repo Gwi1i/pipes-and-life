@@ -107,6 +107,15 @@ límites que hay que respetar:
     exploración: niebla, hallazgos, construcciones, las redes con su color y su
     grosor, las averías y la previsualización de lo que vas a hacer. Hereda de
     `Escena` para reutilizar destellos, clima y helpers de color.
+    Todo el dibujo es Canvas 2D a mano y corre por casilla visible y fotograma,
+    así que las operaciones son baratas a propósito. Tres cosas cargan con casi
+    todo el aspecto: el BISEL (luz arriba, sombra abajo) que despega la casilla
+    del plano; la ORILLA (`pintarOrilla`), una franja de arena por el lado que da
+    al agua —es el detalle que más cambia la cara del mapa, sin él el río es un
+    rectángulo recortado con tijera—; y la SILUETA de cada pieza
+    (`silueta`/`caja3d`/`cilindro`), porque antes todas eran el mismo recuadro con
+    una inicial dentro y eso no es un mapa, es una leyenda. La luz viene siempre
+    de arriba a la izquierda: si añades una pieza, respétalo.
   - **A** — `escena.js` (`Escena`): todo por código ("falso 3D").
   - **B** — `escena_svg.js` (`EscenaSVG`): hereda de `Escena` y sustituye las
     estructuras por sprites SVG dibujados a mano.
