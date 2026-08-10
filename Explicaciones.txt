@@ -1,0 +1,29 @@
+El juego es uno de tipo idle-clicker de teselas cuadradas en las que vas descubriendo un mapa según vas clicando en las teselas.
+Existen poblaciones a las que hay que dotar de diferentes servicios para ir avanzando en el juego.
+Los servicios de momento son abastecimiento, saneamiento, pluviales, residuos. Mas adelante se puede ver como implementar otros servicios como transporte publico, centros de recogida y cuidado de animales, etc.
+
+Abastecimiento:
+Para abastecer a una población se puede llegar a requerir de captación, bombeo, deposito, depuración, desalinizadora.
+
+Saneamiento:
+El saneamiento requiere de depuradora. También los residuos resultantes de la depuración habría que llevarlos a una planta de tratamiento de residuos.
+
+Pluviales:
+En muchas poblaciones, al principio, hay una red unitaria que transporta indistintamente las aguas fecales y las de pluviales, lo que provoca problemas en las estaciones depuradoras por el volumen, lo que puede provocar que haya que desviar parte al rio sin depurar.
+Separar la red es lo ideal. Es importante construir tanque de tormentas para evitar inundaciones en momentos de gran pluviosidad o épocas en de deshielo que coinciden con la lluvia.
+
+Residuos:
+La recogida de residuos es indispensable para la salubridad. Se necesitan varios tipos de contenedores para su correcto reciclaje:
+	-Embases y embalajes-amarillo
+	-Organica-marron
+	-Vidrio-verde
+	-Papel y carton-azul
+	-Resto-gris
+	-aceite-naranja
+	-Ropa
+	-Puntos limpios
+También hace falta un vertedero y plantas de reciclaje.
+
+Todo esto requiere de equipos de mantenimiento de redes y de residuos para arreglar averias y mantener todo en estado optimo.
+
+En un momento mas avanzado se podría pensar en implementar de alguna manera los técnicos que se encargan de diseñar todo y el departamento RRHH o el departamento económico que sirvan para optimizar el coste de las redes o el personal.

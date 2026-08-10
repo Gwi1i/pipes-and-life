@@ -15,6 +15,7 @@ import { capacidad, demandaMedia, caudalCaptacion, costeMejora,
          poderExpansion } from './simulacion.js';
 import { formatear } from './util.js';
 import { celdaEn, piezaDeRuina } from './mapa.js';
+import { pasoActual } from './tutorial.js';
 
 const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 
@@ -52,6 +53,23 @@ export class UI {
           cuesta lo suyo: rodear un bosque puede salir mejor que desbrozarlo.</span>
         <span class="m-coste">según el terreno</span>
       </button>`;
+  }
+
+  /* ---------------- LA GUÍA DE LOS PRIMEROS PASOS ---------------- */
+
+  refrescarGuia(estado){
+    const paso = pasoActual(estado);
+    const firma = paso ? paso.id : 'fin';
+    if(this.cache.guiaFirma === firma) return;
+    this.cache.guiaFirma = firma;
+
+    const panel = document.getElementById('panel-guia');
+    if(!paso){ panel.style.display = 'none'; return; }
+    panel.style.display = '';
+    document.getElementById('guia-cuenta').textContent =
+      `${estado.tutorial.paso + 1}/${CONFIG.tutorial.length}`;
+    document.getElementById('guia-titulo').textContent = paso.titulo;
+    document.getElementById('guia-texto').textContent = paso.texto;
   }
 
   /* ---------------- HALLAZGO SELECCIONADO Y ALMACÉN ---------------- */
@@ -355,6 +373,7 @@ export class UI {
     // Multa por hora, para el panel de cauce
     resultado.multaHora = (resultado.suciedad || 0) * CONFIG.cauce.multaMaxPorHora;
 
+    this.refrescarGuia(estado);
     this.refrescarHallazgo(estado);
     this.refrescarAlmacen(estado);
     this.refrescarTienda(estado);

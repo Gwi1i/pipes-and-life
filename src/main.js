@@ -20,6 +20,7 @@ import { celdaEn, clicarCasilla, clicsParaDestapar, puedeColocar,
 import { avanzar, bombear, costeMejora, requisitosAutobomba, engrasar,
          poderExpansion } from './simulacion.js';
 import { formatear } from './util.js';
+import { comprobar as comprobarGuia, saltar as saltarGuia } from './tutorial.js';
 
 const lienzo  = document.getElementById('escena');
 const estado  = new Estado();
@@ -105,6 +106,11 @@ function procesarAcciones(){
           ? { tipo: null, elemento: null, trazado: [] }
           : { tipo: 'tuberia', elemento: null, trazado: [] };
         ui.refrescarConstruccion(estado);
+        break;
+
+      case 'saltarGuia':
+        saltarGuia(estado);
+        estado.anotar('Guía saltada. Suerte ahí fuera.', 'info');
         break;
 
       case 'cancelarModo':
@@ -594,6 +600,10 @@ function bucle(ahora){
   resultado = avanzar(estado, dt);
   tickAverias(dt * CONFIG.economia.horasPorSegundo);
   tickOperario(dt);
+
+  // La guía avanza sola cuando el jugador consigue de verdad cada paso
+  const pasoHecho = comprobarGuia(estado);
+  if(pasoHecho) estado.anotar(`Guía: ${pasoHecho.titulo} ✓`, 'ok');
   comprobarDesbloqueo();
   anotarCrecimiento();
 

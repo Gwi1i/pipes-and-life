@@ -430,6 +430,32 @@ export const CONFIG = {
     tenue:      '#6f8aa1'
   },
 
+  /* ---------- LA GUÍA DE LOS PRIMEROS PASOS ----------
+     Acompaña hasta que el pueblo bebe por primera vez, y se quita de en medio.
+     Cada paso se da por hecho SOLO cuando el jugador lo consigue de verdad (la
+     comprobación está en tutorial.js): nada de "pulsa siguiente". */
+  tutorial: [
+    { id: 'explorar',  titulo: 'Destapa el terreno',
+      texto: 'Clica sobre una casilla en penumbra, junto a tu pueblo. Cada una ' +
+             'necesita varios clics: el número que ves es lo que le falta.' },
+    { id: 'captacion', titulo: 'Busca de dónde sacar agua',
+      texto: 'Encuentra el río y pon una CAPTACIÓN sobre una casilla de agua. ' +
+             'La eliges en «Construir en el mapa»; en verde es que ahí vale.' },
+    { id: 'bomba',     titulo: 'Levanta el bombeo',
+      texto: 'El agua no sube sola. Coloca un BOMBEO en tierra llana, pegado al agua.' },
+    { id: 'tuberia',   titulo: 'Une todo con tubería',
+      texto: 'Con «Tender tubería» marca el recorrido casilla a casilla, desde ' +
+             'tu pueblo hasta el bombeo. Clic en la última para rematar. Ojo: ' +
+             'lo que no queda conectado no sirve de nada.' },
+    { id: 'bombear',   titulo: 'A bombear',
+      texto: 'Pulsa BOMBEAR (o la barra espaciadora) para llenar el depósito. ' +
+             'Si dejas de clicar, el pueblo se queda seco.' },
+    { id: 'servido',   titulo: '¡Tu pueblo bebe!',
+      texto: 'Ya está abastecido. A partir de aquí: engrasa la instalación para ' +
+             'que no pierda fuelle, y explora más lejos para encontrar pueblos ' +
+             'a los que dar servicio.' }
+  ],
+
   /* ---------- GUARDADO ----------
      v2: el formato multi-pueblo no es compatible con el de un solo pueblo. */
   guardado: { clave: 'redHidraulica_clicker_v2', intervaloSegundos: 10 }

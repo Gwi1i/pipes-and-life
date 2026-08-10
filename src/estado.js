@@ -59,6 +59,7 @@ export class Estado {
     // Modo de construcción: qué está intentando colocar el jugador ahora mismo
     this.modo = { tipo: null, elemento: null, trazado: [], deInventario: false };
     this.seleccion = null;          // { col, fila } de la casilla que miras
+    this.tutorial = { paso: 0, terminado: false };   // la guía de los primeros pasos
 
     this.registro = [];
     this.ultimoInstante = Date.now();
@@ -86,7 +87,8 @@ export class Estado {
       // El terreno se regenera de la semilla: solo se guarda lo que has tocado
       mapa: comprimir(this.mapa),
       inventario: this.inventario, camara: this.camara,
-      construcciones: this.construcciones, tuberias: this.tuberias
+      construcciones: this.construcciones, tuberias: this.tuberias,
+      tutorial: this.tutorial
     };
     try{
       localStorage.setItem(CONFIG.guardado.clave, JSON.stringify(datos));
@@ -127,6 +129,7 @@ export class Estado {
       estado.inventario = d.inventario || [];
       estado.construcciones = d.construcciones || [];
       estado.tuberias = d.tuberias || [];
+      estado.tutorial = d.tutorial || { paso: 0, terminado: false };
       if(d.camara) estado.camara = d.camara;
       return true;
     }catch(e){

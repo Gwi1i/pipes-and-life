@@ -178,6 +178,22 @@ body{
 .mejora.comprada .m-coste{color:var(--ok);}
 .mejora.inalcanzable .m-coste{color:var(--critico);}
 
+/* ---------- GUÍA DE LOS PRIMEROS PASOS ---------- */
+.bloque.guia{border-color:var(--ok); box-shadow:0 0 22px -12px var(--ok);}
+.bloque.guia h2{color:var(--ok); border-color:var(--ok);
+  display:flex; justify-content:space-between; align-items:baseline;}
+#guia-cuenta{font-size:9px; color:var(--tenue); letter-spacing:.1em;}
+.guia-cuerpo{display:grid; gap:6px;}
+.guia-titulo{font-family:var(--mono); font-size:12.5px; font-weight:700; color:var(--ok);}
+.guia-texto{font-size:11.5px; color:var(--texto); line-height:1.5;}
+.guia-saltar{
+  justify-self:start; margin-top:2px; cursor:pointer;
+  background:none; border:1px solid var(--linea-viva); border-radius:3px;
+  color:var(--tenue); font-family:var(--mono); font-size:9px;
+  letter-spacing:.1em; text-transform:uppercase; padding:5px 9px; transition:.15s;
+}
+.guia-saltar:hover{border-color:var(--tenue); color:var(--texto);}
+
 /* Herramientas de construcción sobre el mapa */
 .mejora.obra{border-left-color:var(--tono);}
 .mejora.obra .m-nom{color:var(--tono);}
