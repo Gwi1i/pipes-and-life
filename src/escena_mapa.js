@@ -118,6 +118,10 @@ export class EscenaMapa extends Escena {
     }
 
     this.dibujarTuberias(estado);
+    // Los hallazgos van DESPUES de las tuberias: pintados junto al terreno, una
+    // conduccion que pasara por encima del pueblo lo tapaba, y el icono del
+    // pueblo es justo lo que no puede desaparecer del mapa.
+    this.dibujarHallazgos(estado);
     this.dibujarConstrucciones(estado);
     this.previsualizar(estado);
     this.marcoResaltado(estado);
@@ -154,20 +158,35 @@ export class EscenaMapa extends Escena {
     base = mezclarColor(base, v > 0.5 ? '#ffffff' : '#000000', Math.abs(v - 0.5) * E.variacion);
     if(esAgua && celda.insalubre > 0)
       base = mezclarColor(base, '#7a6a34', Math.min(0.75, celda.insalubre));
+    // La FICHA: cuadrado redondeado con hueco alrededor. Todo lo de dentro se
+    // recorta contra ella, asi el terreno nunca se sale de su tesela.
+    const g = t * E.separacion, r = t * E.radio;
+    const fx = x + g, fy = y + g, fl = t - g * 2;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(fx, fy, fl, fl, r);
+    ctx.clip();
+
     ctx.fillStyle = base;
-    ctx.fillRect(x, y, t, t);
+    ctx.fillRect(fx, fy, fl, fl);
 
-    if(esAgua) this.pintarAgua(celda, c, f, x, y, t, base);
-    else this.pintarTierra(celda, c, f, x, y, t, base, v);
+    if(esAgua) this.pintarAgua(celda, c, f, fx, fy, fl, base);
+    else this.pintarTierra(celda, c, f, fx, fy, fl, base, v);
+    if(!esAgua) this.pintarOrilla(c, f, fx, fy, fl);
 
-    if(!esAgua) this.pintarOrilla(c, f, x, y, t);
+    // Luz arriba y sombra abajo DENTRO de la ficha: es lo que le da grosor y la
+    // separa del fondo sin necesidad de contorno duro.
+    ctx.fillStyle = 'rgba(255,255,255,0.10)';
+    ctx.fillRect(fx, fy, fl, Math.max(1, fl * 0.06));
+    ctx.fillStyle = 'rgba(0,0,0,0.16)';
+    ctx.fillRect(fx, fy + fl - Math.max(1, fl * 0.08), fl, Math.max(1, fl * 0.08));
+    ctx.restore();
 
-    // La rejilla, por encima de TODO. Es lo que convierte el terreno en tablero.
-    ctx.strokeStyle = E.rejilla;
-    ctx.lineWidth = E.grosorRejilla;
-    ctx.strokeRect(x + 0.5, y + 0.5, t, t);
+    ctx.strokeStyle = 'rgba(0,0,0,0.30)';
+    ctx.lineWidth = Math.max(1, t * 0.015);
+    ctx.beginPath(); ctx.roundRect(fx, fy, fl, fl, r); ctx.stroke();
 
-    if(celda.hallazgo) this.dibujarHallazgo(celda, x, y, t);
   }
 
   /** Agua: ondas que corren, sin oscurecer tanto que pierda el color. */
@@ -283,6 +302,23 @@ export class EscenaMapa extends Escena {
     }
   }
 
+  /** Pasada de hallazgos: pueblos, ruinas y yacimientos, por encima de las redes. */
+  dibujarHallazgos(estado){
+    const t = this.tam, M = CONFIG.mapaMundo;
+    const c0 = Math.max(0, Math.floor(estado.camara.x / t));
+    const f0 = Math.max(0, Math.floor(estado.camara.y / t));
+    const c1 = Math.min(M.cols - 1, Math.ceil((estado.camara.x + this._W) / t));
+    const f1 = Math.min(M.filas - 1, Math.ceil((estado.camara.y + this._H) / t));
+    for(let f = f0; f <= f1; f++){
+      for(let c = c0; c <= c1; c++){
+        const celda = celdaEn(estado.mapa, c, f);
+        if(!celda || celda.oculta || !celda.hallazgo) continue;
+        this.dibujarHallazgo(celda, Math.round(c * t - estado.camara.x),
+                             Math.round(f * t - estado.camara.y), t);
+      }
+    }
+  }
+
   /* ---------- lo que esconde una casilla ---------- */
   dibujarHallazgo(celda, x, y, t){
     const ctx = this.ctx;
@@ -338,8 +374,16 @@ export class EscenaMapa extends Escena {
     const alcanzable = esAlcanzable(estado.mapa, c, f);
     const v = ruido(c, f);
 
-    ctx.fillStyle = alcanzable ? '#1e2b3c' : '#121a24';
-    ctx.fillRect(x, y, t, t);
+    // La niebla es una ficha más, con el mismo hueco y el mismo redondeo: si la
+    // tapada fuera un cuadrado a sangre, el frente de exploración se vería como
+    // un muro liso en vez de como fichas por levantar.
+    const E = CONFIG.estiloMapa;
+    const g = t * E.separacion, r = t * E.radio;
+    const fx = x + g, fy = y + g, fl = t - g * 2;
+    ctx.save();
+    ctx.beginPath(); ctx.roundRect(fx, fy, fl, fl, r); ctx.clip();
+    ctx.fillStyle = alcanzable ? '#26364a' : '#151d29';
+    ctx.fillRect(fx, fy, fl, fl);
 
     // borrones de bruma: dan volumen y rompen la cuadrícula
     const tono = alcanzable ? 255 : 200;
@@ -383,18 +427,13 @@ export class EscenaMapa extends Escena {
       ctx.textBaseline = 'alphabetic';
     }
 
-    // La frontera con lo ya explorado se marca sola: un filo claro por el lado
-    // que da a terreno abierto. Es lo que hace que se vea "hasta dónde llegas".
-    const mapa = estado.mapa;
-    const filo = Math.max(1, t * 0.045);
-    const lados = [[0, -1, x, y, t, filo], [0, 1, x, y + t - filo, t, filo],
-                   [-1, 0, x, y, filo, t], [1, 0, x + t - filo, y, filo, t]];
-    for(const [dc, df, rx, ry, rw, rh] of lados){
-      const vec = celdaEn(mapa, c + dc, f + df);
-      if(!vec || vec.oculta) continue;
-      ctx.fillStyle = 'rgba(150,180,210,0.22)';
-      ctx.fillRect(rx, ry, rw, rh);
-    }
+    ctx.restore();
+
+    // Contorno de la ficha. Las que ya puedes abrir llevan filo claro: es lo que
+    // enseña de un vistazo hasta dónde llegas.
+    ctx.strokeStyle = alcanzable ? 'rgba(150,190,225,0.40)' : 'rgba(0,0,0,0.35)';
+    ctx.lineWidth = Math.max(1, t * 0.015);
+    ctx.beginPath(); ctx.roundRect(fx, fy, fl, fl, r); ctx.stroke();
   }
 
   /* ---------- tuberías tendidas ---------- */
@@ -458,28 +497,23 @@ export class EscenaMapa extends Escena {
       if(x < -t || y < -t || x > this._W || y > this._H) continue;
       const def = CONFIG.construibles[obra.tipo];
 
-      // ZÓCALO: la plataforma sobre la que se apoya la pieza. En la referencia
-      // los edificios no llenan la casilla, son fichas puestas sobre el tablero,
-      // y ese zócalo es lo que las ancla en vez de dejarlas flotando.
+      // La TESELA ya es la base: la pieza no necesita zócalo, necesita VOLUMEN.
+      // En la referencia los edificios ocupan casi toda la casilla y asoman por
+      // encima de su borde superior, que es lo que los hace parecer objetos
+      // puestos sobre el tablero y no dibujos estampados en la casilla.
       const E = CONFIG.estiloMapa;
       const lado = t * E.ladoPieza;
-      const ox = x + (t - lado) / 2, oy = y + (t - lado) / 2;
-      ctx.fillStyle = E.zocalo;
-      ctx.beginPath();
-      ctx.roundRect(ox, oy, lado, lado, lado * 0.16);
-      ctx.fill();
-      ctx.strokeStyle = mezclarColor(def.color, '#000000', 0.35);
-      ctx.lineWidth = Math.max(1, t * 0.02);
-      ctx.stroke();
+      const ox = x + (t - lado) / 2;
+      const oy = y + (t - lado) / 2 - t * E.alturaPieza * 0.5;
 
-      // sombra arrojada: sin esto las piezas flotan sobre el zócalo
-      ctx.fillStyle = 'rgba(0,0,0,0.28)';
+      // sombra arrojada sobre la tesela
+      ctx.fillStyle = 'rgba(0,0,0,0.30)';
       ctx.beginPath();
-      ctx.ellipse(ox + lado * 0.54, oy + lado * 0.80, lado * 0.30, lado * 0.10, 0, 0, 7);
+      ctx.ellipse(x + t * 0.52, y + t * 0.74, t * 0.30, t * 0.10, 0, 0, 7);
       ctx.fill();
 
-      // La silueta se dibuja en su caja de t x t y se ESCALA al zócalo, así los
-      // dibujos de cada pieza no tienen que saber nada del tamaño final.
+      // La silueta se dibuja siempre en su caja de t x t y se ESCALA aquí, así
+      // ningún dibujo de pieza tiene que saber nada del tamaño final.
       ctx.save();
       ctx.translate(ox, oy);
       ctx.scale(lado / t, lado / t);

@@ -433,12 +433,18 @@ export const CONFIG = {
        · Las piezas ocupan bastante MENOS que la casilla y se apoyan en un
          zócalo, para que se lean como fichas puestas sobre el tablero. */
   estiloMapa: {
-    rejilla: 'rgba(255,255,255,0.13)',
-    grosorRejilla: 1,
-    damero: 0.035,          // cuánto se aclara/oscurece una casilla respecto a su vecina
+    // Las teselas son FICHAS: cuadrados redondeados separados por un hueco, no
+    // un campo continuo con una rejilla dibujada encima. Es la diferencia entre
+    // que el mapa parezca un tablero de piezas o una hoja cuadriculada, y es lo
+    // que más define el estilo de la referencia.
+    separacion: 0.045,      // hueco entre teselas, en fracción de casilla
+    radio: 0.14,            // redondeo de las esquinas
+    damero: 0.030,          // cuánto se aclara/oscurece una casilla respecto a su vecina
     variacion: 0.05,        // ruido por casilla: poco, solo para que no sea plano
-    ladoPieza: 0.62,        // fracción de la casilla que ocupa una construcción
-    zocalo: 'rgba(20,32,20,0.30)'
+    // Las piezas OCUPAN la tesela y sobresalen por arriba: la ficha ya es su
+    // base, así que no necesitan zócalo y sí necesitan volumen.
+    ladoPieza: 0.86,
+    alturaPieza: 0.30       // cuánto asoma por encima del borde de la tesela
   },
 
   /* ---------- QUÉ SE PUEDE CONSTRUIR Y DÓNDE ----------
