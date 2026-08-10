@@ -184,8 +184,10 @@ export class EscenaMapa extends Escena {
     ctx.fillRect(fx, fy + fl - Math.max(1, fl * 0.08), fl, Math.max(1, fl * 0.08));
     ctx.restore();
 
-    ctx.strokeStyle = 'rgba(0,0,0,0.30)';
-    ctx.lineWidth = Math.max(1, t * 0.015);
+    // El borde sale del PROPIO color de la casilla, no de un negro plano: así
+    // pertenece a la tesela en vez de recortarla contra el fondo.
+    ctx.strokeStyle = oscurecer(base, E.contorno);
+    ctx.lineWidth = Math.max(1, t * 0.02);
     ctx.beginPath(); ctx.roundRect(fx, fy, fl, fl, r); ctx.stroke();
 
   }
@@ -376,6 +378,14 @@ export class EscenaMapa extends Escena {
   }
 
   /* ---------- lo que esconde una casilla ---------- */
+  /**
+   * Los hallazgos eran polígonos planos —una casita de dos trazos, un muro roto,
+   * un rombo— y desentonaban al lado de unas piezas en isométrica. Ahora son
+   * volúmenes con la misma luz que todo lo demás.
+   *
+   * El PUEBLO es el que más importa: es el objetivo del juego y lo que más se
+   * mira. Se dibuja como un caserío de tres casas con sus tejados a dos aguas.
+   */
   dibujarHallazgo(celda, x, y, t){
     const ctx = this.ctx;
     const col = CONFIG.hallazgos.color[celda.hallazgo] || '#ffffff';
@@ -388,7 +398,7 @@ export class EscenaMapa extends Escena {
 
     if(!celda.resuelto){   // aún por atender: late para que se vea
       const pulso = 0.5 + Math.sin(this.tiempo * 3) * 0.5;
-      ctx.globalAlpha = 0.25 + pulso * 0.35;
+      ctx.globalAlpha = 0.20 + pulso * 0.28;
       ctx.fillStyle = col;
       ctx.beginPath(); ctx.arc(cx, cy, t * 0.42, 0, 7); ctx.fill();
       ctx.globalAlpha = 1;
@@ -396,26 +406,71 @@ export class EscenaMapa extends Escena {
 
     // Los pueblos y los yacimientos sí siguen ahí: son referencias del terreno.
     // Se apagan para que se lea de un vistazo que ya están atendidos.
-    if(celda.resuelto) ctx.globalAlpha = 0.4;
-    ctx.fillStyle = col;
-    ctx.strokeStyle = 'rgba(6,15,24,0.6)'; ctx.lineWidth = 1.6;
-    const s = t * 0.17;
+    if(celda.resuelto) ctx.globalAlpha = 0.45;
+
+    // sombra común, que es lo que los asienta sobre la tesela
+    ctx.fillStyle = 'rgba(0,0,0,0.28)';
     ctx.beginPath();
-    if(celda.hallazgo === 'pueblo'){          // casita
-      ctx.moveTo(cx - s, cy + s); ctx.lineTo(cx - s, cy - s * 0.2);
-      ctx.lineTo(cx, cy - s * 1.1); ctx.lineTo(cx + s, cy - s * 0.2);
-      ctx.lineTo(cx + s, cy + s); ctx.closePath();
-    } else if(celda.hallazgo === 'ruina'){    // muro roto
-      ctx.moveTo(cx - s, cy + s); ctx.lineTo(cx - s, cy - s * 0.6);
-      ctx.lineTo(cx - s * 0.2, cy - s * 0.6); ctx.lineTo(cx - s * 0.2, cy - s * 1.1);
-      ctx.lineTo(cx + s * 0.5, cy - s * 1.1); ctx.lineTo(cx + s * 0.5, cy);
-      ctx.lineTo(cx + s, cy); ctx.lineTo(cx + s, cy + s); ctx.closePath();
-    } else {                                   // yacimiento: cristal
-      ctx.moveTo(cx, cy - s * 1.1); ctx.lineTo(cx + s, cy);
-      ctx.lineTo(cx, cy + s * 1.1); ctx.lineTo(cx - s, cy); ctx.closePath();
-    }
-    ctx.fill(); ctx.stroke();
+    ctx.ellipse(cx + t * 0.02, y + t * 0.74, t * 0.26, t * 0.09, 0, 0, 7);
+    ctx.fill();
+
+    if(celda.hallazgo === 'pueblo') this.caserio(cx, y + t * 0.70, t, col);
+    else if(celda.hallazgo === 'ruina') this.ruina(cx, y + t * 0.70, t, col);
+    else this.yacimiento(cx, y + t * 0.70, t, col);
+
     ctx.globalAlpha = 1;
+  }
+
+  /** Un caserío: tres casas con su tejado, en isométrica. */
+  caserio(cx, suelo, t, color){
+    const casas = [
+      [-0.16,  0.02, 0.62],   // izquierda, algo atrás
+      [ 0.15,  0.04, 0.70],   // derecha
+      [ 0.00, -0.09, 0.85]    // la grande, detrás y arriba
+    ];
+    // Muros claros y tejas rojas: el pueblo es el objetivo del juego y tiene que
+    // cantar sobre el verde, no fundirse con él.
+    const muro = mezclarColor(color, '#fff8e6', 0.62);
+    const tejado = '#b4442a';
+    for(const casa of casas){
+      const px = cx + t * casa[0], py = suelo + t * casa[1];
+      const an = t * 0.15 * casa[2], al = t * 0.20 * casa[2];
+      this.isoCaja(px, py, an, an * 0.5, al, muro);
+      this.isoTejado(px, py - al, an, an * 0.5, t * 0.09 * casa[2], tejado);
+    }
+  }
+
+  /** Instalación abandonada: muros derruidos y cascotes. */
+  ruina(cx, suelo, t, color){
+    const ctx = this.ctx;
+    const piedra = mezclarColor(color, '#6b7280', 0.55);
+    this.isoCaja(cx - t * 0.10, suelo, t * 0.11, t * 0.055, t * 0.20, piedra);
+    this.isoCaja(cx + t * 0.12, suelo + t * 0.02, t * 0.08, t * 0.04, t * 0.11,
+                 oscurecer(piedra, 0.18));
+    // cascotes sueltos alrededor
+    ctx.fillStyle = oscurecer(piedra, 0.35);
+    for(const p of [[-0.02, 0.06, 0.030], [0.05, 0.09, 0.022], [-0.18, 0.08, 0.025]]){
+      ctx.beginPath();
+      ctx.ellipse(cx + t * p[0], suelo + t * p[1], t * p[2], t * p[2] * 0.55, 0, 0, 7);
+      ctx.fill();
+    }
+  }
+
+  /** Yacimiento: cristales asomando de la roca. */
+  yacimiento(cx, suelo, t, color){
+    const ctx = this.ctx;
+    const cristales = [[-0.08, 0.26, 0.9], [0.06, 0.34, 1.0], [0.15, 0.20, 0.7]];
+    for(const cr of cristales){
+      const px = cx + t * cr[0], alto = t * cr[1] * 0.55, an = t * 0.055 * cr[2];
+      ctx.fillStyle = aclarar(color, 0.30);
+      ctx.beginPath();
+      ctx.moveTo(px, suelo - alto); ctx.lineTo(px - an, suelo - alto * 0.30);
+      ctx.lineTo(px, suelo); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = oscurecer(color, 0.28);
+      ctx.beginPath();
+      ctx.moveTo(px, suelo - alto); ctx.lineTo(px + an, suelo - alto * 0.30);
+      ctx.lineTo(px, suelo); ctx.closePath(); ctx.fill();
+    }
   }
 
   /* ---------- casilla tapada ---------- */
@@ -487,8 +542,8 @@ export class EscenaMapa extends Escena {
 
     // Contorno de la ficha. Las que ya puedes abrir llevan filo claro: es lo que
     // enseña de un vistazo hasta dónde llegas.
-    ctx.strokeStyle = alcanzable ? 'rgba(150,190,225,0.40)' : 'rgba(0,0,0,0.35)';
-    ctx.lineWidth = Math.max(1, t * 0.015);
+    ctx.strokeStyle = alcanzable ? 'rgba(150,190,225,0.45)' : 'rgba(90,110,135,0.25)';
+    ctx.lineWidth = Math.max(1, t * 0.02);
     ctx.beginPath(); ctx.roundRect(fx, fy, fl, fl, r); ctx.stroke();
   }
 
@@ -670,19 +725,35 @@ export class EscenaMapa extends Escena {
     ctx.stroke();
   }
 
-  /** Tejado a dos aguas isométrico, para las casetas. */
+  /**
+   * Cubierta a cuatro aguas sobre la tapa de una caja. Antes esto dibujaba un
+   * caballete plano por el borde de atrás y quedaba ESCONDIDO tras la propia
+   * tapa: las casetas parecían cubos pelados. Una pirámide sobre el rombo sí se
+   * lee desde este ángulo, y solo hacen falta las dos caras que se ven.
+   *
+   * `ty` es la Y del centro de la tapa; `alto` lo que sube la cumbrera.
+   */
   isoTejado(cx, ty, W, H, alto, color){
     const ctx = this.ctx;
-    ctx.fillStyle = aclarar(color, 0.18);
+    const cumbre = ty - alto;
+    const O = [cx - W, ty], S = [cx, ty + H], E = [cx + W, ty];
+
+    ctx.fillStyle = aclarar(color, 0.14);          // faldón izquierdo (a la luz)
     ctx.beginPath();
-    ctx.moveTo(cx - W, ty); ctx.lineTo(cx, ty - H);
-    ctx.lineTo(cx, ty - H - alto); ctx.lineTo(cx - W, ty - alto);
+    ctx.moveTo(O[0], O[1]); ctx.lineTo(S[0], S[1]); ctx.lineTo(cx, cumbre);
     ctx.closePath(); ctx.fill();
-    ctx.fillStyle = oscurecer(color, 0.22);
+
+    ctx.fillStyle = oscurecer(color, 0.26);        // faldón derecho (en sombra)
     ctx.beginPath();
-    ctx.moveTo(cx + W, ty); ctx.lineTo(cx, ty - H);
-    ctx.lineTo(cx, ty - H - alto); ctx.lineTo(cx + W, ty - alto);
+    ctx.moveTo(S[0], S[1]); ctx.lineTo(E[0], E[1]); ctx.lineTo(cx, cumbre);
     ctx.closePath(); ctx.fill();
+
+    ctx.strokeStyle = oscurecer(color, 0.45);
+    ctx.lineWidth = Math.max(0.8, W * 0.06);
+    ctx.beginPath();
+    ctx.moveTo(O[0], O[1]); ctx.lineTo(S[0], S[1]); ctx.lineTo(E[0], E[1]);
+    ctx.moveTo(S[0], S[1]); ctx.lineTo(cx, cumbre);
+    ctx.stroke();
   }
 
   /** La forma concreta de cada pieza, ya en isométrica. */

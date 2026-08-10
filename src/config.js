@@ -437,8 +437,14 @@ export const CONFIG = {
     // un campo continuo con una rejilla dibujada encima. Es la diferencia entre
     // que el mapa parezca un tablero de piezas o una hoja cuadriculada, y es lo
     // que más define el estilo de la referencia.
-    separacion: 0.045,      // hueco entre teselas, en fracción de casilla
-    radio: 0.14,            // redondeo de las esquinas
+    // El hueco tiene que ser un RESPIRO, no una zanja. Con 0.045 el negro del
+    // fondo se colaba entre casillas y el mapa parecía de azulejos mal puestos:
+    // lo que separa las teselas debe ser el borde, no el vacío.
+    separacion: 0.016,      // hueco entre teselas, en fracción de casilla
+    radio: 0.11,            // redondeo de las esquinas
+    // El contorno de cada ficha, en vez de un negro duro: oscurece su propio
+    // color. Así la línea pertenece a la tesela y no la recorta contra el fondo.
+    contorno: 0.30,         // cuánto se oscurece el color base para el borde
     damero: 0.030,          // cuánto se aclara/oscurece una casilla respecto a su vecina
     variacion: 0.05,        // ruido por casilla: poco, solo para que no sea plano
     // Las piezas OCUPAN la tesela y sobresalen por arriba: la ficha ya es su
