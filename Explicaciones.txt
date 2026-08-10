@@ -38,6 +38,9 @@ Separar la red es lo ideal. Es importante construir tanque de tormentas para evi
 // cauce cuando la depuradora se satura en otoño), pero como MEJORAS de tienda,
 // no como red dibujada sobre el mapa. Lo natural es que la red unitaria sea
 // literalmente una tubería con red:'unitaria' que pagas por desdoblar en dos.
+// ACTUALIZADO: el saneamiento YA es una red propia sobre el mapa, con su
+// colector, su diámetro y su rebose. Meter pluviales ahora es añadir una
+// entrada en CONFIG.redes y poco más: la mecánica ya no hay que inventarla.
 // El DESHIELO que mencionas no está: hoy la lluvia es una curva por estación.
 // Sería una punta de primavera aparte de la de otoño, y encaja bien porque ya
 // existe el tanque para amortiguarla.

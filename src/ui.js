@@ -12,7 +12,7 @@
 import { CONFIG } from './config.js';
 import { capacidad, demandaMedia, caudalCaptacion, costeMejora,
          requisitosAutobomba, capacidadTanque, nombreEstacion,
-         poderExpansion, redEstrangula } from './simulacion.js';
+         poderExpansion, redEstrangula, capacidadTratamiento } from './simulacion.js';
 import { formatear } from './util.js';
 import { celdaEn, piezaDeRuina, diametro, nivelDiametro, costeRenovar,
          lineasConectadas, cuelloDeBotella } from './mapa.js';
@@ -63,34 +63,51 @@ export class UI {
    * renovar. El panel entero existe para responder a una pregunta que si no
    * parece un fallo: "¿por qué ha dejado de crecer mi pueblo?".
    */
-  refrescarRed(estado){
+  refrescarRed(estado, resultado){
     const D = CONFIG.tuberia.diametros;
-    const cuello = cuelloDeBotella(estado);
-    const lineas = lineasConectadas(estado);
+    const clave = estado.redActual;
+    const R = CONFIG.redes[clave];
+    const cuello = cuelloDeBotella(estado, clave);
+    const lineas = lineasConectadas(estado, clave);
     const p = estado.activo;
-    const topeCerca = p.habitantes >= cuello.def.habitantesMax * 0.95;
-    const ahogada = redEstrangula(p, estado);
+    const objetivo = diametro(estado.dnActual);
 
-    const firma = [estado.dnActual, cuello.dn, lineas.length, topeCerca, ahogada,
+    // La firma lleva BANDERAS, no los textos: los avisos del saneamiento llevan
+    // caudales que cambian cada fotograma, y meterlos aquí reconstruía el panel
+    // entero 10 veces por segundo.
+    const firma = [clave, estado.dnActual, cuello.dn, lineas.length,
+                   !!resultado.rebosando, !!resultado.aliviando,
+                   redEstrangula(p, estado),
+                   p.habitantes >= cuello.def.habitantesMax * 0.95,
+                   !!(estado._conectadoSan || {}).depuradora,
                    lineas.map(l => l.tuberia.dn).join('')].join('|');
     if(this.cache.redFirma === firma) return;
     this.cache.redFirma = firma;
 
-    const objetivo = diametro(estado.dnActual);
+    // Pestañas: se trabaja sobre UNA red cada vez. Mezclarlas en una sola lista
+    // era un lío: no se sabía si el tramo que ibas a renovar llevaba agua limpia
+    // o sucia.
+    const pestanas = Object.entries(CONFIG.redes).map(([k, r]) => `
+      <button class="red-tab${k === clave ? ' activa' : ''}"
+              data-accion="elegirRed" data-clave="${k}" style="--tono:${r.color}">
+        ${r.nombre}</button>`).join('');
+
     const selector = D.map(d => `
       <button class="dn${d.id === estado.dnActual ? ' activa' : ''}"
               data-accion="elegirDiametro" data-clave="${d.id}" style="--tono:${d.color}">
         <b>${d.nombre}</b>
         <em>${d.material}</em>
-        <i>hasta ${formatear(d.habitantesMax)} hab · ${Math.round(d.fugas * 100)} % fugas</i>
+        <i>${clave === 'saneamiento'
+              ? formatear(d.caudalMax * CONFIG.saneamiento.holguraColector * 3600) + ' L/h'
+              : 'hasta ' + formatear(d.habitantesMax) + ' hab'} · ${Math.round(d.fugas * 100)} % fugas</i>
       </button>`).join('');
 
-    // Solo tiene sentido renovar hacia arriba: las líneas que ya son iguales o
-    // mejores que el objetivo no salen con botón.
-    const renovables = lineas.filter(l => nivelDiametro(l.tuberia.dn) < nivelDiametro(objetivo.id));
     const listado = !lineas.length
-      ? `<p class="m-desc">Todavía no hay ninguna línea que llegue al pueblo.
-           Mientras tanto bebe de la red vieja: ${D[0].nombre} de ${D[0].material}.</p>`
+      ? `<p class="m-desc">${clave === 'saneamiento'
+          ? `Todavía no hay colector. El pueblo se apaña con la red unitaria vieja:
+             ${D[0].nombre} de ${D[0].material}, y todo lo que no le cabe acaba en el río.`
+          : `Todavía no hay ninguna línea que llegue al pueblo. Mientras tanto bebe
+             de la red vieja: ${D[0].nombre} de ${D[0].material}.`}</p>`
       : lineas.map(({ tuberia, indice }) => {
           const d = diametro(tuberia.dn);
           const sube = nivelDiametro(tuberia.dn) < nivelDiametro(objetivo.id);
@@ -107,32 +124,69 @@ export class UI {
             </button>`;
         }).join('');
 
-    // Los dos motivos por los que la red se convierte en el problema. Sin
-    // decirlos con todas las letras, el juego parece roto: compras captación y
-    // no sube el agua, cuidas el servicio y el pueblo no crece.
-    let aviso = '';
-    if(ahogada) aviso += `<p class="red-aviso">Tu captación da más agua de la que
-      cabe por ${cuello.def.nombre}: se está perdiendo lo que sobra. Comprar más
-      captación no servirá de nada hasta que ensanches la línea.</p>`;
-    if(topeCerca) aviso += `<p class="red-aviso">El pueblo ha tocado techo: por
-      ${cuello.def.nombre} no cabe agua para más de
-      ${formatear(cuello.def.habitantesMax)} habitantes. Hasta que no renueves la
-      línea entera, no crece.</p>`;
+    const avisos = this.avisosRed(estado, clave, cuello, resultado)
+      .map(t => `<p class="red-aviso">${t}</p>`).join('');
 
     document.getElementById('red').innerHTML = `
+      <div class="red-tabs">${pestanas}</div>
+      <p class="m-desc">${R.desc}</p>
       <p class="red-cuello" style="--tono:${cuello.def.color}">
         Manda el tramo más estrecho: <b>${cuello.def.nombre}</b> de ${cuello.def.material}
         ${cuello.estrechas > 1 ? `<i>(${cuello.estrechas} líneas así)</i>` : ''}
       </p>
-      ${aviso}
+      ${avisos}
       <p class="m-desc">Diámetro con el que se tiende y al que se renueva:</p>
       <div class="dn-selector">${selector}</div>
       ${listado}`;
 
-    // Que el botón de tender diga con qué diámetro va a tender: si no, eliges
-    // aquí y luego trazas allí sin saber qué estás poniendo.
+    // Que el botón de tender diga QUÉ va a tender: si no, eliges aquí y luego
+    // trazas allí sin saber si estás poniendo agua limpia o un colector.
+    const nombre = document.querySelector('#obra-tuberia .m-nom');
     const etiqueta = document.querySelector('#obra-tuberia .m-coste');
-    if(etiqueta) etiqueta.textContent = `${objetivo.nombre} · según el terreno`;
+    if(nombre) nombre.textContent = `Tender ${R.corto}`;
+    if(etiqueta) etiqueta.textContent = `${R.nombre} · ${objetivo.nombre}`;
+    const boton = document.getElementById('obra-tuberia');
+    if(boton) boton.style.setProperty('--tono', R.color);
+  }
+
+  /**
+   * Por qué la red se ha convertido en el problema. Van aquí y no en el HTML
+   * porque son la respuesta a preguntas que, sin contestar, parecen fallos del
+   * juego: "compro captación y no sube el agua", "cuido el servicio y el pueblo
+   * no crece", "tengo depuradora y el río sigue sucio".
+   */
+  avisosRed(estado, clave, cuello, resultado = {}){
+    const p = estado.activo;
+    const fuera = [];
+    if(clave === 'abastecimiento'){
+      if(redEstrangula(p, estado)) fuera.push(`Tu captación da más agua de la que
+        cabe por ${cuello.def.nombre}: se está perdiendo lo que sobra. Comprar más
+        captación no servirá de nada hasta que ensanches la línea.`);
+      if(p.habitantes >= cuello.def.habitantesMax * 0.95) fuera.push(`El pueblo ha
+        tocado techo: por ${cuello.def.nombre} no cabe agua para más de
+        ${formatear(cuello.def.habitantesMax)} habitantes. Hasta que no renueves la
+        línea entera, no crece.`);
+    } else {
+      if(p.saneamientoActivo && !(estado._conectadoSan || {}).depuradora)
+        fuera.push(`El pueblo ya genera aguas residuales y no hay ninguna depuradora
+          enganchada al colector. Todo lo que sale va crudo al cauce: constrúyela
+          junto al agua y llévale una línea de saneamiento.`);
+      if(resultado.rebosando) fuera.push(`El colector está REBOSANDO: entra más agua
+        de la que cabe por ${cuello.def.nombre} y se sale antes de llegar a la
+        depuradora. Eso va al río sin tratar. Ensancha el colector o separa las
+        pluviales.`);
+      // El tapón se muda: en cuanto ensanchas el colector, llega TODO a la
+      // depuradora y es ella la que no da abasto. Sin decirlo, el jugador
+      // renueva la línea, ve el río igual de sucio y cree que no ha servido.
+      const trata = capacidadTratamiento(p, estado);
+      if(!resultado.rebosando && resultado.aliviando && p.saneamientoActivo)
+        fuera.push(`El colector da de sí, pero la depuradora no: le llegan
+          ${formatear(resultado.cargaLh || 0)} L/h y solo trata
+          ${formatear(trata)} L/h. Lo que sobra se alivia crudo. Ahora el problema
+          no es la tubería: hace falta más depuración, o un tanque de tormentas
+          que corte la punta.`);
+    }
+    return fuera;
   }
 
   /* ---------------- LA GUÍA DE LOS PRIMEROS PASOS ---------------- */
@@ -454,7 +508,7 @@ export class UI {
     resultado.multaHora = (resultado.suciedad || 0) * CONFIG.cauce.multaMaxPorHora;
 
     this.refrescarGuia(estado);
-    this.refrescarRed(estado);
+    this.refrescarRed(estado, resultado);
     this.refrescarHallazgo(estado);
     this.refrescarAlmacen(estado);
     this.refrescarTienda(estado);
@@ -509,7 +563,7 @@ export class UI {
       <div class="d-fila"><span>Lluvia</span><b class="${lluviaPct > 50 ? 'agua' : ''}">${lluviaPct} %</b></div>
       <div class="d-fila"><span>Pluviales</span><b>${p.mejoras.pluviales > 0 ? 'Nivel ' + p.mejoras.pluviales : 'Sin separar ⚠'}</b></div>
       <div class="d-fila"><span>Tanque tormentas</span><b class="${resultado.aliviando ? 'critico' : ''}">${
-        capacidadTanque(p) > 0 ? tanquePct + ' % lleno' : '—'}${resultado.aliviando ? ' · ALIVIANDO' : ''}</b></div>
+        capacidadTanque(p, estado) > 0 ? tanquePct + ' % lleno' : '—'}${resultado.aliviando ? ' · ALIVIANDO' : ''}</b></div>
       <div class="d-fila"><span>Calidad</span><b class="${(resultado.calidad || 1) > 1.05 ? 'ok' : ''}">×${(resultado.calidad || 1).toFixed(2)}</b></div>` : '';
 
     const firma = [p.nombre, tendencia, Math.floor(p.habitantes),

@@ -519,7 +519,7 @@ export class Escena {
     const cx = W * 0.685, baseY = this.sueloY + (this.rioY - this.sueloY) * 0.30;
     const rx = W * 0.028, ry = rx * 0.42, alto = H * 0.055;
     const topY = baseY - alto;
-    const frac = capacidadTanque(p) > 0 ? limitar(p.tanqueAgua / capacidadTanque(p), 0, 1) : 0;
+    const frac = capacidadTanque(p, this._estado) > 0 ? limitar(p.tanqueAgua / capacidadTanque(p, this._estado), 0, 1) : 0;
 
     // cuerpo
     const g = ctx.createLinearGradient(cx - rx, 0, cx + rx, 0);
@@ -570,7 +570,7 @@ export class Escena {
       this.tubo(W * 0.52, yP, xP, yP, llueve, CONFIG.color.pluviales);
       this.tubo(xP, yP, xP, this.rioY + 4, llueve, CONFIG.color.pluviales);
     }
-    const suciedad = 1 - fraccionTratada(p);
+    const suciedad = 1 - fraccionTratada(p, this._estado);
     const colSucio = mezclarColor('#38bdf8', '#7a5a2a', 0.85);
     if(p.mejoras.depuradora > 0){
       this.tubo(xPueblo, yS, xDepu, yS, true, colSucio);
@@ -674,7 +674,7 @@ export class Escena {
     const ctx = this.ctx, W = this._W, p = this._p;
     if(!p.saneamientoActivo) return;
     const x = W * 0.92, y = this.rioY;
-    const sucio = 1 - fraccionTratada(p);
+    const sucio = 1 - fraccionTratada(p, this._estado);
     const col = mezclarColor('#7dd3fc', '#8a6a2a', sucio);
     ctx.fillStyle = col; ctx.globalAlpha = 0.85;
     for(let k = 0; k < 3; k++){ const dy = (this.tiempo * 40 + k * 6) % 14; ctx.beginPath(); ctx.arc(x, y + dy, 2.2, 0, 7); ctx.fill(); }

@@ -234,7 +234,7 @@ export class EscenaTeselas extends Escena {
     // Saneamiento (pardo): pueblo → tanque → depuradora → río
     if(p.saneamientoActivo){
       const sucio = mezclarColor(azul, '#7a5a2a', 0.85);
-      const salida = mezclarColor(azul, '#7a5a2a', 1 - fraccionTratada(p));
+      const salida = mezclarColor(azul, '#7a5a2a', 1 - fraccionTratada(p, this._estado));
       const tan = this.centroDe(K.tanque);
       const depu = this.centroDe(K.depuradora);
       const vert = this.centro(this.rioDesdeCol, K.depuradora.fila);
@@ -324,7 +324,7 @@ export class EscenaTeselas extends Escena {
                  Math.round(frac * 100) + '%', false, 1, frac);
     }
     if(p.mejoras.tanque > 0){
-      const frac = capacidadTanque(p) > 0 ? limitar(p.tanqueAgua / capacidadTanque(p), 0, 1) : 0;
+      const frac = capacidadTanque(p, this._estado) > 0 ? limitar(p.tanqueAgua / capacidadTanque(p, this._estado), 0, 1) : 0;
       this.pieza(K.tanque, C.tanque, 'tanque', r.aliviando ? 'ALIVIANDO' : 'TORMENTAS',
                  Math.round(frac * 100) + '%', r.aliviando, 1, frac);
     }

@@ -313,21 +313,27 @@ export function costeRenovar(celdas, tuberia, dn){
    LA RED — qué está de verdad conectado al pueblo
    ================================================================ */
 
+/** La red de una tubería. Las de antes de existir el saneamiento son de agua. */
+export function redDe(tuberia){ return tuberia.red || 'abastecimiento'; }
+
 /**
- * Recorrido en anchura desde la casilla del pueblo, saltando solo por casillas
- * que tienen tubería. Devuelve el conjunto de casillas alcanzadas.
+ * Recorrido en anchura desde la casilla del pueblo por las tuberías de UNA red.
+ * Devuelve el conjunto de casillas alcanzadas.
  *
- * Está aparte porque lo usan dos preguntas distintas: qué construcciones están
- * enganchadas y qué LÍNEAS forman la conducción que alimenta al pueblo.
+ * Las redes no se mezclan a propósito: un colector que pasa por encima de una
+ * captación no la conecta a nada. Son dos instalaciones distintas que da la
+ * casualidad de que cruzan el mismo campo.
  */
-function alcanzadasPorLaRed(estado){
+function alcanzadasPorLaRed(estado, red = 'abastecimiento'){
   const M = CONFIG.mapaMundo;
   const clave = (c, f) => f * M.cols + c;
 
-  // Casillas por las que pasa alguna tubería
+  // Casillas por las que pasa alguna tubería DE ESTA RED
   const conTuberia = new Set();
-  for(const tub of estado.tuberias)
+  for(const tub of estado.tuberias){
+    if(redDe(tub) !== red) continue;
     for(const p of tub.camino) conTuberia.add(clave(p.col, p.fila));
+  }
 
   const visitadas = new Set();
   const cola = [clave(M.origen.col, M.origen.fila)];
@@ -351,25 +357,36 @@ function alcanzadasPorLaRed(estado){
  * Una pieza suelta en mitad del campo no sirve de nada: hay que llevarle el
  * agua. Es lo que convierte el trazado en una decisión y no en un adorno.
  */
-export function construccionesConectadas(estado){
-  const M = CONFIG.mapaMundo;
-  const clave = (c, f) => f * M.cols + c;
-  const visitadas = alcanzadasPorLaRed(estado);
+export function construccionesConectadas(estado, red = 'abastecimiento'){
+  const visitadas = alcanzadasPorLaRed(estado, red);
+  const suyas = CONFIG.redes[red].piezas;
+  // Cada red solo cuenta lo suyo: una depuradora no la conecta la tubería de
+  // agua potable, por muy encima que le pase.
+  return estado.construcciones.filter(
+    o => suyas.includes(o.tipo) && pegadaA(visitadas, o.col, o.fila));
+}
 
-  // Cuenta como enganchado lo que está SOBRE la red o PEGADO a ella. Exigir que
-  // la tubería pasara justo por encima de la casilla era una trampa: llevabas la
-  // conducción hasta la puerta del pueblo, se veía conectado, y el juego decía
-  // que no. Con acometida lateral se comporta como uno espera.
-  const enRed = (c, f) => {
-    if(visitadas.has(clave(c, f))) return true;
-    for(const [dc, df] of [[1,0],[-1,0],[0,1],[0,-1]]){
-      const nc = c + dc, nf = f + df;
-      if(nc < 0 || nf < 0 || nc >= M.cols || nf >= M.filas) continue;
-      if(visitadas.has(clave(nc, nf))) return true;
-    }
-    return false;
-  };
-  return estado.construcciones.filter(o => enRed(o.col, o.fila));
+/**
+ * ¿Está esta casilla SOBRE la red o PEGADA a ella? Exigir que la tubería pasara
+ * justo por encima era una trampa: llevabas la conducción hasta la puerta del
+ * pueblo, se veía conectada, y el juego decía que no. Con acometida lateral se
+ * comporta como uno espera.
+ */
+function pegadaA(visitadas, c, f){
+  const M = CONFIG.mapaMundo;
+  const clave = (cc, ff) => ff * M.cols + cc;
+  if(visitadas.has(clave(c, f))) return true;
+  for(const [dc, df] of [[1,0],[-1,0],[0,1],[0,-1]]){
+    const nc = c + dc, nf = f + df;
+    if(nc < 0 || nf < 0 || nc >= M.cols || nf >= M.filas) continue;
+    if(visitadas.has(clave(nc, nf))) return true;
+  }
+  return false;
+}
+
+/** ¿Llega alguna tubería de esa red hasta esta casilla? (o hasta su lado) */
+export function casillaEnRed(estado, col, fila, red = 'abastecimiento'){
+  return pegadaA(alcanzadasPorLaRed(estado, red), col, fila);
 }
 
 /**
@@ -378,12 +395,13 @@ export function construccionesConectadas(estado){
  * nada, así que no debe contar para el cuello de botella.
  * Devuelve [{ tuberia, indice }].
  */
-export function lineasConectadas(estado){
+export function lineasConectadas(estado, red = 'abastecimiento'){
   const M = CONFIG.mapaMundo;
   const clave = (c, f) => f * M.cols + c;
-  const visitadas = alcanzadasPorLaRed(estado);
+  const visitadas = alcanzadasPorLaRed(estado, red);
   const salida = [];
   estado.tuberias.forEach((tuberia, indice) => {
+    if(redDe(tuberia) !== red) return;
     if(tuberia.camino.some(p => visitadas.has(clave(p.col, p.fila))))
       salida.push({ tuberia, indice });
   });
@@ -399,9 +417,9 @@ export function lineasConectadas(estado){
  * estrecho): el pueblo siempre ha bebido de algo.
  * Devuelve { dn, def, lineas, estrechas }.
  */
-export function cuelloDeBotella(estado){
+export function cuelloDeBotella(estado, red = 'abastecimiento'){
   const D = CONFIG.tuberia.diametros;
-  const lineas = lineasConectadas(estado);
+  const lineas = lineasConectadas(estado, red);
   if(!lineas.length) return { dn: D[0].id, def: D[0], lineas: [], estrechas: 0 };
 
   let peor = Infinity;
@@ -412,9 +430,9 @@ export function cuelloDeBotella(estado){
 }
 
 /** Cuenta por tipo lo que hay conectado: { captacion: 2, deposito: 1, ... } */
-export function inventarioConectado(estado){
+export function inventarioConectado(estado, red = 'abastecimiento'){
   const cuenta = {};
-  for(const o of construccionesConectadas(estado)) cuenta[o.tipo] = (cuenta[o.tipo] || 0) + 1;
+  for(const o of construccionesConectadas(estado, red)) cuenta[o.tipo] = (cuenta[o.tipo] || 0) + 1;
   return cuenta;
 }
 

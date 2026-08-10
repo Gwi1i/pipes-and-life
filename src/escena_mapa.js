@@ -13,7 +13,7 @@
 import { CONFIG } from './config.js';
 import { celdaEn, clicsParaDestapar, esAlcanzable, puedeColocar,
          puedeSeguirTrazado, costeTrazado, costeCasillaTuberia,
-         diametro, nivelDiametro } from './mapa.js';
+         diametro, nivelDiametro, redDe } from './mapa.js';
 import { poderExpansion } from './simulacion.js';
 import { formatear } from './util.js';
 import { limitar } from './util.js';
@@ -249,16 +249,17 @@ export class EscenaMapa extends Escena {
         x: p.col * t - estado.camara.x + t / 2,
         y: p.fila * t - estado.camara.y + t / 2
       }));
-      // El diámetro se ve: más gruesa y de otro material. Así el cuello de
-      // botella se localiza mirando el mapa, sin leer ninguna tabla.
-      const d = diametro(tub.dn);
+      // Se ven las dos cosas de un vistazo y sin leer ninguna tabla: el COLOR
+      // dice qué red es (agua limpia o colector) y el GROSOR el diámetro, que es
+      // donde está el cuello de botella.
+      const R = CONFIG.redes[redDe(tub)] || CONFIG.redes.abastecimiento;
       const escala = 1 + nivelDiametro(tub.dn) * 0.55;
       ctx.strokeStyle = '#1b2836'; ctx.lineWidth = Math.max(4, t * 0.16 * escala);
       this.trazo(pts);
-      ctx.strokeStyle = d.color; ctx.lineWidth = Math.max(2, t * 0.09 * escala);
+      ctx.strokeStyle = R.color; ctx.lineWidth = Math.max(2, t * 0.09 * escala);
       this.trazo(pts);
-      // gotas viajando, para que se vea que lleva agua
-      ctx.fillStyle = '#bae6fd';
+      // gotas viajando, para que se vea que lleva algo dentro
+      ctx.fillStyle = aclarar(R.color, 0.45);
       const sep = t * 0.5, desfase = (this.tiempo * 40) % sep;
       let acum = -desfase;
       for(let i = 0; i < pts.length - 1; i++){
@@ -338,7 +339,7 @@ export class EscenaMapa extends Escena {
           x: p.col * t - estado.camara.x + t / 2,
           y: p.fila * t - estado.camara.y + t / 2
         }));
-        ctx.strokeStyle = diametro(estado.dnActual).color;
+        ctx.strokeStyle = (CONFIG.redes[estado.redActual] || CONFIG.redes.abastecimiento).color;
         ctx.lineWidth = Math.max(2, t * 0.10 * (1 + nivelDiametro(estado.dnActual) * 0.55));
         ctx.setLineDash([t * 0.18, t * 0.12]);
         this.trazo(pts); ctx.setLineDash([]);

@@ -139,7 +139,10 @@ export const CONFIG = {
      de todos los pueblos. Se limpia a mano (botón) o, mejor, con depuradoras. */
   saneamiento: {
     habitantesUmbral: 500,   // a partir de aquí el pueblo genera aguas residuales
-    fraccionResidual: 0.80   // fracción del agua servida que vuelve como residual
+    fraccionResidual: 0.80,  // fracción del agua servida que vuelve como residual
+    // Un colector se dimensiona con holgura sobre la línea de agua potable:
+    // no lleva solo lo que bebes, lleva también lo que llueve encima.
+    holguraColector: 1.6
   },
   /* ---------- LLUVIA Y PLUVIALES ----------
      La lluvia deja de ser solo decorado: moja la ciudad y esa escorrentía entra
@@ -350,7 +353,34 @@ export const CONFIG = {
   aportePorPieza: {
     captacion: 0.10,     // L/s de producción pasiva que suma cada captación
     deposito: 9000,      // litros de capacidad que suma cada depósito
-    bomba: 220           // litros por clic que suma cada bombeo
+    bomba: 220,          // litros por clic que suma cada bombeo
+    // Estas dos van por la red de SANEAMIENTO, no por la de abastecimiento
+    depuradora: 2000,    // L/h de tratamiento que suma cada depuradora
+    // ...y lo BIEN que lo trata. Sin esto una depuradora del mapa hacía pasar el
+    // agua por dentro y la devolvía igual de sucia: mucho caudal y cero limpieza.
+    depuradoraCalidad: 0.22,
+    tanque: 25000        // litros de retención que suma cada tanque
+  },
+
+  /* ---------- LAS REDES ----------
+     Un pueblo no tiene UNA red, tiene varias, y cada una lleva lo suyo en su
+     dirección: el abastecimiento trae agua limpia, el saneamiento se lleva la
+     sucia. Comparten mecánica (trazado a mano, diámetros, cuello de botella) y
+     no se mezclan: una tubería de saneamiento no conecta una captación.
+
+     `piezas` dice qué construcciones cuentan en cada una. Las pluviales serán la
+     tercera, cuando toque separarlas del colector unitario. */
+  redes: {
+    abastecimiento: {
+      nombre: 'Abastecimiento', corto: 'agua', color: '#38bdf8',
+      piezas: ['captacion', 'bomba', 'deposito', 'acuifero'],
+      desc: 'Trae el agua desde la captación hasta el pueblo.'
+    },
+    saneamiento: {
+      nombre: 'Saneamiento', corto: 'colector', color: '#a3a15c',
+      piezas: ['depuradora', 'tanque'],
+      desc: 'Se lleva las aguas residuales del pueblo hasta la depuradora.'
+    }
   },
 
   /* ---------- TUBERÍAS ----------

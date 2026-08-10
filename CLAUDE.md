@@ -235,6 +235,28 @@ no. No lo endurezcas otra vez;
 Una pieza suelta en mitad del campo no aporta nada: es lo que convierte el
 trazado en una decisión y no en un adorno.
 
+**Cada servicio tiene SU red.** `CONFIG.redes` define `abastecimiento` (trae agua
+limpia) y `saneamiento` (se lleva la sucia), cada una con su color y su lista de
+`piezas`. Las tuberías llevan `red` y **no se mezclan**: un colector que pasa por
+encima de una captación no la conecta a nada, y una depuradora no la engancha la
+tubería de agua potable. Todo el recorrido de red (`alcanzadasPorLaRed`,
+`construccionesConectadas`, `lineasConectadas`, `cuelloDeBotella`,
+`inventarioConectado`) recibe la red como parámetro; `avanzar()` cachea las dos
+(`_conectado`/`_red` y `_conectadoSan`/`_redSan`). Las pluviales serán la tercera
+y no debería hacer falta tocar la mecánica, solo añadir la entrada en config.
+
+**El colector no estrangula: REBOSA.** En abastecimiento, quedarse corto de
+diámetro significa que llega menos agua; en saneamiento significa que el agua
+sucia **se sale antes de llegar a la depuradora** y va cruda al río
+(`capacidadColector()`, `holguraColector`). Y ojo con el orden del tapón, que se
+comprobó jugando: al ensanchar el colector el problema se MUDA a la depuradora, y
+si la UI no lo dice, el jugador renueva la línea, ve el río igual de sucio y cree
+que no ha servido de nada. Por eso `avisosRed()` distingue los tres casos (no hay
+depuradora / rebosa el colector / no da abasto la depuradora).
+Las depuradoras del mapa suman **caudal Y calidad**
+(`aportePorPieza.depuradora` y `depuradoraCalidad`): con solo el caudal, el agua
+pasaba por dentro de la planta y salía igual de sucia.
+
 **Diámetros: manda el tramo MÁS ESTRECHO.** Cada línea de tubería lleva su `dn`
 (`CONFIG.tuberia.diametros`: fibrocemento → polietileno → fundición dúctil, con
 `caudalMax`, `habitantesMax`, `fugas` y `costeRelativo`). `cuelloDeBotella()` mira

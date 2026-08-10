@@ -15,7 +15,7 @@ import { EscenaAssets } from './escena_assets.js';
 import { EscenaTeselas } from './escena_teselas.js';
 import { EscenaMapa } from './escena_mapa.js';
 import { celdaEn, clicarCasilla, clicsParaDestapar, puedeColocar,
-         puedeSeguirTrazado, costeTrazado, construccionesConectadas,
+         puedeSeguirTrazado, costeTrazado, casillaEnRed,
          piezaDeRuina, diametro, nivelDiametro, costeRenovar } from './mapa.js';
 import { avanzar, bombear, costeMejora, requisitosAutobomba, engrasar,
          poderExpansion } from './simulacion.js';
@@ -109,6 +109,16 @@ function procesarAcciones(){
         break;
 
       /* --- DIÁMETROS: con qué se tiende y qué se renueva --- */
+
+      case 'elegirRed':
+        if(CONFIG.redes[a.clave]){
+          estado.redActual = a.clave;
+          // Cambiar de red a media traza dejaría un trazado a medias con la red
+          // equivocada: se descarta y se empieza de nuevo.
+          if(estado.modo.tipo === 'tuberia') estado.modo.trazado = [];
+          ui.invalidarCache();
+        }
+        break;
 
       case 'elegirDiametro':
         estado.dnActual = diametro(a.clave).id;
@@ -347,8 +357,7 @@ const celdaSeleccionada = () =>
 
 /** ¿Esa casilla está enganchada a la red de tuberías del pueblo? */
 function estaEnLaRed(col, fila){
-  return construccionesConectadas({ ...estado,
-    construcciones: [{ tipo: '_', col, fila }] }).length > 0;
+  return casillaEnRed(estado, col, fila, 'abastecimiento');
 }
 
 /**
@@ -419,15 +428,16 @@ function clicTuberia(col, fila){
 function rematarTuberia(){
   const trazado = estado.modo.trazado;
   if(trazado.length < 2){ avisar('Una tubería necesita al menos dos casillas.'); return; }
-  const dn = estado.dnActual;
+  const dn = estado.dnActual, red = estado.redActual;
   const coste = costeTrazado(estado.mapa, trazado, dn);
   if(!estado.puedePagar(coste)){
     avisar(`Ese trazado cuesta ${formatear(coste)} € y no hay fondos.`);
     return;
   }
   estado.pagar(coste);
-  estado.tuberias.push({ camino: trazado.slice(), coste, dn });
-  estado.anotar(`Tubería ${diametro(dn).nombre} de ${trazado.length} casillas tendida por ${formatear(coste)} €.`, 'ok');
+  estado.tuberias.push({ camino: trazado.slice(), coste, dn, red });
+  estado.anotar(`${CONFIG.redes[red].nombre}: ${diametro(dn).nombre} de ` +
+                `${trazado.length} casillas por ${formatear(coste)} €.`, 'ok');
   estado.modo.trazado = [];
 }
 

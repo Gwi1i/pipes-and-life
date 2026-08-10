@@ -74,8 +74,22 @@ function piezas(estado){ return (estado && estado._conectado) || {}; }
  * Sin estado (llamadas sueltas de la UI) se supone la red heredada, que es lo
  * que hay antes de tender nada.
  */
-export function redDelPueblo(estado){
-  return (estado && estado._red) || { def: CONFIG.tuberia.diametros[0], lineas: [], estrechas: 0 };
+export function redDelPueblo(estado, red = 'abastecimiento'){
+  const cacheada = estado && (red === 'saneamiento' ? estado._redSan : estado._red);
+  return cacheada || { def: CONFIG.tuberia.diametros[0], lineas: [], estrechas: 0 };
+}
+
+/** Piezas conectadas por la red de saneamiento (depuradoras y tanques). */
+function piezasSan(estado){ return (estado && estado._conectadoSan) || {}; }
+
+/**
+ * Lo que cabe por el COLECTOR, en L/h. Aquí el cuello de botella duele distinto
+ * que en el abastecimiento: lo que no cabe no es agua que deja de llegar, es
+ * agua sucia que se sale y va al río tal cual.
+ */
+export function capacidadColector(estado){
+  return redDelPueblo(estado, 'saneamiento').def.caudalMax
+       * CONFIG.saneamiento.holguraColector * 3600;
 }
 
 /**
@@ -131,15 +145,27 @@ export function clicsAutoPorSeg(pueblo){
   return pueblo.autobombaActivo ? CONFIG.premium.autobomba.clicsPorSeg : 0;
 }
 
-/** Fracción de aguas residuales que trata la depuradora del pueblo (0..máx). */
-export function fraccionTratada(pueblo){
+/**
+ * Cómo de limpia sale el agua tratada (0..máx). Cuenta el nivel de la tienda Y
+ * las depuradoras del mapa: si solo contara el nivel, una planta construida
+ * junto al río haría pasar el agua por dentro y la devolvería igual de sucia.
+ */
+export function fraccionTratada(pueblo, estado){
   const d = CONFIG.mejoras.depuradora;
-  return Math.min(d.fraccionMax, pueblo.mejoras.depuradora * d.fraccionPorNivel);
+  return Math.min(d.fraccionMax,
+    pueblo.mejoras.depuradora * d.fraccionPorNivel
+    + (piezasSan(estado).depuradora || 0) * CONFIG.aportePorPieza.depuradoraCalidad);
 }
 
-/** Caudal máximo que la depuradora puede tratar, en L/h. Lo que exceda se alivia. */
-export function capacidadTratamiento(pueblo){
-  return pueblo.mejoras.depuradora * CONFIG.mejoras.depuradora.caudalPorNivel;
+/**
+ * Caudal máximo que se puede tratar, en L/h. Lo que exceda se alivia.
+ * La tienda sube el NIVEL de la depuradora; el mapa dice CUÁNTAS tienes
+ * enganchadas al colector. Una depuradora preciosa junto al río, sin colector
+ * que le lleve el agua sucia, no trata absolutamente nada.
+ */
+export function capacidadTratamiento(pueblo, estado){
+  return pueblo.mejoras.depuradora * CONFIG.mejoras.depuradora.caudalPorNivel
+       + (piezasSan(estado).depuradora || 0) * CONFIG.aportePorPieza.depuradora;
 }
 
 /** Fracción de escorrentía de lluvia que la red de pluviales saca del colector. */
@@ -149,8 +175,9 @@ export function fraccionSeparada(pueblo){
 }
 
 /** Litros que puede retener el tanque de tormentas. */
-export function capacidadTanque(pueblo){
-  return pueblo.mejoras.tanque * CONFIG.mejoras.tanque.capacidadPorNivel;
+export function capacidadTanque(pueblo, estado){
+  return pueblo.mejoras.tanque * CONFIG.mejoras.tanque.capacidadPorNivel
+       + (piezasSan(estado).tanque || 0) * CONFIG.aportePorPieza.tanque;
 }
 
 /**
@@ -274,7 +301,7 @@ function avanzarPueblo(estado, p, dt, dtHoras, punta, estiaje, frenoCrec, lluvia
     p.saneamientoActivo = true;
     recienSaneamiento = true;
   }
-  let residual = 0, alivio = 0, aprovechado = 0;
+  let residual = 0, alivio = 0, aprovechado = 0, reboseColector = 0, cargaBruta = 0;
   if(p.saneamientoActivo){
     // 1. Lo que entra al colector: aguas residuales + la lluvia NO separada.
     const aguasResiduales = servido * S.fraccionResidual;
@@ -285,16 +312,24 @@ function avanzarPueblo(estado, p, dt, dtHoras, punta, estiaje, frenoCrec, lluvia
     if(aprovechado > 0) p.agua = Math.min(cap, p.agua + aprovechado);
     let carga = aguasResiduales + (escorrentia - separada);
 
-    // 2. La depuradora trata hasta su caudal máximo; el resto es exceso.
-    const capacidadPaso = capacidadTratamiento(p) * dtHoras;
+    // 2. EL COLECTOR. Por el tubo cabe lo que cabe: lo que no entra ni siquiera
+    //    llega a la depuradora, se sale antes y va al río tal cual. Aquí el
+    //    cuello de botella no es "llega menos agua", es "se desborda".
+    cargaBruta = carga;
+    const cabe = capacidadColector(estado) * dtHoras;
+    reboseColector = Math.max(0, carga - cabe);
+    carga -= reboseColector;
+
+    // 3. La depuradora trata hasta su caudal máximo; el resto es exceso.
+    const capacidadPaso = capacidadTratamiento(p, estado) * dtHoras;
     let aTratar = Math.min(carga, capacidadPaso);
     let exceso = carga - aTratar;
 
-    // 3. El tanque de tormentas retiene el exceso; si sobra capacidad de
+    // 4. El tanque de tormentas retiene el exceso; si sobra capacidad de
     //    tratamiento, se vacía poco a poco hacia la depuradora. Es exactamente
     //    para lo que sirve uno de verdad: cortar la punta y tratarla luego.
     if(exceso > 0){
-      const hueco = Math.max(0, capacidadTanque(p) - p.tanqueAgua);
+      const hueco = Math.max(0, capacidadTanque(p, estado) - p.tanqueAgua);
       const retenido = Math.min(exceso, hueco);
       p.tanqueAgua += retenido;
       exceso -= retenido;
@@ -305,9 +340,10 @@ function avanzarPueblo(estado, p, dt, dtHoras, punta, estiaje, frenoCrec, lluvia
       aTratar += vaciado;
     }
 
-    // 4. Lo tratado sale casi limpio; lo aliviado va crudo al cauce.
-    alivio = exceso;
-    residual = aTratar * (1 - fraccionTratada(p)) + alivio;
+    // 5. Lo tratado sale casi limpio; lo aliviado va crudo al cauce. El rebose
+    //    del colector cuenta igual: al río no le importa por dónde se ha salido.
+    alivio = exceso + reboseColector;
+    residual = aTratar * (1 - fraccionTratada(p, estado)) + alivio;
   }
 
   const topeRed = redDelPueblo(estado).def.habitantesMax;
@@ -325,7 +361,13 @@ function avanzarPueblo(estado, p, dt, dtHoras, punta, estiaje, frenoCrec, lluvia
       eficiencia: ef,
       saneamiento: p.saneamientoActivo,
       lluvia, aliviando: alivio > 0.0001,
-      tanqueFrac: capacidadTanque(p) > 0 ? p.tanqueAgua / capacidadTanque(p) : 0,
+      // Se distingue el rebose del colector del alivio de la depuradora: son
+      // dos averías distintas y se arreglan en sitios distintos del mapa.
+      rebosando: reboseColector > 0.0001,
+      // Cuánto llega al colector, en L/h: sin este número la UI no puede decir
+      // si el tapón está en la tubería o en la depuradora.
+      cargaLh: dtHoras > 0 ? cargaBruta / dtHoras : 0,
+      tanqueFrac: capacidadTanque(p, estado) > 0 ? p.tanqueAgua / capacidadTanque(p, estado) : 0,
       aprovechadoLh: dtHoras > 0 ? aprovechado / dtHoras : 0,
       calidad: calidadServicio(p)
     }
@@ -341,11 +383,13 @@ export function avanzar(estado, dt){
   // Qué hay enganchado a la red AHORA. Se cachea aquí, una vez por paso: cada
   // consulta de capacidad o caudal la usa, y recorrer la red en todas sería
   // absurdo. Una pieza sin tubería al pueblo no cuenta.
-  estado._conectado = inventarioConectado(estado);
-  // Y por qué diámetro pasa todo eso. Hoy hay una sola conducción (la que sale
-  // del pueblo de origen), así que la red es común; cuando cada pueblo tenga la
-  // suya, esto pasará a calcularse por pueblo.
-  estado._red = cuelloDeBotella(estado);
+  estado._conectado    = inventarioConectado(estado, 'abastecimiento');
+  estado._conectadoSan = inventarioConectado(estado, 'saneamiento');
+  // Y por qué diámetro pasa todo eso. Hoy hay una sola conducción de cada tipo
+  // (las que salen del pueblo de origen), así que las redes son comunes; cuando
+  // cada pueblo tenga las suyas, esto pasará a calcularse por pueblo.
+  estado._red    = cuelloDeBotella(estado, 'abastecimiento');
+  estado._redSan = cuelloDeBotella(estado, 'saneamiento');
   const dtHoras = dt * eco.horasPorSegundo;
   const punta = coefHora(estado.horas);
   const estiaje = factorEstiaje(estado.horas);
