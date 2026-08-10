@@ -158,7 +158,14 @@ export class EscenaMapa extends Escena {
     // Damero muy suave + una pizca de ruido. La clave es que sea POCO: con
     // variación fuerte por celda el prado parece papel pintado descosido.
     const par = (c + f) % 2 === 0;
-    let base = mezclarColor(def.color, par ? '#ffffff' : '#000000', E.damero);
+    let color = def.color;
+    // El año tiñe el suelo. Solo prado y bosque: la roca y el agua no cambian
+    // de color con la estación, y teñirlas se veía falso.
+    if(this.paletaAño && E.tinteEstacion > 0){
+      if(celda.tipo === 'hierba') color = mezclarColor(color, this.paletaAño.hierba, E.tinteEstacion);
+      else if(celda.tipo === 'bosque') color = mezclarColor(color, this.paletaAño.hierba, E.tinteEstacion * 0.7);
+    }
+    let base = mezclarColor(color, par ? '#ffffff' : '#000000', E.damero);
     base = mezclarColor(base, v > 0.5 ? '#ffffff' : '#000000', Math.abs(v - 0.5) * E.variacion);
     if(esAgua && celda.insalubre > 0)
       base = mezclarColor(base, '#7a6a34', Math.min(0.75, celda.insalubre));
@@ -193,6 +200,23 @@ export class EscenaMapa extends Escena {
     ctx.lineWidth = Math.max(1, t * 0.02);
     ctx.beginPath(); ctx.roundRect(fx, fy, fl, fl, r); ctx.stroke();
 
+  }
+
+  /**
+   * Los colores del año, mezclando siempre entre la estación actual y la
+   * siguiente en proporción al trozo de estación transcurrido. Sin escalones.
+   */
+  colorDeEstacion(horas){
+    const E = CONFIG.estaciones;
+    const frac = ((horas % CONFIG.tiempo.horasPorAño) / CONFIG.tiempo.horasPorAño + 1) % 1;
+    const pos = frac * E.length;
+    const i = Math.floor(pos) % E.length;
+    const k = pos - Math.floor(pos);
+    const sig = E[(i + 1) % E.length];
+    return {
+      hierba: mezclarColor(E[i].hierba, sig.hierba, k),
+      follaje: mezclarColor(E[i].follaje, sig.follaje, k)
+    };
   }
 
   /**
@@ -290,17 +314,18 @@ export class EscenaMapa extends Escena {
       // tres faldones superpuestos que estrechan hacia arriba, con la mitad
       // izquierda clara y la derecha en sombra: misma luz que los edificios.
       const puntos = [[0.30, 0.62, 1.00], [0.62, 0.52, 0.86], [0.46, 0.82, 0.72]];
-      const verde = CONFIG.terrenos.bosque.color;
+      // Las copas siguen al follaje del año: en otoño tiran a ocre y en invierno
+      // se apagan, con la misma amplitud contenida que el suelo.
+      let verde = CONFIG.terrenos.bosque.color;
+      if(this.paletaAño && CONFIG.estiloMapa.tinteEstacion > 0)
+        verde = mezclarColor(verde, this.paletaAño.follaje, CONFIG.estiloMapa.tinteEstacion * 1.3);
       const claro = aclarar(verde, 0.20), oscuro = oscurecer(verde, 0.42);
       for(let i = 0; i < puntos.length; i++){
         const px = x + t * puntos[i][0], baseY = y + t * puntos[i][1];
         const esc = puntos[i][2] * (0.9 + ((v * 3 + i * 0.29) % 1) * 0.25);
         const an = t * 0.15 * esc, alto = t * 0.42 * esc;
 
-        ctx.fillStyle = 'rgba(0,0,0,0.22)';
-        ctx.beginPath();
-        ctx.ellipse(px + an * 0.35, baseY, an * 0.95, an * 0.34, 0, 0, 7);
-        ctx.fill();
+        this.sombraPieza(px, baseY, an * 0.9, an * 0.32, 0.22);
 
         ctx.fillStyle = '#4a3524';
         ctx.fillRect(px - an * 0.10, baseY - alto * 0.20, an * 0.20, alto * 0.20);
@@ -332,10 +357,8 @@ export class EscenaMapa extends Escena {
       const W = t * 0.34, H = W * 0.5, alto = t * 0.46;
       const cumbre = base - alto;
 
-      ctx.fillStyle = 'rgba(0,0,0,0.22)';
-      ctx.beginPath();
-      ctx.ellipse(cx + t * 0.04, base + t * 0.01, W * 1.05, H * 0.9, 0, 0, 7);
-      ctx.fill();
+      // SIN sombra arrojada: una montaña no está apoyada sobre el prado, es el
+      // propio terreno levantado. La elipse de debajo la hacía flotar.
 
       // cara trasera-izquierda
       ctx.fillStyle = mezclarColor(roca, '#ffffff', 0.06);
@@ -482,11 +505,8 @@ export class EscenaMapa extends Escena {
     // Se apagan para que se lea de un vistazo que ya están atendidos.
     if(celda.resuelto) ctx.globalAlpha = 0.45;
 
-    // sombra común, que es lo que los asienta sobre la tesela
-    ctx.fillStyle = 'rgba(0,0,0,0.28)';
-    ctx.beginPath();
-    ctx.ellipse(cx + t * 0.02, y + t * 0.74, t * 0.26, t * 0.09, 0, 0, 7);
-    ctx.fill();
+    // sombra desplazada abajo-derecha, como manda la luz
+    this.sombraPieza(cx, y + t * 0.72, t * 0.24, t * 0.08, 0.28);
 
     if(celda.hallazgo === 'pueblo') this.caserio(cx, y + t * 0.70, t, col);
     else if(celda.hallazgo === 'ruina') this.ruina(cx, y + t * 0.70, t, col);
@@ -743,11 +763,14 @@ export class EscenaMapa extends Escena {
       const ox = x + (t - lado) / 2;
       const oy = y + (t - lado) / 2 - t * E.alturaPieza * 0.5;
 
-      // sombra arrojada sobre la tesela
-      ctx.fillStyle = 'rgba(0,0,0,0.30)';
-      ctx.beginPath();
-      ctx.ellipse(x + t * 0.52, y + t * 0.74, t * 0.30, t * 0.10, 0, 0, 7);
-      ctx.fill();
+      // Sobre agua no hay sombra arrojada: hay reflejo y ondas alrededor de los
+      // pilotes. Una elipse negra sobre el río era justo lo que hacía que la
+      // captación pareciera flotar en el aire.
+      const suelo = celdaEn(estado.mapa, obra.col, obra.fila);
+      if(suelo && (suelo.tipo === 'agua' || suelo.tipo === 'lago'))
+        this.reflejoEnAgua(x + t * 0.5, y + t * 0.70, t * 0.22, t * 0.075);
+      else
+        this.sombraPieza(x + t * 0.5, y + t * 0.72, t * 0.26, t * 0.085);
 
       // La silueta se dibuja siempre en su caja de t x t y se ESCALA aquí, así
       // ningún dibujo de pieza tiene que saber nada del tamaño final.
@@ -771,6 +794,47 @@ export class EscenaMapa extends Escena {
         ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 1;
         ctx.strokeRect(bx + 0.5, by + 0.5, bw - 1, bh - 1);
       }
+    }
+  }
+
+  /**
+   * LA SOMBRA VA DESPLAZADA. Si la pones justo debajo del objeto, el objeto
+   * flota: una sombra centrada es la de una luz cenital perfecta, y aquí la luz
+   * viene de arriba a la IZQUIERDA. Tiene que caer abajo y a la derecha.
+   *
+   * Y no todo lleva sombra arrojada: la montaña ES el suelo, no algo apoyado
+   * encima, y lo que está sobre el agua no proyecta sombra dura sino que se
+   * refleja. Poner una elipse negra debajo de todo era lo que hacía que las
+   * piezas parecieran calcomanías flotando.
+   */
+  sombraPieza(cx, baseY, rx, ry, fuerza = 0.30){
+    const ctx = this.ctx;
+    ctx.fillStyle = `rgba(0,0,0,${fuerza})`;
+    ctx.beginPath();
+    ctx.ellipse(cx + rx * 0.42, baseY + ry * 0.55, rx, ry, 0, 0, 7);
+    ctx.fill();
+  }
+
+  /** Lo que está sobre el agua no da sombra: da reflejo y ondas. */
+  reflejoEnAgua(cx, baseY, rx, ry){
+    const ctx = this.ctx;
+    // El reflejo arranca EN la base y se estira hacia abajo. Separado del objeto
+    // volvía a leerse como una sombra suelta, que es justo lo que se quería
+    // quitar: lo que flota es lo que tiene una mancha oscura debajo y despegada.
+    const g = ctx.createLinearGradient(0, baseY - ry, 0, baseY + ry * 2.2);
+    g.addColorStop(0, 'rgba(8,26,44,0.30)');
+    g.addColorStop(1, 'rgba(8,26,44,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.ellipse(cx, baseY + ry * 0.5, rx * 0.85, ry * 1.6, 0, 0, 7);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+    ctx.lineWidth = Math.max(1, rx * 0.07);
+    for(let k = 0; k < 2; k++){
+      const e = 1 + k * 0.5 + Math.sin(this.tiempo * 1.6 + k) * 0.12;
+      ctx.beginPath();
+      ctx.ellipse(cx, baseY, rx * e, ry * e, 0, 0, 7);
+      ctx.stroke();
     }
   }
 

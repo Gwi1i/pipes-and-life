@@ -450,7 +450,13 @@ export const CONFIG = {
     // Las piezas OCUPAN la tesela y sobresalen por arriba: la ficha ya es su
     // base, así que no necesitan zócalo y sí necesitan volumen.
     ladoPieza: 0.86,
-    alturaPieza: 0.30       // cuánto asoma por encima del borde de la tesela
+    alturaPieza: 0.30,      // cuánto asoma por encima del borde de la tesela
+    /* EL AÑO EN EL MAPA. El prado amarillea en verano y se apaga en invierno,
+       pero con MUY poca amplitud y una transición continua de una estación a la
+       siguiente. Un año son 15 minutos reales y una estación 3,8: a ese ritmo un
+       cambio de color fuerte sería un parpadeo molesto cada pocos minutos.
+       Se busca que lo notes sin que te distraiga. A 0 se apaga del todo. */
+    tinteEstacion: 0.16
   },
 
   /* ---------- QUÉ SE PUEDE CONSTRUIR Y DÓNDE ----------

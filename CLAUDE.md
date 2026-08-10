@@ -107,6 +107,13 @@ límites que hay que respetar:
     exploración: niebla, hallazgos, construcciones, las redes con su color y su
     grosor, las averías y la previsualización de lo que vas a hacer. Hereda de
     `Escena` para reutilizar destellos, clima y helpers de color.
+    **La sombra va DESPLAZADA abajo-derecha** (`sombraPieza`), nunca centrada
+    debajo: una sombra centrada es la de una luz cenital y aquí la luz viene de
+    arriba a la izquierda, así que poner la elipse justo debajo hacía que todo
+    pareciera flotar. Y no todo lleva sombra: la MONTAÑA no (es el suelo
+    levantado, no algo apoyado encima) y lo que está sobre AGUA tampoco
+    (`reflejoEnAgua`: reflejo pegado a la base y ondas, nunca una mancha oscura
+    despegada).
     Las piezas van en ISOMETRICA de verdad (`isoCaja`/`isoCilindro`/`isoTejado`):
     tapa en rombo y dos laterales, con la luz SIEMPRE de arriba a la izquierda
     —tapa clara, cara izquierda media, derecha oscura—. Si añades una pieza y no
