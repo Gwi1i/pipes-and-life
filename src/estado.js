@@ -55,7 +55,10 @@ export class Estado {
     this.inventario = [];           // instalaciones recuperadas de las ruinas
     this.descubiertas = 0;          // casillas abiertas, para el HUD
     this.construcciones = [];       // { tipo, col, fila } puestas sobre el mapa
-    this.tuberias = [];             // { camino:[{col,fila}], coste }
+    this.tuberias = [];             // { camino:[{col,fila}], coste, dn }
+    // Diámetro con el que se tienden los tramos NUEVOS. Arranca en el más
+    // estrecho: la red barata es el punto de partida, no el objetivo.
+    this.dnActual = CONFIG.tuberia.diametros[0].id;
     // Modo de construcción: qué está intentando colocar el jugador ahora mismo
     this.modo = { tipo: null, elemento: null, trazado: [], deInventario: false };
     this.seleccion = null;          // { col, fila } de la casilla que miras
@@ -88,7 +91,7 @@ export class Estado {
       mapa: comprimir(this.mapa),
       inventario: this.inventario, camara: this.camara,
       construcciones: this.construcciones, tuberias: this.tuberias,
-      tutorial: this.tutorial
+      dnActual: this.dnActual, tutorial: this.tutorial
     };
     try{
       localStorage.setItem(CONFIG.guardado.clave, JSON.stringify(datos));
@@ -129,6 +132,10 @@ export class Estado {
       estado.inventario = d.inventario || [];
       estado.construcciones = d.construcciones || [];
       estado.tuberias = d.tuberias || [];
+      // Las tuberías de antes de los diámetros se quedan en el más estrecho: es
+      // exactamente la red vieja de fibrocemento que uno se encuentra heredada.
+      for(const t of estado.tuberias) if(!t.dn) t.dn = CONFIG.tuberia.diametros[0].id;
+      estado.dnActual = d.dnActual || CONFIG.tuberia.diametros[0].id;
       estado.tutorial = d.tutorial || { paso: 0, terminado: false };
       if(d.camara) estado.camara = d.camara;
       return true;

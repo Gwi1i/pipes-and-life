@@ -12,7 +12,8 @@
 
 import { CONFIG } from './config.js';
 import { celdaEn, clicsParaDestapar, esAlcanzable, puedeColocar,
-         puedeSeguirTrazado, costeTrazado, costeCasillaTuberia } from './mapa.js';
+         puedeSeguirTrazado, costeTrazado, costeCasillaTuberia,
+         diametro, nivelDiametro } from './mapa.js';
 import { poderExpansion } from './simulacion.js';
 import { formatear } from './util.js';
 import { limitar } from './util.js';
@@ -248,9 +249,13 @@ export class EscenaMapa extends Escena {
         x: p.col * t - estado.camara.x + t / 2,
         y: p.fila * t - estado.camara.y + t / 2
       }));
-      ctx.strokeStyle = '#1b2836'; ctx.lineWidth = Math.max(4, t * 0.16);
+      // El diámetro se ve: más gruesa y de otro material. Así el cuello de
+      // botella se localiza mirando el mapa, sin leer ninguna tabla.
+      const d = diametro(tub.dn);
+      const escala = 1 + nivelDiametro(tub.dn) * 0.55;
+      ctx.strokeStyle = '#1b2836'; ctx.lineWidth = Math.max(4, t * 0.16 * escala);
       this.trazo(pts);
-      ctx.strokeStyle = CONFIG.color.agua; ctx.lineWidth = Math.max(2, t * 0.09);
+      ctx.strokeStyle = d.color; ctx.lineWidth = Math.max(2, t * 0.09 * escala);
       this.trazo(pts);
       // gotas viajando, para que se vea que lleva agua
       ctx.fillStyle = '#bae6fd';
@@ -333,7 +338,8 @@ export class EscenaMapa extends Escena {
           x: p.col * t - estado.camara.x + t / 2,
           y: p.fila * t - estado.camara.y + t / 2
         }));
-        ctx.strokeStyle = CONFIG.color.agua; ctx.lineWidth = Math.max(2, t * 0.10);
+        ctx.strokeStyle = diametro(estado.dnActual).color;
+        ctx.lineWidth = Math.max(2, t * 0.10 * (1 + nivelDiametro(estado.dnActual) * 0.55));
         ctx.setLineDash([t * 0.18, t * 0.12]);
         this.trazo(pts); ctx.setLineDash([]);
         // la última puesta, marcada: es donde se pincha para rematar
@@ -347,7 +353,7 @@ export class EscenaMapa extends Escena {
         return;
       }
 
-      const total = costeTrazado(estado.mapa, trazado);
+      const total = costeTrazado(estado.mapa, trazado, estado.dnActual);
       const ultimo = trazado[trazado.length - 1];
       if(ultimo.col === r.col && ultimo.fila === r.fila){
         this.cartel(`Clic aquí: rematar · ${formatear(total)} €`, x + t / 2, y - 6,
@@ -360,7 +366,7 @@ export class EscenaMapa extends Escena {
       if(v.ok && celda){
         const obra = CONFIG.tuberia.nombreObra[celda.tipo] || 'obra';
         ctx.fillStyle = 'rgba(74,222,128,0.28)'; ctx.fillRect(x, y, t, t);
-        this.cartel(`+${formatear(costeCasillaTuberia(celda))} € (${obra}) · total ${formatear(total)} €`,
+        this.cartel(`+${formatear(costeCasillaTuberia(celda, estado.dnActual))} € (${obra}) · total ${formatear(total)} €`,
                     x + t / 2, y - 6, CONFIG.color.ok);
       } else {
         this.cartel(v.motivo || 'Ahí no', x + t / 2, y - 6, CONFIG.color.critico);

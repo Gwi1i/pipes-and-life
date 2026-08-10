@@ -16,7 +16,7 @@ import { EscenaTeselas } from './escena_teselas.js';
 import { EscenaMapa } from './escena_mapa.js';
 import { celdaEn, clicarCasilla, clicsParaDestapar, puedeColocar,
          puedeSeguirTrazado, costeTrazado, construccionesConectadas,
-         piezaDeRuina } from './mapa.js';
+         piezaDeRuina, diametro, nivelDiametro, costeRenovar } from './mapa.js';
 import { avanzar, bombear, costeMejora, requisitosAutobomba, engrasar,
          poderExpansion } from './simulacion.js';
 import { formatear } from './util.js';
@@ -107,6 +107,37 @@ function procesarAcciones(){
           : { tipo: 'tuberia', elemento: null, trazado: [] };
         ui.refrescarConstruccion(estado);
         break;
+
+      /* --- DIÁMETROS: con qué se tiende y qué se renueva --- */
+
+      case 'elegirDiametro':
+        estado.dnActual = diametro(a.clave).id;
+        ui.invalidarCache();
+        break;
+
+      case 'renovarLinea': {
+        const i = parseInt(a.clave, 10);
+        const tub = estado.tuberias[i];
+        if(!tub) break;
+        const destino = estado.dnActual;
+        if(nivelDiametro(destino) <= nivelDiametro(tub.dn)){
+          avisar('Elige arriba un diámetro mayor que el que ya tiene.');
+          break;
+        }
+        const coste = costeRenovar(estado.mapa, tub, destino);
+        if(!estado.puedePagar(coste)){
+          avisar(`Renovar esa línea cuesta ${formatear(coste)} € y no hay fondos.`);
+          break;
+        }
+        estado.pagar(coste);
+        const antes = diametro(tub.dn).nombre;
+        tub.dn = destino;
+        tub.coste = (tub.coste || 0) + coste;
+        estado.anotar(`Línea renovada de ${antes} a ${diametro(destino).nombre} por ${formatear(coste)} €.`, 'ok');
+        avisar(`Línea renovada a ${diametro(destino).nombre}.`);
+        ui.invalidarCache();
+        break;
+      }
 
       case 'saltarGuia':
         saltarGuia(estado);
@@ -388,14 +419,15 @@ function clicTuberia(col, fila){
 function rematarTuberia(){
   const trazado = estado.modo.trazado;
   if(trazado.length < 2){ avisar('Una tubería necesita al menos dos casillas.'); return; }
-  const coste = costeTrazado(estado.mapa, trazado);
+  const dn = estado.dnActual;
+  const coste = costeTrazado(estado.mapa, trazado, dn);
   if(!estado.puedePagar(coste)){
     avisar(`Ese trazado cuesta ${formatear(coste)} € y no hay fondos.`);
     return;
   }
   estado.pagar(coste);
-  estado.tuberias.push({ camino: trazado.slice(), coste });
-  estado.anotar(`Tubería de ${trazado.length} casillas tendida por ${formatear(coste)} €.`, 'ok');
+  estado.tuberias.push({ camino: trazado.slice(), coste, dn });
+  estado.anotar(`Tubería ${diametro(dn).nombre} de ${trazado.length} casillas tendida por ${formatear(coste)} €.`, 'ok');
   estado.modo.trazado = [];
 }
 

@@ -1,9 +1,31 @@
+[Este archivo es el cajón de ideas. Las líneas que empiezan por "// Claude:" son
+comentarios míos sobre cómo encaja cada idea con lo que ya está montado, o qué
+haría falta para meterla. Bórralas sin miedo si estorban.]
+
 El juego es uno de tipo idle-clicker de teselas cuadradas en las que vas descubriendo un mapa según vas clicando en las teselas.
 Existen poblaciones a las que hay que dotar de diferentes servicios para ir avanzando en el juego.
 Los servicios de momento son abastecimiento, saneamiento, pluviales, residuos. Mas adelante se puede ver como implementar otros servicios como transporte publico, centros de recogida y cuidado de animales, etc.
 
+// Claude: hoy un pueblo es una LISTA DE MEJORAS (pueblo.mejoras{}), no una lista
+// de servicios. Para que esto funcione como lo describes habría que dar el paso
+// a pueblo.servicios[clave] = { activo, piezas, salud }, con cada servicio
+// pidiendo SUS instalaciones y SU red sobre el mapa. Es un cambio de estructura,
+// no una mejora más: mejor hacerlo antes de meter residuos, no después.
+
 Abastecimiento:
 Para abastecer a una población se puede llegar a requerir de captación, bombeo, deposito, depuración, desalinizadora.
+
+// Claude: hechos captación, bombeo y depósito. Falta la DESALADORA, y del
+// esquema se saca bien: cara de construir y sobre todo cara de mantener
+// (energía), pero inmune al estiaje. Sería la respuesta a quedarse sin río, no
+// una captación mejor. El acuífero (pozo profundo) está reservado a propósito
+// para cuando estés lejos del agua.
+//
+// Ya está el DIÁMETRO de la tubería: manda el tramo más estrecho de la línea, y
+// eso topa el caudal Y el tamaño al que puede llegar el pueblo. Los tiers son
+// los del esquema: fibrocemento (heredado, con fugas) → polietileno → fundición
+// dúctil. Cuando haya red de saneamiento y de pluviales, cada una llevará su
+// propio diámetro con la misma mecánica.
 
 Saneamiento:
 El saneamiento requiere de depuradora. También los residuos resultantes de la depuración habría que llevarlos a una planta de tratamiento de residuos.
@@ -11,6 +33,14 @@ El saneamiento requiere de depuradora. También los residuos resultantes de la d
 Pluviales:
 En muchas poblaciones, al principio, hay una red unitaria que transporta indistintamente las aguas fecales y las de pluviales, lo que provoca problemas en las estaciones depuradoras por el volumen, lo que puede provocar que haya que desviar parte al rio sin depurar.
 Separar la red es lo ideal. Es importante construir tanque de tormentas para evitar inundaciones en momentos de gran pluviosidad o épocas en de deshielo que coinciden con la lluvia.
+
+// Claude: esto ya está simulado (mejora "pluviales" + "tanque", y el alivio al
+// cauce cuando la depuradora se satura en otoño), pero como MEJORAS de tienda,
+// no como red dibujada sobre el mapa. Lo natural es que la red unitaria sea
+// literalmente una tubería con red:'unitaria' que pagas por desdoblar en dos.
+// El DESHIELO que mencionas no está: hoy la lluvia es una curva por estación.
+// Sería una punta de primavera aparte de la de otoño, y encaja bien porque ya
+// existe el tanque para amortiguarla.
 
 Residuos:
 La recogida de residuos es indispensable para la salubridad. Se necesitan varios tipos de contenedores para su correcto reciclaje:
@@ -24,6 +54,42 @@ La recogida de residuos es indispensable para la salubridad. Se necesitan varios
 	-Puntos limpios
 También hace falta un vertedero y plantas de reciclaje.
 
+// Claude: es el servicio más grande de los cuatro y el único que no tiene nada
+// hecho. Aviso de diseño: ocho fracciones de contenedor son ocho botones, y el
+// juego ya pide clicar en bombear, engrasar, limpiar cauce y explorar. Yo
+// empezaría por tres fracciones y el vertedero, y abriría el resto conforme
+// crece el pueblo, como se hizo con el saneamiento. Lo bueno es que los
+// residuos NO usan tuberías: se recogen con camiones, o sea rutas por el mapa.
+// Es una mecánica distinta de verdad, no más de lo mismo con otro color.
+
 Todo esto requiere de equipos de mantenimiento de redes y de residuos para arreglar averias y mantener todo en estado optimo.
 
+// Claude: el germen ya está: el operario que aparece cada tanto y te quita el
+// desgaste, y la mejora "personal de mantenimiento" que repara averías solo.
+// Esto sería subirlo a BRIGADAS por servicio, cada una con su coste fijo. Ojo
+// con una cosa: si las brigadas lo arreglan todo solas, el juego deja de pedir
+// clics y se apaga. El personal tiene que aliviar, nunca sustituir.
+
 En un momento mas avanzado se podría pensar en implementar de alguna manera los técnicos que se encargan de diseñar todo y el departamento RRHH o el departamento económico que sirvan para optimizar el coste de las redes o el personal.
+
+// Claude: de acuerdo en dejarlo para el final. Son multiplicadores sobre coste
+// de red y de personal, y un multiplicador solo se disfruta cuando hay mucho
+// que multiplicar. Antes de esto tienen que existir las brigadas y varias redes.
+
+// --- Claude: ideas del Esquema.png que NO están en este texto y no quiero que
+// se pierdan ---
+// · Canon de explotación por captar agua, y gasto de tratamiento aparte de la
+//   obra. Hoy el agua no cuesta nada de sacar: solo se ingresa por venderla.
+// · Sequía como evento que multiplica el canon o directamente bloquea una
+//   fuente. El estiaje ya modula la captación por estación, pero es suave y
+//   previsible; un evento seco de verdad daría sobresaltos.
+// · FALLO BLANDO al quedarse el depósito a 0: en vez de cortar el agua y ya,
+//   perder un 80 % de los ingresos. Castiga sin dejarte tirado.
+// · Botón RECAUDAR para cobrar los impuestos acumulados. Es otro clic con
+//   sentido, y de los que enganchan.
+// · Incidencias concretas (bomba rota, fuga grave) en vez de una "avería"
+//   genérica. Cada una con su forma de arreglarse.
+// · Control F2P vs premium: válvulas manuales, geófono y medidor de reflejos
+//   frente a SCADA automático y brigada automatizada. OJO: el auto-bombeo ya
+//   está montado como función especial CON EL GANCHO PARA UN PAGO QUE NO EXISTE.
+//   No hay pago ni anuncio real implementado, y no se debe simular uno falso.

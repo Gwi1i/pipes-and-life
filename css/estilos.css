@@ -178,6 +178,31 @@ body{
 .mejora.comprada .m-coste{color:var(--ok);}
 .mejora.inalcanzable .m-coste{color:var(--critico);}
 
+/* ---------- LA RED: DIÁMETROS ---------- */
+.red-cuello{
+  font-size:11.5px; line-height:1.5; color:var(--texto);
+  border-left:3px solid var(--tono); padding-left:8px;
+}
+.red-cuello b{font-family:var(--mono); color:var(--tono);}
+.red-cuello i{color:var(--tenue); font-style:normal; font-size:10.5px;}
+.red-aviso{
+  font-size:11px; line-height:1.5; color:var(--aviso, #fbbf24);
+  background:rgba(251,191,36,.07); border:1px solid rgba(251,191,36,.28);
+  border-radius:4px; padding:7px 9px;
+}
+.dn-selector{display:grid; grid-template-columns:repeat(3,1fr); gap:5px;}
+.dn{
+  display:grid; gap:2px; text-align:left; cursor:pointer; padding:7px;
+  background:rgba(255,255,255,.02); border:1px solid var(--linea-viva);
+  border-radius:4px; color:var(--texto); transition:.15s;
+}
+.dn:hover{border-color:var(--tono);}
+.dn.activa{border-color:var(--tono); background:color-mix(in srgb, var(--tono) 12%, transparent);}
+.dn b{font-family:var(--mono); font-size:11px; color:var(--tono);}
+.dn em{font-style:normal; font-size:9.5px; color:var(--texto);}
+.dn i{font-style:normal; font-size:9px; color:var(--tenue); line-height:1.35;}
+.mejora.linea.hecha{opacity:.45;}
+
 /* ---------- GUÍA DE LOS PRIMEROS PASOS ---------- */
 .bloque.guia{border-color:var(--ok); box-shadow:0 0 22px -12px var(--ok);}
 .bloque.guia h2{color:var(--ok); border-color:var(--ok);

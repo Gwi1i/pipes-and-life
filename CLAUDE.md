@@ -59,10 +59,13 @@ red-hidraulica/
     ├── util.js         Funciones puras: formato, interpolación, color
     ├── estado.js       Dinero, agua, tiempo y persistencia
     ├── simulacion.js   El motor: balance de agua, consumo y facturación
+    ├── mapa.js         El territorio: generación, niebla, red y diámetros
+    ├── escena_mapa.js  Estilo M (el principal): el mapa de exploración
     ├── escena.js       El diorama animado (canvas), estilo A: "falso 3D"
     ├── escena_svg.js   Estilo B: sprites SVG dibujados a mano (hereda de escena)
     ├── escena_assets.js Estilo C: imágenes PNG de assets/ (hereda de escena)
     ├── escena_teselas.js Estilo D: vista cenital sobre cuadrícula (hereda)
+    ├── tutorial.js     La guía de los primeros pasos (solo lee estado)
     ├── entrada.js      Ratón, tacto, teclado → acciones
     ├── ui.js           DOM fuera de la escena: HUD, tienda, paneles
     └── main.js         Ensamblado y bucle principal
@@ -231,6 +234,18 @@ no. No lo endurezcas otra vez;
 `capacidad`/`caudalCaptacion`/`litrosPorClic` le suman `CONFIG.aportePorPieza`.
 Una pieza suelta en mitad del campo no aporta nada: es lo que convierte el
 trazado en una decisión y no en un adorno.
+
+**Diámetros: manda el tramo MÁS ESTRECHO.** Cada línea de tubería lleva su `dn`
+(`CONFIG.tuberia.diametros`: fibrocemento → polietileno → fundición dúctil, con
+`caudalMax`, `habitantesMax`, `fugas` y `costeRelativo`). `cuelloDeBotella()` mira
+solo las líneas ENGANCHADAS al pueblo (`lineasConectadas()`) y devuelve la peor:
+eso tapa `caudalCaptacion()`, resta `fugas` a todo lo que entra y pone techo al
+crecimiento en `crecer()`. Renovar medio recorrido no sirve de nada —es la
+gracia—, y el tope FRENA pero no encoge: una partida vieja por encima del techo
+no se despuebla de golpe. Sin ninguna línea conectada se supone la red heredada
+(el diámetro más estrecho): el pueblo siempre ha bebido de algo. Hoy la red es
+COMÚN porque solo hay una conducción, la del pueblo de origen; cuando cada pueblo
+tenga la suya, `estado._red` pasará a calcularse por pueblo.
 
 **El mapa y el abastecimiento son UN SOLO bucle.** `poderExpansion(estado)` sale
 de la población, el nivel de servicio, el desgaste y las averías, y DIVIDE el

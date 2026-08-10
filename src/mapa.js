@@ -251,8 +251,22 @@ export function puedeColocar(celdas, construcciones, tipo, col, fila){
    TUBERÍAS — la ruta más barata, esquivando o pagando el terreno
    ================================================================ */
 
-export function costeCasillaTuberia(celda){
-  return CONFIG.tuberia.costePorCasilla[celda.tipo] ?? 20;
+/** El diámetro `id`, o el más estrecho si no consta (red heredada). */
+export function diametro(id){
+  const D = CONFIG.tuberia.diametros;
+  return D.find(d => d.id === id) || D[0];
+}
+
+/** Posición de un diámetro en la escala (0 = el más estrecho). */
+export function nivelDiametro(id){
+  const i = CONFIG.tuberia.diametros.findIndex(d => d.id === id);
+  return i < 0 ? 0 : i;
+}
+
+/** Lo que cuesta atravesar una casilla con un diámetro dado. */
+export function costeCasillaTuberia(celda, dn){
+  const base = CONFIG.tuberia.costePorCasilla[celda.tipo] ?? 20;
+  return Math.round(base * diametro(dn).costeRelativo);
 }
 
 /**
@@ -276,13 +290,23 @@ export function puedeSeguirTrazado(celdas, trazado, col, fila){
 }
 
 /** Lo que cuesta un trazado completo, sumando la obra de cada casilla. */
-export function costeTrazado(celdas, trazado){
+export function costeTrazado(celdas, trazado, dn){
   let total = 0;
   for(const p of trazado){
     const celda = celdaEn(celdas, p.col, p.fila);
-    if(celda) total += costeCasillaTuberia(celda);
+    if(celda) total += costeCasillaTuberia(celda, dn);
   }
   return total;
+}
+
+/**
+ * Lo que cuesta cambiarle el diámetro a una línea ya tendida. La zanja ya está
+ * abierta y el material viejo se vende, así que sale más barato que tenderla de
+ * cero — pero renovar sigue siendo una inversión, no un botón.
+ */
+export function costeRenovar(celdas, tuberia, dn){
+  const bruto = costeTrazado(celdas, tuberia.camino, dn);
+  return Math.round(bruto * (1 - CONFIG.tuberia.valorRecuperado));
 }
 
 /* ================================================================
@@ -290,15 +314,13 @@ export function costeTrazado(celdas, trazado){
    ================================================================ */
 
 /**
- * Devuelve el conjunto de construcciones ENGANCHADAS al pueblo por tubería.
- * Una pieza suelta en mitad del campo no sirve de nada: hay que llevarle el
- * agua. Es lo que convierte el trazado en una decisión y no en un adorno.
+ * Recorrido en anchura desde la casilla del pueblo, saltando solo por casillas
+ * que tienen tubería. Devuelve el conjunto de casillas alcanzadas.
  *
- * Se recorre en anchura desde la casilla del pueblo, saltando de casilla a
- * casilla por las que tienen tubería; una construcción cuenta si su casilla
- * está en la red (o es la propia casilla del pueblo).
+ * Está aparte porque lo usan dos preguntas distintas: qué construcciones están
+ * enganchadas y qué LÍNEAS forman la conducción que alimenta al pueblo.
  */
-export function construccionesConectadas(estado){
+function alcanzadasPorLaRed(estado){
   const M = CONFIG.mapaMundo;
   const clave = (c, f) => f * M.cols + c;
 
@@ -307,7 +329,6 @@ export function construccionesConectadas(estado){
   for(const tub of estado.tuberias)
     for(const p of tub.camino) conTuberia.add(clave(p.col, p.fila));
 
-  // Recorrido en anchura desde el pueblo, solo por casillas con tubería
   const visitadas = new Set();
   const cola = [clave(M.origen.col, M.origen.fila)];
   visitadas.add(cola[0]);
@@ -322,6 +343,18 @@ export function construccionesConectadas(estado){
       visitadas.add(kv); cola.push(kv);
     }
   }
+  return visitadas;
+}
+
+/**
+ * Devuelve el conjunto de construcciones ENGANCHADAS al pueblo por tubería.
+ * Una pieza suelta en mitad del campo no sirve de nada: hay que llevarle el
+ * agua. Es lo que convierte el trazado en una decisión y no en un adorno.
+ */
+export function construccionesConectadas(estado){
+  const M = CONFIG.mapaMundo;
+  const clave = (c, f) => f * M.cols + c;
+  const visitadas = alcanzadasPorLaRed(estado);
 
   // Cuenta como enganchado lo que está SOBRE la red o PEGADO a ella. Exigir que
   // la tubería pasara justo por encima de la casilla era una trampa: llevabas la
@@ -337,6 +370,45 @@ export function construccionesConectadas(estado){
     return false;
   };
   return estado.construcciones.filter(o => enRed(o.col, o.fila));
+}
+
+/**
+ * Las líneas que forman de verdad la conducción del pueblo: las que tocan la
+ * red que sale de él. Una tubería tirada en la otra punta del mapa no estrangula
+ * nada, así que no debe contar para el cuello de botella.
+ * Devuelve [{ tuberia, indice }].
+ */
+export function lineasConectadas(estado){
+  const M = CONFIG.mapaMundo;
+  const clave = (c, f) => f * M.cols + c;
+  const visitadas = alcanzadasPorLaRed(estado);
+  const salida = [];
+  estado.tuberias.forEach((tuberia, indice) => {
+    if(tuberia.camino.some(p => visitadas.has(clave(p.col, p.fila))))
+      salida.push({ tuberia, indice });
+  });
+  return salida;
+}
+
+/**
+ * EL CUELLO DE BOTELLA: por una línea cabe lo que quepa por su tramo más
+ * estrecho, y punto. Es lo que obliga a renovar la conducción ENTERA en vez de
+ * parchear un trozo, y lo que hace que crecer duela.
+ *
+ * Sin ninguna línea conectada se supone la red heredada (el diámetro más
+ * estrecho): el pueblo siempre ha bebido de algo.
+ * Devuelve { dn, def, lineas, estrechas }.
+ */
+export function cuelloDeBotella(estado){
+  const D = CONFIG.tuberia.diametros;
+  const lineas = lineasConectadas(estado);
+  if(!lineas.length) return { dn: D[0].id, def: D[0], lineas: [], estrechas: 0 };
+
+  let peor = Infinity;
+  for(const { tuberia } of lineas) peor = Math.min(peor, nivelDiametro(tuberia.dn));
+  const def = D[peor];
+  const estrechas = lineas.filter(l => nivelDiametro(l.tuberia.dn) === peor).length;
+  return { dn: def.id, def, lineas, estrechas };
 }
 
 /** Cuenta por tipo lo que hay conectado: { captacion: 2, deposito: 1, ... } */

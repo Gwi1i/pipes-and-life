@@ -12,9 +12,10 @@
 import { CONFIG } from './config.js';
 import { capacidad, demandaMedia, caudalCaptacion, costeMejora,
          requisitosAutobomba, capacidadTanque, nombreEstacion,
-         poderExpansion } from './simulacion.js';
+         poderExpansion, redEstrangula } from './simulacion.js';
 import { formatear } from './util.js';
-import { celdaEn, piezaDeRuina } from './mapa.js';
+import { celdaEn, piezaDeRuina, diametro, nivelDiametro, costeRenovar,
+         lineasConectadas, cuelloDeBotella } from './mapa.js';
 import { pasoActual } from './tutorial.js';
 
 const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
@@ -53,6 +54,85 @@ export class UI {
           cuesta lo suyo: rodear un bosque puede salir mejor que desbrozarlo.</span>
         <span class="m-coste">según el terreno</span>
       </button>`;
+  }
+
+  /* ---------------- LA RED: DIÁMETROS Y RENOVACIÓN ---------------- */
+
+  /**
+   * Qué diámetro manda, qué tope de población impone y qué líneas hay que
+   * renovar. El panel entero existe para responder a una pregunta que si no
+   * parece un fallo: "¿por qué ha dejado de crecer mi pueblo?".
+   */
+  refrescarRed(estado){
+    const D = CONFIG.tuberia.diametros;
+    const cuello = cuelloDeBotella(estado);
+    const lineas = lineasConectadas(estado);
+    const p = estado.activo;
+    const topeCerca = p.habitantes >= cuello.def.habitantesMax * 0.95;
+    const ahogada = redEstrangula(p, estado);
+
+    const firma = [estado.dnActual, cuello.dn, lineas.length, topeCerca, ahogada,
+                   lineas.map(l => l.tuberia.dn).join('')].join('|');
+    if(this.cache.redFirma === firma) return;
+    this.cache.redFirma = firma;
+
+    const objetivo = diametro(estado.dnActual);
+    const selector = D.map(d => `
+      <button class="dn${d.id === estado.dnActual ? ' activa' : ''}"
+              data-accion="elegirDiametro" data-clave="${d.id}" style="--tono:${d.color}">
+        <b>${d.nombre}</b>
+        <em>${d.material}</em>
+        <i>hasta ${formatear(d.habitantesMax)} hab · ${Math.round(d.fugas * 100)} % fugas</i>
+      </button>`).join('');
+
+    // Solo tiene sentido renovar hacia arriba: las líneas que ya son iguales o
+    // mejores que el objetivo no salen con botón.
+    const renovables = lineas.filter(l => nivelDiametro(l.tuberia.dn) < nivelDiametro(objetivo.id));
+    const listado = !lineas.length
+      ? `<p class="m-desc">Todavía no hay ninguna línea que llegue al pueblo.
+           Mientras tanto bebe de la red vieja: ${D[0].nombre} de ${D[0].material}.</p>`
+      : lineas.map(({ tuberia, indice }) => {
+          const d = diametro(tuberia.dn);
+          const sube = nivelDiametro(tuberia.dn) < nivelDiametro(objetivo.id);
+          const coste = sube ? costeRenovar(estado.mapa, tuberia, objetivo.id) : 0;
+          return `
+            <button class="mejora obra linea${sube ? '' : ' hecha'}"
+                    ${sube ? `data-accion="renovarLinea" data-clave="${indice}"` : 'disabled'}
+                    style="--tono:${d.color}">
+              <span class="m-cab"><span class="m-nom">${tuberia.camino.length} casillas · ${d.nombre}</span></span>
+              <span class="m-desc">${sube
+                ? `Renovar a ${objetivo.nombre} de ${objetivo.material}.`
+                : 'Ya está a la altura del diámetro elegido.'}</span>
+              <span class="m-coste">${sube ? formatear(coste) + ' €' : '—'}</span>
+            </button>`;
+        }).join('');
+
+    // Los dos motivos por los que la red se convierte en el problema. Sin
+    // decirlos con todas las letras, el juego parece roto: compras captación y
+    // no sube el agua, cuidas el servicio y el pueblo no crece.
+    let aviso = '';
+    if(ahogada) aviso += `<p class="red-aviso">Tu captación da más agua de la que
+      cabe por ${cuello.def.nombre}: se está perdiendo lo que sobra. Comprar más
+      captación no servirá de nada hasta que ensanches la línea.</p>`;
+    if(topeCerca) aviso += `<p class="red-aviso">El pueblo ha tocado techo: por
+      ${cuello.def.nombre} no cabe agua para más de
+      ${formatear(cuello.def.habitantesMax)} habitantes. Hasta que no renueves la
+      línea entera, no crece.</p>`;
+
+    document.getElementById('red').innerHTML = `
+      <p class="red-cuello" style="--tono:${cuello.def.color}">
+        Manda el tramo más estrecho: <b>${cuello.def.nombre}</b> de ${cuello.def.material}
+        ${cuello.estrechas > 1 ? `<i>(${cuello.estrechas} líneas así)</i>` : ''}
+      </p>
+      ${aviso}
+      <p class="m-desc">Diámetro con el que se tiende y al que se renueva:</p>
+      <div class="dn-selector">${selector}</div>
+      ${listado}`;
+
+    // Que el botón de tender diga con qué diámetro va a tender: si no, eliges
+    // aquí y luego trazas allí sin saber qué estás poniendo.
+    const etiqueta = document.querySelector('#obra-tuberia .m-coste');
+    if(etiqueta) etiqueta.textContent = `${objetivo.nombre} · según el terreno`;
   }
 
   /* ---------------- LA GUÍA DE LOS PRIMEROS PASOS ---------------- */
@@ -374,6 +454,7 @@ export class UI {
     resultado.multaHora = (resultado.suciedad || 0) * CONFIG.cauce.multaMaxPorHora;
 
     this.refrescarGuia(estado);
+    this.refrescarRed(estado);
     this.refrescarHallazgo(estado);
     this.refrescarAlmacen(estado);
     this.refrescarTienda(estado);

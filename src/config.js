@@ -359,7 +359,32 @@ export const CONFIG = {
   tuberia: {
     costePorCasilla: { hierba: 12, bosque: 45, montana: 120, agua: 70, lago: 70 },
     nombreObra: { hierba: 'zanja', bosque: 'desbroce', montana: 'excavación',
-                  agua: 'cruce del cauce', lago: 'cruce del lago' }
+                  agua: 'cruce del cauce', lago: 'cruce del lago' },
+
+    /* --- DIÁMETROS Y MATERIALES ---
+       Una tubería no es solo un camino: tiene un tamaño. `caudalMax` es lo que
+       cabe por ella (L/s de juego) y `habitantesMax` hasta dónde puede crecer
+       el pueblo que alimenta. La red vieja es de FIBROCEMENTO porque es lo que
+       de verdad hay heredado en media España: barata, estrecha y con fugas.
+
+       Regla del juego: manda el TRAMO MÁS ESTRECHO de toda la línea. Renovar
+       medio recorrido no sirve de nada. Por eso `caudalMax` y `habitantesMax`
+       van de la mano (≈ litros/hab/día): el tope de población de cada diámetro
+       es justo la gente a la que puede dar de beber. */
+    diametros: [
+      { id: 'dn63',  nombre: 'DN 63',  material: 'fibrocemento',
+        caudalMax: 0.80, habitantesMax: 400,  fugas: 0.12,
+        costeRelativo: 1,   color: '#9aa08a' },
+      { id: 'dn110', nombre: 'DN 110', material: 'polietileno',
+        caudalMax: 3.20, habitantesMax: 1600, fugas: 0.04,
+        costeRelativo: 3.5, color: '#38bdf8' },
+      { id: 'dn200', nombre: 'DN 200', material: 'fundición dúctil',
+        caudalMax: 12.0, habitantesMax: 6000, fugas: 0.01,
+        costeRelativo: 11, color: '#cbd5e1' }
+    ],
+    // Al renovar un tramo se recupera parte del material viejo: renovar es más
+    // barato que tender de cero, pero no gratis.
+    valorRecuperado: 0.25
   },
 
   /* ---------- HALLAZGOS ----------
@@ -452,8 +477,9 @@ export const CONFIG = {
              'Si dejas de clicar, el pueblo se queda seco.' },
     { id: 'servido',   titulo: '¡Tu pueblo bebe!',
       texto: 'Ya está abastecido. A partir de aquí: engrasa la instalación para ' +
-             'que no pierda fuelle, y explora más lejos para encontrar pueblos ' +
-             'a los que dar servicio.' }
+             'que no pierda fuelle, explora más lejos para encontrar pueblos a ' +
+             'los que dar servicio, y vigila «La red»: por la tubería estrecha ' +
+             'que has puesto no cabe agua para siempre.' }
   ],
 
   /* ---------- GUARDADO ----------

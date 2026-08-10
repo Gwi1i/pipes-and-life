@@ -20,7 +20,7 @@
 
 import { CONFIG } from './config.js';
 import { limitar } from './util.js';
-import { inventarioConectado } from './mapa.js';
+import { inventarioConectado, cuelloDeBotella } from './mapa.js';
 
 /* ---------------- HELPERS POR PUEBLO ---------------- */
 
@@ -66,11 +66,32 @@ export function eficiencia(pueblo){
  */
 function piezas(estado){ return (estado && estado._conectado) || {}; }
 
+/**
+ * El diámetro que MANDA en la conducción del pueblo: el del tramo más estrecho.
+ * Igual que `_conectado`, se cachea una vez por paso porque lo consultan el
+ * caudal, las fugas y el crecimiento.
+ *
+ * Sin estado (llamadas sueltas de la UI) se supone la red heredada, que es lo
+ * que hay antes de tender nada.
+ */
+export function redDelPueblo(estado){
+  return (estado && estado._red) || { def: CONFIG.tuberia.diametros[0], lineas: [], estrechas: 0 };
+}
+
+/**
+ * Lo que se pierde por el camino. El fibrocemento viejo gotea: es la parte
+ * antipática de no renovar, y la que hace que el salto de material se NOTE en
+ * el contador de agua sin tener que leer ninguna cifra.
+ */
+export function rendimientoRed(estado){
+  return 1 - redDelPueblo(estado).def.fugas;
+}
+
 export function litrosPorClic(pueblo, estado){
   const base = CONFIG.bomba.litrosPorClicBase
              + pueblo.mejoras.bomba * CONFIG.mejoras.bomba.incrementoLitros
              + (piezas(estado).bomba || 0) * CONFIG.aportePorPieza.bomba;
-  return base * eficiencia(pueblo);
+  return base * eficiencia(pueblo) * rendimientoRed(estado);
 }
 
 /** Engrasado a mano: lo que baja el desgaste por cada clic de mantenimiento. */
@@ -87,9 +108,23 @@ export function capacidad(pueblo, estado){
   return CONFIG.deposito.capacidadBase + (n - 1) * CONFIG.deposito.incrementoCapacidad + extra;
 }
 
+/**
+ * Caudal que produce la captación... y que llega. Por mucha captación que
+ * tengas, por la tubería cabe lo que cabe: el tramo más estrecho tapa el resto.
+ * Es el motivo de renovar la conducción y no seguir comprando bombas.
+ */
 export function caudalCaptacion(pueblo, estado){
-  return pueblo.mejoras.captacion * CONFIG.mejoras.captacion.caudalPorNivel
-       + (piezas(estado).captacion || 0) * CONFIG.aportePorPieza.captacion;
+  const bruto = pueblo.mejoras.captacion * CONFIG.mejoras.captacion.caudalPorNivel
+              + (piezas(estado).captacion || 0) * CONFIG.aportePorPieza.captacion;
+  const red = redDelPueblo(estado);
+  return Math.min(bruto, red.def.caudalMax) * rendimientoRed(estado);
+}
+
+/** ¿Está la tubería estrangulando la captación? Para poder avisar en la UI. */
+export function redEstrangula(pueblo, estado){
+  const bruto = pueblo.mejoras.captacion * CONFIG.mejoras.captacion.caudalPorNivel
+              + (piezas(estado).captacion || 0) * CONFIG.aportePorPieza.captacion;
+  return bruto > redDelPueblo(estado).def.caudalMax + 1e-9;
 }
 
 export function clicsAutoPorSeg(pueblo){
@@ -275,7 +310,8 @@ function avanzarPueblo(estado, p, dt, dtHoras, punta, estiaje, frenoCrec, lluvia
     residual = aTratar * (1 - fraccionTratada(p)) + alivio;
   }
 
-  crecer(p, servicio, dtHoras, frenoCrec, calidadServicio(p));
+  const topeRed = redDelPueblo(estado).def.habitantesMax;
+  crecer(p, servicio, dtHoras, frenoCrec, calidadServicio(p), topeRed);
 
   return {
     residual, recienSaneamiento,
@@ -306,6 +342,10 @@ export function avanzar(estado, dt){
   // consulta de capacidad o caudal la usa, y recorrer la red en todas sería
   // absurdo. Una pieza sin tubería al pueblo no cuenta.
   estado._conectado = inventarioConectado(estado);
+  // Y por qué diámetro pasa todo eso. Hoy hay una sola conducción (la que sale
+  // del pueblo de origen), así que la red es común; cuando cada pueblo tenga la
+  // suya, esto pasará a calcularse por pueblo.
+  estado._red = cuelloDeBotella(estado);
   const dtHoras = dt * eco.horasPorSegundo;
   const punta = coefHora(estado.horas);
   const estiaje = factorEstiaje(estado.horas);
@@ -352,16 +392,23 @@ export function avanzar(estado, dt){
 /**
  * Crecimiento / despoblación de un pueblo. El freno del cauce reduce lo que
  * crece; la calidad (pluviales y tanque de tormentas) lo empuja.
+ *
+ * `topeRed` es el techo que pone el DIÁMETRO de la conducción. Un pueblo no
+ * crece más allá de lo que su tubería puede darle de beber: se estanca, no se
+ * castiga. Ese estancamiento es la señal de que toca renovar la red.
  */
-function crecer(p, servicio, dtHoras, frenoCrec, calidad = 1){
+function crecer(p, servicio, dtHoras, frenoCrec, calidad = 1, topeRed = Infinity){
   const P = CONFIG.poblacion;
   const años = dtHoras / CONFIG.tiempo.horasPorAño;
+  const tope = Math.min(P.habitantesMax, topeRed);
 
   if(servicio >= P.servicioBueno){
     p.racha += dtHoras;
     if(p.racha >= P.horasBuenServicioParaCrecer){
-      p.habitantes = Math.min(P.habitantesMax,
-        p.habitantes * (1 + P.tasaCrecimientoAnual * frenoCrec * calidad * años));
+      const crecido = p.habitantes * (1 + P.tasaCrecimientoAnual * frenoCrec * calidad * años);
+      // El tope FRENA, no encoge: si una partida vieja ya estaba por encima, no
+      // se le despuebla el pueblo de golpe por haber cambiado la regla.
+      p.habitantes = Math.max(p.habitantes, Math.min(tope, crecido));
     }
   } else if(servicio < P.servicioMalo){
     p.racha = 0;
