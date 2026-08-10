@@ -178,6 +178,24 @@ body{
 .mejora.comprada .m-coste{color:var(--ok);}
 .mejora.inalcanzable .m-coste{color:var(--critico);}
 
+/* ---------- LA TIENDA AGRUPADA POR SERVICIO ---------- */
+.servicio{
+  display:grid; gap:7px; padding:9px; border-radius:4px;
+  border:1px solid var(--linea); border-left:3px solid var(--tono);
+  background:rgba(255,255,255,.015);
+}
+.servicio.dormido{opacity:.5;}
+.sv-cab{display:flex; justify-content:space-between; align-items:baseline; gap:8px;}
+.sv-nom{
+  font-family:var(--mono); font-size:10.5px; font-weight:700;
+  letter-spacing:.12em; text-transform:uppercase; color:var(--tono);
+}
+.sv-estado{
+  font-family:var(--mono); font-size:8.5px; letter-spacing:.09em;
+  text-transform:uppercase; color:var(--tenue);
+}
+.sv-desc{font-size:10.5px; line-height:1.45; color:var(--tenue);}
+
 /* ---------- LA RED: DIÁMETROS ---------- */
 .red-tabs{display:flex; flex-wrap:wrap; gap:5px;}
 .red-tabs .red-tab{flex:1 1 30%;}

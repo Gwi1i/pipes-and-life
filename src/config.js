@@ -59,6 +59,44 @@ export const CONFIG = {
     incrementoCapacidad: 14000
   },
 
+  /* ---------- LOS SERVICIOS ----------
+     La espina dorsal del juego: un pueblo no es una lista de mejoras sueltas,
+     es un conjunto de SERVICIOS que hay que darle, y cada uno se abre cuando
+     toca. Aquí se dice qué mejoras y qué red pertenecen a cada uno.
+
+     OJO: servicio NO es lo mismo que red. Las tres primeras tienen tubería, pero
+     `explotacion` no la tiene (es el personal), y los RESIDUOS del día de mañana
+     tampoco: se recogen en camión, con rutas por el mapa. Por eso son dos
+     conceptos con dos tablas (`CONFIG.redes` y esto) y no una sola: fundirlos
+     ahora dejaría fuera la mitad de lo que viene.
+
+     `piezas` no se repite aquí: lo que se puede construir de cada red vive en
+     `CONFIG.redes[red].piezas`, y esa es la única fuente. */
+  servicios: {
+    abastecimiento: {
+      nombre: 'Abastecimiento', orden: 1, red: 'abastecimiento', siempre: true,
+      desc: 'Llevar agua potable al pueblo. Es de lo que vive la mancomunidad.',
+      mejoras: ['bomba', 'deposito', 'captacion']
+    },
+    saneamiento: {
+      nombre: 'Saneamiento', orden: 2, red: 'saneamiento',
+      desc: 'Llevarse lo que el pueblo devuelve sucio, y tratarlo antes del río.',
+      // Se abre solo al crecer: hasta cierto tamaño un pueblo se apaña sin nada
+      activaEnHabitantes: 500,
+      mejoras: ['depuradora']
+    },
+    pluviales: {
+      nombre: 'Pluviales', orden: 3, red: 'pluviales', requiere: 'pluviales',
+      desc: 'Separar la lluvia del colector para que no reviente la depuradora.',
+      mejoras: ['pluviales', 'tanque']
+    },
+    explotacion: {
+      nombre: 'Explotación', orden: 4, siempre: true,
+      desc: 'El personal que mantiene todo lo demás. No tiene red propia.',
+      mejoras: ['mantenimiento']
+    }
+  },
+
   /* ---------- MEJORAS (la tienda de cada pueblo) ----------
      Cada pueblo tiene su propio nivel de cada vía. La tienda se genera sola. */
   mejoras: {
@@ -138,7 +176,8 @@ export const CONFIG = {
      cauce COMÚN. La contaminación cuesta dinero (multa) y frena el crecimiento
      de todos los pueblos. Se limpia a mano (botón) o, mejor, con depuradoras. */
   saneamiento: {
-    habitantesUmbral: 500,   // a partir de aquí el pueblo genera aguas residuales
+    // El umbral de habitantes vive en CONFIG.servicios.saneamiento
+    // (`activaEnHabitantes`): un servicio decide él solo cuándo se abre.
     fraccionResidual: 0.80,  // fracción del agua servida que vuelve como residual
     // Un colector se dimensiona con holgura sobre la línea de agua potable:
     // no lleva solo lo que bebes, lleva también lo que llueve encima.

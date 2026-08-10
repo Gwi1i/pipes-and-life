@@ -12,7 +12,8 @@
 import { CONFIG } from './config.js';
 import { capacidad, demandaMedia, caudalCaptacion, costeMejora,
          requisitosAutobomba, capacidadTanque, nombreEstacion,
-         poderExpansion, redEstrangula, capacidadTratamiento } from './simulacion.js';
+         poderExpansion, redEstrangula, capacidadTratamiento,
+         servicioActivo } from './simulacion.js';
 import { formatear } from './util.js';
 import { celdaEn, piezaDeRuina, diametro, nivelDiametro, costeRenovar,
          lineasConectadas, cuelloDeBotella } from './mapa.js';
@@ -179,7 +180,7 @@ export class UI {
         ${formatear(resultado.lluviaLh)} L/h sobre el pueblo y tu red se lleva
         ${formatear(resultado.separadaLh)} L/h. El resto baja por el colector.`);
     } else {
-      if(p.saneamientoActivo && !(estado._conectadoSan || {}).depuradora)
+      if(servicioActivo(p, 'saneamiento') && !(estado._conectadoSan || {}).depuradora)
         fuera.push(`El pueblo ya genera aguas residuales y no hay ninguna depuradora
           enganchada al colector. Todo lo que sale va crudo al cauce: constrúyela
           junto al agua y llévale una línea de saneamiento.`);
@@ -191,7 +192,7 @@ export class UI {
       // depuradora y es ella la que no da abasto. Sin decirlo, el jugador
       // renueva la línea, ve el río igual de sucio y cree que no ha servido.
       const trata = capacidadTratamiento(p, estado);
-      if(!resultado.rebosando && resultado.aliviando && p.saneamientoActivo)
+      if(!resultado.rebosando && resultado.aliviando && servicioActivo(p, 'saneamiento'))
         fuera.push(`El colector da de sí, pero la depuradora no: le llegan
           ${formatear(resultado.cargaLh || 0)} L/h y solo trata
           ${formatear(trata)} L/h. Lo que sobra se alivia crudo. Ahora el problema
@@ -323,21 +324,77 @@ export class UI {
 
   /* ---------------- TIENDA (del pueblo activo) ---------------- */
 
+  /**
+   * La tienda va AGRUPADA POR SERVICIO, no como una lista suelta de mejoras. Es
+   * la misma idea que ordena el juego entero: un pueblo necesita servicios, y
+   * cada servicio tiene sus vías de mejora y su red. Puestas en fila, "tanque de
+   * tormentas" y "potencia de bomba" parecían lo mismo.
+   */
   construirTienda(){
     const cont = document.getElementById('tienda');
-    cont.innerHTML = this.mejoras.map(([clave, m]) => `
-      <button class="mejora" data-accion="mejorar" data-clave="${clave}" id="mejora-${clave}">
-        <span class="m-cab">
-          <span class="m-nom">${m.nombre}</span>
-          <span class="m-nivel" id="nivel-${clave}"></span>
-        </span>
-        <span class="m-desc">${m.desc}</span>
-        <span class="m-coste" id="coste-${clave}">—</span>
-      </button>`).join('');
+    const servicios = Object.entries(CONFIG.servicios)
+      .sort((a, b) => (a[1].orden || 0) - (b[1].orden || 0));
+
+    // Red de seguridad: una mejora que no figure en ningún servicio no puede
+    // desaparecer sin más de la tienda. Sería un fallo mudo —la añades, no la
+    // ves, y no hay ningún error—, así que cae en un grupo suelto al final.
+    const asignadas = new Set(servicios.flatMap(([, sv]) => sv.mejoras || []));
+    const huerfanas = Object.keys(CONFIG.mejoras).filter(k => !asignadas.has(k));
+    if(huerfanas.length){
+      servicios.push(['otras', { nombre: 'Otras mejoras', siempre: true,
+        desc: 'Sin servicio asignado en CONFIG.servicios.', mejoras: huerfanas }]);
+    }
+
+    cont.innerHTML = servicios.map(([sc, sv]) => {
+      const dentro = (sv.mejoras || [])
+        .filter(k => CONFIG.mejoras[k])
+        .map(k => {
+          const m = CONFIG.mejoras[k];
+          return `
+            <button class="mejora" data-accion="mejorar" data-clave="${k}" id="mejora-${k}">
+              <span class="m-cab">
+                <span class="m-nom">${m.nombre}</span>
+                <span class="m-nivel" id="nivel-${k}"></span>
+              </span>
+              <span class="m-desc">${m.desc}</span>
+              <span class="m-coste" id="coste-${k}">—</span>
+            </button>`;
+        }).join('');
+      const tono = (CONFIG.redes[sv.red] || {}).color || CONFIG.color.alarma;
+      return `
+        <div class="servicio" id="servicio-${sc}" style="--tono:${tono}">
+          <p class="sv-cab">
+            <span class="sv-nom">${sv.nombre}</span>
+            <span class="sv-estado" id="sv-estado-${sc}"></span>
+          </p>
+          <p class="sv-desc">${sv.desc}</p>
+          ${dentro}
+        </div>`;
+    }).join('');
   }
 
   refrescarTienda(estado){
     const p = estado.activo;
+
+    // Cada servicio dice en qué punto está: de serie, en marcha, esperando a
+    // crecer o todavía cerrado. Sin esto, las mejoras de un servicio dormido
+    // salían igual que las demás y no se entendía por qué no hacían nada.
+    for(const [sc, sv] of Object.entries(CONFIG.servicios)){
+      const caja = document.getElementById('servicio-' + sc);
+      const etq = document.getElementById('sv-estado-' + sc);
+      if(!caja) continue;
+      const activo = servicioActivo(p, sc);
+      let texto = 'de serie';
+      if(!sv.siempre){
+        if(activo) texto = 'en marcha';
+        else if(sv.requiere === 'pluviales') texto = 'con el tercer pueblo';
+        else if(sv.activaEnHabitantes) texto = `desde ${formatear(sv.activaEnHabitantes)} hab`;
+        else texto = 'cerrado';
+      }
+      etq.textContent = texto;
+      caja.classList.toggle('dormido', !activo);
+    }
+
     for(const [clave, m] of this.mejoras){
       const nivel = p.mejoras[clave];
       const bt = document.getElementById('mejora-' + clave);
@@ -454,7 +511,7 @@ export class UI {
   refrescarCauce(estado, resultado){
     const panel = document.getElementById('panel-cauce');
     // Solo tiene sentido cuando algún pueblo ya vierte, o si hay suciedad
-    const algunoVierte = estado.pueblos.some(p => p.desbloqueado && p.saneamientoActivo);
+    const algunoVierte = estado.pueblos.some(p => p.desbloqueado && servicioActivo(p, 'saneamiento'));
     const visible = algunoVierte || estado.contaminacion > 0.5;
     panel.style.display = visible ? '' : 'none';
     if(!visible) return;
@@ -578,7 +635,7 @@ export class UI {
       (est < 0.7 ? ' · estiaje' : est > 1.1 ? ' · deshielo' : '');
     const nivelDep = p.mejoras.deposito;
     const reserva = nivelDep === 0 ? 'Sin depósito' : `Nivel ${nivelDep} · ${formatear(capacidad(p, estado))} L`;
-    const sane = p.saneamientoActivo
+    const sane = servicioActivo(p, 'saneamiento')
       ? (p.mejoras.depuradora > 0 ? `Depuradora Nv ${p.mejoras.depuradora}` : 'SIN depurar ⚠')
       : 'Aún no genera';
 
@@ -607,7 +664,7 @@ export class UI {
       <div class="d-fila"><span>Captación</span><b>${prodAhora > 0 ? prodAhora.toFixed(2) + ' m³/h' : '—'}</b></div>
       <div class="d-fila"><span>Estación</span><b>${estacion}</b></div>
       <div class="d-fila"><span>Reserva</span><b>${reserva}</b></div>
-      <div class="d-fila"><span>Saneamiento</span><b class="${p.saneamientoActivo && p.mejoras.depuradora === 0 ? 'alarma' : ''}">${sane}</b></div>
+      <div class="d-fila"><span>Saneamiento</span><b class="${servicioActivo(p, 'saneamiento') && p.mejoras.depuradora === 0 ? 'alarma' : ''}">${sane}</b></div>
       ${filaLluvia}`;
   }
 

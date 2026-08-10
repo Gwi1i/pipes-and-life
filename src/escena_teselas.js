@@ -17,7 +17,7 @@
  */
 
 import { CONFIG } from './config.js';
-import { capacidad, capacidadTanque, fraccionTratada } from './simulacion.js';
+import { capacidad, capacidadTanque, fraccionTratada, servicioActivo } from './simulacion.js';
 import { limitar } from './util.js';
 import { Escena, mezclarColor, oscurecer, aclarar } from './escena.js';
 
@@ -231,7 +231,7 @@ export class EscenaTeselas extends Escena {
     }
 
     // Saneamiento (pardo): pueblo → tanque → depuradora → río
-    if(p.saneamientoActivo){
+    if(servicioActivo(p, 'saneamiento')){
       const sucio = mezclarColor(azul, '#7a5a2a', 0.85);
       const salida = mezclarColor(azul, '#7a5a2a', 1 - fraccionTratada(p, this._estado));
       const tan = this.centroDe(K.tanque);

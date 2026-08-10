@@ -162,7 +162,7 @@ común está separado a propósito:
 
 - **Por pueblo** (`estado.pueblos[i]`): agua, habitantes, servicio, racha,
   `mejoras{}` (bomba, depósito, captación, depuradora, mantenimiento),
-  `autobombaActivo`, `saneamientoActivo`, `desbloqueado`. Casi todas
+  `servicios{}` (cuáles tiene en marcha), `autobombaActivo`, `desbloqueado`. Casi todas
   las funciones de `simulacion.js` reciben un `pueblo`.
 - **Común** (`estado`): `dinero` (una sola caja), `horas` (un reloj),
   `contaminacion` (un solo cauce) y `averias` (lo que está roto sobre el mapa).
@@ -201,9 +201,9 @@ se trata luego, cuando sobra capacidad. Lo que ni se trata ni se retiene es un
    residuales sin depurar al cauce común. Devuelve el resultado efímero del
    pueblo ACTIVO más los datos del cauce (contaminación, multa); NO lo guarda.
 
-**Saneamiento y cauce.** Al superar `saneamiento.habitantesUmbral`, el pueblo
-activa `saneamientoActivo` y genera aguas residuales (`fraccionResidual` del agua
-servida). La depuradora (`fraccionTratada(pueblo)`) trata un %; lo que llega
+**Saneamiento y cauce.** Al superar `servicios.saneamiento.activaEnHabitantes`,
+el pueblo abre ese servicio y genera aguas residuales (`fraccionResidual` del agua
+servida). La depuradora (`fraccionTratada(pueblo, estado)`) trata un %; lo que llega
 crudo sube `estado.contaminacion`. La contaminación cuesta una multa (a la caja)
 y multiplica a la baja el crecimiento de TODOS los pueblos (`frenoCrec`). Baja
 sola despacio (`recuperacionNatural`) y de golpe con el botón LIMPIAR CAUCE
@@ -254,6 +254,22 @@ no. No lo endurezcas otra vez;
 `capacidad`/`caudalCaptacion`/`litrosPorClic` le suman `CONFIG.aportePorPieza`.
 Una pieza suelta en mitad del campo no aporta nada: es lo que convierte el
 trazado en una decisión y no en un adorno.
+
+**Un pueblo es un conjunto de SERVICIOS, no una lista de mejoras.**
+`CONFIG.servicios` es la espina dorsal: cada entrada agrupa sus `mejoras`, apunta
+a su `red` y dice cuándo se abre (`siempre`, `activaEnHabitantes`, `requiere`).
+El estado vive en `pueblo.servicios[clave] = { activo }`, y `servicioActivo()` es
+la ÚNICA puerta para preguntarlo —antes era un booleano suelto
+(`saneamientoActivo`) consultado desde diez sitios—. `abrirServicios()` los
+enciende y devuelve los recién abiertos para poder anunciarlos.
+
+**Servicio NO es lo mismo que red.** Son dos tablas a propósito: `explotacion`
+(el personal) no tiene tubería, y los RESIDUOS que vienen tampoco —se recogen en
+camión, con rutas—. Fundirlas ahora dejaría fuera la mitad de lo que falta. Las
+`piezas` construibles NO se repiten en `servicios`: viven solo en
+`CONFIG.redes[red].piezas`. La tienda se genera agrupada por servicio, y una
+mejora que no figure en ninguno cae en un grupo "Otras" en vez de desaparecer sin
+avisar, que sería un fallo mudo.
 
 **Cada servicio tiene SU red.** `CONFIG.redes` define `abastecimiento` (trae agua
 limpia), `saneamiento` (se lleva la sucia) y `pluviales` (saca la lluvia del

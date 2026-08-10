@@ -86,6 +86,33 @@ export function piezasDeRed(estado, red){
 function piezasSan(estado){ return piezasDeRed(estado, 'saneamiento'); }
 
 /**
+ * ¿Tiene el pueblo este servicio en marcha? Única puerta de entrada: si algún
+ * día un servicio se activa por otra cosa (un hito, una compra), se cambia aquí
+ * y no en los diez sitios que preguntan.
+ */
+export function servicioActivo(pueblo, clave){
+  return !!(pueblo.servicios && pueblo.servicios[clave] && pueblo.servicios[clave].activo);
+}
+
+/**
+ * Abre los servicios que ya toquen. Devuelve los que se acaban de abrir, para
+ * poder anunciarlos. `estado` hace falta para los que dependen de un hito de la
+ * mancomunidad y no del tamaño del pueblo.
+ */
+export function abrirServicios(pueblo, estado){
+  const nuevos = [];
+  for(const [clave, def] of Object.entries(CONFIG.servicios)){
+    if(servicioActivo(pueblo, clave)) continue;
+    const porTamano = def.activaEnHabitantes != null && pueblo.habitantes >= def.activaEnHabitantes;
+    const porHito = def.requiere === 'pluviales' && estado.pluvialesActivas;
+    if(!porTamano && !porHito) continue;
+    pueblo.servicios[clave] = { activo: true };
+    nuevos.push(clave);
+  }
+  return nuevos;
+}
+
+/**
  * Lo que cabe por el COLECTOR, en L/h. Aquí el cuello de botella duele distinto
  * que en el abastecimiento: lo que no cabe no es agua que deja de llegar, es
  * agua sucia que se sale y va al río tal cual.
@@ -318,14 +345,11 @@ function avanzarPueblo(estado, p, dt, dtHoras, punta, estiaje, frenoCrec, lluvia
   p.abastecida = servicio > 0.999;
 
   // Saneamiento: al superar el umbral, el pueblo empieza a generar residuales
-  let recienSaneamiento = false;
-  if(!p.saneamientoActivo && p.habitantes >= S.habitantesUmbral){
-    p.saneamientoActivo = true;
-    recienSaneamiento = true;
-  }
+  const serviciosNuevos = abrirServicios(p, estado);
+  const recienSaneamiento = serviciosNuevos.includes('saneamiento');
   let residual = 0, alivio = 0, aprovechado = 0, reboseColector = 0, cargaBruta = 0;
   let lluviaBruta = 0, lluviaSeparada = 0;
-  if(p.saneamientoActivo){
+  if(servicioActivo(p, 'saneamiento')){
     // 1. Lo que entra al colector: aguas residuales + la lluvia NO separada.
     const aguasResiduales = servido * S.fraccionResidual;
     const escorrentia = p.habitantes * CONFIG.lluvia.litrosPorHabHora * lluvia * dtHoras;
@@ -386,7 +410,7 @@ function avanzarPueblo(estado, p, dt, dtHoras, punta, estiaje, frenoCrec, lluvia
       averiada: (estado.averias || []).length > 0,
       desgaste: p.desgaste || 0,
       eficiencia: ef,
-      saneamiento: p.saneamientoActivo,
+      saneamiento: servicioActivo(p, 'saneamiento'),
       lluvia, aliviando: alivio > 0.0001,
       // Se distingue el rebose del colector del alivio de la depuradora: son
       // dos averías distintas y se arreglan en sitios distintos del mapa.

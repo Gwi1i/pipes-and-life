@@ -16,6 +16,20 @@ function mejorasACero(){
   return m;
 }
 
+/**
+ * Los servicios que puede tener un pueblo, todos apagados salvo los que van de
+ * serie. Un pueblo no es una lista de mejoras: es un conjunto de servicios que
+ * se van abriendo, y cada uno se activa por su cuenta (por tamaño, por hito de
+ * la mancomunidad...).
+ */
+function serviciosIniciales(){
+  const s = {};
+  for(const [clave, def] of Object.entries(CONFIG.servicios)){
+    s[clave] = { activo: !!def.siempre };
+  }
+  return s;
+}
+
 /** Crea un pueblo a partir de su definición en CONFIG.poblaciones. */
 function crearPueblo(def){
   return {
@@ -27,8 +41,8 @@ function crearPueblo(def){
     abastecida: false,
     racha: 0,
     mejoras: mejorasACero(),
+    servicios: serviciosIniciales(),
     autobombaActivo: false,
-    saneamientoActivo: false,   // se activa al superar el umbral de habitantes
     tanqueAgua: 0,              // litros retenidos ahora en el tanque de tormentas
     desgaste: 0                 // 0..1; a más desgaste, menos rinde todo
   };
@@ -126,10 +140,18 @@ export class Estado {
         const base = crearPueblo(def);
         const g = (d.pueblos || [])[i];
         if(!g) return base;
-        return {
+        const pueblo = {
           ...base, ...g,
-          mejoras: { ...base.mejoras, ...(g.mejoras || {}) }
+          mejoras: { ...base.mejoras, ...(g.mejoras || {}) },
+          // Igual que con las mejoras: se parte de la definición actual y se
+          // vuelca lo guardado encima, así añadir un servicio nuevo no rompe
+          // una partida vieja.
+          servicios: { ...base.servicios, ...(g.servicios || {}) }
         };
+        // Partidas de antes de los servicios: el saneamiento era un booleano suelto
+        if(g.saneamientoActivo) pueblo.servicios.saneamiento = { activo: true };
+        delete pueblo.saneamientoActivo;
+        return pueblo;
       });
       if(estado.puebloActivo >= estado.pueblos.length) estado.puebloActivo = 0;
 

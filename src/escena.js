@@ -17,7 +17,7 @@
  */
 
 import { CONFIG } from './config.js';
-import { capacidad, fraccionTratada, capacidadTanque } from './simulacion.js';
+import { capacidad, fraccionTratada, capacidadTanque, servicioActivo } from './simulacion.js';
 import { limitar } from './util.js';
 
 export class Escena {
@@ -515,7 +515,7 @@ export class Escena {
   /* ---------- tubería de saneamiento (retorno al cauce) ---------- */
   tuberiaSaneamiento(){
     const W = this._W, p = this._p, r = this._res;
-    if(!p.saneamientoActivo) return;
+    if(!servicioActivo(p, 'saneamiento')) return;
     const yS = this.sueloY + (this.rioY - this.sueloY) * 0.55;
     const xPueblo = W * 0.60, xDepu = W * 0.80, xVert = W * 0.92;
 
@@ -629,7 +629,7 @@ export class Escena {
   /* ---------- vertido al cauce ---------- */
   vertido(){
     const ctx = this.ctx, W = this._W, p = this._p;
-    if(!p.saneamientoActivo) return;
+    if(!servicioActivo(p, 'saneamiento')) return;
     const x = W * 0.92, y = this.rioY;
     const sucio = 1 - fraccionTratada(p, this._estado);
     const col = mezclarColor('#7dd3fc', '#8a6a2a', sucio);
