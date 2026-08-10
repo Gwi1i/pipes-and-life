@@ -18,8 +18,11 @@ ramas distintas:
   tuberías y lleva agua con presión suficiente a cuatro núcleos, con un solver
   hidráulico, terreno con hidrología, economía, estiaje, crecimiento y averías.
 - **`clicker`** (esta rama) — la versión **incremental/clicker**: se bombea a
-  golpe de clic, se acumula en un depósito y se abastece a una población. El
-  mapa se sustituye por una **escena decorativa animada**.
+  golpe de clic, se acumula en un depósito y se abastece a una población. Arrancó
+  sustituyendo el mapa por una escena decorativa, pero ha vuelto a tener mapa: uno
+  **de exploración**, de teselas tapadas que se destapan clicando, con pueblos y
+  ruinas que encontrar y las redes trazadas a mano sobre él. Las escenas
+  decorativas siguen ahí como estilos alternativos.
 
 Técnicamente, ambas comparten:
 
@@ -32,26 +35,36 @@ No añadas dependencias, empaquetadores ni frameworks sin plantearlo antes.
 
 ## Cómo se ejecuta
 
-Desde la raíz del proyecto:
+**Doble clic en `jugar.bat`.** Busca Python, levanta el servidor y abre el
+navegador solo. Se cierra cerrando esa ventana.
+
+Por consola, si prefieres:
 
 ```bash
-py -m http.server 8000
+py servidor.py
 ```
 
-Y abrir `http://localhost:8000`.
+**No funciona abriendo `index.html` con doble clic**, y no es algo que se pueda
+arreglar: el proyecto usa módulos ES y los navegadores los bloquean sobre el
+protocolo `file://` por seguridad. Hace falta que algo lo sirva por http. De ahí
+el lanzador; las alternativas serían meter un empaquetador o volver a scripts
+clásicos sin `import`/`export`, y las dos rompen lo que hay.
 
-**No funciona abriendo `index.html` con doble clic.** El proyecto usa módulos
-ES, y los navegadores los bloquean sobre el protocolo `file://` por seguridad.
-Hace falta un servidor local.
+`servidor.py` no es `http.server` a secas: manda `Cache-Control: no-store` y
+busca puerto libre desde el 8000. Lo primero importa más de lo que parece —el
+navegador cachea los módulos ES con muchas ganas, y sin esa cabecera editabas un
+`.js`, recargabas y seguías viendo el viejo—. Con el servidor del proyecto no
+hace falta `Ctrl`+`F5`: se edita, se recarga normal y ya está.
 
-Sin proceso de build: se edita un archivo, se recarga el navegador y ya está.
-Aviso: el navegador **cachea los módulos ES** con agresividad. Si un cambio en un
-`.js` no se refleja, fuerza recarga sin caché (`Ctrl`+`F5`).
+Sigue sin haber proceso de build.
 
 ## Arquitectura (rama clicker)
 
 ```
 red-hidraulica/
+├── jugar.bat           Doble clic para jugar: levanta el servidor y abre el navegador
+├── servidor.py         Servidor local sin caché (los módulos ES no van por file://)
+├── Explicaciones.txt   Cajón de ideas del autor, con notas mías marcadas "// Claude:"
 ├── index.html          Estructura de la página: escena y paneles
 ├── css/estilos.css     Aspecto
 └── src/
@@ -88,8 +101,12 @@ límites que hay que respetar:
   atmosférica (mezcla hacia `this.bruma` según lejanía). Si hace falta más
   detalle sin perder fluidez, pre-renderiza a un canvas oculto (como hacía el
   terreno en `master`).
-- **Tres estilos visuales intercambiables**, todos con la MISMA interfaz
+- **Estilos visuales intercambiables**, todos con la MISMA interfaz
   (`dibujar`, `destello`, `aparecer*`, `destelloCauce`, `ajustar`):
+  - **M** — `escena_mapa.js` (`EscenaMapa`): **el juego de verdad**. El mapa de
+    exploración: niebla, hallazgos, construcciones, las redes con su color y su
+    grosor, las averías y la previsualización de lo que vas a hacer. Hereda de
+    `Escena` para reutilizar destellos, clima y helpers de color.
   - **A** — `escena.js` (`Escena`): todo por código ("falso 3D").
   - **B** — `escena_svg.js` (`EscenaSVG`): hereda de `Escena` y sustituye las
     estructuras por sprites SVG dibujados a mano.
@@ -110,8 +127,11 @@ límites que hay que respetar:
   B y C, mientras un sprite no ha cargado —o el archivo no existe—, recurren al
   método del padre (`super.metodo()`), así nunca desaparece nada y puedes añadir
   imágenes de una en una. `main.js` elige con `crearEscena()` según
-  `localStorage.rh_estilo` y el botón *Estilo* cicla A→B→C en caliente. Los
-  helpers `mezclarColor`/`oscurecer`/`aclarar` se exportan desde `escena.js`.
+  `localStorage.rh_estilo`; el orden es `['m','d','a','b','c']` y **'m' es el
+  predeterminado**. A, B, C y D son vistas de la PARCELA y se quedan como
+  alternativas para comparar: no tienen mapa, así que en ellas el clic bombea en
+  vez de explorar (lo distingue `main.js` con `escena instanceof EscenaMapa`).
+  Los helpers `mezclarColor`/`oscurecer`/`aclarar` se exportan desde `escena.js`.
 - **`entrada.js` no toca el estado.** Traduce eventos del navegador a acciones y
   las encola; `main.js` es quien las ejecuta. La lógica de juego queda en un
   solo sitio.
@@ -344,17 +364,22 @@ Usa `estado.ultimoInstante`, que `guardar()` sella en cada guardado.
 
 ## Trampas conocidas
 
-- El navegador cachea los módulos ES: si un cambio no aparece, recarga sin caché.
+- El navegador cachea los módulos ES con ganas. `servidor.py` lo desactiva con
+  `no-store`, así que con el lanzador del proyecto no da guerra. Si arrancas con
+  `py -m http.server` a pelo, vuelve el problema: editas un `.js`, recargas y
+  sigues viendo el viejo. Ahí hace falta `Ctrl`+`F5`.
 - `localStorage` guarda bajo `CONFIG.guardado.clave`. La clave clicker
   (`redHidraulica_clicker_v2`, subida al pasar a multi-pueblo) es distinta de la
   de estrategia a propósito. Si un cambio rompe el formato guardado, hay que
   borrarla (botón *Reiniciar*). `Estado.cargar()` reconstruye los pueblos desde
   la definición actual y vuelca lo guardado encima, así añadir una mejora o un
   pueblo no rompe una partida vieja.
-- Los botones van por delegación (`data-accion`, y `data-clave` para la mejora o
-  el índice de pueblo). `entrada.js` escucha varios contenedores: `tienda`,
-  `premium`, `panel-averias`, `pestanas`, `panel-cauce`. Añadir un botón dentro
-  de uno de ellos no obliga a tocar el listener.
+- Los botones van por delegación (`data-accion`, y `data-clave` para la mejora,
+  el índice de pueblo, el diámetro o la red). `entrada.js` escucha varios
+  contenedores: `tienda`, `premium`, `panel-averias`, `pestanas`, `panel-cauce`,
+  `construir`, `hallazgo`, `almacen`, `panel-guia` y `red`. Añadir un botón
+  dentro de uno de ellos no obliga a tocar el listener; añadir un contenedor
+  NUEVO sí, y es un fallo silencioso: el botón se pinta y no hace nada.
 
 ## Depuración
 
