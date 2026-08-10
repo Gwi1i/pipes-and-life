@@ -175,6 +175,11 @@ export class EscenaMapa extends Escena {
     const col = CONFIG.hallazgos.color[celda.hallazgo] || '#ffffff';
     const cx = x + t / 2, cy = y + t / 2;
 
+    // Una ruina atendida YA NO ESTÁ: o te la has llevado al almacén o la has
+    // puesto en marcha y ahora hay una construcción encima. Seguir pintando el
+    // muro roto dejaba fantasmas por el mapa y ensuciaba la pieza reparada.
+    if(celda.resuelto && celda.hallazgo === 'ruina') return;
+
     if(!celda.resuelto){   // aún por atender: late para que se vea
       const pulso = 0.5 + Math.sin(this.tiempo * 3) * 0.5;
       ctx.globalAlpha = 0.25 + pulso * 0.35;
@@ -183,6 +188,9 @@ export class EscenaMapa extends Escena {
       ctx.globalAlpha = 1;
     }
 
+    // Los pueblos y los yacimientos sí siguen ahí: son referencias del terreno.
+    // Se apagan para que se lea de un vistazo que ya están atendidos.
+    if(celda.resuelto) ctx.globalAlpha = 0.4;
     ctx.fillStyle = col;
     ctx.strokeStyle = 'rgba(6,15,24,0.6)'; ctx.lineWidth = 1.6;
     const s = t * 0.17;
@@ -201,6 +209,7 @@ export class EscenaMapa extends Escena {
       ctx.lineTo(cx, cy + s * 1.1); ctx.lineTo(cx - s, cy); ctx.closePath();
     }
     ctx.fill(); ctx.stroke();
+    ctx.globalAlpha = 1;
   }
 
   /* ---------- casilla tapada ---------- */
