@@ -104,7 +104,8 @@ export function abrirServicios(pueblo, estado){
   for(const [clave, def] of Object.entries(CONFIG.servicios)){
     if(servicioActivo(pueblo, clave)) continue;
     const porTamano = def.activaEnHabitantes != null && pueblo.habitantes >= def.activaEnHabitantes;
-    const porHito = def.requiere === 'pluviales' && estado.pluvialesActivas;
+    const porHito = (def.requiere === 'pluviales' && estado.pluvialesActivas)
+                 || (def.requiere === 'residuos' && pueblo.habitantes >= CONFIG.residuos.activaEnHabitantes);
     if(!porTamano && !porHito) continue;
     pueblo.servicios[clave] = { activo: true };
     nuevos.push(clave);
@@ -120,6 +121,56 @@ export function abrirServicios(pueblo, estado){
 export function capacidadColector(estado){
   return redDelPueblo(estado, 'saneamiento').def.caudalMax
        * CONFIG.saneamiento.holguraColector * 3600;
+}
+
+/* ---------------- RESIDUOS ---------------- */
+
+/** Basura que genera el pueblo, en toneladas por hora de juego. */
+export function basuraGenerada(pueblo){
+  return pueblo.habitantes * CONFIG.residuos.kgPorHabitanteDia / 1000 / 24;
+}
+
+/**
+ * Lo que la CARRETERA es capaz de sacar del pueblo, en t/h. Sin vía tendida no
+ * sale nada: a diferencia del saneamiento, aquí no hay ninguna red heredada de
+ * la que tirar. Si no hay por dónde pasar el camión, la basura se queda.
+ */
+export function capacidadRecogida(estado){
+  const red = redDelPueblo(estado, 'residuos');
+  if(!red.lineas || !red.lineas.length) return 0;
+  return red.def.caudalMax * (1 - red.def.fugas);
+}
+
+/** Lo que tragan los vertederos conectados, en t/h. */
+export function capacidadVertido(estado){
+  return (piezasDeRed(estado, 'residuos').vertedero || 0) * CONFIG.residuos.capacidadVertedero;
+}
+
+/** Nivel efectivo de reciclaje: hace falta la mejora Y una planta conectada. */
+export function nivelReciclaje(pueblo, estado){
+  if(!(piezasDeRed(estado, 'residuos').reciclaje || 0)) return 0;
+  return pueblo.mejoras.reciclaje || 0;
+}
+
+/**
+ * Las fracciones que se están recuperando ahora mismo. El nivel de la planta va
+ * abriendo contenedores: primero envases, luego orgánica, y así. El "resto" no
+ * cuenta aquí porque no se recicla, se entierra.
+ */
+export function fraccionesActivas(pueblo, estado){
+  const nivel = nivelReciclaje(pueblo, estado);
+  return CONFIG.residuos.fracciones.filter(f => f.nivel > 0 && f.nivel <= nivel);
+}
+
+/**
+ * Lo que se saca por vender lo reciclado, en € por tonelada recogida. Es la
+ * segunda fuente de ingresos del juego: no se recicla por deber moral, se
+ * recicla porque alguien te compra el material.
+ */
+export function precioMedioReciclaje(pueblo, estado){
+  let euros = 0;
+  for(const f of fraccionesActivas(pueblo, estado)) euros += f.parte * f.precio;
+  return euros * CONFIG.residuos.escalaEconomica;
 }
 
 /**
@@ -397,8 +448,42 @@ function avanzarPueblo(estado, p, dt, dtHoras, punta, estiaje, frenoCrec, lluvia
     residual = aTratar * (1 - fraccionTratada(p, estado)) + alivio;
   }
 
+  /* --- RESIDUOS: recoger, enterrar y VENDER lo aprovechable --- */
+  let basura = 0, recogida = 0, reciclada = 0, ingresoResiduos = 0;
+  if(servicioActivo(p, 'residuos')){
+    const R = CONFIG.residuos;
+    basura = basuraGenerada(p) * dtHoras;
+
+    // 1. La carretera pone el techo: lo que no cabe en el camión se queda en la
+    //    calle. Sin vía tendida no sale NADA, igual que con las pluviales.
+    const cabe = capacidadRecogida(estado) * dtHoras;
+    recogida = Math.min(basura, cabe);
+
+    // 2. De lo recogido, la planta recupera sus fracciones y las vende. El resto
+    //    hay que enterrarlo, y enterrar cuesta.
+    const fracRecuperada = fraccionesActivas(p, estado).reduce((a, f) => a + f.parte, 0);
+    const aVertedero = recogida * (1 - fracRecuperada);
+    // El vertedero también tiene tope: lo que no traga se queda sin gestionar.
+    const tragadero = capacidadVertido(estado) * dtHoras;
+    const enterrada = Math.min(aVertedero, tragadero);
+    reciclada = recogida - aVertedero;
+
+    ingresoResiduos = reciclada * precioMedioReciclaje(p, estado)
+                    - enterrada * R.costeVertidoTonelada * R.escalaEconomica;
+    estado.dinero += ingresoResiduos;
+
+    // 3. Lo que ni se recoge ni se entierra se pudre en el pueblo.
+    const abandonada = (basura - recogida) + (aVertedero - enterrada);
+    p.basuraCalle = Math.max(0, Math.min(1,
+      (p.basuraCalle || 0) + abandonada * R.acumulaPorTonelada
+      - R.recuperacionNatural * dtHoras));
+  }
+
   const topeRed = redDelPueblo(estado).def.habitantesMax;
-  crecer(p, servicio, dtHoras, frenoCrec, calidadServicio(p), topeRed);
+  // La basura en la calle frena el crecimiento igual que lo hace el cauce sucio:
+  // nadie se muda a un pueblo que huele.
+  const frenoBasura = 1 - (p.basuraCalle || 0) * CONFIG.residuos.penalizacionCrecimiento;
+  crecer(p, servicio, dtHoras, frenoCrec * frenoBasura, calidadServicio(p), topeRed);
 
   return {
     residual, recienSaneamiento,
@@ -418,6 +503,11 @@ function avanzarPueblo(estado, p, dt, dtHoras, punta, estiaje, frenoCrec, lluvia
       // Cuánto llega al colector, en L/h: sin este número la UI no puede decir
       // si el tapón está en la tubería o en la depuradora.
       cargaLh: dtHoras > 0 ? cargaBruta / dtHoras : 0,
+      basuraTh: dtHoras > 0 ? basura / dtHoras : 0,
+      recogidaTh: dtHoras > 0 ? recogida / dtHoras : 0,
+      recicladaTh: dtHoras > 0 ? reciclada / dtHoras : 0,
+      ingresoResiduosHora: dtHoras > 0 ? ingresoResiduos / dtHoras : 0,
+      basuraCalle: p.basuraCalle || 0,
       lluviaLh: dtHoras > 0 ? lluviaBruta / dtHoras : 0,
       separadaLh: dtHoras > 0 ? lluviaSeparada / dtHoras : 0,
       tanqueFrac: capacidadTanque(p, estado) > 0 ? p.tanqueAgua / capacidadTanque(p, estado) : 0,

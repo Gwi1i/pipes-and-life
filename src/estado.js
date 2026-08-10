@@ -44,6 +44,7 @@ function crearPueblo(def){
     servicios: serviciosIniciales(),
     autobombaActivo: false,
     tanqueAgua: 0,              // litros retenidos ahora en el tanque de tormentas
+    basuraCalle: 0,             // 0..1; basura sin recoger pudriéndose en el pueblo
     desgaste: 0                 // 0..1; a más desgaste, menos rinde todo
   };
 }
@@ -69,10 +70,15 @@ export class Estado {
     this.descubiertas = 0;          // casillas abiertas, para el HUD
     this.construcciones = [];       // { tipo, col, fila } puestas sobre el mapa
     this.tuberias = [];             // { camino:[{col,fila}], coste, dn, red }
-    // Diámetro con el que se tienden los tramos NUEVOS. Arranca en el más
-    // estrecho: la red barata es el punto de partida, no el objetivo.
-    this.dnActual = CONFIG.tuberia.diametros[0].id;
-    // Y para qué red se tiende: agua potable o colector.
+    // Calibre con el que se tienden los tramos NUEVOS, UNO POR RED: cada una
+    // tiene su escala (diámetros o clases de vía) y su punto de partida, que es
+    // siempre el más barato. La red barata es el arranque, no el objetivo.
+    this.dnActual = {};
+    for(const [clave, def] of Object.entries(CONFIG.redes)){
+      const escala = def.tiers === 'viales' ? CONFIG.viales.clases : CONFIG.tuberia.diametros;
+      this.dnActual[clave] = escala[0].id;
+    }
+    // Y sobre qué red se está trabajando ahora mismo.
     this.redActual = 'abastecimiento';
     // Averías VIVAS sobre el mapa: { col, fila, clics, desde }. Son de la
     // mancomunidad, no de un pueblo: lo que se rompe es una pieza concreta.
@@ -166,7 +172,11 @@ export class Estado {
         if(!t.dn) t.dn = CONFIG.tuberia.diametros[0].id;
         if(!t.red) t.red = 'abastecimiento';
       }
-      estado.dnActual = d.dnActual || CONFIG.tuberia.diametros[0].id;
+      // Antes había un solo calibre para todo; ahora hay uno por red. Una
+      // partida vieja traía una cadena suelta, y hay que ignorarla.
+      if(d.dnActual && typeof d.dnActual === 'object'){
+        estado.dnActual = { ...estado.dnActual, ...d.dnActual };
+      }
       estado.redActual = d.redActual || 'abastecimiento';
       // Una partida con la avería vieja (del pueblo entero) empieza limpia: el
       // formato no es convertible y arrastrarlo daría un pueblo roto sin sitio

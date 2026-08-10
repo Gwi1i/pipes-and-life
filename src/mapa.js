@@ -251,22 +251,32 @@ export function puedeColocar(celdas, construcciones, tipo, col, fila){
    TUBERÍAS — la ruta más barata, esquivando o pagando el terreno
    ================================================================ */
 
-/** El diámetro `id`, o el más estrecho si no consta (red heredada). */
-export function diametro(id){
-  const D = CONFIG.tuberia.diametros;
+/**
+ * La escala de una red. Las de tubería se miden en diámetros; la de residuos en
+ * clases de vía. Es la misma mecánica —manda el tramo peor— pero llamar
+ * "DN 63 de fibrocemento" a una carretera no tendría ningún sentido.
+ */
+export function escalaDeRed(red = 'abastecimiento'){
+  const def = CONFIG.redes[red];
+  return (def && def.tiers === 'viales') ? CONFIG.viales.clases : CONFIG.tuberia.diametros;
+}
+
+/** El calibre `id` de esa red, o el más bajo si no consta (red heredada). */
+export function diametro(id, red = 'abastecimiento'){
+  const D = escalaDeRed(red);
   return D.find(d => d.id === id) || D[0];
 }
 
-/** Posición de un diámetro en la escala (0 = el más estrecho). */
-export function nivelDiametro(id){
-  const i = CONFIG.tuberia.diametros.findIndex(d => d.id === id);
+/** Posición en la escala (0 = el más bajo). */
+export function nivelDiametro(id, red = 'abastecimiento'){
+  const i = escalaDeRed(red).findIndex(d => d.id === id);
   return i < 0 ? 0 : i;
 }
 
-/** Lo que cuesta atravesar una casilla con un diámetro dado. */
-export function costeCasillaTuberia(celda, dn){
+/** Lo que cuesta atravesar una casilla con ese calibre. */
+export function costeCasillaTuberia(celda, dn, red = 'abastecimiento'){
   const base = CONFIG.tuberia.costePorCasilla[celda.tipo] ?? 20;
-  return Math.round(base * diametro(dn).costeRelativo);
+  return Math.round(base * diametro(dn, red).costeRelativo);
 }
 
 /**
@@ -290,11 +300,11 @@ export function puedeSeguirTrazado(celdas, trazado, col, fila){
 }
 
 /** Lo que cuesta un trazado completo, sumando la obra de cada casilla. */
-export function costeTrazado(celdas, trazado, dn){
+export function costeTrazado(celdas, trazado, dn, red = 'abastecimiento'){
   let total = 0;
   for(const p of trazado){
     const celda = celdaEn(celdas, p.col, p.fila);
-    if(celda) total += costeCasillaTuberia(celda, dn);
+    if(celda) total += costeCasillaTuberia(celda, dn, red);
   }
   return total;
 }
@@ -304,8 +314,8 @@ export function costeTrazado(celdas, trazado, dn){
  * abierta y el material viejo se vende, así que sale más barato que tenderla de
  * cero — pero renovar sigue siendo una inversión, no un botón.
  */
-export function costeRenovar(celdas, tuberia, dn){
-  const bruto = costeTrazado(celdas, tuberia.camino, dn);
+export function costeRenovar(celdas, tuberia, dn, red = 'abastecimiento'){
+  const bruto = costeTrazado(celdas, tuberia.camino, dn, red);
   return Math.round(bruto * (1 - CONFIG.tuberia.valorRecuperado));
 }
 
@@ -425,14 +435,14 @@ export function lineasConectadas(estado, red = 'abastecimiento'){
  * Devuelve { dn, def, lineas, estrechas }.
  */
 export function cuelloDeBotella(estado, red = 'abastecimiento'){
-  const D = CONFIG.tuberia.diametros;
+  const D = escalaDeRed(red);
   const lineas = lineasConectadas(estado, red);
   if(!lineas.length) return { dn: D[0].id, def: D[0], lineas: [], estrechas: 0 };
 
   let peor = Infinity;
-  for(const { tuberia } of lineas) peor = Math.min(peor, nivelDiametro(tuberia.dn));
+  for(const { tuberia } of lineas) peor = Math.min(peor, nivelDiametro(tuberia.dn, red));
   const def = D[peor];
-  const estrechas = lineas.filter(l => nivelDiametro(l.tuberia.dn) === peor).length;
+  const estrechas = lineas.filter(l => nivelDiametro(l.tuberia.dn, red) === peor).length;
   return { dn: def.id, def, lineas, estrechas };
 }
 

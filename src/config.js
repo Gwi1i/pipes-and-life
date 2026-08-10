@@ -90,8 +90,13 @@ export const CONFIG = {
       desc: 'Separar la lluvia del colector para que no reviente la depuradora.',
       mejoras: ['pluviales', 'tanque']
     },
+    residuos: {
+      nombre: 'Residuos', orden: 4, red: 'residuos', requiere: 'residuos',
+      desc: 'Recoger la basura y llevarla fuera. Lo que se recicla se VENDE.',
+      mejoras: ['reciclaje']
+    },
     explotacion: {
-      nombre: 'Explotación', orden: 4, siempre: true,
+      nombre: 'Explotación', orden: 5, siempre: true,
       desc: 'El personal que mantiene todo lo demás. No tiene red propia.',
       mejoras: ['mantenimiento']
     }
@@ -149,8 +154,15 @@ export const CONFIG = {
       requiere: 'pluviales',
       capacidadPorNivel: 30000  // litros de retención por nivel
     },
+    reciclaje: {
+      nombre: 'Planta de reciclaje', orden: 7,
+      desc: 'Cada nivel abre una fracción nueva (envases, orgánica, vidrio...) ' +
+            'y con ella un contenedor en el pueblo. Lo separado se vende.',
+      costeBase: 5000, factorCoste: 1.75, nivelMax: 7,
+      requiere: 'residuos'
+    },
     mantenimiento: {
-      nombre: 'Personal de mantenimiento', orden: 7,
+      nombre: 'Personal de mantenimiento', orden: 8,
       desc: 'Repara las averías de este pueblo solo. Cada nivel, más rápido.',
       costeBase: 1500, factorCoste: 1.8, nivelMax: 8
     }
@@ -202,6 +214,53 @@ export const CONFIG = {
      Multiplica el crecimiento: un pueblo con buen saneamiento crece mejor. */
   calidad: {
     base: 1.0, bonusTanque: 0.10, bonusPluviales: 0.05, max: 1.6
+  },
+
+  /* ---------- RESIDUOS ----------
+     El cuarto servicio, y el primero que gana dinero en vez de gastarlo. La
+     basura sale del pueblo por CARRETERA (la red `residuos`): lo que la vía no
+     es capaz de mover se queda pudriéndose en la calle y baja la salubridad.
+
+     Al principio hay un solo contenedor —el gris, resto— y la basura solo se
+     entierra en el vertedero: cuesta y no da nada. La planta de reciclaje abre
+     una fracción por nivel, y cada fracción se le VENDE a quien la compra, que
+     es como funciona de verdad. Reciclar deja de ser una obligación moral y
+     pasa a ser el negocio. */
+  residuos: {
+    kgPorHabitanteDia: 1.4,      // lo que genera cada vecino
+    activaEnHabitantes: 800,     // cuándo se abre el servicio
+    costeVertidoTonelada: 12,    // lo que cuesta enterrar lo que no se recicla
+    // Los precios de abajo son los REALES por tonelada, y así se quedan: lo que
+    // importa es que el aceite valga mucho más que la orgánica, y eso es cierto.
+    // Pero la economía del juego ya va inflada (el agua se paga a 14 €/m³, no a
+    // 1,50 como en la vida), así que sin escalar esto el reciclaje daba 7 €/h
+    // contra 115 del agua: cuatro duros y no compensaba mirarlo. Este número
+    // sube la escala SIN tocar las proporciones entre fracciones.
+    escalaEconomica: 5,
+    capacidadVertedero: 0.10,    // t/h que traga cada vertedero conectado
+    // Basura sin recoger: se acumula (0..1) y castiga la salubridad del pueblo,
+    // que multiplica el crecimiento igual que hace la calidad del saneamiento.
+    // Ojo con estos dos: la primera versión limpiaba la calle más deprisa de lo
+    // que se ensuciaba, así que con la vía saturada el contador se quedaba a
+    // cero y el castigo no llegaba nunca. Tienen que moverse a la vez.
+    acumulaPorTonelada: 2.0,
+    recuperacionNatural: 0.010,  // lo que baja sola por hora de juego
+    penalizacionCrecimiento: 0.6,
+
+    /* LAS FRACCIONES, en el orden en que las abre la planta. `nivel` es el de
+       la mejora `reciclaje` que hace falta; `parte` es qué porcentaje de la
+       basura total es esa fracción; `precio` lo que pagan por tonelada.
+       El gris (resto) no se recicla: es lo que queda y va al vertedero. */
+    fracciones: [
+      { id: 'resto',    nombre: 'Resto',              color: '#94a3b8', nivel: 0, parte: 1.00, precio: 0 },
+      { id: 'envases',  nombre: 'Envases y embalajes', color: '#facc15', nivel: 1, parte: 0.13, precio: 260 },
+      { id: 'organica', nombre: 'Orgánica',            color: '#a16207', nivel: 2, parte: 0.38, precio: 45 },
+      { id: 'papel',    nombre: 'Papel y cartón',      color: '#3b82f6', nivel: 3, parte: 0.18, precio: 110 },
+      { id: 'vidrio',   nombre: 'Vidrio',              color: '#22c55e', nivel: 4, parte: 0.08, precio: 90 },
+      { id: 'aceite',   nombre: 'Aceite',              color: '#f97316', nivel: 5, parte: 0.01, precio: 700 },
+      { id: 'ropa',     nombre: 'Ropa',                color: '#c084fc', nivel: 6, parte: 0.04, precio: 320 },
+      { id: 'limpio',   nombre: 'Punto limpio',        color: '#14b8a6', nivel: 7, parte: 0.03, precio: 480 }
+    ]
   },
 
   cauce: {
@@ -376,6 +435,18 @@ export const CONFIG = {
       terreno: ['hierba', 'bosque'],
       desc: 'Retiene la punta de lluvia. En llano o desbrozando bosque.'
     },
+    vertedero: {
+      nombre: 'Vertedero', coste: 1800, orden: 7, color: '#a8896a',
+      terreno: ['hierba', 'bosque'], lejosDeAgua: 3,
+      desc: 'Donde acaba lo que no se recicla. LEJOS del agua: nadie quiere ' +
+            'lixiviados en el río.'
+    },
+    reciclaje: {
+      nombre: 'Planta de reciclaje', coste: 6000, orden: 8, color: '#4ade80',
+      terreno: ['hierba'],
+      desc: 'Separa y vende lo aprovechable. Cuanto mejor sea, más fracciones ' +
+            'recupera y más te pagan por ellas.'
+    },
     acuifero: {
       nombre: 'Sondeo a acuífero', coste: 5000, orden: 6, color: '#a78bfa',
       terreno: ['hierba', 'bosque', 'montana'], lejosDeAgua: 4,
@@ -411,11 +482,13 @@ export const CONFIG = {
   redes: {
     abastecimiento: {
       nombre: 'Abastecimiento', corto: 'agua', color: '#38bdf8',
+      tiers: 'tuberia',
       piezas: ['captacion', 'bomba', 'deposito', 'acuifero'],
       desc: 'Trae el agua desde la captación hasta el pueblo.'
     },
     saneamiento: {
       nombre: 'Saneamiento', corto: 'colector', color: '#a3a15c',
+      tiers: 'tuberia',
       piezas: ['depuradora'],
       desc: 'Se lleva las aguas residuales del pueblo hasta la depuradora.'
     },
@@ -425,8 +498,18 @@ export const CONFIG = {
     // aquí el diámetro no es un detalle, es la mecánica entera.
     pluviales: {
       nombre: 'Pluviales', corto: 'pluvial', color: '#60a5fa',
+      tiers: 'tuberia',
       piezas: ['tanque'], requiere: 'pluviales',
       desc: 'Saca el agua de lluvia del colector antes de que sature la depuradora.'
+    },
+    // La cuarta, y la primera que NO es una tubería. La mecánica es la misma
+    // —se traza a mano, manda el tramo peor, renovar a medias no sirve— pero lo
+    // que circula son camiones, así que su escala son clases de vía.
+    residuos: {
+      nombre: 'Residuos', corto: 'carretera', color: '#b7a08a',
+      tiers: 'viales', esVial: true,
+      piezas: ['vertedero', 'reciclaje'], requiere: 'residuos',
+      desc: 'Lleva la basura del pueblo al vertedero y a la planta de reciclaje.'
     }
   },
 
@@ -462,6 +545,33 @@ export const CONFIG = {
     // Al renovar un tramo se recupera parte del material viejo: renovar es más
     // barato que tender de cero, pero no gratis.
     valorRecuperado: 0.25
+  },
+
+  /* ---------- VIALES ----------
+     La escala de la red de residuos. Es la MISMA mecánica que los diámetros
+     —manda el tramo peor y renovar a medias no sirve— pero medir una carretera
+     en "DN 63 de fibrocemento" no tendría ningún sentido, así que cada red usa
+     su propia tabla (`CONFIG.redes[red].tiers`).
+
+     Aquí `caudalMax` son toneladas de basura por hora que aguanta la vía, y
+     `habitantesMax` la gente a la que puede dar servicio: los dos van de la mano
+     (a 1,4 kg por vecino y día) y hay que moverlos JUNTOS. Con caudales sueltos,
+     una pista de tierra daba para cinco mil habitantes y la carretera no era un
+     cuello de botella nunca, que es justo lo contrario de lo que se busca. `fugas` es la basura
+     que se pierde por el camino: en una pista de tierra el camión va dando
+     tumbos y se deja media carga en la cuneta. */
+  viales: {
+    clases: [
+      { id: 'pista',   nombre: 'Pista',    material: 'tierra compactada',
+        caudalMax: 0.06, habitantesMax: 900,  fugas: 0.15,
+        costeRelativo: 0.8, color: '#a8896a' },
+      { id: 'asfalto', nombre: 'Asfaltada', material: 'aglomerado',
+        caudalMax: 0.20, habitantesMax: 3000, fugas: 0.05,
+        costeRelativo: 3.0, color: '#94a3b8' },
+      { id: 'calzada', nombre: 'Doble calzada', material: 'hormigón',
+        caudalMax: 0.60, habitantesMax: 9000, fugas: 0.01,
+        costeRelativo: 9.0, color: '#e2e8f0' }
+    ]
   },
 
   /* ---------- HALLAZGOS ----------
@@ -556,8 +666,9 @@ export const CONFIG = {
       texto: 'Ya está abastecido. A partir de aquí: engrasa la instalación para ' +
              'que no pierda fuelle, explora más lejos para encontrar pueblos a ' +
              'los que dar servicio, y vigila «La red»: por la tubería estrecha ' +
-             'que has puesto no cabe agua para siempre. Y cuando algo se rompa, ' +
-             'búscalo en el mapa: se repara clicando encima.' }
+             'que has puesto no cabe agua para siempre. Cuando algo se rompa, ' +
+             'búscalo en el mapa: se repara clicando encima. Y al crecer llegarán ' +
+             'el saneamiento, las pluviales y la basura, cada uno con SU red.' }
   ],
 
   /* ---------- GUARDADO ----------

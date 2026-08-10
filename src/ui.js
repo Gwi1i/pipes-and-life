@@ -13,10 +13,10 @@ import { CONFIG } from './config.js';
 import { capacidad, demandaMedia, caudalCaptacion, costeMejora,
          requisitosAutobomba, capacidadTanque, nombreEstacion,
          poderExpansion, redEstrangula, capacidadTratamiento,
-         servicioActivo } from './simulacion.js';
+         servicioActivo, nivelReciclaje, fraccionesActivas } from './simulacion.js';
 import { formatear } from './util.js';
 import { celdaEn, piezaDeRuina, diametro, nivelDiametro, costeRenovar,
-         lineasConectadas, cuelloDeBotella } from './mapa.js';
+         lineasConectadas, cuelloDeBotella, escalaDeRed } from './mapa.js';
 import { pasoActual } from './tutorial.js';
 
 const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
@@ -65,22 +65,26 @@ export class UI {
    * parece un fallo: "¿por qué ha dejado de crecer mi pueblo?".
    */
   refrescarRed(estado, resultado){
-    const D = CONFIG.tuberia.diametros;
     const clave = estado.redActual;
     const R = CONFIG.redes[clave];
+    const D = escalaDeRed(clave);
     const cuello = cuelloDeBotella(estado, clave);
     const lineas = lineasConectadas(estado, clave);
     const p = estado.activo;
-    const objetivo = diametro(estado.dnActual);
+    const objetivo = diametro(estado.dnActual[clave], clave);
     // Las pluviales no existen hasta que se abre el tercer pueblo
+    // Una red solo se ofrece cuando su servicio está en marcha
     const disponibles = Object.entries(CONFIG.redes)
-      .filter(([, r]) => r.requiere !== 'pluviales' || estado.pluvialesActivas);
+      .filter(([, r]) => !r.requiere || servicioActivo(p, r.requiere));
 
     // La firma lleva BANDERAS, no los textos: los avisos del saneamiento llevan
     // caudales que cambian cada fotograma, y meterlos aquí reconstruía el panel
     // entero 10 veces por segundo.
-    const firma = [clave, disponibles.length, estado.dnActual, cuello.dn, lineas.length,
+    const firma = [clave, disponibles.length, estado.dnActual[clave], cuello.dn, lineas.length,
                    Math.round((resultado.lluviaLh || 0) / 500),
+                   // En décimas: el porcentaje de basura en la calle sale en el
+                   // aviso, y sin esto se quedaba congelado en el primer valor.
+                   Math.round((resultado.basuraCalle || 0) * 10),
                    !!resultado.rebosando, !!resultado.aliviando,
                    redEstrangula(p, estado),
                    p.habitantes >= cuello.def.habitantesMax * 0.95,
@@ -98,13 +102,11 @@ export class UI {
         ${r.nombre}</button>`).join('');
 
     const selector = D.map(d => `
-      <button class="dn${d.id === estado.dnActual ? ' activa' : ''}"
+      <button class="dn${d.id === objetivo.id ? ' activa' : ''}"
               data-accion="elegirDiametro" data-clave="${d.id}" style="--tono:${d.color}">
         <b>${d.nombre}</b>
         <em>${d.material}</em>
-        <i>${clave === 'saneamiento'
-              ? formatear(d.caudalMax * CONFIG.saneamiento.holguraColector * 3600) + ' L/h'
-              : 'hasta ' + formatear(d.habitantesMax) + ' hab'} · ${Math.round(d.fugas * 100)} % fugas</i>
+        <i>${this.medidaTier(clave, d)} · ${Math.round(d.fugas * 100)} % fugas</i>
       </button>`).join('');
 
     const listado = !lineas.length
@@ -114,9 +116,9 @@ export class UI {
           : `Todavía no hay ninguna línea que llegue al pueblo. Mientras tanto bebe
              de la red vieja: ${D[0].nombre} de ${D[0].material}.`}</p>`
       : lineas.map(({ tuberia, indice }) => {
-          const d = diametro(tuberia.dn);
-          const sube = nivelDiametro(tuberia.dn) < nivelDiametro(objetivo.id);
-          const coste = sube ? costeRenovar(estado.mapa, tuberia, objetivo.id) : 0;
+          const d = diametro(tuberia.dn, clave);
+          const sube = nivelDiametro(tuberia.dn, clave) < nivelDiametro(objetivo.id, clave);
+          const coste = sube ? costeRenovar(estado.mapa, tuberia, objetivo.id, clave) : 0;
           return `
             <button class="mejora obra linea${sube ? '' : ' hecha'}"
                     ${sube ? `data-accion="renovarLinea" data-clave="${indice}"` : 'disabled'}
@@ -140,7 +142,8 @@ export class UI {
         ${cuello.estrechas > 1 ? `<i>(${cuello.estrechas} líneas así)</i>` : ''}
       </p>
       ${avisos}
-      <p class="m-desc">Diámetro con el que se tiende y al que se renueva:</p>
+      <p class="m-desc">${R.esVial ? 'Clase de vía' : 'Diámetro'} con que se tiende
+        y a la que se renueva:</p>
       <div class="dn-selector">${selector}</div>
       ${listado}`;
 
@@ -152,6 +155,15 @@ export class UI {
     if(etiqueta) etiqueta.textContent = `${R.nombre} · ${objetivo.nombre}`;
     const boton = document.getElementById('obra-tuberia');
     if(boton) boton.style.setProperty('--tono', R.color);
+  }
+
+  /** Lo que dice cada calibre según la red: no se mide igual un tubo que una vía. */
+  medidaTier(clave, d){
+    if(clave === 'saneamiento')
+      return formatear(d.caudalMax * CONFIG.saneamiento.holguraColector * 3600) + ' L/h';
+    if(clave === 'residuos')
+      return d.caudalMax.toFixed(2) + ' t/h';
+    return 'hasta ' + formatear(d.habitantesMax) + ' hab';
   }
 
   /**
@@ -179,6 +191,22 @@ export class UI {
       else if(resultado.lluviaLh > 0) fuera.push(`Ahora mismo caen
         ${formatear(resultado.lluviaLh)} L/h sobre el pueblo y tu red se lleva
         ${formatear(resultado.separadaLh)} L/h. El resto baja por el colector.`);
+    } else if(clave === 'residuos'){
+      const piezas = (estado._conectadoRed || {}).residuos || {};
+      if(!cuello.lineas.length) fuera.push(`No hay carretera: el camión no tiene por
+        dónde salir y la basura se queda en el pueblo. Aquí no hay ninguna vía vieja
+        que valga, hay que tenderla.`);
+      else if(!piezas.vertedero) fuera.push(`Recoges la basura pero no tienes dónde
+        dejarla: hace falta un VERTEDERO enganchado a la carretera, y lejos del agua.`);
+      else if(resultado.basuraTh > resultado.recogidaTh + 1e-6) fuera.push(`Se genera
+        más basura de la que puede sacar la vía: ${(resultado.basuraTh || 0).toFixed(3)}
+        t/h contra ${(resultado.recogidaTh || 0).toFixed(3)}. Lo que no sale se pudre
+        en la calle —ya va por el ${Math.round((resultado.basuraCalle || 0) * 100)} %—
+        y frena el crecimiento.`);
+      if(!nivelReciclaje(p, estado)) fuera.push(`Todo va al vertedero, y enterrar solo
+        cuesta dinero. Con una PLANTA DE RECICLAJE conectada empiezas a separar
+        fracciones y a venderlas: es la única parte del juego que ingresa aparte
+        del agua.`);
     } else {
       if(servicioActivo(p, 'saneamiento') && !(estado._conectadoSan || {}).depuradora)
         fuera.push(`El pueblo ya genera aguas residuales y no hay ninguna depuradora
@@ -388,6 +416,7 @@ export class UI {
       if(!sv.siempre){
         if(activo) texto = 'en marcha';
         else if(sv.requiere === 'pluviales') texto = 'con el tercer pueblo';
+        else if(sv.requiere === 'residuos') texto = `desde ${formatear(CONFIG.residuos.activaEnHabitantes)} hab`;
         else if(sv.activaEnHabitantes) texto = `desde ${formatear(sv.activaEnHabitantes)} hab`;
         else texto = 'cerrado';
       }
@@ -402,8 +431,8 @@ export class UI {
       const elC = document.getElementById('coste-' + clave);
       if(!bt) continue;
 
-      // Mejoras que aún no están desbloqueadas para la mancomunidad
-      if(m.requiere === 'pluviales' && !estado.pluvialesActivas){
+      // Mejoras de un servicio que todavía no está en marcha
+      if(m.requiere && !servicioActivo(p, m.requiere)){
         bt.style.display = 'none';
         continue;
       }
@@ -649,8 +678,19 @@ export class UI {
         capacidadTanque(p, estado) > 0 ? tanquePct + ' % lleno' : '—'}${resultado.aliviando ? ' · ALIVIANDO' : ''}</b></div>
       <div class="d-fila"><span>Calidad</span><b class="${(resultado.calidad || 1) > 1.05 ? 'ok' : ''}">×${(resultado.calidad || 1).toFixed(2)}</b></div>` : '';
 
+    // Residuos: cuánto se recicla, cuánto deja y cuánta basura hay tirada
+    const basuraPct = Math.round((resultado.basuraCalle || 0) * 100);
+    const recicPct = resultado.basuraTh > 0
+      ? Math.round((resultado.recicladaTh || 0) / resultado.basuraTh * 100) : 0;
+    const filaResiduos = servicioActivo(p, 'residuos') ? `
+      <div class="d-fila"><span>Basura</span><b>${(resultado.basuraTh || 0).toFixed(3)} t/h</b></div>
+      <div class="d-fila"><span>Se recicla</span><b class="${recicPct > 0 ? 'ok' : 'alarma'}">${recicPct} %</b></div>
+      <div class="d-fila"><span>Venta de material</span><b class="${(resultado.ingresoResiduosHora || 0) > 0 ? 'dinero' : 'critico'}">${
+        formatear(resultado.ingresoResiduosHora || 0)} €/h</b></div>
+      <div class="d-fila"><span>Sin recoger</span><b class="${basuraPct > 20 ? 'critico' : ''}">${basuraPct} %</b></div>` : '';
+
     const firma = [p.nombre, tendencia, Math.floor(p.habitantes),
-                   nivelDep, p.mejoras.captacion, estacion, sane,
+                   nivelDep, p.mejoras.captacion, estacion, sane, basuraPct, recicPct,
                    estado.pluvialesActivas, lluviaPct, tanquePct,
                    resultado.aliviando, p.mejoras.pluviales, p.mejoras.tanque].join('|');
     if(this.cache.panelFirma === firma) return;
@@ -665,7 +705,8 @@ export class UI {
       <div class="d-fila"><span>Estación</span><b>${estacion}</b></div>
       <div class="d-fila"><span>Reserva</span><b>${reserva}</b></div>
       <div class="d-fila"><span>Saneamiento</span><b class="${servicioActivo(p, 'saneamiento') && p.mejoras.depuradora === 0 ? 'alarma' : ''}">${sane}</b></div>
-      ${filaLluvia}`;
+      ${filaLluvia}
+      ${filaResiduos}`;
   }
 
   actualizarRegistro(estado){

@@ -272,8 +272,8 @@ mejora que no figure en ninguno cae en un grupo "Otras" en vez de desaparecer si
 avisar, que sería un fallo mudo.
 
 **Cada servicio tiene SU red.** `CONFIG.redes` define `abastecimiento` (trae agua
-limpia), `saneamiento` (se lleva la sucia) y `pluviales` (saca la lluvia del
-colector; `requiere: 'pluviales'`, o sea el tercer pueblo), cada una con su color
+limpia), `saneamiento` (se lleva la sucia), `pluviales` (saca la lluvia del
+colector) y `residuos` (**una CARRETERA**, no una tubería), cada una con su color
 y su lista de `piezas`. Las tuberías llevan `red` y **no se mezclan**: un colector que pasa por
 encima de una captación no la conecta a nada, y una depuradora no la engancha la
 tubería de agua potable. Todo el recorrido de red (`alcanzadasPorLaRed`,
@@ -283,6 +283,28 @@ tubería de agua potable. Todo el recorrido de red (`alcanzadasPorLaRed`,
 `_red`, `_conectadoSan`, `_redSan`). Añadir una cuarta red debería ser una
 entrada más en `CONFIG.redes`: las pluviales se metieron así y no hizo falta
 tocar la mecánica.
+
+**Cada red tiene SU escala.** Las de tubería se miden en diámetros
+(`CONFIG.tuberia.diametros`); la de residuos, en clases de vía
+(`CONFIG.viales.clases`). Lo dice `CONFIG.redes[red].tiers` y lo resuelve
+`escalaDeRed()`; `diametro()` y `nivelDiametro()` reciben SIEMPRE la red. Por eso
+`estado.dnActual` es un objeto por red y no una cadena: elegir doble calzada no
+debe cambiar con qué diámetro tiendes tuberías de agua. La mecánica es la misma
+—manda el tramo peor, renovar a medias no sirve—, solo cambia cómo se llama y en
+qué se mide. Al calibrar una escala nueva, mueve `caudalMax` y `habitantesMax`
+JUNTOS: con caudales sueltos una pista de tierra daba para cinco mil habitantes y
+la carretera no era un cuello de botella nunca.
+
+**Residuos: el primer servicio que INGRESA.** La basura
+(`residuos.kgPorHabitanteDia`) sale del pueblo por carretera. Sin vía tendida no
+sale nada —como en pluviales, aquí no hay red vieja de la que tirar—; lo que no
+se recoge se pudre (`pueblo.basuraCalle`, 0..1) y frena el crecimiento igual que
+el cauce sucio. Enterrar en el vertedero solo cuesta; la planta de reciclaje abre
+una fracción por nivel (`residuos.fracciones`) y cada una se VENDE. Los precios
+por tonelada son los reales y así se quedan —lo que importa es que el aceite
+valga mucho más que la orgánica—, pero la economía del juego va inflada (el agua
+a 14 €/m³), así que `escalaEconomica` sube el conjunto sin tocar las proporciones.
+Sin él, reciclar daba 7 €/h contra 115 del agua y no compensaba ni mirarlo.
 
 **Las pluviales, al revés que el colector.** Sin red de saneamiento se supone la
 red unitaria vieja (el diámetro más estrecho): el pueblo siempre ha evacuado por

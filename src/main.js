@@ -19,7 +19,7 @@ import { celdaEn, clicarCasilla, clicsParaDestapar, puedeColocar,
          piezaDeRuina, diametro, nivelDiametro, costeRenovar,
          averiaEn } from './mapa.js';
 import { avanzar, bombear, costeMejora, requisitosAutobomba, engrasar,
-         poderExpansion } from './simulacion.js';
+         poderExpansion, servicioActivo } from './simulacion.js';
 import { formatear } from './util.js';
 import { comprobar as comprobarGuia, saltar as saltarGuia } from './tutorial.js';
 
@@ -111,8 +111,8 @@ function procesarAcciones(){
 
       case 'elegirRed': {
         const def = CONFIG.redes[a.clave];
-        if(def && def.requiere === 'pluviales' && !estado.pluvialesActivas){
-          avisar('Las pluviales se abren al incorporar el tercer pueblo.');
+        if(def && def.requiere && !servicioActivo(estado.activo, def.requiere)){
+          avisar(`Esa red llega con el servicio de ${CONFIG.servicios[def.requiere].nombre.toLowerCase()}.`);
           break;
         }
         if(def){
@@ -126,7 +126,9 @@ function procesarAcciones(){
       }
 
       case 'elegirDiametro':
-        estado.dnActual = diametro(a.clave).id;
+        // El calibre es POR RED: elegir doble calzada no debe cambiar el
+        // diámetro con el que tiendes tuberías de agua.
+        estado.dnActual[estado.redActual] = diametro(a.clave, estado.redActual).id;
         ui.invalidarCache();
         break;
 
@@ -134,22 +136,23 @@ function procesarAcciones(){
         const i = parseInt(a.clave, 10);
         const tub = estado.tuberias[i];
         if(!tub) break;
-        const destino = estado.dnActual;
-        if(nivelDiametro(destino) <= nivelDiametro(tub.dn)){
-          avisar('Elige arriba un diámetro mayor que el que ya tiene.');
+        const red = tub.red || 'abastecimiento';
+        const destino = estado.dnActual[red];
+        if(nivelDiametro(destino, red) <= nivelDiametro(tub.dn, red)){
+          avisar('Elige arriba un calibre mayor que el que ya tiene.');
           break;
         }
-        const coste = costeRenovar(estado.mapa, tub, destino);
+        const coste = costeRenovar(estado.mapa, tub, destino, red);
         if(!estado.puedePagar(coste)){
           avisar(`Renovar esa línea cuesta ${formatear(coste)} € y no hay fondos.`);
           break;
         }
         estado.pagar(coste);
-        const antes = diametro(tub.dn).nombre;
+        const antes = diametro(tub.dn, red).nombre;
         tub.dn = destino;
         tub.coste = (tub.coste || 0) + coste;
-        estado.anotar(`Línea renovada de ${antes} a ${diametro(destino).nombre} por ${formatear(coste)} €.`, 'ok');
-        avisar(`Línea renovada a ${diametro(destino).nombre}.`);
+        estado.anotar(`Línea renovada de ${antes} a ${diametro(destino, red).nombre} por ${formatear(coste)} €.`, 'ok');
+        avisar(`Línea renovada a ${diametro(destino, red).nombre}.`);
         ui.invalidarCache();
         break;
       }
@@ -430,15 +433,15 @@ function clicTuberia(col, fila){
 function rematarTuberia(){
   const trazado = estado.modo.trazado;
   if(trazado.length < 2){ avisar('Una tubería necesita al menos dos casillas.'); return; }
-  const dn = estado.dnActual, red = estado.redActual;
-  const coste = costeTrazado(estado.mapa, trazado, dn);
+  const red = estado.redActual, dn = estado.dnActual[red];
+  const coste = costeTrazado(estado.mapa, trazado, dn, red);
   if(!estado.puedePagar(coste)){
     avisar(`Ese trazado cuesta ${formatear(coste)} € y no hay fondos.`);
     return;
   }
   estado.pagar(coste);
   estado.tuberias.push({ camino: trazado.slice(), coste, dn, red });
-  estado.anotar(`${CONFIG.redes[red].nombre}: ${diametro(dn).nombre} de ` +
+  estado.anotar(`${CONFIG.redes[red].nombre}: ${diametro(dn, red).nombre} de ` +
                 `${trazado.length} casillas por ${formatear(coste)} €.`, 'ok');
   estado.modo.trazado = [];
 }

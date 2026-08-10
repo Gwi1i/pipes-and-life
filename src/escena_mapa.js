@@ -268,7 +268,7 @@ export class EscenaMapa extends Escena {
       // dice qué red es (agua limpia o colector) y el GROSOR el diámetro, que es
       // donde está el cuello de botella.
       const R = CONFIG.redes[redDe(tub)] || CONFIG.redes.abastecimiento;
-      const escala = 1 + nivelDiametro(tub.dn) * 0.55;
+      const escala = 1 + nivelDiametro(tub.dn, redDe(tub)) * 0.55;
       ctx.strokeStyle = '#1b2836'; ctx.lineWidth = Math.max(4, t * 0.16 * escala);
       this.trazo(pts);
       ctx.strokeStyle = R.color; ctx.lineWidth = Math.max(2, t * 0.09 * escala);
@@ -391,7 +391,8 @@ export class EscenaMapa extends Escena {
           y: p.fila * t - estado.camara.y + t / 2
         }));
         ctx.strokeStyle = (CONFIG.redes[estado.redActual] || CONFIG.redes.abastecimiento).color;
-        ctx.lineWidth = Math.max(2, t * 0.10 * (1 + nivelDiametro(estado.dnActual) * 0.55));
+        ctx.lineWidth = Math.max(2, t * 0.10 *
+          (1 + nivelDiametro(estado.dnActual[estado.redActual], estado.redActual) * 0.55));
         ctx.setLineDash([t * 0.18, t * 0.12]);
         this.trazo(pts); ctx.setLineDash([]);
         // la última puesta, marcada: es donde se pincha para rematar
@@ -405,7 +406,7 @@ export class EscenaMapa extends Escena {
         return;
       }
 
-      const total = costeTrazado(estado.mapa, trazado, estado.dnActual);
+      const total = costeTrazado(estado.mapa, trazado, estado.dnActual[estado.redActual], estado.redActual);
       const ultimo = trazado[trazado.length - 1];
       if(ultimo.col === r.col && ultimo.fila === r.fila){
         this.cartel(`Clic aquí: rematar · ${formatear(total)} €`, x + t / 2, y - 6,
@@ -418,7 +419,7 @@ export class EscenaMapa extends Escena {
       if(v.ok && celda){
         const obra = CONFIG.tuberia.nombreObra[celda.tipo] || 'obra';
         ctx.fillStyle = 'rgba(74,222,128,0.28)'; ctx.fillRect(x, y, t, t);
-        this.cartel(`+${formatear(costeCasillaTuberia(celda, estado.dnActual))} € (${obra}) · total ${formatear(total)} €`,
+        this.cartel(`+${formatear(costeCasillaTuberia(celda, estado.dnActual[estado.redActual], estado.redActual))} € (${obra}) · total ${formatear(total)} €`,
                     x + t / 2, y - 6, CONFIG.color.ok);
       } else {
         this.cartel(v.motivo || 'Ahí no', x + t / 2, y - 6, CONFIG.color.critico);
