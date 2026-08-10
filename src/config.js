@@ -415,11 +415,30 @@ export const CONFIG = {
   /* ---------- TERRENOS ----------
      `costeExtra` multiplica los clics necesarios para abrir la casilla. */
   terrenos: {
-    hierba:  { nombre: 'Prado',   color: '#4f9a44', costeExtra: 1.0 },
-    bosque:  { nombre: 'Bosque',  color: '#2f6b39', costeExtra: 1.4 },
-    montana: { nombre: 'Montaña', color: '#7b7f86', costeExtra: 2.0 },
-    agua:    { nombre: 'Río',     color: '#2b7fa8', costeExtra: 1.2 },
-    lago:    { nombre: 'Lago',    color: '#1d5f80', costeExtra: 1.2 }
+    hierba:  { nombre: 'Prado',   color: '#6aab4e', costeExtra: 1.0 },
+    bosque:  { nombre: 'Bosque',  color: '#4b8b43', costeExtra: 1.4 },
+    montana: { nombre: 'Montaña', color: '#9aa0a8', costeExtra: 2.0 },
+    agua:    { nombre: 'Río',     color: '#3d84c6', costeExtra: 1.2 },
+    lago:    { nombre: 'Lago',    color: '#2f6ea8', costeExtra: 1.2 }
+  },
+
+  /* ---------- ESTILO DEL MAPA ----------
+     La referencia es un idle builder de vista cenital: campo continuo, no un
+     mosaico de cuadros. Las claves son tres y las tres van aquí para poder
+     moverlas sin tocar el dibujo:
+       · La cuadrícula se ve, es CLARA y se pinta por encima de TODO, agua
+         incluida. Es lo que da la sensación de tablero.
+       · La variación entre casillas es un damero muy suave, no ruido: si cada
+         celda tira por su lado, el prado parece papel pintado roto.
+       · Las piezas ocupan bastante MENOS que la casilla y se apoyan en un
+         zócalo, para que se lean como fichas puestas sobre el tablero. */
+  estiloMapa: {
+    rejilla: 'rgba(255,255,255,0.13)',
+    grosorRejilla: 1,
+    damero: 0.035,          // cuánto se aclara/oscurece una casilla respecto a su vecina
+    variacion: 0.05,        // ruido por casilla: poco, solo para que no sea plano
+    ladoPieza: 0.62,        // fracción de la casilla que ocupa una construcción
+    zocalo: 'rgba(20,32,20,0.30)'
   },
 
   /* ---------- QUÉ SE PUEDE CONSTRUIR Y DÓNDE ----------
