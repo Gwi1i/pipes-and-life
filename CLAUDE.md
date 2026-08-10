@@ -142,10 +142,10 @@ común está separado a propósito:
 
 - **Por pueblo** (`estado.pueblos[i]`): agua, habitantes, servicio, racha,
   `mejoras{}` (bomba, depósito, captación, depuradora, mantenimiento),
-  `autobombaActivo`, `averia`, `saneamientoActivo`, `desbloqueado`. Casi todas
+  `autobombaActivo`, `saneamientoActivo`, `desbloqueado`. Casi todas
   las funciones de `simulacion.js` reciben un `pueblo`.
-- **Común** (`estado`): `dinero` (una sola caja), `horas` (un reloj), y
-  `contaminacion` (un solo cauce).
+- **Común** (`estado`): `dinero` (una sola caja), `horas` (un reloj),
+  `contaminacion` (un solo cauce) y `averias` (lo que está roto sobre el mapa).
 
 La UI muestra SIEMPRE el pueblo activo (`estado.activo`, índice en
 `estado.puebloActivo`); las pestañas cambian cuál. La tienda, el panel de
@@ -236,14 +236,24 @@ Una pieza suelta en mitad del campo no aporta nada: es lo que convierte el
 trazado en una decisión y no en un adorno.
 
 **Cada servicio tiene SU red.** `CONFIG.redes` define `abastecimiento` (trae agua
-limpia) y `saneamiento` (se lleva la sucia), cada una con su color y su lista de
-`piezas`. Las tuberías llevan `red` y **no se mezclan**: un colector que pasa por
+limpia), `saneamiento` (se lleva la sucia) y `pluviales` (saca la lluvia del
+colector; `requiere: 'pluviales'`, o sea el tercer pueblo), cada una con su color
+y su lista de `piezas`. Las tuberías llevan `red` y **no se mezclan**: un colector que pasa por
 encima de una captación no la conecta a nada, y una depuradora no la engancha la
 tubería de agua potable. Todo el recorrido de red (`alcanzadasPorLaRed`,
 `construccionesConectadas`, `lineasConectadas`, `cuelloDeBotella`,
 `inventarioConectado`) recibe la red como parámetro; `avanzar()` cachea las dos
-(`_conectado`/`_red` y `_conectadoSan`/`_redSan`). Las pluviales serán la tercera
-y no debería hacer falta tocar la mecánica, solo añadir la entrada en config.
+(`estado._conectadoRed[red]` y `estado._redes[red]`, con atajos `_conectado`,
+`_red`, `_conectadoSan`, `_redSan`). Añadir una cuarta red debería ser una
+entrada más en `CONFIG.redes`: las pluviales se metieron así y no hizo falta
+tocar la mecánica.
+
+**Las pluviales, al revés que el colector.** Sin red de saneamiento se supone la
+red unitaria vieja (el diámetro más estrecho): el pueblo siempre ha evacuado por
+algún sitio. Pero `capacidadPluviales()` devuelve **cero** si no has tendido la
+red: separar la lluvia no lo hace nadie por ti, y esa asimetría es justo lo que
+describe `Explicaciones.txt`. Lo que separa es lo que le quepa por el tubo, así
+que aquí el diámetro no es un detalle, es la mecánica entera.
 
 **El colector no estrangula: REBOSA.** En abastecimiento, quedarse corto de
 diámetro significa que llega menos agua; en saneamiento significa que el agua
@@ -305,12 +315,22 @@ su mínimo caiga en pleno VERANO; sin él, el panel decía "estiaje (verano)"
 mientras la escena ya pintaba otoño lloviendo. Si tocas una curva, comprueba las
 otras dos: `nombreEstacion()` es la fuente única del nombre.
 
-**Averías.** Por pueblo. Viven FUERA de `avanzar()`, en `tickAverias()` de
-`main.js`, que recorre los pueblos y solo corre en la partida viva (nunca
-offline: sería injusto). Una avería es `pueblo.averia = { desde }`; mientras
-exista, `avanzar()` corta la producción automática de ESE pueblo (el clic manual
-sigue). Se repara pagando (`repararAveria`, sobre el activo) o sola si
-`pueblo.mejoras.mantenimiento > 0`, tras un tiempo que baja con el nivel.
+**Averías: tienen SITIO en el mapa.** Viven en `estado.averias`
+(`{col, fila, clics, desde}`) y son de la mancomunidad, no de un pueblo. Caen
+sobre una PIEZA construida —sin instalación no hay averías, lo que mantiene
+limpio el arranque— y su castigo es que esa pieza deja de contar como conectada
+(`construccionesConectadas` la filtra): la avería se paga justo en lo que esa
+pieza aportaba, no en un porcentaje suelto.
+
+Se reparan YENDO ALLÍ y clicando encima (`clicAveria` en `main.js`), y cada golpe
+de llave cuesta `costePorClic`. El panel lateral NO repara: lista lo roto y
+centra la cámara. Hubo antes un botón que lo arreglaba de lejos y un operario que
+aparecía solo por la pantalla cada minuto; los dos se quitaron a propósito —el
+personaje automático cansaba y el botón convertía la avería en un trámite—.
+`tickAverias()` sigue fuera de `avanzar()` y solo corre en la partida viva (nunca
+offline: sería injusto), y el riesgo sube con la instalación por RAÍZ del número
+de piezas, no en línea recta: multiplicando por el número salían averías en
+cadena con solo dos piezas.
 
 **Auto-bombeo = función especial, no una mejora.** Vive en `CONFIG.premium`, no
 en `CONFIG.mejoras`. Es un booleano por pueblo (`pueblo.autobombaActivo`), no un

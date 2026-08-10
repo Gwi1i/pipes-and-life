@@ -38,12 +38,14 @@ Separar la red es lo ideal. Es importante construir tanque de tormentas para evi
 // cauce cuando la depuradora se satura en otoño), pero como MEJORAS de tienda,
 // no como red dibujada sobre el mapa. Lo natural es que la red unitaria sea
 // literalmente una tubería con red:'unitaria' que pagas por desdoblar en dos.
-// ACTUALIZADO: el saneamiento YA es una red propia sobre el mapa, con su
-// colector, su diámetro y su rebose. Meter pluviales ahora es añadir una
-// entrada en CONFIG.redes y poco más: la mecánica ya no hay que inventarla.
-// El DESHIELO que mencionas no está: hoy la lluvia es una curva por estación.
-// Sería una punta de primavera aparte de la de otoño, y encaja bien porque ya
-// existe el tanque para amortiguarla.
+// ACTUALIZADO: saneamiento Y pluviales son ya redes propias sobre el mapa, con
+// su colector, su diámetro y su rebose. Lo de las pluviales salió exactamente
+// como estaba previsto: una entrada más en CONFIG.redes. La diferencia con el
+// colector es a propósito: sin red de saneamiento se supone la unitaria vieja,
+// pero sin red de pluviales NO se separa nada, porque separar no lo hace nadie
+// por ti. Falta el deshielo que mencionas: hoy la lluvia solo tiene punta de
+// otoño: sería una punta de primavera aparte, y encaja bien porque ya existe el
+// tanque para amortiguarla.
 
 Residuos:
 La recogida de residuos es indispensable para la salubridad. Se necesitan varios tipos de contenedores para su correcto reciclaje:
@@ -67,11 +69,14 @@ También hace falta un vertedero y plantas de reciclaje.
 
 Todo esto requiere de equipos de mantenimiento de redes y de residuos para arreglar averias y mantener todo en estado optimo.
 
-// Claude: el germen ya está: el operario que aparece cada tanto y te quita el
-// desgaste, y la mejora "personal de mantenimiento" que repara averías solo.
-// Esto sería subirlo a BRIGADAS por servicio, cada una con su coste fijo. Ojo
-// con una cosa: si las brigadas lo arreglan todo solas, el juego deja de pedir
-// clics y se apaga. El personal tiene que aliviar, nunca sustituir.
+// Claude: ACTUALIZADO. El operario que aparecía solo por la pantalla se ha
+// quitado: cansaba. Ahora la avería CAE SOBRE UNA PIEZA del mapa, la deja fuera
+// de servicio, y hay que ir hasta allí y clicar encima para arreglarla, pagando
+// cada golpe de llave. El "personal de mantenimiento" de la tienda deja menos
+// faena manual y termina el arreglo solo si le das tiempo.
+// Subirlo a BRIGADAS por servicio es el siguiente paso natural: cada una con su
+// coste fijo. Ojo con una cosa: si las brigadas lo arreglan todo solas, el juego
+// deja de pedir clics y se apaga. El personal tiene que aliviar, nunca sustituir.
 
 En un momento mas avanzado se podría pensar en implementar de alguna manera los técnicos que se encargan de diseñar todo y el departamento RRHH o el departamento económico que sirvan para optimizar el coste de las redes o el personal.
 

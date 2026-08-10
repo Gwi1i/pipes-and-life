@@ -361,9 +361,16 @@ export function construccionesConectadas(estado, red = 'abastecimiento'){
   const visitadas = alcanzadasPorLaRed(estado, red);
   const suyas = CONFIG.redes[red].piezas;
   // Cada red solo cuenta lo suyo: una depuradora no la conecta la tubería de
-  // agua potable, por muy encima que le pase.
+  // agua potable, por muy encima que le pase. Y una pieza averiada no cuenta
+  // aunque esté perfectamente conectada: está parada.
   return estado.construcciones.filter(
-    o => suyas.includes(o.tipo) && pegadaA(visitadas, o.col, o.fila));
+    o => suyas.includes(o.tipo) && !averiaEn(estado, o.col, o.fila)
+      && pegadaA(visitadas, o.col, o.fila));
+}
+
+/** La avería que hay en esa casilla, si la hay. */
+export function averiaEn(estado, col, fila){
+  return (estado.averias || []).find(a => a.col === col && a.fila === fila) || null;
 }
 
 /**

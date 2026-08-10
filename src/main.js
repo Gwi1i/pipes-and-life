@@ -16,7 +16,8 @@ import { EscenaTeselas } from './escena_teselas.js';
 import { EscenaMapa } from './escena_mapa.js';
 import { celdaEn, clicarCasilla, clicsParaDestapar, puedeColocar,
          puedeSeguirTrazado, costeTrazado, casillaEnRed,
-         piezaDeRuina, diametro, nivelDiametro, costeRenovar } from './mapa.js';
+         piezaDeRuina, diametro, nivelDiametro, costeRenovar,
+         averiaEn } from './mapa.js';
 import { avanzar, bombear, costeMejora, requisitosAutobomba, engrasar,
          poderExpansion } from './simulacion.js';
 import { formatear } from './util.js';
@@ -62,8 +63,6 @@ function procesarAcciones(){
     switch(a.tipo){
 
       case 'bombear': {
-        // Si el operario está en pantalla y le has dado, se lleva el clic
-        if(recogerOperario(a.x, a.y)) break;
         bombear(estado.activo, estado);
         escena.destello(a.x, a.y);
         break;
@@ -110,8 +109,13 @@ function procesarAcciones(){
 
       /* --- DIÁMETROS: con qué se tiende y qué se renueva --- */
 
-      case 'elegirRed':
-        if(CONFIG.redes[a.clave]){
+      case 'elegirRed': {
+        const def = CONFIG.redes[a.clave];
+        if(def && def.requiere === 'pluviales' && !estado.pluvialesActivas){
+          avisar('Las pluviales se abren al incorporar el tercer pueblo.');
+          break;
+        }
+        if(def){
           estado.redActual = a.clave;
           // Cambiar de red a media traza dejaría un trazado a medias con la red
           // equivocada: se descarta y se empieza de nuevo.
@@ -119,6 +123,7 @@ function procesarAcciones(){
           ui.invalidarCache();
         }
         break;
+      }
 
       case 'elegirDiametro':
         estado.dnActual = diametro(a.clave).id;
@@ -162,12 +167,10 @@ function procesarAcciones(){
       case 'clicEscena': {
         // En el mapa el clic explora; en las vistas de parcela, bombea.
         if(!(escena instanceof EscenaMapa)){
-          if(recogerOperario(a.x, a.y)) break;
-          bombear(estado.activo, estado);
+            bombear(estado.activo, estado);
           escena.destello(a.x, a.y);
           break;
         }
-        if(recogerOperario(a.x, a.y)) break;
         const { col, fila } = escena.celdaEnPantalla(estado, a.x, a.y);
         const celda = celdaEn(estado.mapa, col, fila);
         if(!celda) break;
@@ -175,6 +178,9 @@ function procesarAcciones(){
         // Con una herramienta activa, el clic construye en vez de explorar
         if(estado.modo.tipo === 'colocar'){ colocarElemento(col, fila); break; }
         if(estado.modo.tipo === 'tuberia'){ clicTuberia(col, fila); break; }
+
+        // Lo roto manda: si hay una avería aquí, el clic la repara
+        if(clicAveria(col, fila)){ escena.destello(a.x, a.y); break; }
 
         if(celda.oculta){
           const r = clicarCasilla(estado.mapa, col, fila, poderExpansion(estado));
@@ -299,17 +305,13 @@ function procesarAcciones(){
         break;
       }
 
-      case 'repararAveria': {
-        const p = estado.activo;
-        if(!p.averia) break;
-        const coste = CONFIG.averias.costeReparacionManual;
-        if(!estado.puedePagar(coste)){
-          avisar(`La reparación cuesta ${formatear(coste)} € y no hay fondos.`);
-          break;
-        }
-        estado.pagar(coste);
-        p.averia = null;
-        estado.anotar(`Avería de ${p.nombre} reparada a mano por ${formatear(coste)} €.`, 'ok');
+      // El panel ya no repara: lleva hasta la avería. Arreglarla es ir y clicar.
+      case 'irAAveria': {
+        const av = estado.averias[parseInt(a.clave, 10)] || estado.averias[0];
+        if(!av) break;
+        if(escena instanceof EscenaMapa) escena.centrarEn(estado, av.col, av.fila);
+        estado.seleccion = { col: av.col, fila: av.fila };
+        avisar('Ahí la tienes: clica encima hasta dejarla arreglada.');
         break;
       }
 
@@ -463,86 +465,82 @@ const distancia = (c, f) =>
    EL OPERARIO — aparece de vez en cuando y hay que pillarlo
    ================================================================== */
 
-let operario = null;          // { x, y, t } en píxeles del lienzo
-let proximaVisita = tiempoHastaVisita();
-
-function tiempoHastaVisita(){
-  const V = CONFIG.visita;
-  return V.cadaMinSeg + Math.random() * (V.cadaMaxSeg - V.cadaMinSeg);
-}
-
-function tickOperario(dt){
-  const V = CONFIG.visita;
-  if(operario){
-    operario.t += dt;
-    if(operario.t > V.duracionSeg){ operario = null; proximaVisita = tiempoHastaVisita(); }
-    escena.operario = operario;
-    return;
-  }
-  proximaVisita -= dt;
-  if(proximaVisita <= 0){
-    operario = { t: 0,
-      x: 0.15 + Math.random() * 0.6,   // en fracción del lienzo, para que valga
-      y: 0.25 + Math.random() * 0.5 }; // a cualquier tamaño de ventana
-    estado.anotar('¡El operario anda por la instalación! Pínchalo antes de que se vaya.', 'ok');
-  }
-  escena.operario = operario;
-}
-
-/** ¿El clic ha caído sobre el operario? Si sí, cobra la prima y engrasa. */
-function recogerOperario(px, py){
-  if(!operario || px == null) return false;
-  const caja = lienzo.getBoundingClientRect();
-  const ox = operario.x * caja.width, oy = operario.y * caja.height;
-  const radio = Math.min(caja.width, caja.height) * 0.09;
-  if(Math.hypot(px - ox, py - oy) > radio) return false;
-
-  const V = CONFIG.visita;
-  // Prima proporcional a lo que ganas ahora, para que valga en toda la partida
-  const porSegundo = (resultado.servidoM3 || 0) * CONFIG.economia.tarifa / 0.016;
-  const prima = Math.max(V.primaMinima, porSegundo * V.primaSegundos);
-  estado.dinero += prima;
-  estado.activo.desgaste = 0;
-  estado.anotar(`El operario engrasa todo y te deja ${formatear(prima)} € de prima.`, 'ok');
-  avisar(`¡+${formatear(prima)} € y la instalación como nueva!`);
-  escena.destello(ox, oy);
-  escena.destelloMantenimiento();
-  operario = null; escena.operario = null;
-  proximaVisita = tiempoHastaVisita();
-  return true;
-}
-
 /* ==================================================================
    AVERÍAS — por pueblo, solo en la partida viva (nunca offline)
    ================================================================== */
 
 function tickAverias(dtHoras){
   const A = CONFIG.averias;
-  for(let i = 0; i < estado.pueblos.length; i++){
-    const p = estado.pueblos[i];
-    if(!p.desbloqueado) continue;
 
-    if(p.averia){
-      const nivel = p.mejoras.mantenimiento;
-      if(nivel > 0){
-        const tiempo = A.reparacionAutoHoras * Math.pow(A.reparacionAutoFactor, nivel - 1);
-        if(estado.horas - p.averia.desde >= tiempo){
-          p.averia = null;
-          estado.anotar(`El equipo de mantenimiento repara la avería de ${p.nombre}.`, 'ok');
-        }
-      }
-      continue;
-    }
-
-    let riesgo = A.probBasePorHora * dtHoras;
-    riesgo *= 1 + A.factorDesgaste *
-              (p.mejoras.captacion + (p.autobombaActivo ? A.riesgoAutobomba : 0));
-    if(Math.random() < riesgo){
-      p.averia = { desde: estado.horas };
-      estado.anotar(`Avería en ${p.nombre}: producción automática parada.`, 'critico');
-      if(i === estado.puebloActivo) avisar('¡Avería! La producción automática se ha parado.');
+  // 1. Lo que ya está roto: el personal contratado lo va terminando solo.
+  for(let i = estado.averias.length - 1; i >= 0; i--){
+    const av = estado.averias[i];
+    const nivel = Math.max(...estado.pueblos.map(p => p.mejoras.mantenimiento));
+    if(nivel <= 0) continue;
+    const tiempo = A.reparacionAutoHoras * Math.pow(A.reparacionAutoFactor, nivel - 1);
+    if(estado.horas - av.desde >= tiempo){
+      estado.averias.splice(i, 1);
+      estado.anotar('El equipo de mantenimiento termina una reparación.', 'ok');
     }
   }
+
+  // 2. Lo que puede romperse: SOLO piezas puestas en el mapa. Sin instalación no
+  //    hay averías, que es lo que mantiene limpio el arranque de la partida.
+  const sanas = estado.construcciones.filter(o => !averiaEn(estado, o.col, o.fila));
+  if(!sanas.length) return;
+
+  const p = estado.activo;
+  // El riesgo sube con el tamaño de la instalación, pero por RAÍZ y no en línea
+  // recta: multiplicarlo por el número de piezas hacía que con dos ya cayeran
+  // averías en cadena, y con veinte habría sido injugable.
+  let riesgo = A.probBasePorHora * dtHoras * Math.sqrt(sanas.length);
+  riesgo *= 1 + A.factorDesgaste *
+            (p.mejoras.captacion + (p.autobombaActivo ? A.riesgoAutobomba : 0));
+  if(Math.random() >= riesgo) return;
+
+  const victima = sanas[Math.floor(Math.random() * sanas.length)];
+  const def = CONFIG.construibles[victima.tipo];
+  estado.averias.push({
+    col: victima.col, fila: victima.fila,
+    clics: clicsDeReparacion(), desde: estado.horas
+  });
+  estado.anotar(`Avería: ${def.nombre} fuera de servicio hasta que lo repares.`, 'critico');
+  avisar(`¡Avería en ${def.nombre}! Ve al mapa y clica encima.`);
+}
+
+/** Golpes de llave que pide una avería. El personal contratado deja menos faena. */
+function clicsDeReparacion(){
+  const A = CONFIG.averias;
+  const nivel = Math.max(...estado.pueblos.map(p => p.mejoras.mantenimiento));
+  return Math.max(A.clicsMinimos, A.clicsParaReparar - nivel * A.clicsMenosPorNivelMant);
+}
+
+/**
+ * Un clic sobre una casilla averiada: se paga y se avanza el arreglo. Repararla
+ * es ir hasta allí y darle, no pulsar un botón desde el panel. Devuelve true si
+ * el clic se ha consumido aquí.
+ */
+function clicAveria(col, fila){
+  const av = averiaEn(estado, col, fila);
+  if(!av) return false;
+  const coste = CONFIG.averias.costePorClic;
+  if(!estado.puedePagar(coste)){
+    avisar(`Cada golpe de llave cuesta ${formatear(coste)} € y no hay fondos.`);
+    return true;
+  }
+  estado.pagar(coste);
+  av.clics--;
+  if(av.clics > 0){
+    avisar(`Reparando... quedan ${av.clics} (−${formatear(coste)} €)`);
+    return true;
+  }
+  estado.averias.splice(estado.averias.indexOf(av), 1);
+  const obra = estado.construcciones.find(o => o.col === col && o.fila === fila);
+  const nombre = obra ? CONFIG.construibles[obra.tipo].nombre : 'La instalación';
+  estado.anotar(`${nombre}: avería reparada, vuelve a estar en servicio.`, 'ok');
+  avisar('¡Reparada! Vuelve a contar en la red.');
+  escena.destelloMantenimiento();
+  return true;
 }
 
 /* ==================================================================
@@ -641,7 +639,6 @@ function bucle(ahora){
   procesarAcciones();
   resultado = avanzar(estado, dt);
   tickAverias(dt * CONFIG.economia.horasPorSegundo);
-  tickOperario(dt);
 
   // La guía avanza sola cuando el jugador consigue de verdad cada paso
   const pasoHecho = comprobarGuia(estado);

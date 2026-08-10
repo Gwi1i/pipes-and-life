@@ -75,12 +75,15 @@ function piezas(estado){ return (estado && estado._conectado) || {}; }
  * que hay antes de tender nada.
  */
 export function redDelPueblo(estado, red = 'abastecimiento'){
-  const cacheada = estado && (red === 'saneamiento' ? estado._redSan : estado._red);
+  const cacheada = estado && (estado._redes || {})[red];
   return cacheada || { def: CONFIG.tuberia.diametros[0], lineas: [], estrechas: 0 };
 }
 
-/** Piezas conectadas por la red de saneamiento (depuradoras y tanques). */
-function piezasSan(estado){ return (estado && estado._conectadoSan) || {}; }
+/** Piezas conectadas a una red concreta del mapa. */
+export function piezasDeRed(estado, red){
+  return (estado && (estado._conectadoRed || {})[red]) || {};
+}
+function piezasSan(estado){ return piezasDeRed(estado, 'saneamiento'); }
 
 /**
  * Lo que cabe por el COLECTOR, en L/h. Aquí el cuello de botella duele distinto
@@ -90,6 +93,18 @@ function piezasSan(estado){ return (estado && estado._conectadoSan) || {}; }
 export function capacidadColector(estado){
   return redDelPueblo(estado, 'saneamiento').def.caudalMax
        * CONFIG.saneamiento.holguraColector * 3600;
+}
+
+/**
+ * Lo que se lleva la red de PLUVIALES, en L/h. Si no la has tendido devuelve
+ * cero, y ahí está la diferencia con el colector: el saneamiento tiene una red
+ * unitaria vieja de la que tirar, pero separar la lluvia no lo hace nadie por
+ * ti. Sin red de pluviales, la tormenta entera se va por el colector.
+ */
+export function capacidadPluviales(estado){
+  const red = redDelPueblo(estado, 'pluviales');
+  if(!red.lineas || !red.lineas.length) return 0;
+  return red.def.caudalMax * CONFIG.pluviales.holguraPluvial * 3600;
 }
 
 /**
@@ -168,7 +183,7 @@ export function capacidadTratamiento(pueblo, estado){
        + (piezasSan(estado).depuradora || 0) * CONFIG.aportePorPieza.depuradora;
 }
 
-/** Fracción de escorrentía de lluvia que la red de pluviales saca del colector. */
+/** Fracción de escorrentía que separa la MEJORA de pluviales (la de la tienda). */
 export function fraccionSeparada(pueblo){
   const r = CONFIG.mejoras.pluviales;
   return Math.min(r.fraccionMax, pueblo.mejoras.pluviales * r.fraccionPorNivel);
@@ -177,7 +192,9 @@ export function fraccionSeparada(pueblo){
 /** Litros que puede retener el tanque de tormentas. */
 export function capacidadTanque(pueblo, estado){
   return pueblo.mejoras.tanque * CONFIG.mejoras.tanque.capacidadPorNivel
-       + (piezasSan(estado).tanque || 0) * CONFIG.aportePorPieza.tanque;
+       // El tanque de tormentas vive en la red de PLUVIALES, no en el colector:
+       // su trabajo es cortar la punta de lluvia antes de que llegue abajo.
+       + (piezasDeRed(estado, 'pluviales').tanque || 0) * CONFIG.aportePorPieza.tanque;
 }
 
 /**
@@ -201,13 +218,15 @@ export function factorLluvia(horas){
  */
 export function poderExpansion(estado){
   const E = CONFIG.expansion;
-  let hab = 0, servicio = 0, desgaste = 0, n = 0, averiado = false;
+  let hab = 0, servicio = 0, desgaste = 0, n = 0;
+  // Las averías ya no son del pueblo sino de las piezas del mapa: basta con que
+  // haya alguna sin reparar para que explorar cueste más.
+  const averiado = (estado.averias || []).length > 0;
   for(const p of estado.pueblos){
     if(!p.desbloqueado) continue;
     hab += p.habitantes;
     servicio += p.servicio;
     desgaste += p.desgaste || 0;
-    if(p.averia) averiado = true;
     n++;
   }
   if(n === 0) return 1;
@@ -266,7 +285,10 @@ export function bombear(pueblo, estado){
 function avanzarPueblo(estado, p, dt, dtHoras, punta, estiaje, frenoCrec, lluvia){
   const S = CONFIG.saneamiento;
   const cap = capacidad(p, estado);
-  const factorAveria = p.averia ? (1 - CONFIG.averias.recorteProduccion) : 1;
+  // Ya no hay un "pueblo averiado": lo que se rompe es una pieza concreta, y su
+  // castigo es dejar de contar como conectada (lo hace `construccionesConectadas`).
+  // Así la avería se paga justo en lo que esa pieza aportaba, no en un porcentaje
+  // suelto que no se sabía de dónde salía.
 
   // Entrada: producción pasiva (parada si hay avería)
   // La instalación se gasta con el tiempo; el personal de mantenimiento lo frena
@@ -275,8 +297,8 @@ function avanzarPueblo(estado, p, dt, dtHoras, punta, estiaje, frenoCrec, lluvia
     D.porHoraJuego * dtHoras * Math.pow(D.frenoPorNivelMant, p.mejoras.mantenimiento));
 
   const ef = eficiencia(p);
-  const prodCaptacion = caudalCaptacion(p, estado) * estiaje * ef * factorAveria * 3600 * dtHoras;
-  const prodAuto = clicsAutoPorSeg(p) * litrosPorClic(p, estado) * factorAveria * dt;
+  const prodCaptacion = caudalCaptacion(p, estado) * estiaje * ef * 3600 * dtHoras;
+  const prodAuto = clicsAutoPorSeg(p) * litrosPorClic(p, estado) * dt;
   const antes = p.agua;
   p.agua = Math.min(cap, p.agua + prodCaptacion + prodAuto);
   const entrada = p.agua - antes;
@@ -302,11 +324,16 @@ function avanzarPueblo(estado, p, dt, dtHoras, punta, estiaje, frenoCrec, lluvia
     recienSaneamiento = true;
   }
   let residual = 0, alivio = 0, aprovechado = 0, reboseColector = 0, cargaBruta = 0;
+  let lluviaBruta = 0, lluviaSeparada = 0;
   if(p.saneamientoActivo){
     // 1. Lo que entra al colector: aguas residuales + la lluvia NO separada.
     const aguasResiduales = servido * S.fraccionResidual;
     const escorrentia = p.habitantes * CONFIG.lluvia.litrosPorHabHora * lluvia * dtHoras;
-    const separada = escorrentia * fraccionSeparada(p);
+    // Lo que se saca del colector: lo que separa la mejora de la tienda MÁS lo
+    // que se lleva la red de pluviales del mapa, sin pasar de lo que llueve.
+    const separada = Math.min(escorrentia,
+      escorrentia * fraccionSeparada(p) + capacidadPluviales(estado) * dtHoras);
+    lluviaBruta = escorrentia; lluviaSeparada = separada;
     // La red de pluviales, además de aliviar el colector, recoge agua limpia
     aprovechado = separada * CONFIG.pluviales.fraccionAprovechada;
     if(aprovechado > 0) p.agua = Math.min(cap, p.agua + aprovechado);
@@ -356,7 +383,7 @@ function avanzarPueblo(estado, p, dt, dtHoras, punta, estiaje, frenoCrec, lluvia
       prodLps: dt > 0 ? entrada / dt : 0,
       produciendo: entrada > 0.0001,
       bombeoAuto: prodAuto > 0.0001,
-      averiada: !!p.averia,
+      averiada: (estado.averias || []).length > 0,
       desgaste: p.desgaste || 0,
       eficiencia: ef,
       saneamiento: p.saneamientoActivo,
@@ -367,6 +394,8 @@ function avanzarPueblo(estado, p, dt, dtHoras, punta, estiaje, frenoCrec, lluvia
       // Cuánto llega al colector, en L/h: sin este número la UI no puede decir
       // si el tapón está en la tubería o en la depuradora.
       cargaLh: dtHoras > 0 ? cargaBruta / dtHoras : 0,
+      lluviaLh: dtHoras > 0 ? lluviaBruta / dtHoras : 0,
+      separadaLh: dtHoras > 0 ? lluviaSeparada / dtHoras : 0,
       tanqueFrac: capacidadTanque(p, estado) > 0 ? p.tanqueAgua / capacidadTanque(p, estado) : 0,
       aprovechadoLh: dtHoras > 0 ? aprovechado / dtHoras : 0,
       calidad: calidadServicio(p)
@@ -383,13 +412,21 @@ export function avanzar(estado, dt){
   // Qué hay enganchado a la red AHORA. Se cachea aquí, una vez por paso: cada
   // consulta de capacidad o caudal la usa, y recorrer la red en todas sería
   // absurdo. Una pieza sin tubería al pueblo no cuenta.
-  estado._conectado    = inventarioConectado(estado, 'abastecimiento');
-  estado._conectadoSan = inventarioConectado(estado, 'saneamiento');
-  // Y por qué diámetro pasa todo eso. Hoy hay una sola conducción de cada tipo
-  // (las que salen del pueblo de origen), así que las redes son comunes; cuando
-  // cada pueblo tenga las suyas, esto pasará a calcularse por pueblo.
-  estado._red    = cuelloDeBotella(estado, 'abastecimiento');
-  estado._redSan = cuelloDeBotella(estado, 'saneamiento');
+  // Qué hay enganchado a CADA red y por qué diámetro pasa. Se recorre una vez
+  // por paso: cada consulta de capacidad, caudal o tratamiento lo usa. Hoy las
+  // redes son comunes (salen todas del pueblo de origen); cuando cada pueblo
+  // tenga las suyas, esto pasará a calcularse por pueblo.
+  estado._conectadoRed = {};
+  estado._redes = {};
+  for(const clave of Object.keys(CONFIG.redes)){
+    estado._conectadoRed[clave] = inventarioConectado(estado, clave);
+    estado._redes[clave] = cuelloDeBotella(estado, clave);
+  }
+  // Atajos para lo que se consulta a todas horas
+  estado._conectado    = estado._conectadoRed.abastecimiento;
+  estado._conectadoSan = estado._conectadoRed.saneamiento;
+  estado._red          = estado._redes.abastecimiento;
+  estado._redSan       = estado._redes.saneamiento;
   const dtHoras = dt * eco.horasPorSegundo;
   const punta = coefHora(estado.horas);
   const estiaje = factorEstiaje(estado.horas);

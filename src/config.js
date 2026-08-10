@@ -154,7 +154,10 @@ export const CONFIG = {
     litrosPorHabHora: 6      // escorrentía urbana por habitante y hora, a lluvia máxima
   },
   pluviales: {
-    fraccionAprovechada: 0.35   // de lo separado, cuánto se recoge para el depósito
+    fraccionAprovechada: 0.35,  // de lo separado, cuánto se recoge para el depósito
+    // Un pluvial va sobradísimo respecto a la línea de agua potable: lo suyo son
+    // puntas cortas y bestiales, no un caudal sostenido.
+    holguraPluvial: 3.0
   },
   /* ---------- CALIDAD DEL PUEBLO ----------
      Multiplica el crecimiento: un pueblo con buen saneamiento crece mejor. */
@@ -234,25 +237,21 @@ export const CONFIG = {
     avisoEn: 0.45            // a partir de aquí, la UI avisa
   },
 
-  /* ---------- EL OPERARIO ----------
-     Cada cierto tiempo aparece en la escena y hay que pillarlo antes de que se
-     vaya: engrasa la instalación entera y trae una prima. Da algo que mirar
-     mientras se clica y premia estar atento. */
-  visita: {
-    cadaMinSeg: 30, cadaMaxSeg: 70,   // cada cuánto asoma (segundos reales)
-    duracionSeg: 9,                   // lo que se queda antes de irse
-    primaSegundos: 25,                // le paga al jugador lo que ganaría en X s
-    primaMinima: 40                   // ...o esto, lo que sea mayor
-  },
-
+  
   /* ---------- AVERÍAS (por pueblo) ---------- */
   averias: {
     probBasePorHora: 0.006,
     factorDesgaste: 0.10,
     riesgoAutobomba: 4,
-    recorteProduccion: 1.0,
-    costeReparacionManual: 200,
-    reparacionAutoHoras: 6,
+    // Una avería CAE SOBRE UNA PIEZA del mapa y la deja fuera de servicio: se
+    // ve dónde se ha roto y se nota qué has dejado de tener. Se arregla yendo
+    // allí y clicando encima, y cada golpe de llave cuesta dinero. No hay botón
+    // que lo resuelva de lejos: si algo se rompe, hay que ir.
+    clicsParaReparar: 6,
+    clicsMenosPorNivelMant: 1,   // el personal contratado deja menos faena manual
+    clicsMinimos: 2,             // ...pero nunca la quita del todo
+    costePorClic: 60,
+    reparacionAutoHoras: 6,      // el personal termina el arreglo solo, con tiempo
     reparacionAutoFactor: 0.7
   },
 
@@ -378,8 +377,17 @@ export const CONFIG = {
     },
     saneamiento: {
       nombre: 'Saneamiento', corto: 'colector', color: '#a3a15c',
-      piezas: ['depuradora', 'tanque'],
+      piezas: ['depuradora'],
       desc: 'Se lleva las aguas residuales del pueblo hasta la depuradora.'
+    },
+    // La tercera. Al principio TODO va por el colector unitario: la lluvia y las
+    // fecales juntas, que es lo que revienta la depuradora en tormenta. Separar
+    // es tender esta red aparte, y lo que separa es lo que le quepa: por eso
+    // aquí el diámetro no es un detalle, es la mecánica entera.
+    pluviales: {
+      nombre: 'Pluviales', corto: 'pluvial', color: '#60a5fa',
+      piezas: ['tanque'], requiere: 'pluviales',
+      desc: 'Saca el agua de lluvia del colector antes de que sature la depuradora.'
     }
   },
 
@@ -509,7 +517,8 @@ export const CONFIG = {
       texto: 'Ya está abastecido. A partir de aquí: engrasa la instalación para ' +
              'que no pierda fuelle, explora más lejos para encontrar pueblos a ' +
              'los que dar servicio, y vigila «La red»: por la tubería estrecha ' +
-             'que has puesto no cabe agua para siempre.' }
+             'que has puesto no cabe agua para siempre. Y cuando algo se rompa, ' +
+             'búscalo en el mapa: se repara clicando encima.' }
   ],
 
   /* ---------- GUARDADO ----------

@@ -28,7 +28,6 @@ function crearPueblo(def){
     racha: 0,
     mejoras: mejorasACero(),
     autobombaActivo: false,
-    averia: null,               // null | { desde: horas }
     saneamientoActivo: false,   // se activa al superar el umbral de habitantes
     tanqueAgua: 0,              // litros retenidos ahora en el tanque de tormentas
     desgaste: 0                 // 0..1; a más desgaste, menos rinde todo
@@ -61,6 +60,9 @@ export class Estado {
     this.dnActual = CONFIG.tuberia.diametros[0].id;
     // Y para qué red se tiende: agua potable o colector.
     this.redActual = 'abastecimiento';
+    // Averías VIVAS sobre el mapa: { col, fila, clics, desde }. Son de la
+    // mancomunidad, no de un pueblo: lo que se rompe es una pieza concreta.
+    this.averias = [];
     // Modo de construcción: qué está intentando colocar el jugador ahora mismo
     this.modo = { tipo: null, elemento: null, trazado: [], deInventario: false };
     this.seleccion = null;          // { col, fila } de la casilla que miras
@@ -93,7 +95,8 @@ export class Estado {
       mapa: comprimir(this.mapa),
       inventario: this.inventario, camara: this.camara,
       construcciones: this.construcciones, tuberias: this.tuberias,
-      dnActual: this.dnActual, redActual: this.redActual, tutorial: this.tutorial
+      dnActual: this.dnActual, redActual: this.redActual,
+      averias: this.averias, tutorial: this.tutorial
     };
     try{
       localStorage.setItem(CONFIG.guardado.clave, JSON.stringify(datos));
@@ -143,6 +146,10 @@ export class Estado {
       }
       estado.dnActual = d.dnActual || CONFIG.tuberia.diametros[0].id;
       estado.redActual = d.redActual || 'abastecimiento';
+      // Una partida con la avería vieja (del pueblo entero) empieza limpia: el
+      // formato no es convertible y arrastrarlo daría un pueblo roto sin sitio
+      // donde ir a arreglarlo.
+      estado.averias = (d.averias || []).filter(a => a && a.col != null);
       estado.tutorial = d.tutorial || { paso: 0, terminado: false };
       if(d.camara) estado.camara = d.camara;
       return true;

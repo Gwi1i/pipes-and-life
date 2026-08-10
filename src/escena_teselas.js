@@ -108,7 +108,6 @@ export class EscenaTeselas extends Escena {
     this.edificios();
     this.velosDeAmbiente();
     this.clima(dt);
-    this.dibujarOperario();
     this.destellosClic();
   }
 

@@ -179,7 +179,8 @@ body{
 .mejora.inalcanzable .m-coste{color:var(--critico);}
 
 /* ---------- LA RED: DIÁMETROS ---------- */
-.red-tabs{display:grid; grid-template-columns:repeat(2,1fr); gap:5px;}
+.red-tabs{display:flex; flex-wrap:wrap; gap:5px;}
+.red-tabs .red-tab{flex:1 1 30%;}
 .red-tab{
   cursor:pointer; padding:7px 6px; border-radius:4px;
   background:rgba(255,255,255,.02); border:1px solid var(--linea-viva);

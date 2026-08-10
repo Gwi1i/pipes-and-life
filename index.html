@@ -68,14 +68,8 @@
     <!-- Panel derecho -->
     <aside class="lateral derecha">
       <section class="bloque" id="panel-averias" style="display:none">
-        <h2>Avería</h2>
-        <div class="averias">
-          <p class="averia-estado" id="averia-estado">—</p>
-          <button class="btn-reparar" data-accion="repararAveria" id="btn-reparar">
-            <span>Reparar ahora</span>
-            <b id="averia-coste">—</b>
-          </button>
-        </div>
+        <h2>Averías</h2>
+        <div id="averias-lista" class="tienda"></div>
       </section>
 
       <section class="bloque guia" id="panel-guia" style="display:none">
@@ -152,8 +146,11 @@
           <p><b>3. Automatiza.</b> La captación produce agua sola (pero en verano
              el estiaje la baja). El consumo tiene punta de mañana y de tarde:
              por eso importa el depósito. Reparte el dinero entre las mejoras.</p>
-          <p><b>4. Vigila las averías.</b> La instalación se rompe y para la
-             producción. Repárala a mano, o contrata personal que lo haga solo.</p>
+          <p><b>4. Vigila las averías.</b> Lo que se rompe es una PIEZA concreta
+             del mapa: se marca en rojo y deja de contar en la red. Ve hasta ella
+             y clica encima hasta arreglarla; cada golpe de llave cuesta dinero.
+             El personal de mantenimiento deja menos faena y acaba el arreglo
+             solo, pero tarda.</p>
           <p><b>5. Haz crecer el pueblo.</b> Bien servido y sin cortes, crece y
              pide más agua. Mal servido, se despuebla. No te duermas.</p>
           <p><b>6. Depura antes de verter.</b> Al crecer, el pueblo genera aguas
@@ -168,9 +165,11 @@
              su tramo más estrecho. Cuando el pueblo deje de crecer o la captación
              se ahogue, renueva la línea ENTERA a un diámetro mayor: media
              conducción nueva no sirve de nada.</p>
-          <p><b>9. Gestiona la lluvia.</b> Con el tercer pueblo llegan la red de
-             pluviales y el tanque de tormentas: en otoño la lluvia satura la
-             depuradora y se alivia crudo al río. Sepárala y retén la punta.</p>
+          <p><b>9. Gestiona la lluvia.</b> Con el tercer pueblo se abre la red de
+             PLUVIALES: una tercera red, aparte del colector. Sin ella la lluvia
+             y las fecales bajan juntas y en otoño revientan la depuradora. La
+             pluvial se lleva lo que le quepa —otra vez, el diámetro— y el tanque
+             de tormentas corta la punta.</p>
         </div>
       </section>
     </aside>

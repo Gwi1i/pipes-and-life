@@ -62,11 +62,17 @@ export class EscenaMapa extends Escena {
 
   /** Centra la cámara en el pueblo de origen (solo la primera vez). */
   centrarEnOrigen(estado){
-    const M = CONFIG.mapaMundo, t = this.tam;
-    estado.camara.x = M.origen.col * t + t / 2 - this.ancho / 2;
-    estado.camara.y = M.origen.fila * t + t / 2 - this.alto / 2;
-    this.limitarCamara(estado);
+    const M = CONFIG.mapaMundo;
+    this.centrarEn(estado, M.origen.col, M.origen.fila);
     this.centrada = true;
+  }
+
+  /** Lleva la vista a una casilla concreta (el botón de "ir a la avería"). */
+  centrarEn(estado, col, fila){
+    const t = this.tam;
+    estado.camara.x = col * t + t / 2 - this.ancho / 2;
+    estado.camara.y = fila * t + t / 2 - this.alto / 2;
+    this.limitarCamara(estado);
   }
 
   /** Que la cámara no se salga del mundo. */
@@ -116,7 +122,7 @@ export class EscenaMapa extends Escena {
     this.previsualizar(estado);
     this.marcoResaltado(estado);
     this.velosDeAmbiente();
-    this.dibujarOperario();
+    this.dibujarAverias(estado);
     this.destellosClic();
   }
 
@@ -303,6 +309,42 @@ export class EscenaMapa extends Escena {
       ctx.font = `700 ${Math.round(t * 0.3)}px IBM Plex Mono, ui-monospace, monospace`;
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText(def.nombre[0], x + t / 2, y + t / 2);
+      ctx.textBaseline = 'alphabetic';
+    }
+  }
+
+  /* ---------- lo que está roto ---------- */
+  /**
+   * La avería tiene SITIO. Se pinta encima de la pieza parada, con la brigada
+   * esperando y los golpes de llave que le faltan: así el jugador sabe adónde
+   * ir y cuánto le queda sin abrir ningún panel.
+   */
+  dibujarAverias(estado){
+    const ctx = this.ctx, t = this.tam;
+    for(const av of estado.averias || []){
+      const x = av.col * t - estado.camara.x, y = av.fila * t - estado.camara.y;
+      if(x < -t || y < -t || x > this._W || y > this._H) continue;
+      const cx = x + t / 2, cy = y + t / 2;
+      const pulso = 0.5 + Math.abs(Math.sin(this.tiempo * 3)) * 0.5;
+
+      // halo de aviso, para localizarla de un vistazo aunque esté lejos
+      const halo = ctx.createRadialGradient(cx, cy, 0, cx, cy, t * 0.75);
+      halo.addColorStop(0, `rgba(239,68,68,${0.30 * pulso})`);
+      halo.addColorStop(1, 'rgba(239,68,68,0)');
+      ctx.fillStyle = halo;
+      ctx.fillRect(x - t * 0.25, y - t * 0.25, t * 1.5, t * 1.5);
+
+      ctx.strokeStyle = CONFIG.color.critico;
+      ctx.lineWidth = 2 + pulso * 1.5;
+      ctx.strokeRect(x + 2, y + 2, t - 4, t - 4);
+
+      // la llave inglesa y los clics que faltan
+      ctx.font = `${Math.round(t * 0.34)}px serif`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('🔧', cx, y + t * 0.26);
+      ctx.font = `700 ${Math.round(t * 0.2)}px IBM Plex Mono, ui-monospace, monospace`;
+      ctx.fillStyle = CONFIG.color.critico;
+      ctx.fillText('×' + av.clics, cx, y + t * 0.78);
       ctx.textBaseline = 'alphabetic';
     }
   }

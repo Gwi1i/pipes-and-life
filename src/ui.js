@@ -71,11 +71,15 @@ export class UI {
     const lineas = lineasConectadas(estado, clave);
     const p = estado.activo;
     const objetivo = diametro(estado.dnActual);
+    // Las pluviales no existen hasta que se abre el tercer pueblo
+    const disponibles = Object.entries(CONFIG.redes)
+      .filter(([, r]) => r.requiere !== 'pluviales' || estado.pluvialesActivas);
 
     // La firma lleva BANDERAS, no los textos: los avisos del saneamiento llevan
     // caudales que cambian cada fotograma, y meterlos aquí reconstruía el panel
     // entero 10 veces por segundo.
-    const firma = [clave, estado.dnActual, cuello.dn, lineas.length,
+    const firma = [clave, disponibles.length, estado.dnActual, cuello.dn, lineas.length,
+                   Math.round((resultado.lluviaLh || 0) / 500),
                    !!resultado.rebosando, !!resultado.aliviando,
                    redEstrangula(p, estado),
                    p.habitantes >= cuello.def.habitantesMax * 0.95,
@@ -87,7 +91,7 @@ export class UI {
     // Pestañas: se trabaja sobre UNA red cada vez. Mezclarlas en una sola lista
     // era un lío: no se sabía si el tramo que ibas a renovar llevaba agua limpia
     // o sucia.
-    const pestanas = Object.entries(CONFIG.redes).map(([k, r]) => `
+    const pestanas = disponibles.map(([k, r]) => `
       <button class="red-tab${k === clave ? ' activa' : ''}"
               data-accion="elegirRed" data-clave="${k}" style="--tono:${r.color}">
         ${r.nombre}</button>`).join('');
@@ -166,6 +170,14 @@ export class UI {
         tocado techo: por ${cuello.def.nombre} no cabe agua para más de
         ${formatear(cuello.def.habitantesMax)} habitantes. Hasta que no renueves la
         línea entera, no crece.`);
+    } else if(clave === 'pluviales'){
+      if(!cuello.lineas.length) fuera.push(`No hay red de pluviales: la lluvia y las
+        aguas fecales van juntas por el mismo colector, y en tormenta eso es lo que
+        revienta a la depuradora. Tender una línea aparte saca del colector todo lo
+        que le quepa.`);
+      else if(resultado.lluviaLh > 0) fuera.push(`Ahora mismo caen
+        ${formatear(resultado.lluviaLh)} L/h sobre el pueblo y tu red se lleva
+        ${formatear(resultado.separadaLh)} L/h. El resto baja por el colector.`);
     } else {
       if(p.saneamientoActivo && !(estado._conectadoSan || {}).depuradora)
         fuera.push(`El pueblo ya genera aguas residuales y no hay ninguna depuradora
@@ -303,9 +315,9 @@ export class UI {
         return `<span class="pestana bloqueada" title="Se abre al crecer el primer pueblo">🔒 ?</span>`;
       }
       const activa = i === estado.puebloActivo ? ' activa' : '';
-      const alerta = p.averia ? ' con-averia' : '';
+      const alerta = (estado.averias || []).length ? ' con-averia' : '';
       return `<button class="pestana${activa}${alerta}" data-accion="cambiarPueblo" data-clave="${i}">
-        ${p.nombre}${p.averia ? ' ⚠' : ''}</button>`;
+        ${p.nombre}${(estado.averias || []).length ? ' ⚠' : ''}</button>`;
     }).join('');
   }
 
@@ -405,22 +417,36 @@ export class UI {
 
   /* ---------------- AVERÍAS (del pueblo activo) ---------------- */
 
+  /**
+   * El panel NO repara: lista lo que está roto y te lleva hasta ello. Arreglarlo
+   * es ir a la casilla y clicar encima. Un botón que lo resolviera desde aquí
+   * volvería a convertir la avería en un trámite de panel, que es justo lo que
+   * se ha quitado.
+   */
   refrescarAverias(estado){
-    const p = estado.activo;
     const panel = document.getElementById('panel-averias');
-    const hayAveria = !!p.averia;
-    const tieneEquipo = p.mejoras.mantenimiento > 0;
+    const lista = estado.averias || [];
+    const firma = lista.map(a => `${a.col},${a.fila},${a.clics}`).join('|');
+    if(this.cache.averiasFirma === firma) return;
+    this.cache.averiasFirma = firma;
 
-    panel.style.display = hayAveria ? '' : 'none';
-    if(!hayAveria) return;
+    panel.style.display = lista.length ? '' : 'none';
+    if(!lista.length) return;
 
-    document.getElementById('averia-estado').textContent = tieneEquipo
-      ? 'El equipo de mantenimiento está en camino…'
-      : 'Producción automática parada. Bombea a mano o repara.';
-    const btn = document.getElementById('btn-reparar');
-    btn.style.display = tieneEquipo ? 'none' : '';
-    document.getElementById('averia-coste').textContent =
-      formatear(CONFIG.averias.costeReparacionManual) + ' €';
+    const coste = CONFIG.averias.costePorClic;
+    document.getElementById('averias-lista').innerHTML = lista.map((av, i) => {
+      const obra = estado.construcciones.find(o => o.col === av.col && o.fila === av.fila);
+      const def = obra ? CONFIG.construibles[obra.tipo] : null;
+      return `
+        <button class="mejora obra averia" data-accion="irAAveria" data-clave="${i}"
+                style="--tono:${CONFIG.color.critico}">
+          <span class="m-cab"><span class="m-nom">${def ? def.nombre : 'Instalación'} · fuera de servicio</span></span>
+          <span class="m-desc">Está fuera de servicio y no cuenta en la red.
+            Ve hasta ella y clica encima: le faltan <b>${av.clics}</b> golpes de
+            llave, a ${formatear(coste)} € cada uno.</span>
+          <span class="m-coste">ir ahí →</span>
+        </button>`;
+    }).join('');
   }
 
   /* ---------------- CAUCE (común) ---------------- */
@@ -522,7 +548,7 @@ export class UI {
 
   /** Pinta una alerta en la pestaña de cualquier pueblo con avería. */
   marcarPestanaAveria(estado){
-    const firma = estado.pueblos.map(p => (p.averia ? 1 : 0)).join('') + '|' + estado.puebloActivo;
+    const firma = (estado.averias || []).length + '|' + estado.puebloActivo;
     if(this.cache.pestanaFirma === firma) return;
     this.cache.pestanaFirma = firma;
     this.reconstruirPestanas(estado);
@@ -536,7 +562,7 @@ export class UI {
     const prodAhora = caudalCaptacion(p, estado) * (resultado.estiaje || 1) * 3600 / 1000;
 
     let tendencia, claseT;
-    if(p.averia){ tendencia = 'Avería activa'; claseT = 'critico'; }
+    if((estado.averias || []).length){ tendencia = 'Avería sin reparar'; claseT = 'critico'; }
     else if(resultado.servicio >= P.servicioBueno){
       const listo = p.racha >= P.horasBuenServicioParaCrecer;
       tendencia = listo ? 'Creciendo ▲' : 'Ganándose la confianza…';
