@@ -14,7 +14,7 @@ import { CONFIG } from './config.js';
 import { celdaEn, clicsParaDestapar, esAlcanzable, puedeColocar,
          puedeSeguirTrazado, costeTrazado, costeCasillaTuberia,
          diametro, nivelDiametro, redDe } from './mapa.js';
-import { poderExpansion } from './simulacion.js';
+import { poderExpansion, llenadoVaso } from './simulacion.js';
 import { formatear } from './util.js';
 import { limitar } from './util.js';
 import { Escena, mezclarColor, oscurecer, aclarar } from './escena.js';
@@ -138,6 +138,17 @@ export class EscenaMapa extends Escena {
     ctx.fillRect(x, y, t, t);
 
     if(celda.tipo === 'agua' || celda.tipo === 'lago'){
+      // Agua envenenada por los lixiviados de un vertedero: se pone turbia y
+      // parda. Tiene que verse desde lejos, porque es un daño que te has hecho
+      // tú y que además le quita caudal a tu captación.
+      if(celda.insalubre > 0){
+        ctx.fillStyle = mezclarColor(def.color, '#6b5a2a', Math.min(0.75, celda.insalubre));
+        ctx.fillRect(x, y, t, t);
+        ctx.fillStyle = `rgba(120,100,40,${0.20 * celda.insalubre})`;
+        for(const [dx, dy, r] of [[0.28, 0.34, 0.09], [0.62, 0.55, 0.07], [0.44, 0.72, 0.06]]){
+          ctx.beginPath(); ctx.arc(x + t * dx, y + t * dy, t * r, 0, 7); ctx.fill();
+        }
+      }
       ctx.strokeStyle = 'rgba(255,255,255,0.16)'; ctx.lineWidth = 1.5;
       for(let k = 0; k < 2; k++){
         const yy = y + t * (0.34 + k * 0.32);
@@ -319,6 +330,20 @@ export class EscenaMapa extends Escena {
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText(def.nombre[0], x + t / 2, y + t / 2);
       ctx.textBaseline = 'alphabetic';
+
+      // El vertedero enseña cuánto vaso le queda: cuando se llena deja de
+      // tragar, y eso hay que verlo venir sin abrir ningún panel.
+      if(obra.tipo === 'vertedero'){
+        const frac = llenadoVaso(obra);
+        const bx = x + (t - lado) / 2, by = y + t * 0.80, bw = lado, bh = Math.max(3, t * 0.07);
+        ctx.fillStyle = 'rgba(6,15,24,0.75)';
+        ctx.fillRect(bx, by, bw, bh);
+        ctx.fillStyle = frac >= 1 ? CONFIG.color.critico
+                      : (frac > 0.8 ? CONFIG.color.alarma : '#a8896a');
+        ctx.fillRect(bx, by, bw * frac, bh);
+        ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 1;
+        ctx.strokeRect(bx + 0.5, by + 0.5, bw - 1, bh - 1);
+      }
     }
   }
 
@@ -372,6 +397,7 @@ export class EscenaMapa extends Escena {
       ctx.strokeStyle = v.ok ? CONFIG.color.ok : CONFIG.color.critico;
       ctx.lineWidth = 3; ctx.strokeRect(x + 1.5, y + 1.5, t - 3, t - 3);
       if(!v.ok) this.cartel(v.motivo, x + t / 2, y - 6, CONFIG.color.critico);
+      else if(v.aviso) this.cartel(v.aviso, x + t / 2, y - 6, CONFIG.color.alarma);
       else this.cartel(formatear(CONFIG.construibles[estado.modo.elemento].coste) + ' €',
                        x + t / 2, y - 6, CONFIG.color.ok);
       return;

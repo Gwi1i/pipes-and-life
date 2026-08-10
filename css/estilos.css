@@ -196,6 +196,16 @@ body{
 }
 .sv-desc{font-size:10.5px; line-height:1.45; color:var(--tenue);}
 
+.vaso{
+  height:10px; border-radius:5px; overflow:hidden;
+  background:rgba(8,18,28,.8); border:1px solid var(--linea-viva);
+}
+.vaso i{
+  display:block; height:100%;
+  background:linear-gradient(90deg,#6b5b3e,#a8896a);
+  transition:width .3s linear;
+}
+
 /* ---------- LA RED: DIÁMETROS ---------- */
 .red-tabs{display:flex; flex-wrap:wrap; gap:5px;}
 .red-tabs .red-tab{flex:1 1 30%;}

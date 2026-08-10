@@ -13,7 +13,8 @@ import { CONFIG } from './config.js';
 import { capacidad, demandaMedia, caudalCaptacion, costeMejora,
          requisitosAutobomba, capacidadTanque, nombreEstacion,
          poderExpansion, redEstrangula, capacidadTratamiento,
-         servicioActivo, nivelReciclaje, fraccionesActivas } from './simulacion.js';
+         servicioActivo, nivelReciclaje, fraccionesActivas,
+         llenadoVaso, capacidadVaso, costeAmpliarVertedero } from './simulacion.js';
 import { formatear } from './util.js';
 import { celdaEn, piezaDeRuina, diametro, nivelDiametro, costeRenovar,
          lineasConectadas, cuelloDeBotella, escalaDeRed } from './mapa.js';
@@ -299,6 +300,56 @@ export class UI {
           <span class="m-coste">se une a tu red</span>
         </button>`;
     }
+  }
+
+  /**
+   * La instalación seleccionada. Existe sobre todo por el VERTEDERO: sin poder
+   * mirarlo no hay forma de saber cuánto le queda de vaso, y cuando se llena la
+   * basura se queda en la calle sin que se entienda por qué.
+   */
+  refrescarObra(estado){
+    const panel = document.getElementById('panel-obra');
+    const sel = estado.seleccion;
+    const obra = sel && estado.construcciones.find(o => o.col === sel.col && o.fila === sel.fila);
+    const firma = obra ? `${obra.tipo},${obra.col},${obra.fila},${obra.nivel || 1},${Math.round(obra.lleno || 0)}` : 'nada';
+    if(this.cache.obraFirma === firma) return;
+    this.cache.obraFirma = firma;
+
+    if(!obra){ panel.style.display = 'none'; return; }
+    panel.style.display = '';
+    const def = CONFIG.construibles[obra.tipo];
+    const cont = document.getElementById('obra');
+
+    if(obra.tipo !== 'vertedero'){
+      cont.innerHTML = `
+        <p class="red-cuello" style="--tono:${def.color}"><b>${def.nombre}</b></p>
+        <p class="m-desc">${def.desc}</p>`;
+      return;
+    }
+
+    const V = CONFIG.residuos.vertedero;
+    const pct = Math.round(llenadoVaso(obra) * 100);
+    const nivel = obra.nivel || 1;
+    const tope = nivel >= V.nivelMax;
+    const coste = costeAmpliarVertedero(obra);
+    cont.innerHTML = `
+      <p class="red-cuello" style="--tono:${def.color}">
+        <b>${def.nombre}</b> · nivel ${nivel}
+      </p>
+      <div class="vaso"><i style="width:${pct}%"></i></div>
+      <p class="m-desc">${formatear(obra.lleno || 0)} de ${formatear(capacidadVaso(obra))} t
+        (${pct} %).${pct >= 100
+          ? ' <b class="critico">LLENO: ya no admite nada.</b>'
+          : ''}</p>
+      <p class="m-desc">Gotea sobre el agua que tiene alrededor, y cuanto más
+        lleno, más. Un agua insalubre da menos caudal.</p>
+      ${tope
+        ? '<p class="m-desc">No se puede ampliar más: abre otro vertedero en otra parte.</p>'
+        : `<button class="mejora obra" data-accion="ampliarVertedero" style="--tono:${def.color}">
+             <span class="m-cab"><span class="m-nom">Ampliar el vaso</span></span>
+             <span class="m-desc">+${formatear(V.capacidadPorNivel)} t de capacidad.</span>
+             <span class="m-coste">${formatear(coste)} €</span>
+           </button>`}`;
   }
 
   /** El almacén: piezas rescatadas, listas para colocar sin volver a pagarlas. */
@@ -621,6 +672,7 @@ export class UI {
 
     this.refrescarGuia(estado);
     this.refrescarRed(estado, resultado);
+    this.refrescarObra(estado);
     this.refrescarHallazgo(estado);
     this.refrescarAlmacen(estado);
     this.refrescarTienda(estado);

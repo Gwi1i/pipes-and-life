@@ -19,7 +19,8 @@ import { celdaEn, clicarCasilla, clicsParaDestapar, puedeColocar,
          piezaDeRuina, diametro, nivelDiametro, costeRenovar,
          averiaEn } from './mapa.js';
 import { avanzar, bombear, costeMejora, requisitosAutobomba, engrasar,
-         poderExpansion, servicioActivo } from './simulacion.js';
+         poderExpansion, servicioActivo, costeAmpliarVertedero,
+         capacidadVaso } from './simulacion.js';
 import { formatear } from './util.js';
 import { comprobar as comprobarGuia, saltar as saltarGuia } from './tutorial.js';
 
@@ -157,6 +158,25 @@ function procesarAcciones(){
         break;
       }
 
+      case 'ampliarVertedero': {
+        const sel = estado.seleccion;
+        const obra = sel && estado.construcciones.find(
+          o => o.col === sel.col && o.fila === sel.fila && o.tipo === 'vertedero');
+        if(!obra) break;
+        const V = CONFIG.residuos.vertedero;
+        if((obra.nivel || 1) >= V.nivelMax){ avisar('Ese vaso ya no da más de sí.'); break; }
+        const coste = costeAmpliarVertedero(obra);
+        if(!estado.puedePagar(coste)){
+          avisar(`Ampliar el vaso cuesta ${formatear(coste)} € y no hay fondos.`);
+          break;
+        }
+        estado.pagar(coste);
+        obra.nivel = (obra.nivel || 1) + 1;
+        estado.anotar(`Vertedero ampliado a nivel ${obra.nivel}: ${formatear(capacidadVaso(obra))} t de capacidad.`, 'ok');
+        ui.invalidarCache();
+        break;
+      }
+
       case 'saltarGuia':
         saltarGuia(estado);
         estado.anotar('Guía saltada. Suerte ahí fuera.', 'info');
@@ -184,6 +204,11 @@ function procesarAcciones(){
 
         // Lo roto manda: si hay una avería aquí, el clic la repara
         if(clicAveria(col, fila)){ escena.destello(a.x, a.y); break; }
+
+        // Clicar una instalación tuya la selecciona para verla de cerca: es la
+        // única forma de saber cómo va de lleno un vertedero.
+        const obraAqui = estado.construcciones.find(o => o.col === col && o.fila === fila);
+        if(obraAqui){ estado.seleccion = { col, fila }; break; }
 
         if(celda.oculta){
           const r = clicarCasilla(estado.mapa, col, fila, poderExpansion(estado));

@@ -20,7 +20,8 @@
 
 import { CONFIG } from './config.js';
 import { limitar } from './util.js';
-import { inventarioConectado, cuelloDeBotella } from './mapa.js';
+import { inventarioConectado, cuelloDeBotella, construccionesConectadas,
+         celdaEn } from './mapa.js';
 
 /* ---------------- HELPERS POR PUEBLO ---------------- */
 
@@ -141,9 +142,37 @@ export function capacidadRecogida(estado){
   return red.def.caudalMax * (1 - red.def.fugas);
 }
 
-/** Lo que tragan los vertederos conectados, en t/h. */
+/** Los vertederos enganchados a la carretera, con su llenado y su nivel. */
+export function vertederosConectados(estado){
+  return construccionesConectadas(estado, 'residuos').filter(o => o.tipo === 'vertedero');
+}
+
+/** Toneladas que le caben a un vertedero según su nivel. */
+export function capacidadVaso(obra){
+  const V = CONFIG.residuos.vertedero;
+  return V.capacidadBase + ((obra.nivel || 1) - 1) * V.capacidadPorNivel;
+}
+
+/** Cuánto le queda de vida, de 0 (nuevo) a 1 (hasta arriba). */
+export function llenadoVaso(obra){
+  return Math.min(1, (obra.lleno || 0) / capacidadVaso(obra));
+}
+
+/** Lo que cuesta la siguiente ampliación de ese vertedero. */
+export function costeAmpliarVertedero(obra){
+  const V = CONFIG.residuos.vertedero;
+  return Math.round(V.costeAmpliarBase * Math.pow(V.factorAmpliar, (obra.nivel || 1) - 1));
+}
+
+/**
+ * Lo que tragan los vertederos, en t/h. Un vertedero LLENO no traga nada: deja
+ * de contar y la basura se queda en la calle hasta que amplías o abres otro.
+ */
 export function capacidadVertido(estado){
-  return (piezasDeRed(estado, 'residuos').vertedero || 0) * CONFIG.residuos.capacidadVertedero;
+  let t = 0;
+  for(const v of vertederosConectados(estado))
+    if(llenadoVaso(v) < 1) t += CONFIG.residuos.capacidadVertedero;
+  return t;
 }
 
 /** Nivel efectivo de reciclaje: hace falta la mejora Y una planta conectada. */
@@ -171,6 +200,79 @@ export function precioMedioReciclaje(pueblo, estado){
   let euros = 0;
   for(const f of fraccionesActivas(pueblo, estado)) euros += f.parte * f.precio;
   return euros * CONFIG.residuos.escalaEconomica;
+}
+
+/**
+ * Reparte lo enterrado entre los vertederos con hueco. Se llena antes el que va
+ * más vacío, que es lo que haría cualquiera: así los que abres nuevos alivian de
+ * verdad al que estaba a punto de reventar.
+ */
+function llenarVertederos(estado, toneladas){
+  const libres = vertederosConectados(estado)
+    .filter(v => llenadoVaso(v) < 1)
+    .sort((a, b) => llenadoVaso(a) - llenadoVaso(b));
+  if(!libres.length) return;
+  let queda = toneladas;
+  for(const v of libres){
+    const hueco = capacidadVaso(v) - (v.lleno || 0);
+    const mete = Math.min(queda, hueco);
+    v.lleno = (v.lleno || 0) + mete;
+    queda -= mete;
+    if(queda <= 0) break;
+  }
+}
+
+/**
+ * LIXIVIADOS. Un vertedero con carga gotea, y lo que gotea acaba en el agua que
+ * tiene cerca: esa masa se vuelve insalubre (`celda.insalubre`, 0..1) y da menos
+ * caudal. Es lo que castiga poner el vertedero al lado de tu propia captación.
+ *
+ * Muta el mapa y el cauce común, así que vive aquí y no en un helper de lectura.
+ */
+function lixiviar(estado, dtHoras){
+  const V = CONFIG.residuos.vertedero;
+  // OJO: aquí NO se filtra por conectados. Un vertedero con basura dentro gotea
+  // esté o no enganchado a la carretera; si dependiera de la conexión, levantar
+  // el último tramo de vía pararía la fuga por arte de magia.
+  const vertederos = (estado.construcciones || [])
+    .filter(o => o.tipo === 'vertedero' && (o.lleno || 0) > 0);
+  if(!vertederos.length) return 0;
+
+  let alCauce = 0;
+  for(const v of vertederos){
+    const carga = llenadoVaso(v);          // cuanto más lleno, más gotea
+    const goteo = carga * V.lixiviadoPorHora * dtHoras;
+    if(goteo <= 0) continue;
+    for(let df = -V.radioContaminacion; df <= V.radioContaminacion; df++){
+      for(let dc = -V.radioContaminacion; dc <= V.radioContaminacion; dc++){
+        const celda = celdaEn(estado.mapa, v.col + dc, v.fila + df);
+        if(!celda || (celda.tipo !== 'agua' && celda.tipo !== 'lago')) continue;
+        const dist = Math.hypot(dc, df);
+        if(dist > V.radioContaminacion) continue;
+        // más cerca, más veneno
+        const cerca = 1 - dist / (V.radioContaminacion + 1);
+        celda.insalubre = Math.min(1, (celda.insalubre || 0) + goteo * cerca);
+      }
+    }
+    alCauce += goteo * V.aporteCauce;
+  }
+  return alCauce;
+}
+
+/**
+ * Cómo de envenenada está el agua que tomas: la media de las casillas donde
+ * tienes captaciones. Recorta el caudal, porque un agua mala hay que tratarla
+ * más y rinde menos.
+ */
+export function insalubridadCaptacion(estado){
+  const tomas = (estado.construcciones || []).filter(o => o.tipo === 'captacion');
+  if(!tomas.length) return 0;
+  let suma = 0;
+  for(const t of tomas){
+    const celda = celdaEn(estado.mapa, t.col, t.fila);
+    suma += (celda && celda.insalubre) || 0;
+  }
+  return suma / tomas.length;
 }
 
 /**
@@ -224,7 +326,9 @@ export function caudalCaptacion(pueblo, estado){
   const bruto = pueblo.mejoras.captacion * CONFIG.mejoras.captacion.caudalPorNivel
               + (piezas(estado).captacion || 0) * CONFIG.aportePorPieza.captacion;
   const red = redDelPueblo(estado);
-  return Math.min(bruto, red.def.caudalMax) * rendimientoRed(estado);
+  // Un agua envenenada por los lixiviados rinde menos: hay que tratarla más.
+  const veneno = 1 - insalubridadCaptacion(estado);
+  return Math.min(bruto, red.def.caudalMax) * rendimientoRed(estado) * veneno;
 }
 
 /** ¿Está la tubería estrangulando la captación? Para poder avisar en la UI. */
@@ -468,6 +572,9 @@ function avanzarPueblo(estado, p, dt, dtHoras, punta, estiaje, frenoCrec, lluvia
     const enterrada = Math.min(aVertedero, tragadero);
     reciclada = recogida - aVertedero;
 
+    // Lo enterrado OCUPA SITIO: se reparte entre los vasos que aún admiten.
+    if(enterrada > 0) llenarVertederos(estado, enterrada);
+
     ingresoResiduos = reciclada * precioMedioReciclaje(p, estado)
                     - enterrada * R.costeVertidoTonelada * R.escalaEconomica;
     estado.dinero += ingresoResiduos;
@@ -561,9 +668,15 @@ export function avanzar(estado, dt){
     if(i === estado.puebloActivo) activoRes = out.res;
   }
 
+  // Los vertederos gotean sobre las masas de agua cercanas, y parte acaba en el
+  // cauce común. Va aquí, fuera del bucle de pueblos: los vertederos son de la
+  // mancomunidad, no de un pueblo.
+  const lixiviados = lixiviar(estado, dtHoras);
+
   // Cauce común: sube con el vertido crudo, baja solo poco a poco
   estado.contaminacion = Math.max(0, Math.min(K.contaminacionMax,
-    estado.contaminacion + totalResidual * K.porLitroResidual - K.recuperacionNatural * dtHoras));
+    estado.contaminacion + totalResidual * K.porLitroResidual + lixiviados
+    - K.recuperacionNatural * dtHoras));
 
   // Multa por contaminación (a la caja común)
   const multa = (estado.contaminacion / K.contaminacionMax) * K.multaMaxPorHora * dtHoras;

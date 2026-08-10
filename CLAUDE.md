@@ -295,6 +295,22 @@ qué se mide. Al calibrar una escala nueva, mueve `caudalMax` y `habitantesMax`
 JUNTOS: con caudales sueltos una pista de tierra daba para cinco mil habitantes y
 la carretera no era un cuello de botella nunca.
 
+**El vertedero se llena, y gotea.** Cada uno lleva su `nivel` y sus toneladas
+(`lleno`) EN LA PROPIA CONSTRUCCIÓN, no en el pueblo: son de la mancomunidad y
+hay varios. Lleno deja de tragar y la basura se queda en la calle; se amplía
+seleccionándolo en el mapa (`panel-obra`) o se abre otro. Y suelta lixiviados
+sobre las masas de agua a `radioContaminacion`: sube `celda.insalubre` (0..1, se
+guarda en la partida) y eso RECORTA `caudalCaptacion()` — envenenar tu propia
+toma es el castigo por ponerlo mal. `lixiviar()` recorre TODOS los vertederos con
+carga, **no solo los conectados**: si dependiera de la conexión, levantar el
+último tramo de carretera pararía la fuga por arte de magia.
+
+**Colocarlo mal se AVISA, no se prohíbe.** El vertedero tenía `lejosDeAgua: 3` y
+el lixiviado alcanza 3: un vertedero legal no podía envenenar nada nunca, o sea
+que la mecánica nacía muerta. Ahora lleva `avisaSiAguaCerca` y `puedeColocar()`
+devuelve `{ok:true, aviso}`: la previsualización lo pinta en ámbar y tú decides.
+Un juego que no te deja equivocarte no tiene nada que decidir.
+
 **Residuos: el primer servicio que INGRESA.** La basura
 (`residuos.kgPorHabitanteDia`) sale del pueblo por carretera. Sin vía tendida no
 sale nada —como en pluviales, aquí no hay red vieja de la que tirar—; lo que no

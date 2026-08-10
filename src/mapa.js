@@ -244,6 +244,11 @@ export function puedeColocar(celdas, construcciones, tipo, col, fila){
   if(def.lejosDeAgua && hayAguaCerca(celdas, col, fila, def.lejosDeAgua))
     return { ok: false, motivo: 'Hay agua cerca: sale mucho más barato captarla que perforar.' };
 
+  // Jugadas legales pero malas. Se deja hacer y se avisa: prohibirlas quita la
+  // decisión, y un juego que no te deja equivocarte no tiene nada que decidir.
+  if(def.avisaSiAguaCerca && hayAguaCerca(celdas, col, fila, def.avisaSiAguaCerca))
+    return { ok: true, motivo: '', aviso: 'Hay agua a tiro: los lixiviados la envenenarán.' };
+
   return { ok: true, motivo: '' };
 }
 
@@ -459,14 +464,17 @@ export function inventarioConectado(estado, red = 'abastecimiento'){
    hallazgos ya ha resuelto. */
 
 export function comprimir(celdas){
-  const abiertas = [], progresos = [], resueltos = [];
+  const abiertas = [], progresos = [], resueltos = [], insalubres = [];
   recorrer(celdas, (celda, c, f) => {
     const i = f * CONFIG.mapaMundo.cols + c;
     if(!celda.oculta) abiertas.push(i);
     else if(celda.progreso > 0) progresos.push([i, celda.progreso]);
     if(celda.resuelto) resueltos.push(i);
+    // El agua envenenada por los lixiviados hay que guardarla: es daño que se
+    // queda, y regenerar el terreno de la semilla lo borraría.
+    if(celda.insalubre > 0) insalubres.push([i, +celda.insalubre.toFixed(3)]);
   });
-  return { abiertas, progresos, resueltos };
+  return { abiertas, progresos, resueltos, insalubres };
 }
 
 /** La pieza que esconde una ruina, ya resuelta o no. */
@@ -477,4 +485,5 @@ export function aplicarGuardado(celdas, datos){
   for(const i of datos.abiertas || []) if(celdas[i]) celdas[i].oculta = false;
   for(const [i, p] of datos.progresos || []) if(celdas[i]) celdas[i].progreso = p;
   for(const i of datos.resueltos || []) if(celdas[i]) celdas[i].resuelto = true;
+  for(const [i, v] of datos.insalubres || []) if(celdas[i]) celdas[i].insalubre = v;
 }

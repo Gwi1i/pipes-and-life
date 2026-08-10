@@ -238,6 +238,25 @@ export const CONFIG = {
     // sube la escala SIN tocar las proporciones entre fracciones.
     escalaEconomica: 5,
     capacidadVertedero: 0.10,    // t/h que traga cada vertedero conectado
+
+    /* EL VERTEDERO SE LLENA. No es un agujero sin fondo: tiene toneladas de
+       capacidad y se acaban. Cuando se llena deja de tragar, la basura se queda
+       en la calle y hay que decidir: ampliar el que tienes (más caro cada nivel)
+       o abrir otro en otra parte.
+
+       Y gotea. Un vertedero con carga suelta LIXIVIADOS que ensucian las masas de
+       agua que tiene cerca, y un agua insalubre da menos caudal: si pones el
+       vertedero al lado de tu captación, te envenenas tú solo. Esa es la
+       decisión que hace que el sitio importe. */
+    vertedero: {
+      capacidadBase: 400,        // toneladas que caben de fábrica
+      capacidadPorNivel: 350,    // lo que suma cada ampliación
+      nivelMax: 5,
+      costeAmpliarBase: 1200, factorAmpliar: 1.7,
+      radioContaminacion: 3,     // casillas a la redonda que puede envenenar
+      lixiviadoPorHora: 0.030,   // cuánto sube la insalubridad del agua cercana
+      aporteCauce: 0.25          // parte de eso que además ensucia el cauce común
+    },
     // Basura sin recoger: se acumula (0..1) y castiga la salubridad del pueblo,
     // que multiplica el crecimiento igual que hace la calidad del saneamiento.
     // Ojo con estos dos: la primera versión limpiaba la calle más deprisa de lo
@@ -437,9 +456,14 @@ export const CONFIG = {
     },
     vertedero: {
       nombre: 'Vertedero', coste: 1800, orden: 7, color: '#a8896a',
-      terreno: ['hierba', 'bosque'], lejosDeAgua: 3,
-      desc: 'Donde acaba lo que no se recicla. LEJOS del agua: nadie quiere ' +
-            'lixiviados en el río.'
+      terreno: ['hierba', 'bosque'],
+      // NO se prohíbe ponerlo junto al agua, se AVISA. Prohibirlo dejaba la
+      // mecánica de lixiviados muerta —un vertedero legal nunca podía alcanzar
+      // una masa de agua— y encima quitaba la decisión: que puedas equivocarte
+      // a sabiendas es justo lo que hace que el sitio importe.
+      avisaSiAguaCerca: 3,
+      desc: 'Donde acaba lo que no se recicla. Se llena, y gotea: si lo pones ' +
+            'junto al agua, la envenenas y tu captación rinde menos.'
     },
     reciclaje: {
       nombre: 'Planta de reciclaje', coste: 6000, orden: 8, color: '#4ade80',
