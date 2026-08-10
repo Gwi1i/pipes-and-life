@@ -107,6 +107,17 @@ límites que hay que respetar:
     exploración: niebla, hallazgos, construcciones, las redes con su color y su
     grosor, las averías y la previsualización de lo que vas a hacer. Hereda de
     `Escena` para reutilizar destellos, clima y helpers de color.
+    Las piezas van en ISOMETRICA de verdad (`isoCaja`/`isoCilindro`/`isoTejado`):
+    tapa en rombo y dos laterales, con la luz SIEMPRE de arriba a la izquierda
+    —tapa clara, cara izquierda media, derecha oscura—. Si añades una pieza y no
+    respetas esa luz, canta al lado de las demás. Cada silueta se dibuja en su
+    caja de t x t y `dibujarConstrucciones` la escala, así ningún dibujo sabe el
+    tamaño final. El terreno son FICHAS separadas y redondeadas
+    (`CONFIG.estiloMapa`), no un campo continuo con rejilla encima: es lo que
+    hace que parezca un tablero de piezas. Y `contornoExplorado()` rodea el
+    territorio abierto con una línea dorada dibujando solo el lado de cada
+    casilla que da a lo desconocido, así el conjunto sale como un perímetro
+    único.
     Todo el dibujo es Canvas 2D a mano y corre por casilla visible y fotograma,
     así que las operaciones son baratas a propósito. Tres cosas cargan con casi
     todo el aspecto: el BISEL (luz arriba, sombra abajo) que despega la casilla

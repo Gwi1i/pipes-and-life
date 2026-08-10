@@ -117,6 +117,7 @@ export class EscenaMapa extends Escena {
       }
     }
 
+    this.contornoExplorado(estado, c0, f0, c1, f1);
     this.dibujarTuberias(estado);
     // Los hallazgos van DESPUES de las tuberias: pintados junto al terreno, una
     // conduccion que pasara por encima del pueblo lo tapaba, y el icono del
@@ -233,20 +234,38 @@ export class EscenaMapa extends Escena {
     }
 
     if(celda.tipo === 'bosque'){
-      // Arboleda: copas redondas y SOLAPADAS, como en la referencia. Cinco
-      // pequeñas leen mucho mejor que tres grandes: parece bosque, no setos.
-      const puntos = [[0.28, 0.34], [0.58, 0.28], [0.42, 0.52], [0.72, 0.55], [0.30, 0.70], [0.60, 0.78]];
-      const oscuro = oscurecer(CONFIG.terrenos.bosque.color, 0.40);
-      const claro = aclarar(CONFIG.terrenos.bosque.color, 0.16);
+      // CONIFERAS en 3/4, no copas redondas vistas desde arriba. Cada una son
+      // tres faldones superpuestos que estrechan hacia arriba, con la mitad
+      // izquierda clara y la derecha en sombra: misma luz que los edificios.
+      const puntos = [[0.30, 0.62, 1.00], [0.62, 0.52, 0.86], [0.46, 0.82, 0.72]];
+      const verde = CONFIG.terrenos.bosque.color;
+      const claro = aclarar(verde, 0.20), oscuro = oscurecer(verde, 0.42);
       for(let i = 0; i < puntos.length; i++){
-        const px = x + t * puntos[i][0], py = y + t * puntos[i][1];
-        const r = t * (0.11 + ((v * 3 + i * 0.23) % 1) * 0.035);
-        ctx.fillStyle = 'rgba(0,0,0,0.20)';
-        ctx.beginPath(); ctx.ellipse(px + r * 0.3, py + r * 0.55, r * 0.85, r * 0.35, 0, 0, 7); ctx.fill();
-        ctx.fillStyle = oscuro;
-        ctx.beginPath(); ctx.arc(px, py, r, 0, 7); ctx.fill();
-        ctx.fillStyle = claro;
-        ctx.beginPath(); ctx.arc(px - r * 0.25, py - r * 0.28, r * 0.5, 0, 7); ctx.fill();
+        const px = x + t * puntos[i][0], baseY = y + t * puntos[i][1];
+        const esc = puntos[i][2] * (0.9 + ((v * 3 + i * 0.29) % 1) * 0.25);
+        const an = t * 0.15 * esc, alto = t * 0.42 * esc;
+
+        ctx.fillStyle = 'rgba(0,0,0,0.22)';
+        ctx.beginPath();
+        ctx.ellipse(px + an * 0.35, baseY, an * 0.95, an * 0.34, 0, 0, 7);
+        ctx.fill();
+
+        ctx.fillStyle = '#4a3524';
+        ctx.fillRect(px - an * 0.10, baseY - alto * 0.20, an * 0.20, alto * 0.20);
+
+        for(let k = 0; k < 3; k++){
+          const w = an * (1 - k * 0.24);
+          const yb = baseY - alto * (0.16 + k * 0.26);
+          const yt = yb - alto * 0.36;
+          ctx.fillStyle = claro;
+          ctx.beginPath();
+          ctx.moveTo(px, yt); ctx.lineTo(px - w, yb); ctx.lineTo(px, yb);
+          ctx.closePath(); ctx.fill();
+          ctx.fillStyle = oscuro;
+          ctx.beginPath();
+          ctx.moveTo(px, yt); ctx.lineTo(px + w, yb); ctx.lineTo(px, yb);
+          ctx.closePath(); ctx.fill();
+        }
       }
       return;
     }
@@ -300,6 +319,43 @@ export class EscenaMapa extends Escena {
       if(vec.tipo !== 'agua' && vec.tipo !== 'lago') continue;
       ctx.fillRect(l[2], l[3], l[4], l[5]);
     }
+  }
+
+  /**
+   * EL CONTORNO DE LO EXPLORADO. Una linea dorada que rodea todo el territorio
+   * abierto, no tesela a tesela: se dibuja solo el lado de cada casilla que da a
+   * lo desconocido, y el conjunto sale como un unico perimetro continuo.
+   *
+   * Es lo que convierte un monton de casillas destapadas en TU territorio.
+   */
+  contornoExplorado(estado, c0, f0, c1, f1){
+    const ctx = this.ctx, t = this.tam, E = CONFIG.estiloMapa;
+    const g = t * E.separacion;
+    ctx.strokeStyle = CONFIG.color.dorado;
+    ctx.lineWidth = Math.max(2, t * 0.045);
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    for(let f = f0; f <= f1; f++){
+      for(let c = c0; c <= c1; c++){
+        const celda = celdaEn(estado.mapa, c, f);
+        if(!celda || celda.oculta) continue;
+        const x = Math.round(c * t - estado.camara.x) + g;
+        const y = Math.round(f * t - estado.camara.y) + g;
+        const l = t - g * 2;
+        // solo el lado que da a lo desconocido (o al borde del mundo)
+        const lados = [[0, -1, x, y, x + l, y],
+                       [0,  1, x, y + l, x + l, y + l],
+                       [-1, 0, x, y, x, y + l],
+                       [1,  0, x + l, y, x + l, y + l]];
+        for(const s of lados){
+          const vec = celdaEn(estado.mapa, c + s[0], f + s[1]);
+          if(vec && !vec.oculta) continue;
+          ctx.moveTo(s[2], s[3]); ctx.lineTo(s[4], s[5]);
+        }
+      }
+    }
+    ctx.stroke();
+    ctx.lineCap = 'butt';
   }
 
   /** Pasada de hallazgos: pueblos, ruinas y yacimientos, por encima de las redes. */
@@ -537,134 +593,188 @@ export class EscenaMapa extends Escena {
     }
   }
 
-  /** Caja con volumen: cara frontal, lateral en sombra y tapa iluminada. */
-  caja3d(x, y, an, al, prof, color){
+  /* ================================================================
+     VOLUMEN ISOMÉTRICO
+     Las piezas se dibujan en 3/4 de verdad: una cara superior en rombo y dos
+     laterales. La luz viene de arriba a la izquierda SIEMPRE, así que la tapa
+     es la más clara, la cara izquierda intermedia y la derecha la oscura. Si
+     añades una pieza nueva, respétalo o cantará al lado de las demás.
+
+     `W` es el medio ancho del rombo en pantalla y `H` su medio alto; la
+     proporción 2:1 (H = W/2) es la isometría de toda la vida.
+     ================================================================ */
+
+  /** Prisma isométrico: la caja base de casi todo. */
+  isoCaja(cx, baseY, W, H, alto, color){
     const ctx = this.ctx;
-    ctx.fillStyle = color;
-    ctx.fillRect(x, y, an, al);                                   // frente
-    ctx.fillStyle = oscurecer(color, 0.35);
-    ctx.beginPath();                                              // lateral
-    ctx.moveTo(x + an, y); ctx.lineTo(x + an + prof, y - prof);
-    ctx.lineTo(x + an + prof, y + al - prof); ctx.lineTo(x + an, y + al);
+    const ty = baseY - alto;
+    const izq = aclarar(color, 0.02);
+    const der = oscurecer(color, 0.34);
+    const tapa = aclarar(color, 0.30);
+
+    ctx.fillStyle = izq;                      // cara izquierda
+    ctx.beginPath();
+    ctx.moveTo(cx - W, baseY - H * 0);
+    ctx.lineTo(cx, baseY + H);
+    ctx.lineTo(cx, ty + H);
+    ctx.lineTo(cx - W, ty);
     ctx.closePath(); ctx.fill();
-    ctx.fillStyle = aclarar(color, 0.28);
-    ctx.beginPath();                                              // tapa
-    ctx.moveTo(x, y); ctx.lineTo(x + prof, y - prof);
-    ctx.lineTo(x + an + prof, y - prof); ctx.lineTo(x + an, y);
+
+    ctx.fillStyle = der;                      // cara derecha
+    ctx.beginPath();
+    ctx.moveTo(cx + W, baseY);
+    ctx.lineTo(cx, baseY + H);
+    ctx.lineTo(cx, ty + H);
+    ctx.lineTo(cx + W, ty);
     ctx.closePath(); ctx.fill();
+
+    ctx.fillStyle = tapa;                     // tapa en rombo
+    ctx.beginPath();
+    ctx.moveTo(cx, ty - H);
+    ctx.lineTo(cx + W, ty);
+    ctx.lineTo(cx, ty + H);
+    ctx.lineTo(cx - W, ty);
+    ctx.closePath(); ctx.fill();
+
+    ctx.strokeStyle = oscurecer(color, 0.55);
+    ctx.lineWidth = Math.max(0.8, W * 0.05);
+    ctx.stroke();
   }
 
-  /** Cilindro en pie: depósitos, tanques y decantadores. */
-  cilindro(cx, baseY, r, alto, color){
+  /** Cilindro isométrico: depósitos, tanques y decantadores. */
+  isoCilindro(cx, baseY, W, H, alto, color){
     const ctx = this.ctx;
-    const ry = r * 0.34;
-    ctx.fillStyle = color;
-    ctx.fillRect(cx - r, baseY - alto, r * 2, alto);
+    const ty = baseY - alto;
+    ctx.fillStyle = color;                    // cuerpo
+    ctx.beginPath();
+    ctx.moveTo(cx - W, baseY);
+    ctx.lineTo(cx - W, ty);
+    ctx.ellipse(cx, ty, W, H, 0, Math.PI, 0);
+    ctx.lineTo(cx + W, baseY);
+    ctx.ellipse(cx, baseY, W, H, 0, 0, Math.PI);
+    ctx.closePath(); ctx.fill();
+    // sombra propia en el lado derecho, que es de donde no viene la luz
     ctx.fillStyle = oscurecer(color, 0.30);
-    ctx.fillRect(cx + r * 0.35, baseY - alto, r * 0.65, alto);
-    ctx.beginPath(); ctx.ellipse(cx, baseY, r, ry, 0, 0, 7); ctx.fill();
-    ctx.fillStyle = aclarar(color, 0.30);
-    ctx.beginPath(); ctx.ellipse(cx, baseY - alto, r, ry, 0, 0, 7); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(cx + W * 0.30, baseY + H * 0.55);
+    ctx.lineTo(cx + W * 0.30, ty);
+    ctx.ellipse(cx, ty, W, H, 0, 0, Math.PI * 0.35);
+    ctx.lineTo(cx + W, baseY);
+    ctx.ellipse(cx, baseY, W, H, 0, 0, Math.PI * 0.5);
+    ctx.closePath(); ctx.fill();
+
+    ctx.fillStyle = aclarar(color, 0.32);     // tapa
+    ctx.beginPath(); ctx.ellipse(cx, ty, W, H, 0, 0, 7); ctx.fill();
+    ctx.strokeStyle = oscurecer(color, 0.5);
+    ctx.lineWidth = Math.max(0.8, W * 0.05);
+    ctx.stroke();
   }
 
-  /** La forma concreta de cada pieza. */
+  /** Tejado a dos aguas isométrico, para las casetas. */
+  isoTejado(cx, ty, W, H, alto, color){
+    const ctx = this.ctx;
+    ctx.fillStyle = aclarar(color, 0.18);
+    ctx.beginPath();
+    ctx.moveTo(cx - W, ty); ctx.lineTo(cx, ty - H);
+    ctx.lineTo(cx, ty - H - alto); ctx.lineTo(cx - W, ty - alto);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = oscurecer(color, 0.22);
+    ctx.beginPath();
+    ctx.moveTo(cx + W, ty); ctx.lineTo(cx, ty - H);
+    ctx.lineTo(cx, ty - H - alto); ctx.lineTo(cx + W, ty - alto);
+    ctx.closePath(); ctx.fill();
+  }
+
+  /** La forma concreta de cada pieza, ya en isométrica. */
   silueta(tipo, x, y, t, color){
     const ctx = this.ctx;
-    const cx = x + t * 0.5, suelo = y + t * 0.78;
+    const cx = x + t * 0.5, suelo = y + t * 0.70;
+    const W = t * 0.30, H = W * 0.5;
 
     switch(tipo){
-      case 'deposito':        // depósito elevado sobre patas
-        ctx.strokeStyle = oscurecer(color, 0.45);
+      case 'deposito':        // depósito elevado sobre su torreta
+        this.isoCaja(cx, suelo, W * 0.34, H * 0.34, t * 0.20, oscurecer(color, 0.42));
+        this.isoCilindro(cx, suelo - t * 0.20, W * 0.72, H * 0.72, t * 0.30, color);
+        break;
+
+      case 'bomba':           // caseta de bombeo con tejado y tubo
+        this.isoCaja(cx, suelo, W * 0.82, H * 0.82, t * 0.24, color);
+        this.isoTejado(cx, suelo - t * 0.24, W * 0.82, H * 0.82, t * 0.12, oscurecer(color, 0.15));
+        ctx.strokeStyle = aclarar(color, 0.40);
+        ctx.lineWidth = Math.max(2, t * 0.05);
+        ctx.beginPath();
+        ctx.moveTo(cx - W * 0.95, suelo - t * 0.04);
+        ctx.lineTo(cx - W * 0.95, suelo - t * 0.30);
+        ctx.stroke();
+        break;
+
+      case 'captacion':       // plataforma de toma sobre pilotes
+        ctx.strokeStyle = oscurecer(color, 0.50);
         ctx.lineWidth = Math.max(1.5, t * 0.035);
         ctx.beginPath();
-        ctx.moveTo(cx - t * 0.14, suelo); ctx.lineTo(cx - t * 0.08, suelo - t * 0.24);
-        ctx.moveTo(cx + t * 0.14, suelo); ctx.lineTo(cx + t * 0.08, suelo - t * 0.24);
+        ctx.moveTo(cx - W * 0.5, suelo + t * 0.10); ctx.lineTo(cx - W * 0.5, suelo - t * 0.02);
+        ctx.moveTo(cx + W * 0.5, suelo + t * 0.10); ctx.lineTo(cx + W * 0.5, suelo - t * 0.02);
         ctx.stroke();
-        this.cilindro(cx, suelo - t * 0.20, t * 0.20, t * 0.26, color);
+        this.isoCaja(cx, suelo, W * 0.9, H * 0.9, t * 0.10, color);
+        this.isoCaja(cx, suelo - t * 0.10, W * 0.42, H * 0.42, t * 0.16, aclarar(color, 0.12));
         break;
 
-      case 'bomba': {         // caseta de bombeo con su tubo de impulsión
-        this.caja3d(cx - t * 0.20, suelo - t * 0.30, t * 0.36, t * 0.30, t * 0.09, color);
-        ctx.strokeStyle = aclarar(color, 0.35);
-        ctx.lineWidth = Math.max(2, t * 0.055);
-        ctx.beginPath();
-        ctx.moveTo(cx - t * 0.24, suelo - t * 0.06);
-        ctx.lineTo(cx - t * 0.24, suelo - t * 0.34);
-        ctx.lineTo(cx - t * 0.06, suelo - t * 0.34);
-        ctx.stroke();
-        break;
-      }
-
-      case 'captacion': {     // toma sobre el agua: plataforma sobre pilotes
-        ctx.fillStyle = oscurecer(color, 0.40);
-        ctx.fillRect(cx - t * 0.06, suelo - t * 0.10, t * 0.05, t * 0.20);
-        ctx.fillRect(cx + t * 0.02, suelo - t * 0.10, t * 0.05, t * 0.20);
-        this.caja3d(cx - t * 0.18, suelo - t * 0.26, t * 0.32, t * 0.18, t * 0.07, color);
-        ctx.strokeStyle = oscurecer(color, 0.5); ctx.lineWidth = 1;
-        for(let i = 1; i < 4; i++){
-          const px = cx - t * 0.18 + (t * 0.32 * i) / 4;
+      case 'depuradora':      // dos decantadores con su puente
+        for(const dx of [-0.42, 0.42]){
+          this.isoCilindro(cx + W * dx, suelo, W * 0.46, H * 0.46, t * 0.09, color);
+          ctx.fillStyle = mezclarColor(color, '#08251a', 0.55);
           ctx.beginPath();
-          ctx.moveTo(px, suelo - t * 0.26); ctx.lineTo(px, suelo - t * 0.08);
-          ctx.stroke();
+          ctx.ellipse(cx + W * dx, suelo - t * 0.09, W * 0.34, H * 0.34, 0, 0, 7);
+          ctx.fill();
         }
-        break;
-      }
-
-      case 'depuradora':      // dos decantadores circulares con su puente
-        for(const dx of [-0.15, 0.15]){
-          const px = cx + t * dx;
-          ctx.fillStyle = oscurecer(color, 0.35);
-          ctx.beginPath(); ctx.ellipse(px, suelo - t * 0.08, t * 0.13, t * 0.07, 0, 0, 7); ctx.fill();
-          ctx.fillStyle = mezclarColor(color, '#0b2a1c', 0.45);
-          ctx.beginPath(); ctx.ellipse(px, suelo - t * 0.09, t * 0.10, t * 0.05, 0, 0, 7); ctx.fill();
-          ctx.strokeStyle = aclarar(color, 0.35); ctx.lineWidth = Math.max(1, t * 0.022);
-          ctx.beginPath();
-          ctx.moveTo(px - t * 0.13, suelo - t * 0.09); ctx.lineTo(px + t * 0.13, suelo - t * 0.09);
-          ctx.stroke();
-        }
-        break;
-
-      case 'tanque':          // tanque de tormentas: cilindro ancho y bajo
-        this.cilindro(cx, suelo, t * 0.26, t * 0.20, color);
-        break;
-
-      case 'acuifero':        // sondeo: castillete sobre la boca del pozo
-        ctx.strokeStyle = color; ctx.lineWidth = Math.max(1.5, t * 0.035);
+        ctx.strokeStyle = aclarar(color, 0.45);
+        ctx.lineWidth = Math.max(1, t * 0.022);
         ctx.beginPath();
-        ctx.moveTo(cx - t * 0.16, suelo); ctx.lineTo(cx, suelo - t * 0.34);
-        ctx.lineTo(cx + t * 0.16, suelo);
-        ctx.moveTo(cx - t * 0.09, suelo - t * 0.15); ctx.lineTo(cx + t * 0.09, suelo - t * 0.15);
+        ctx.moveTo(cx - W * 0.85, suelo - t * 0.09);
+        ctx.lineTo(cx + W * 0.85, suelo - t * 0.09);
         ctx.stroke();
-        ctx.fillStyle = oscurecer(color, 0.3);
-        ctx.beginPath(); ctx.ellipse(cx, suelo, t * 0.10, t * 0.04, 0, 0, 7); ctx.fill();
+        break;
+
+      case 'tanque':          // tanque de tormentas: ancho y bajo
+        this.isoCilindro(cx, suelo, W * 0.92, H * 0.92, t * 0.16, color);
+        break;
+
+      case 'acuifero':        // castillete del sondeo
+        this.isoCaja(cx, suelo, W * 0.55, H * 0.55, t * 0.06, oscurecer(color, 0.35));
+        ctx.strokeStyle = color; ctx.lineWidth = Math.max(1.5, t * 0.032);
+        ctx.beginPath();
+        ctx.moveTo(cx - W * 0.5, suelo - t * 0.06); ctx.lineTo(cx, suelo - t * 0.34);
+        ctx.lineTo(cx + W * 0.5, suelo - t * 0.06);
+        ctx.moveTo(cx - W * 0.28, suelo - t * 0.20); ctx.lineTo(cx + W * 0.28, suelo - t * 0.20);
+        ctx.stroke();
         break;
 
       case 'vertedero': {     // montera de basura por capas
-        const capas = [[0.30, 0.00], [0.22, 0.09], [0.13, 0.16]];
+        const capas = [[1.00, 0.00, 0.10], [0.72, 0.09, 0.08], [0.42, 0.16, 0.06]];
         for(let i = 0; i < capas.length; i++){
-          const an = capas[i][0], sub = capas[i][1];
-          ctx.fillStyle = i % 2 ? oscurecer(color, 0.22) : color;
-          ctx.beginPath();
-          ctx.ellipse(cx, suelo - t * sub, t * an, t * (an * 0.42), 0, Math.PI, 0);
-          ctx.closePath(); ctx.fill();
+          const e = capas[i];
+          this.isoCilindro(cx, suelo - t * e[1], W * e[0], H * e[0], t * e[2],
+                           i % 2 ? oscurecer(color, 0.20) : color);
         }
         break;
       }
 
-      case 'reciclaje': {     // nave con el triángulo de las flechas
-        this.caja3d(cx - t * 0.22, suelo - t * 0.28, t * 0.40, t * 0.28, t * 0.08, color);
-        ctx.strokeStyle = '#0b1a12'; ctx.lineWidth = Math.max(1.5, t * 0.03);
-        const r = t * 0.09, cy = suelo - t * 0.15;
-        ctx.beginPath();
-        ctx.moveTo(cx - t * 0.02, cy - r);
-        ctx.lineTo(cx - t * 0.02 + r * 0.87, cy + r * 0.5);
-        ctx.lineTo(cx - t * 0.02 - r * 0.87, cy + r * 0.5);
-        ctx.closePath(); ctx.stroke();
+      case 'reciclaje':       // nave con el triángulo de las flechas
+        this.isoCaja(cx, suelo, W * 0.92, H * 0.92, t * 0.22, color);
+        this.isoTejado(cx, suelo - t * 0.22, W * 0.92, H * 0.92, t * 0.10, oscurecer(color, 0.18));
+        ctx.strokeStyle = '#0b1a12'; ctx.lineWidth = Math.max(1.5, t * 0.028);
+        {
+          const r = t * 0.075, cy = suelo - t * 0.14;
+          ctx.beginPath();
+          ctx.moveTo(cx, cy - r);
+          ctx.lineTo(cx + r * 0.87, cy + r * 0.5);
+          ctx.lineTo(cx - r * 0.87, cy + r * 0.5);
+          ctx.closePath(); ctx.stroke();
+        }
         break;
-      }
 
       default:
-        this.caja3d(cx - t * 0.18, suelo - t * 0.28, t * 0.34, t * 0.28, t * 0.08, color);
+        this.isoCaja(cx, suelo, W * 0.8, H * 0.8, t * 0.22, color);
     }
   }
 

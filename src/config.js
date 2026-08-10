@@ -685,6 +685,9 @@ export const CONFIG = {
     casaSeca:   '#6f8aa1',
     ok:         '#4ade80',
     alarma:     '#f5a524',
+    // El contorno del territorio ya explorado. Va aparte de `alarma` aunque se
+    // parezcan: uno avisa de un problema y el otro dice "esto es tuyo".
+    dorado:     '#e0b155',
     critico:    '#ef4444',
     premium:    '#c084fc',
     texto:      '#cfdce8',
