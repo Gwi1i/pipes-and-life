@@ -14,7 +14,7 @@ import { CONFIG } from './config.js';
 import { celdaEn, clicsParaDestapar, esAlcanzable, puedeColocar,
          puedeSeguirTrazado, costeTrazado, costeCasillaTuberia,
          diametro, nivelDiametro, redDe } from './mapa.js';
-import { poderExpansion, llenadoVaso } from './simulacion.js';
+import { poderExpansion, llenadoVaso, factorEstiaje } from './simulacion.js';
 import { formatear } from './util.js';
 import { limitar } from './util.js';
 import { Escena, mezclarColor, oscurecer, aclarar } from './escena.js';
@@ -99,6 +99,9 @@ export class EscenaMapa extends Escena {
 
     // El coste de cada casilla depende de cómo lleves el abastecimiento
     this.poder = poderExpansion(estado);
+    // El estiaje se cachea aquí: lo consulta cada casilla de agua y recalcularlo
+    // mil veces por fotograma no tendría ningún sentido.
+    this.estiaje = factorEstiaje(estado.horas);
 
     const t = this.tam, M = CONFIG.mapaMundo;
     const c0 = Math.max(0, Math.floor(estado.camara.x / t));
@@ -192,25 +195,72 @@ export class EscenaMapa extends Escena {
 
   }
 
-  /** Agua: ondas que corren, sin oscurecer tanto que pierda el color. */
+  /**
+   * El agua CORRE. Las ondas no se mueven en el sitio: se desplazan siguiendo el
+   * cauce, y para saber por dónde va se mira si la casilla tiene agua a los
+   * lados (corriente horizontal) o arriba y abajo (vertical).
+   *
+   * Y el ESTIAJE se ve. En verano el río baja y deja lecho al descubierto por
+   * las orillas. Es el dato que ya calcula la simulación, puesto en pantalla:
+   * hasta ahora el estiaje solo existía en un número del panel.
+   */
   pintarAgua(celda, c, f, x, y, t, base){
     const ctx = this.ctx;
+    const mapa = this._estado && this._estado.mapa;
+
+    // ¿Por dónde va la corriente? Se deduce de los vecinos con agua.
+    let horizontal = true;
+    if(mapa){
+      const esAgua = (dc, df) => {
+        const v = celdaEn(mapa, c + dc, f + df);
+        return !!v && (v.tipo === 'agua' || v.tipo === 'lago');
+      };
+      const lados = (esAgua(-1, 0) ? 1 : 0) + (esAgua(1, 0) ? 1 : 0);
+      const vert = (esAgua(0, -1) ? 1 : 0) + (esAgua(0, 1) ? 1 : 0);
+      horizontal = lados >= vert;
+    }
+
+    // Lecho al descubierto por el estiaje: cuanto menos caudal, más orilla seca.
+    // Ojo con la normalización: `factorEstiaje` va de factorMin a factorMax y el
+    // máximo pasa de 1, así que restarle a 1 daba negativo casi todo el año y el
+    // lecho no aparecía nunca.
+    const Q = CONFIG.estiaje;
+    const seco = limitar((Q.factorMax - this.estiaje) / (Q.factorMax - Q.factorMin), 0, 1) * 0.34;
+    if(seco > 0.01){
+      ctx.fillStyle = 'rgba(150,132,96,0.55)';
+      const b = t * seco * 0.5;
+      if(horizontal){ ctx.fillRect(x, y, t, b); ctx.fillRect(x, y + t - b, t, b); }
+      else { ctx.fillRect(x, y, b, t); ctx.fillRect(x + t - b, y, b, t); }
+    }
+
     if(celda.insalubre > 0){
       ctx.fillStyle = `rgba(130,110,50,${0.22 * celda.insalubre})`;
       for(const p of [[0.28, 0.34, 0.10], [0.62, 0.55, 0.08], [0.44, 0.72, 0.07]]){
         ctx.beginPath(); ctx.arc(x + t * p[0], y + t * p[1], t * p[2], 0, 7); ctx.fill();
       }
     }
-    const desf = c * 0.7 + f * 1.3;
+
+    // Las crestas se DESPLAZAN a lo largo del cauce. El desfase por casilla hace
+    // que el río se lea como una corriente continua y no como celdas sueltas.
+    const corre = this.tiempo * t * 0.28;
     for(let k = 0; k < 2; k++){
-      ctx.strokeStyle = `rgba(255,255,255,${0.16 - k * 0.05})`;
-      ctx.lineWidth = Math.max(1, t * 0.022);
-      const yy = y + t * (0.32 + k * 0.30);
+      ctx.strokeStyle = `rgba(255,255,255,${0.17 - k * 0.05})`;
+      ctx.lineWidth = Math.max(1, t * 0.024);
+      const carril = 0.32 + k * 0.30;
+      const paso = t / 6;
       ctx.beginPath();
       for(let i = 0; i <= 6; i++){
-        const xx = x + (t * i) / 6;
-        const oy = Math.sin(i * 1.1 + this.tiempo * 1.5 + desf + k) * t * 0.03;
-        i ? ctx.lineTo(xx, yy + oy) : ctx.moveTo(xx, yy + oy);
+        let px, py;
+        if(horizontal){
+          px = x + paso * i;
+          const s = (px + corre + f * 37) * 0.09;
+          py = y + t * carril + Math.sin(s + k) * t * 0.035;
+        } else {
+          py = y + paso * i;
+          const s = (py + corre + c * 37) * 0.09;
+          px = x + t * carril + Math.sin(s + k) * t * 0.035;
+        }
+        i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
       }
       ctx.stroke();
     }
@@ -273,28 +323,52 @@ export class EscenaMapa extends Escena {
     }
 
     if(celda.tipo === 'montana'){
-      const cima = [x + t * 0.50, y + t * 0.24];
-      ctx.fillStyle = 'rgba(0,0,0,0.20)';
-      ctx.beginPath();
-      ctx.ellipse(x + t * 0.55, y + t * 0.80, t * 0.32, t * 0.08, 0, 0, 7); ctx.fill();
+      // La ÚLTIMA pieza de terreno que seguía siendo un triángulo plano. Ahora
+      // es un macizo isométrico: tres caras con la misma luz que los edificios
+      // —la izquierda al sol, la derecha en sombra, la trasera intermedia— y el
+      // nevero siguiendo la arista de la cumbre.
+      const roca = CONFIG.terrenos.montana.color;
+      const cx = x + t * 0.50, base = y + t * 0.78;
+      const W = t * 0.34, H = W * 0.5, alto = t * 0.46;
+      const cumbre = base - alto;
 
-      ctx.fillStyle = aclarar(CONFIG.terrenos.montana.color, 0.26);
+      ctx.fillStyle = 'rgba(0,0,0,0.22)';
       ctx.beginPath();
-      ctx.moveTo(cima[0], cima[1]); ctx.lineTo(x + t * 0.18, y + t * 0.78);
-      ctx.lineTo(x + t * 0.50, y + t * 0.78); ctx.closePath(); ctx.fill();
-      ctx.fillStyle = oscurecer(CONFIG.terrenos.montana.color, 0.20);
-      ctx.beginPath();
-      ctx.moveTo(cima[0], cima[1]); ctx.lineTo(x + t * 0.82, y + t * 0.78);
-      ctx.lineTo(x + t * 0.50, y + t * 0.78); ctx.closePath(); ctx.fill();
+      ctx.ellipse(cx + t * 0.04, base + t * 0.01, W * 1.05, H * 0.9, 0, 0, 7);
+      ctx.fill();
 
+      // cara trasera-izquierda
+      ctx.fillStyle = mezclarColor(roca, '#ffffff', 0.06);
+      ctx.beginPath();
+      ctx.moveTo(cx - W, base - H); ctx.lineTo(cx, base - H * 2);
+      ctx.lineTo(cx, cumbre); ctx.closePath(); ctx.fill();
+      // cara izquierda, la que da al sol
+      ctx.fillStyle = aclarar(roca, 0.26);
+      ctx.beginPath();
+      ctx.moveTo(cx - W, base - H); ctx.lineTo(cx, base);
+      ctx.lineTo(cx, cumbre); ctx.closePath(); ctx.fill();
+      // cara derecha, en sombra
+      ctx.fillStyle = oscurecer(roca, 0.30);
+      ctx.beginPath();
+      ctx.moveTo(cx + W, base - H); ctx.lineTo(cx, base);
+      ctx.lineTo(cx, cumbre); ctx.closePath(); ctx.fill();
+
+      // nevero: cuelga de la cumbre por las dos caras que se ven
       ctx.fillStyle = '#f2f7fb';
       ctx.beginPath();
-      ctx.moveTo(cima[0], cima[1]);
-      ctx.lineTo(x + t * 0.39, y + t * 0.41);
-      ctx.lineTo(x + t * 0.46, y + t * 0.37);
-      ctx.lineTo(x + t * 0.54, y + t * 0.44);
-      ctx.lineTo(x + t * 0.61, y + t * 0.41);
+      ctx.moveTo(cx, cumbre);
+      ctx.lineTo(cx - W * 0.42, cumbre + alto * 0.30);
+      ctx.lineTo(cx - W * 0.18, cumbre + alto * 0.22);
+      ctx.lineTo(cx, cumbre + alto * 0.34);
+      ctx.lineTo(cx + W * 0.20, cumbre + alto * 0.20);
+      ctx.lineTo(cx + W * 0.40, cumbre + alto * 0.30);
       ctx.closePath(); ctx.fill();
+
+      ctx.strokeStyle = oscurecer(roca, 0.45);
+      ctx.lineWidth = Math.max(0.8, t * 0.012);
+      ctx.beginPath();
+      ctx.moveTo(cx, base); ctx.lineTo(cx, cumbre);
+      ctx.stroke();
     }
   }
 
@@ -548,40 +622,92 @@ export class EscenaMapa extends Escena {
   }
 
   /* ---------- tuberías tendidas ---------- */
+  /**
+   * Las conducciones eran dos líneas planas sobre unas teselas que ya tienen
+   * volumen, y cantaba. Ahora se trazan en cuatro pasadas —sombra, cuerpo,
+   * brillo y contenido— con la misma luz que el resto: el reflejo va arriba
+   * porque el sol está arriba a la izquierda.
+   *
+   * Y las dos redes se leen distinto a propósito: por una TUBERÍA corren gotas;
+   * una CARRETERA lleva marca vial discontinua. Antes eran la misma línea con
+   * otro color.
+   */
   dibujarTuberias(estado){
     const ctx = this.ctx, t = this.tam;
     if(!estado.tuberias.length) return;
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+
     for(const tub of estado.tuberias){
       const pts = tub.camino.map(p => ({
         x: p.col * t - estado.camara.x + t / 2,
         y: p.fila * t - estado.camara.y + t / 2
       }));
-      // Se ven las dos cosas de un vistazo y sin leer ninguna tabla: el COLOR
-      // dice qué red es (agua limpia o colector) y el GROSOR el diámetro, que es
-      // donde está el cuello de botella.
-      const R = CONFIG.redes[redDe(tub)] || CONFIG.redes.abastecimiento;
-      const escala = 1 + nivelDiametro(tub.dn, redDe(tub)) * 0.55;
-      ctx.strokeStyle = '#1b2836'; ctx.lineWidth = Math.max(4, t * 0.16 * escala);
+      const clave = redDe(tub);
+      const R = CONFIG.redes[clave] || CONFIG.redes.abastecimiento;
+      // El GROSOR dice el calibre y el COLOR la red: el cuello de botella se
+      // localiza mirando el mapa, sin abrir ninguna tabla.
+      const escala = 1 + nivelDiametro(tub.dn, clave) * 0.55;
+      const ancho = Math.max(3, t * 0.115 * escala);
+
+      // 1. sombra arrojada, desplazada hacia abajo
+      ctx.save();
+      ctx.translate(0, ancho * 0.30);
+      ctx.strokeStyle = 'rgba(0,0,0,0.32)';
+      ctx.lineWidth = ancho * 1.15;
       this.trazo(pts);
-      ctx.strokeStyle = R.color; ctx.lineWidth = Math.max(2, t * 0.09 * escala);
+      ctx.restore();
+
+      // 2. cuerpo
+      ctx.strokeStyle = oscurecer(R.color, 0.34);
+      ctx.lineWidth = ancho * 1.15;
       this.trazo(pts);
-      // gotas viajando, para que se vea que lleva algo dentro
-      ctx.fillStyle = aclarar(R.color, 0.45);
-      const sep = t * 0.5, desfase = (this.tiempo * 40) % sep;
-      let acum = -desfase;
-      for(let i = 0; i < pts.length - 1; i++){
-        const a = pts[i], b = pts[i + 1];
-        const largo = Math.hypot(b.x - a.x, b.y - a.y);
-        let d = -acum % sep; if(d < 0) d += sep;
-        for(; d < largo; d += sep){
-          const k = d / largo;
-          ctx.beginPath();
-          ctx.arc(a.x + (b.x - a.x) * k, a.y + (b.y - a.y) * k, Math.max(1.5, t * 0.035), 0, 7);
-          ctx.fill();
-        }
-        acum += largo;
+      ctx.strokeStyle = R.color;
+      ctx.lineWidth = ancho;
+      this.trazo(pts);
+
+      // 3. brillo: una línea fina desplazada hacia arriba. Es lo que convierte
+      //    la banda plana en algo cilíndrico.
+      ctx.save();
+      ctx.translate(0, -ancho * 0.22);
+      ctx.strokeStyle = aclarar(R.color, 0.40);
+      ctx.lineWidth = Math.max(1, ancho * 0.22);
+      this.trazo(pts);
+      ctx.restore();
+
+      // 4. lo que lleva dentro
+      if(R.esVial) this.marcaVial(pts, ancho);
+      else this.gotasEnRuta(pts, ancho, R.color);
+    }
+  }
+
+  /** Marca vial discontinua, para que la carretera no parezca un tubo gris. */
+  marcaVial(pts, ancho){
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.setLineDash([ancho * 0.9, ancho * 0.8]);
+    ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+    ctx.lineWidth = Math.max(1, ancho * 0.11);
+    this.trazo(pts);
+    ctx.restore();
+  }
+
+  /** Gotas viajando por dentro, para que se vea que la tubería lleva agua. */
+  gotasEnRuta(pts, ancho, color){
+    const ctx = this.ctx;
+    ctx.fillStyle = aclarar(color, 0.55);
+    const sep = ancho * 3.2, desfase = (this.tiempo * 34) % sep;
+    let acum = -desfase;
+    for(let i = 0; i < pts.length - 1; i++){
+      const a = pts[i], b = pts[i + 1];
+      const largo = Math.hypot(b.x - a.x, b.y - a.y);
+      let d = -acum % sep; if(d < 0) d += sep;
+      for(; d < largo; d += sep){
+        const k = d / largo;
+        ctx.beginPath();
+        ctx.arc(a.x + (b.x - a.x) * k, a.y + (b.y - a.y) * k, ancho * 0.16, 0, 7);
+        ctx.fill();
       }
+      acum += largo;
     }
   }
 
