@@ -102,6 +102,12 @@ export class EscenaMapa extends Escena {
     // El estiaje se cachea aquí: lo consulta cada casilla de agua y recalcularlo
     // mil veces por fotograma no tendría ningún sentido.
     this.estiaje = factorEstiaje(estado.horas);
+    // El color del año, interpolado de forma CONTINUA entre la estación actual
+    // y la siguiente. El `estacion()` del padre salta el 70 % y funde el resto:
+    // sirve para el diorama, pero aquí daría justo el tirón que no se quiere.
+    this.paletaAño = this.colorDeEstacion(estado.horas);
+    // Cuánto de invierno hay ahora mismo (0..1): lo usa la nieve de los árboles.
+    this.invierno = this.gradoInvierno(estado.horas);
 
     const t = this.tam, M = CONFIG.mapaMundo;
     const c0 = Math.max(0, Math.floor(estado.camara.x / t));
@@ -200,6 +206,19 @@ export class EscenaMapa extends Escena {
     ctx.lineWidth = Math.max(1, t * 0.02);
     ctx.beginPath(); ctx.roundRect(fx, fy, fl, fl, r); ctx.stroke();
 
+  }
+
+  /**
+   * 0 fuera del invierno y 1 en su centro, con subida y bajada suaves. Sirve
+   * para lo que solo debe verse cuando de verdad hace frío.
+   */
+  gradoInvierno(horas){
+    const E = CONFIG.estaciones;
+    const frac = ((horas % CONFIG.tiempo.horasPorAño) / CONFIG.tiempo.horasPorAño + 1) % 1;
+    const pos = frac * E.length;
+    const i = Math.floor(pos) % E.length;
+    if(E[i].nombre !== 'Invierno') return 0;
+    return Math.sin((pos - Math.floor(pos)) * Math.PI);
   }
 
   /**
@@ -310,87 +329,144 @@ export class EscenaMapa extends Escena {
     }
 
     if(celda.tipo === 'bosque'){
-      // CONIFERAS en 3/4, no copas redondas vistas desde arriba. Cada una son
-      // tres faldones superpuestos que estrechan hacia arriba, con la mitad
-      // izquierda clara y la derecha en sombra: misma luz que los edificios.
-      const puntos = [[0.30, 0.62, 1.00], [0.62, 0.52, 0.86], [0.46, 0.82, 0.72]];
       // Las copas siguen al follaje del año: en otoño tiran a ocre y en invierno
       // se apagan, con la misma amplitud contenida que el suelo.
       let verde = CONFIG.terrenos.bosque.color;
       if(this.paletaAño && CONFIG.estiloMapa.tinteEstacion > 0)
         verde = mezclarColor(verde, this.paletaAño.follaje, CONFIG.estiloMapa.tinteEstacion * 1.3);
-      const claro = aclarar(verde, 0.20), oscuro = oscurecer(verde, 0.42);
-      for(let i = 0; i < puntos.length; i++){
-        const px = x + t * puntos[i][0], baseY = y + t * puntos[i][1];
-        const esc = puntos[i][2] * (0.9 + ((v * 3 + i * 0.29) % 1) * 0.25);
-        const an = t * 0.15 * esc, alto = t * 0.42 * esc;
 
-        this.sombraPieza(px, baseY, an * 0.9, an * 0.32, 0.22);
+      // Un bosque no son tres árboles iguales. Cada uno saca su altura, su tono
+      // y su número de faldones del ruido de la celda, así ninguna casilla se
+      // repite y el conjunto deja de parecer un sello estampado.
+      const sitios = [[0.28, 0.60, 1.00], [0.60, 0.50, 0.88], [0.44, 0.82, 0.76],
+                      [0.76, 0.74, 0.62]];
+      const nieve = this.paletaAño && celda.tipo === 'bosque'
+        ? Math.max(0, (this.invierno || 0)) : 0;
 
+      for(let i = 0; i < sitios.length; i++){
+        const rnd = (v * 13.7 + i * 2.31) % 1;
+        const px = x + t * sitios[i][0], baseY = y + t * sitios[i][1];
+        const esc = sitios[i][2] * (0.86 + rnd * 0.34);
+        const an = t * 0.155 * esc, alto = t * 0.46 * esc;
+        // cada árbol con su tono: unos más viejos y oscuros que otros
+        const claro = aclarar(verde, 0.14 + rnd * 0.16);
+        const oscuro = oscurecer(verde, 0.34 + rnd * 0.14);
+
+        this.sombraPieza(px, baseY, an * 0.9, an * 0.30, 0.22);
+
+        // tronco visible bajo el primer faldón
         ctx.fillStyle = '#4a3524';
-        ctx.fillRect(px - an * 0.10, baseY - alto * 0.20, an * 0.20, alto * 0.20);
+        ctx.fillRect(px - an * 0.09, baseY - alto * 0.18, an * 0.18, alto * 0.19);
+        ctx.fillStyle = '#33251a';
+        ctx.fillRect(px + an * 0.02, baseY - alto * 0.18, an * 0.07, alto * 0.19);
 
-        for(let k = 0; k < 3; k++){
-          const w = an * (1 - k * 0.24);
-          const yb = baseY - alto * (0.16 + k * 0.26);
-          const yt = yb - alto * 0.36;
+        const faldones = rnd > 0.55 ? 4 : 3;
+        for(let k = 0; k < faldones; k++){
+          const w = an * (1 - k * (0.78 / faldones));
+          const yb = baseY - alto * (0.14 + k * (0.72 / faldones));
+          const yt = yb - alto * (0.40 / faldones * 1.6);
           ctx.fillStyle = claro;
           ctx.beginPath();
-          ctx.moveTo(px, yt); ctx.lineTo(px - w, yb); ctx.lineTo(px, yb);
+          ctx.moveTo(px, yt); ctx.lineTo(px - w, yb);
+          ctx.lineTo(px - w * 0.45, yb); ctx.lineTo(px, yb - alto * 0.05);
           ctx.closePath(); ctx.fill();
           ctx.fillStyle = oscuro;
           ctx.beginPath();
-          ctx.moveTo(px, yt); ctx.lineTo(px + w, yb); ctx.lineTo(px, yb);
+          ctx.moveTo(px, yt); ctx.lineTo(px + w, yb);
+          ctx.lineTo(px + w * 0.45, yb); ctx.lineTo(px, yb - alto * 0.05);
           ctx.closePath(); ctx.fill();
+          // nieve posada en el faldón, solo en invierno
+          if(nieve > 0.02){
+            ctx.fillStyle = `rgba(240,248,255,${0.55 * nieve})`;
+            ctx.beginPath();
+            ctx.moveTo(px, yt); ctx.lineTo(px - w * 0.55, yb - alto * 0.03);
+            ctx.lineTo(px - w * 0.2, yb - alto * 0.04);
+            ctx.closePath(); ctx.fill();
+          }
         }
       }
       return;
     }
 
     if(celda.tipo === 'montana'){
-      // La ÚLTIMA pieza de terreno que seguía siendo un triángulo plano. Ahora
-      // es un macizo isométrico: tres caras con la misma luz que los edificios
-      // —la izquierda al sol, la derecha en sombra, la trasera intermedia— y el
-      // nevero siguiendo la arista de la cumbre.
+      // Un macizo isométrico con ESTRATOS y desprendimientos al pie. Antes eran
+      // tres triángulos lisos y todas las montañas del mapa idénticas; ahora
+      // cada una saca del ruido de su celda la altura, la inclinación de la
+      // cumbre y si le sale un pico secundario.
       const roca = CONFIG.terrenos.montana.color;
-      const cx = x + t * 0.50, base = y + t * 0.78;
-      const W = t * 0.34, H = W * 0.5, alto = t * 0.46;
+      const cx = x + t * (0.46 + v * 0.08), base = y + t * 0.80;
+      const W = t * (0.32 + v * 0.05), H = W * 0.5;
+      const alto = t * (0.42 + v * 0.16);
       const cumbre = base - alto;
+      const ladeo = (v - 0.5) * W * 0.35;      // la cumbre no siempre centrada
+      const cima = cx + ladeo;
 
-      // SIN sombra arrojada: una montaña no está apoyada sobre el prado, es el
-      // propio terreno levantado. La elipse de debajo la hacía flotar.
+      // pico secundario detrás, en algunas casillas
+      if(v > 0.55){
+        const px2 = cx - W * 0.62, alto2 = alto * 0.62;
+        ctx.fillStyle = oscurecer(roca, 0.34);
+        ctx.beginPath();
+        ctx.moveTo(px2, base - alto2);
+        ctx.lineTo(px2 - W * 0.5, base - H * 0.4);
+        ctx.lineTo(px2 + W * 0.5, base - H * 0.4);
+        ctx.closePath(); ctx.fill();
+      }
 
-      // cara trasera-izquierda
-      ctx.fillStyle = mezclarColor(roca, '#ffffff', 0.06);
+      // cara izquierda (al sol) y derecha (en sombra)
+      ctx.fillStyle = aclarar(roca, 0.28);
       ctx.beginPath();
-      ctx.moveTo(cx - W, base - H); ctx.lineTo(cx, base - H * 2);
-      ctx.lineTo(cx, cumbre); ctx.closePath(); ctx.fill();
-      // cara izquierda, la que da al sol
-      ctx.fillStyle = aclarar(roca, 0.26);
+      ctx.moveTo(cima, cumbre); ctx.lineTo(cx - W, base - H);
+      ctx.lineTo(cx, base); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = oscurecer(roca, 0.32);
       ctx.beginPath();
-      ctx.moveTo(cx - W, base - H); ctx.lineTo(cx, base);
-      ctx.lineTo(cx, cumbre); ctx.closePath(); ctx.fill();
-      // cara derecha, en sombra
-      ctx.fillStyle = oscurecer(roca, 0.30);
-      ctx.beginPath();
-      ctx.moveTo(cx + W, base - H); ctx.lineTo(cx, base);
-      ctx.lineTo(cx, cumbre); ctx.closePath(); ctx.fill();
+      ctx.moveTo(cima, cumbre); ctx.lineTo(cx + W, base - H);
+      ctx.lineTo(cx, base); ctx.closePath(); ctx.fill();
 
-      // nevero: cuelga de la cumbre por las dos caras que se ven
-      ctx.fillStyle = '#f2f7fb';
+      // ESTRATOS: tres vetas que siguen la pendiente. Es lo que convierte un
+      // triángulo liso en roca.
+      ctx.save();
       ctx.beginPath();
-      ctx.moveTo(cx, cumbre);
-      ctx.lineTo(cx - W * 0.42, cumbre + alto * 0.30);
-      ctx.lineTo(cx - W * 0.18, cumbre + alto * 0.22);
-      ctx.lineTo(cx, cumbre + alto * 0.34);
-      ctx.lineTo(cx + W * 0.20, cumbre + alto * 0.20);
-      ctx.lineTo(cx + W * 0.40, cumbre + alto * 0.30);
+      ctx.moveTo(cima, cumbre); ctx.lineTo(cx - W, base - H);
+      ctx.lineTo(cx, base); ctx.lineTo(cx + W, base - H);
+      ctx.closePath(); ctx.clip();
+      for(let k = 1; k <= 3; k++){
+        const q = k / 4;
+        ctx.strokeStyle = `rgba(0,0,0,${0.13 - k * 0.02})`;
+        ctx.lineWidth = Math.max(1, t * 0.018);
+        ctx.beginPath();
+        ctx.moveTo(cx - W * q * 1.05, base - H + (cumbre - base + H) * (1 - q));
+        ctx.lineTo(cima, cumbre + alto * q * 0.85);
+        ctx.lineTo(cx + W * q * 1.05, base - H + (cumbre - base + H) * (1 - q));
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      // nevero irregular colgando de la cumbre
+      ctx.fillStyle = '#f4f8fc';
+      ctx.beginPath();
+      ctx.moveTo(cima, cumbre);
+      ctx.lineTo(cima - W * 0.40, cumbre + alto * 0.30);
+      ctx.lineTo(cima - W * 0.16, cumbre + alto * 0.19);
+      ctx.lineTo(cima - W * 0.02, cumbre + alto * 0.34);
+      ctx.lineTo(cima + W * 0.16, cumbre + alto * 0.17);
+      ctx.lineTo(cima + W * 0.38, cumbre + alto * 0.28);
       ctx.closePath(); ctx.fill();
 
-      ctx.strokeStyle = oscurecer(roca, 0.45);
+      // pedrera al pie, del lado en sombra
+      ctx.fillStyle = oscurecer(roca, 0.42);
+      for(let k = 0; k < 3; k++){
+        const rr = t * (0.020 + ((v * 7 + k * 0.4) % 1) * 0.018);
+        ctx.beginPath();
+        ctx.ellipse(cx + W * (0.35 + k * 0.22), base - H * 0.1 + t * 0.02 * k,
+                    rr, rr * 0.6, 0, 0, 7);
+        ctx.fill();
+      }
+
+      // arista de la cumbre
+      ctx.strokeStyle = oscurecer(roca, 0.50);
       ctx.lineWidth = Math.max(0.8, t * 0.012);
       ctx.beginPath();
-      ctx.moveTo(cx, base); ctx.lineTo(cx, cumbre);
+      ctx.moveTo(cima, cumbre); ctx.lineTo(cx, base);
       ctx.stroke();
     }
   }
@@ -762,6 +838,19 @@ export class EscenaMapa extends Escena {
       const lado = t * E.ladoPieza;
       const ox = x + (t - lado) / 2;
       const oy = y + (t - lado) / 2 - t * E.alturaPieza * 0.5;
+
+      // VELO: se apaga y difumina el terreno de debajo antes de poner la pieza.
+      // Sobre una montaña, el pico de detrás competía con el edificio y no se
+      // leía ninguno de los dos. Es el equivalente barato a una profundidad de
+      // campo: el fondo se va y la pieza se queda delante.
+      const E0 = CONFIG.estiloMapa;
+      const rv = t * E0.difuminaPieza;
+      const velo = ctx.createRadialGradient(x + t * 0.5, y + t * 0.55, rv * 0.15,
+                                            x + t * 0.5, y + t * 0.55, rv);
+      velo.addColorStop(0, `rgba(10,18,26,${E0.veloPieza})`);
+      velo.addColorStop(1, 'rgba(10,18,26,0)');
+      ctx.fillStyle = velo;
+      ctx.fillRect(x - t * 0.1, y - t * 0.1, t * 1.2, t * 1.2);
 
       // Sobre agua no hay sombra arrojada: hay reflejo y ondas alrededor de los
       // pilotes. Una elipse negra sobre el río era justo lo que hacía que la

@@ -449,8 +449,14 @@ export const CONFIG = {
     variacion: 0.05,        // ruido por casilla: poco, solo para que no sea plano
     // Las piezas OCUPAN la tesela y sobresalen por arriba: la ficha ya es su
     // base, así que no necesitan zócalo y sí necesitan volumen.
-    ladoPieza: 0.86,
-    alturaPieza: 0.30,      // cuánto asoma por encima del borde de la tesela
+    ladoPieza: 1.02,        // las piezas mandan sobre su casilla
+    alturaPieza: 0.34,      // cuánto asoma por encima del borde de la tesela
+    /* VELO BAJO LA PIEZA. Un edificio sobre una montaña competía con el pico que
+       tenía detrás y no se leía ninguno de los dos. Se apaga y desenfoca el
+       terreno justo debajo, como una profundidad de campo: el fondo pierde
+       nitidez y la pieza pasa a primer plano. */
+    veloPieza: 0.42,        // cuánto se apaga el terreno bajo una construcción
+    difuminaPieza: 0.55,    // radio del degradado, en fracción de casilla
     /* EL AÑO EN EL MAPA. El prado amarillea en verano y se apaga en invierno,
        pero con MUY poca amplitud y una transición continua de una estación a la
        siguiente. Un año son 15 minutos reales y una estación 3,8: a ese ritmo un
