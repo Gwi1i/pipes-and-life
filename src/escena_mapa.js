@@ -1035,93 +1035,248 @@ export class EscenaMapa extends Escena {
     ctx.stroke();
   }
 
-  /** La forma concreta de cada pieza, ya en isométrica. */
+  /* ---------- detalles finos de las piezas ----------
+     Lo que separa un volumen de un edificio: puertas, ventanas, escalerillas,
+     barandillas y las piezas que se mueven. Va aparte de `silueta` porque son
+     adornos reutilizables, no la forma de nada. */
+
+  /** Ventanas iluminadas en una cara. `n` por fila, repartidas. */
+  ventanas(x, y, an, al, n, color){
+    const ctx = this.ctx;
+    const w = an / (n * 2 + 1), h = al * 0.26;
+    for(let i = 0; i < n; i++){
+      const px = x + w * (1 + i * 2);
+      ctx.fillStyle = color;
+      ctx.fillRect(px, y + al * 0.22, w, h);
+      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      ctx.fillRect(px, y + al * 0.22, w, h * 0.28);
+    }
+  }
+
+  /** Puerta con dintel. */
+  puerta(cx, baseY, an, al, color){
+    const ctx = this.ctx;
+    ctx.fillStyle = oscurecer(color, 0.55);
+    ctx.fillRect(cx - an / 2, baseY - al, an, al);
+    ctx.fillStyle = oscurecer(color, 0.30);
+    ctx.fillRect(cx - an / 2, baseY - al, an, al * 0.14);
+  }
+
+  /** Escalerilla de gato: dos largueros y sus peldaños. */
+  escalerilla(px, baseY, alto, an, color){
+    const ctx = this.ctx;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = Math.max(0.7, an * 0.16);
+    ctx.beginPath();
+    ctx.moveTo(px - an / 2, baseY); ctx.lineTo(px - an / 2, baseY - alto);
+    ctx.moveTo(px + an / 2, baseY); ctx.lineTo(px + an / 2, baseY - alto);
+    const n = Math.max(3, Math.round(alto / (an * 0.9)));
+    for(let i = 1; i < n; i++){
+      const yy = baseY - (alto * i) / n;
+      ctx.moveTo(px - an / 2, yy); ctx.lineTo(px + an / 2, yy);
+    }
+    ctx.stroke();
+  }
+
+  /** Barandilla sobre el borde de un rombo (la tapa de un cilindro o caja). */
+  barandilla(cx, cy, W, H, altoPost, color){
+    const ctx = this.ctx;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = Math.max(0.7, W * 0.045);
+    ctx.beginPath();
+    ctx.ellipse(cx, cy - altoPost, W, H, 0, 0, 7);
+    ctx.stroke();
+    for(let a = 0; a < 8; a++){
+      const ang = (a / 8) * Math.PI * 2;
+      const px = cx + Math.cos(ang) * W, py = cy + Math.sin(ang) * H;
+      ctx.beginPath();
+      ctx.moveTo(px, py); ctx.lineTo(px, py - altoPost);
+      ctx.stroke();
+    }
+  }
+
+  /** Zunchos horizontales de un depósito metálico. */
+  zunchos(cx, baseY, W, H, alto, n, color){
+    const ctx = this.ctx;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = Math.max(0.7, W * 0.05);
+    for(let i = 1; i <= n; i++){
+      const yy = baseY - (alto * i) / (n + 1);
+      ctx.beginPath();
+      ctx.ellipse(cx, yy, W, H, 0, 0, Math.PI);
+      ctx.stroke();
+    }
+  }
+
+  /** La forma concreta de cada pieza, ya en isométrica y con sus detalles. */
   silueta(tipo, x, y, t, color){
     const ctx = this.ctx;
     const cx = x + t * 0.5, suelo = y + t * 0.70;
     const W = t * 0.30, H = W * 0.5;
+    const metal = 'rgba(230,240,250,0.75)';
+    const luz = 'rgba(255,214,120,0.92)';
 
     switch(tipo){
-      case 'deposito':        // depósito elevado sobre su torreta
+      case 'deposito': {      // depósito elevado: zunchos, escalerilla y baranda
         this.isoCaja(cx, suelo, W * 0.34, H * 0.34, t * 0.20, oscurecer(color, 0.42));
-        this.isoCilindro(cx, suelo - t * 0.20, W * 0.72, H * 0.72, t * 0.30, color);
+        const alto = t * 0.30, rw = W * 0.72, rh = H * 0.72;
+        this.isoCilindro(cx, suelo - t * 0.20, rw, rh, alto, color);
+        this.zunchos(cx, suelo - t * 0.20, rw, rh, alto, 2, 'rgba(0,0,0,0.22)');
+        this.escalerilla(cx - rw * 0.72, suelo - t * 0.20, alto * 0.92, W * 0.13, metal);
+        this.barandilla(cx, suelo - t * 0.20 - alto, rw, rh, t * 0.045, metal);
         break;
+      }
 
-      case 'bomba':           // caseta de bombeo con tejado y tubo
-        this.isoCaja(cx, suelo, W * 0.82, H * 0.82, t * 0.24, color);
-        this.isoTejado(cx, suelo - t * 0.24, W * 0.82, H * 0.82, t * 0.12, oscurecer(color, 0.15));
-        ctx.strokeStyle = aclarar(color, 0.40);
-        ctx.lineWidth = Math.max(2, t * 0.05);
+      case 'bomba': {         // caseta: puerta, dos ventanas y respiradero
+        const an = W * 0.82, al = t * 0.24;
+        this.isoCaja(cx, suelo, an, an * 0.5, al, color);
+        this.ventanas(cx - an * 0.85, suelo - al, an * 0.75, al, 2, luz);
+        this.puerta(cx + an * 0.42, suelo, an * 0.26, al * 0.62, color);
+        this.isoTejado(cx, suelo - al, an, an * 0.5, t * 0.11, oscurecer(color, 0.15));
+        // tubo de impulsión con su codo
+        ctx.strokeStyle = metal;
+        ctx.lineWidth = Math.max(2, t * 0.045);
         ctx.beginPath();
-        ctx.moveTo(cx - W * 0.95, suelo - t * 0.04);
-        ctx.lineTo(cx - W * 0.95, suelo - t * 0.30);
+        ctx.moveTo(cx - an * 1.05, suelo - t * 0.02);
+        ctx.lineTo(cx - an * 1.05, suelo - t * 0.26);
+        ctx.lineTo(cx - an * 0.55, suelo - t * 0.30);
         ctx.stroke();
         break;
+      }
 
-      case 'captacion':       // plataforma de toma sobre pilotes
-        ctx.strokeStyle = oscurecer(color, 0.50);
-        ctx.lineWidth = Math.max(1.5, t * 0.035);
-        ctx.beginPath();
-        ctx.moveTo(cx - W * 0.5, suelo + t * 0.10); ctx.lineTo(cx - W * 0.5, suelo - t * 0.02);
-        ctx.moveTo(cx + W * 0.5, suelo + t * 0.10); ctx.lineTo(cx + W * 0.5, suelo - t * 0.02);
-        ctx.stroke();
-        this.isoCaja(cx, suelo, W * 0.9, H * 0.9, t * 0.10, color);
-        this.isoCaja(cx, suelo - t * 0.10, W * 0.42, H * 0.42, t * 0.16, aclarar(color, 0.12));
-        break;
-
-      case 'depuradora':      // dos decantadores con su puente
-        for(const dx of [-0.42, 0.42]){
-          this.isoCilindro(cx + W * dx, suelo, W * 0.46, H * 0.46, t * 0.09, color);
-          ctx.fillStyle = mezclarColor(color, '#08251a', 0.55);
+      case 'captacion': {     // toma sobre pilotes, con reja y barandilla
+        ctx.strokeStyle = oscurecer(color, 0.55);
+        ctx.lineWidth = Math.max(1.5, t * 0.030);
+        for(const dx of [-0.55, 0, 0.55]){
           ctx.beginPath();
-          ctx.ellipse(cx + W * dx, suelo - t * 0.09, W * 0.34, H * 0.34, 0, 0, 7);
-          ctx.fill();
+          ctx.moveTo(cx + W * dx, suelo + t * 0.10);
+          ctx.lineTo(cx + W * dx, suelo - t * 0.02);
+          ctx.stroke();
         }
-        ctx.strokeStyle = aclarar(color, 0.45);
-        ctx.lineWidth = Math.max(1, t * 0.022);
+        this.isoCaja(cx, suelo, W * 0.9, H * 0.9, t * 0.08, color);
+        this.barandilla(cx, suelo - t * 0.08, W * 0.9, H * 0.9, t * 0.05, metal);
+        // casetilla de la reja, con su ventanuco
+        const an = W * 0.40, al = t * 0.16;
+        this.isoCaja(cx, suelo - t * 0.08, an, an * 0.5, al, aclarar(color, 0.10));
+        this.ventanas(cx - an * 0.8, suelo - t * 0.08 - al, an * 0.7, al, 1, luz);
+        // reja de la toma, bajo el agua
+        ctx.strokeStyle = 'rgba(255,255,255,0.30)';
+        ctx.lineWidth = 1;
+        for(let i = 0; i < 4; i++){
+          const px = cx - W * 0.5 + (W * i) / 3;
+          ctx.beginPath();
+          ctx.moveTo(px, suelo + t * 0.02); ctx.lineTo(px, suelo + t * 0.10);
+          ctx.stroke();
+        }
+        break;
+      }
+
+      case 'depuradora': {    // decantadores con el PUENTE DE RASQUETAS girando
+        for(const dx of [-0.42, 0.42]){
+          const px = cx + W * dx, rw = W * 0.46, rh = H * 0.46;
+          this.isoCilindro(px, suelo, rw, rh, t * 0.08, color);
+          // lámina de agua
+          ctx.fillStyle = mezclarColor(color, '#08251a', 0.60);
+          ctx.beginPath();
+          ctx.ellipse(px, suelo - t * 0.08, rw * 0.76, rh * 0.76, 0, 0, 7);
+          ctx.fill();
+          // el puente gira despacio: es lo que dice que la planta ESTÁ tratando
+          const ang = this.tiempo * 0.5 + (dx > 0 ? 1.7 : 0);
+          ctx.strokeStyle = metal;
+          ctx.lineWidth = Math.max(1, t * 0.020);
+          ctx.beginPath();
+          ctx.moveTo(px - Math.cos(ang) * rw * 0.78, suelo - t * 0.08 - Math.sin(ang) * rh * 0.78);
+          ctx.lineTo(px + Math.cos(ang) * rw * 0.78, suelo - t * 0.08 + Math.sin(ang) * rh * 0.78);
+          ctx.stroke();
+          ctx.fillStyle = metal;
+          ctx.beginPath();
+          ctx.arc(px, suelo - t * 0.085, Math.max(1, t * 0.016), 0, 7);
+          ctx.fill();
+          this.barandilla(px, suelo - t * 0.08, rw, rh, t * 0.032, 'rgba(230,240,250,0.55)');
+        }
+        break;
+      }
+
+      case 'tanque': {        // tanque de tormentas: zunchos y boca de hombre
+        const rw = W * 0.92, rh = H * 0.92, alto = t * 0.17;
+        this.isoCilindro(cx, suelo, rw, rh, alto, color);
+        this.zunchos(cx, suelo, rw, rh, alto, 2, 'rgba(0,0,0,0.20)');
+        ctx.fillStyle = oscurecer(color, 0.45);
         ctx.beginPath();
-        ctx.moveTo(cx - W * 0.85, suelo - t * 0.09);
-        ctx.lineTo(cx + W * 0.85, suelo - t * 0.09);
+        ctx.ellipse(cx + rw * 0.28, suelo - alto, rw * 0.22, rh * 0.22, 0, 0, 7);
+        ctx.fill();
+        this.escalerilla(cx - rw * 0.74, suelo, alto * 0.95, W * 0.11, metal);
+        break;
+      }
+
+      case 'acuifero': {      // castillete con polea y cable
+        this.isoCaja(cx, suelo, W * 0.55, H * 0.55, t * 0.05, oscurecer(color, 0.35));
+        ctx.strokeStyle = color; ctx.lineWidth = Math.max(1.5, t * 0.030);
+        ctx.beginPath();
+        ctx.moveTo(cx - W * 0.5, suelo - t * 0.05); ctx.lineTo(cx, suelo - t * 0.36);
+        ctx.lineTo(cx + W * 0.5, suelo - t * 0.05);
+        ctx.moveTo(cx - W * 0.30, suelo - t * 0.20); ctx.lineTo(cx + W * 0.30, suelo - t * 0.20);
+        ctx.moveTo(cx - W * 0.17, suelo - t * 0.28); ctx.lineTo(cx + W * 0.17, suelo - t * 0.28);
+        ctx.stroke();
+        ctx.fillStyle = metal;
+        ctx.beginPath(); ctx.arc(cx, suelo - t * 0.36, t * 0.022, 0, 7); ctx.fill();
+        ctx.strokeStyle = 'rgba(230,240,250,0.55)'; ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(cx, suelo - t * 0.36); ctx.lineTo(cx, suelo - t * 0.05);
         ctx.stroke();
         break;
+      }
 
-      case 'tanque':          // tanque de tormentas: ancho y bajo
-        this.isoCilindro(cx, suelo, W * 0.92, H * 0.92, t * 0.16, color);
-        break;
-
-      case 'acuifero':        // castillete del sondeo
-        this.isoCaja(cx, suelo, W * 0.55, H * 0.55, t * 0.06, oscurecer(color, 0.35));
-        ctx.strokeStyle = color; ctx.lineWidth = Math.max(1.5, t * 0.032);
-        ctx.beginPath();
-        ctx.moveTo(cx - W * 0.5, suelo - t * 0.06); ctx.lineTo(cx, suelo - t * 0.34);
-        ctx.lineTo(cx + W * 0.5, suelo - t * 0.06);
-        ctx.moveTo(cx - W * 0.28, suelo - t * 0.20); ctx.lineTo(cx + W * 0.28, suelo - t * 0.20);
-        ctx.stroke();
-        break;
-
-      case 'vertedero': {     // montera de basura por capas
-        const capas = [[1.00, 0.00, 0.10], [0.72, 0.09, 0.08], [0.42, 0.16, 0.06]];
+      case 'vertedero': {     // montera por capas, con basura suelta encima
+        const capas = [[1.00, 0.00, 0.09], [0.72, 0.08, 0.07], [0.42, 0.14, 0.055]];
         for(let i = 0; i < capas.length; i++){
           const e = capas[i];
           this.isoCilindro(cx, suelo - t * e[1], W * e[0], H * e[0], t * e[2],
                            i % 2 ? oscurecer(color, 0.20) : color);
         }
+        // cachivaches asomando: es lo que lo hace basura y no una duna
+        const trozos = [[-0.45, 0.02, 0.030], [0.30, 0.05, 0.026], [-0.10, -0.10, 0.022],
+                        [0.52, -0.01, 0.020], [0.05, 0.08, 0.024]];
+        for(let i = 0; i < trozos.length; i++){
+          const p = trozos[i];
+          ctx.fillStyle = i % 2 ? 'rgba(120,130,140,0.85)' : 'rgba(90,70,50,0.85)';
+          ctx.save();
+          ctx.translate(cx + W * p[0], suelo - t * (0.06 + p[1]));
+          ctx.rotate(i * 0.7);
+          ctx.fillRect(-t * p[2] / 2, -t * p[2] / 3, t * p[2], t * p[2] * 0.66);
+          ctx.restore();
+        }
         break;
       }
 
-      case 'reciclaje':       // nave con el triángulo de las flechas
-        this.isoCaja(cx, suelo, W * 0.92, H * 0.92, t * 0.22, color);
-        this.isoTejado(cx, suelo - t * 0.22, W * 0.92, H * 0.92, t * 0.10, oscurecer(color, 0.18));
-        ctx.strokeStyle = '#0b1a12'; ctx.lineWidth = Math.max(1.5, t * 0.028);
+      case 'reciclaje': {     // nave con portón, ventanas, cinta y chimenea
+        const an = W * 0.92, al = t * 0.22;
+        this.isoCaja(cx, suelo, an, an * 0.5, al, color);
+        this.ventanas(cx - an * 0.9, suelo - al, an * 0.7, al, 3, luz);
+        this.puerta(cx + an * 0.45, suelo, an * 0.34, al * 0.72, color);
+        this.isoTejado(cx, suelo - al, an, an * 0.5, t * 0.10, oscurecer(color, 0.18));
+        // cinta transportadora entrando por el lateral
+        ctx.strokeStyle = 'rgba(80,90,100,0.9)';
+        ctx.lineWidth = Math.max(1.5, t * 0.026);
+        ctx.beginPath();
+        ctx.moveTo(cx - an * 1.15, suelo + t * 0.02);
+        ctx.lineTo(cx - an * 0.35, suelo - al * 0.75);
+        ctx.stroke();
+        // chimenea
+        ctx.fillStyle = oscurecer(color, 0.40);
+        ctx.fillRect(cx + an * 0.30, suelo - al - t * 0.16, t * 0.035, t * 0.16);
+        // el triángulo del reciclaje, en la fachada
+        ctx.strokeStyle = '#0b1a12'; ctx.lineWidth = Math.max(1.2, t * 0.024);
         {
-          const r = t * 0.075, cy = suelo - t * 0.14;
+          const r = t * 0.055, cyy = suelo - al * 0.45;
           ctx.beginPath();
-          ctx.moveTo(cx, cy - r);
-          ctx.lineTo(cx + r * 0.87, cy + r * 0.5);
-          ctx.lineTo(cx - r * 0.87, cy + r * 0.5);
+          ctx.moveTo(cx - an * 0.35, cyy - r);
+          ctx.lineTo(cx - an * 0.35 + r * 0.87, cyy + r * 0.5);
+          ctx.lineTo(cx - an * 0.35 - r * 0.87, cyy + r * 0.5);
           ctx.closePath(); ctx.stroke();
         }
         break;
+      }
 
       default:
         this.isoCaja(cx, suelo, W * 0.8, H * 0.8, t * 0.22, color);
