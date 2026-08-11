@@ -370,7 +370,8 @@ export class UI {
     if(obra.tipo !== 'vertedero'){
       cont.innerHTML = `
         <p class="red-cuello" style="--tono:${def.color}"><b>${def.nombre}</b></p>
-        <p class="m-desc">${def.desc}</p>`;
+        <p class="m-desc">${def.desc}</p>
+        ${this.fichaHTML(def)}`;
       return;
     }
 
@@ -390,6 +391,7 @@ export class UI {
           : ''}</p>
       <p class="m-desc">Gotea sobre el agua que tiene alrededor, y cuanto más
         lleno, más. Un agua insalubre da menos caudal.</p>
+      ${this.fichaHTML(def)}
       ${tope
         ? '<p class="m-desc">No se puede ampliar más: abre otro vertedero en otra parte.</p>'
         : `<button class="mejora obra" data-accion="ampliarVertedero" style="--tono:${def.color}">
@@ -397,6 +399,48 @@ export class UI {
              <span class="m-desc">+${formatear(V.capacidadPorNivel)} t de capacidad.</span>
              <span class="m-coste">${formatear(coste)} €</span>
            </button>`}`;
+  }
+
+  /**
+   * LA FICHA DIVULGATIVA de una pieza. El autor trabaja en esto y quiere que
+   * quien juegue acabe sabiendo algo del oficio, así que cada instalación cuenta
+   * qué es de verdad, para qué sirve y un detalle que no se ve desde fuera.
+   *
+   * No es texto de juego: no habla de costes ni de niveles. Va aparte a
+   * propósito para que se pueda leer sin ruido y para que sea evidente, al
+   * añadir una pieza nueva, que también hay que explicarla.
+   */
+  fichaHTML(def){
+    if(!def || !def.ficha) return '';
+    const f = def.ficha;
+    return `
+      <div class="ficha" style="--tono:${def.color}">
+        <p class="ficha-tit">¿Qué es?</p>
+        <p class="ficha-txt">${f.que}</p>
+        <p class="ficha-tit">¿Para qué sirve?</p>
+        <p class="ficha-txt">${f.para}</p>
+        <p class="ficha-tit ficha-dato-tit">Del oficio</p>
+        <p class="ficha-txt ficha-dato">${f.dato}</p>
+      </div>`;
+  }
+
+  /**
+   * Mientras tienes una pieza elegida para colocar, su ficha se lee ANTES de
+   * pagarla. Aprender lo que estás a punto de construir es justo el momento en
+   * el que apetece leerlo.
+   */
+  refrescarFichaObra(estado){
+    const panel = document.getElementById('panel-ficha');
+    const clave = estado.modo.tipo === 'colocar' ? estado.modo.elemento : null;
+    if(this.cache.fichaFirma === clave) return;
+    this.cache.fichaFirma = clave;
+
+    if(!clave){ panel.style.display = 'none'; return; }
+    const def = CONFIG.construibles[clave];
+    panel.style.display = '';
+    document.getElementById('ficha').innerHTML = `
+      <p class="red-cuello" style="--tono:${def.color}"><b>${def.nombre}</b></p>
+      ${this.fichaHTML(def)}`;
   }
 
   /**
@@ -803,6 +847,7 @@ export class UI {
     this.refrescarRed(estado, resultado);
     this.refrescarObra(estado);
     this.refrescarCasilla(estado, this.escena);
+    this.refrescarFichaObra(estado);
     this.refrescarHallazgo(estado);
     this.refrescarAlmacen(estado);
     this.refrescarTienda(estado);

@@ -363,6 +363,14 @@ cuesta cruzarlo con cada red y qué piezas admite. Con nueve terrenos y precios 
 icono aparte: se pinta prestándole el contexto a `escena.dibujarTerreno()`, así
 no hay dos verdades sobre qué aspecto tiene un pedregal.
 
+**Cada pieza tiene su FICHA DIVULGATIVA** (`construibles[x].ficha`): qué es de
+verdad, para qué sirve y un dato del oficio. El autor trabaja en abastecimiento y
+quiere que quien juegue acabe sabiendo algo, así que esto NO es texto de juego —
+no habla de costes ni de niveles— y va en su propio bloque con otro aire. Se lee
+al elegir la pieza para construir (antes de pagarla, que es cuando apetece) y al
+clicar una ya construida. **Si añades una pieza, escríbele su ficha**: una
+instalación sin explicar rompe justo lo que el juego quiere hacer.
+
 **El clic vive EN EL MAPA.** Bombear es clicar EL PUEBLO, y solo el pueblo.
 Antes habia un botonazo BOMBEAR ocupando un cuarto de pantalla y ademas clicar
 cualquier casilla vacia bombeaba, que no significaba nada. Ahora cada clic sobre

@@ -489,29 +489,106 @@ export const CONFIG = {
     captacion: {
       nombre: 'Captación', coste: 300, orden: 1, color: '#5eead4',
       terreno: ['agua', 'lago'],
-      desc: 'Toma el agua del cauce. Va sobre el río o un lago.'
+      desc: 'Toma el agua del cauce. Va sobre el río o un lago.',
+      // Ficha divulgativa: esto no es texto de juego, es lo que
+      // esta pieza ES de verdad. El objetivo del autor es que quien
+      // juegue acabe sabiendo algo del oficio.
+      ficha: {
+        que: 'La OBRA DE TOMA: el punto donde el agua deja de ser del río y entra ' +
+        'en el sistema. Suele ser una arqueta o una torre con compuertas, y ' +
+        'siempre lleva una REJA de desbaste que para ramas, hojas y todo lo ' +
+        'que baja flotando antes de que llegue a las bombas. ',
+        para: 'Coger el agua bruta y entregarla al resto de la instalación en ' +
+        'condiciones de poder tratarla. Aquí el agua todavía no es potable. ',
+        dato: 'El caudal que puedes captar no lo decides tú: lo marca la concesión ' +
+        'administrativa y lo limita el propio río. En estiaje hay menos, y ' +
+        'cuando viene crecida el problema es el contrario — tanta turbidez que ' +
+        'la planta no da abasto y a veces hay que parar la toma. '
+      }
     },
     bomba: {
       nombre: 'Bombeo', coste: 250, orden: 2, color: '#7aa7c7',
       terreno: ['prado', 'pastizal'], junto: ['agua', 'lago'],
-      desc: 'Impulsa el agua. En tierra llana y despejada, pegado al agua.'
+      desc: 'Impulsa el agua. En tierra llana y despejada, pegado al agua.',
+      // Ficha divulgativa: esto no es texto de juego, es lo que
+      // esta pieza ES de verdad. El objetivo del autor es que quien
+      // juegue acabe sabiendo algo del oficio.
+      ficha: {
+        que: 'La ESTACIÓN DE BOMBEO. Un edificio con uno o varios grupos motobomba, ' +
+        'sus válvulas, el calderín antiariete y el cuadro eléctrico. Es lo que ' +
+        'le da al agua la energía que necesita para subir. ',
+        para: 'Vencer el desnivel y las pérdidas de carga de la tubería. Lo que la ' +
+        'bomba proporciona se llama ALTURA MANOMÉTRICA, y se mide en metros de ' +
+        'columna de agua, no en presión a secas. ',
+        dato: 'La energía eléctrica es casi siempre la mayor partida del coste de ' +
+        'explotación de un abastecimiento. Por eso se bombea de noche siempre ' +
+        'que se puede: la tarifa es más barata y el depósito guarda el agua ' +
+        'para el día. '
+      }
     },
     deposito: {
       nombre: 'Depósito', coste: 400, orden: 3, color: '#7dd3fc',
       // Le vale una COLINA, que es barata de encontrar: obligarle a sierra
       // dejaría a media partida sin sitio donde poner el primer depósito.
       terreno: ['colina', 'sierra', 'roca'],
-      desc: 'Guarda agua EN ALTO para que baje por gravedad: va en relieve, y con una colina le basta.'
+      desc: 'Guarda agua EN ALTO para que baje por gravedad: va en relieve, y con una colina le basta.',
+      // Ficha divulgativa: esto no es texto de juego, es lo que
+      // esta pieza ES de verdad. El objetivo del autor es que quien
+      // juegue acabe sabiendo algo del oficio.
+      ficha: {
+        que: 'El DEPÓSITO REGULADOR. Un vaso cerrado, normalmente de hormigón, ' +
+        'colocado por encima del pueblo. Puede ser enterrado en una loma o ' +
+        'elevado sobre una torre si no hay altura natural. ',
+        para: 'Dos cosas a la vez, y por eso es la pieza clave. REGULAR: el consumo ' +
+        'tiene puntas de mañana y de tarde, y el depósito las absorbe para que ' +
+        'la captación trabaje a caudal constante. Y DAR PRESIÓN: el agua baja ' +
+        'por gravedad, así que la altura del depósito es la presión del grifo. ',
+        dato: 'Se dimensiona para guardar entre medio día y un día de consumo. Esa ' +
+        'reserva no es solo comodidad: es lo que te permite parar la captación ' +
+        'por una avería o por un episodio de turbidez sin dejar a nadie sin ' +
+        'agua. '
+      }
     },
     depuradora: {
       nombre: 'Depuradora', coste: 2000, orden: 4, color: '#34d399',
       terreno: ['prado', 'pastizal'], junto: ['agua', 'lago'],
-      desc: 'Trata las aguas residuales antes de devolverlas al cauce.'
+      desc: 'Trata las aguas residuales antes de devolverlas al cauce.',
+      // Ficha divulgativa: esto no es texto de juego, es lo que
+      // esta pieza ES de verdad. El objetivo del autor es que quien
+      // juegue acabe sabiendo algo del oficio.
+      ficha: {
+        que: 'Una EDAR: Estación Depuradora de Aguas Residuales. Lo que se ve son ' +
+        'los decantadores circulares con su puente de rasquetas girando, pero ' +
+        'eso es solo una parte del proceso. ',
+        para: 'Devolver al río el agua que el pueblo ha ensuciado, en condiciones de ' +
+        'que el río pueda con ella. El agua pasa por un PRETRATAMIENTO ' +
+        '(desbaste y desarenado), una DECANTACIÓN primaria que separa lo que ' +
+        'sedimenta, y un tratamiento BIOLÓGICO donde son bacterias las que se ' +
+        'comen la materia orgánica. ',
+        dato: 'Lo que de verdad depura no es una máquina: son microorganismos vivos. ' +
+        'Por eso una depuradora no se enciende y se apaga como un motor — ' +
+        'necesita semanas para arrancar, y un vertido tóxico puede matarle la ' +
+        'biología y dejarla inservible durante días. '
+      }
     },
     tanque: {
       nombre: 'Tanque de tormentas', coste: 1500, orden: 5, color: '#818cf8',
       terreno: ['prado', 'pastizal', 'matorral'],
-      desc: 'Retiene la punta de lluvia. En llano, o desbrozando matorral.'
+      desc: 'Retiene la punta de lluvia. En llano, o desbrozando matorral.',
+      // Ficha divulgativa: esto no es texto de juego, es lo que
+      // esta pieza ES de verdad. El objetivo del autor es que quien
+      // juegue acabe sabiendo algo del oficio.
+      ficha: {
+        que: 'Un TANQUE DE TORMENTAS. Un depósito grande, casi siempre enterrado, ' +
+        'conectado al colector antes de la depuradora. ',
+        para: 'Retener el primer golpe de agua de una tormenta y soltarlo despacio ' +
+        'cuando la depuradora vuelva a tener hueco, en vez de aliviarlo al ' +
+        'río. ',
+        dato: 'Se llama PRIMER LAVADO y es lo más sucio de todo el episodio: la ' +
+        'primera lluvia arrastra de golpe los aceites, gomas y suciedad que ' +
+        'llevan días acumulándose en las calles. Retener solo esos primeros ' +
+        'minutos evita la mayor parte de la contaminación del aguacero entero. '
+      }
     },
     vertedero: {
       nombre: 'Vertedero', coste: 1800, orden: 7, color: '#a8896a',
@@ -522,20 +599,65 @@ export const CONFIG = {
       // a sabiendas es justo lo que hace que el sitio importe.
       avisaSiAguaCerca: 3,
       desc: 'Donde acaba lo que no se recicla. Se llena, y gotea: si lo pones ' +
-            'junto al agua, la envenenas y tu captación rinde menos.'
+            'junto al agua, la envenenas y tu captación rinde menos.',
+      // Ficha divulgativa: esto no es texto de juego, es lo que
+      // esta pieza ES de verdad. El objetivo del autor es que quien
+      // juegue acabe sabiendo algo del oficio.
+      ficha: {
+        que: 'Un VERTEDERO CONTROLADO. No es un agujero: es un vaso ' +
+        'impermeabilizado con láminas y arcilla, con red de drenaje en el ' +
+        'fondo y chimeneas de desgasificación. ',
+        para: 'Confinar lo que no se puede aprovechar, aislándolo del terreno y del ' +
+        'agua subterránea. Los residuos se extienden en capas y se cubren cada ' +
+        'día con tierra para que no vuelen ni atraigan bichos. ',
+        dato: 'Lo que se filtra por dentro se llama LIXIVIADO y es un líquido muy ' +
+        'cargado: hay que recogerlo y tratarlo aparte, a veces durante décadas ' +
+        'después de haber cerrado el vertedero. Un vertedero no termina cuando ' +
+        'se llena; hay que vigilarlo treinta años más. '
+      }
     },
     reciclaje: {
       nombre: 'Planta de reciclaje', coste: 6000, orden: 8, color: '#4ade80',
       terreno: ['prado', 'pastizal'],
       desc: 'Separa y vende lo aprovechable. Cuanto mejor sea, más fracciones ' +
-            'recupera y más te pagan por ellas.'
+            'recupera y más te pagan por ellas.',
+      // Ficha divulgativa: esto no es texto de juego, es lo que
+      // esta pieza ES de verdad. El objetivo del autor es que quien
+      // juegue acabe sabiendo algo del oficio.
+      ficha: {
+        que: 'Una PLANTA DE TRATAMIENTO DE RESIDUOS. Una nave con cintas ' +
+        'transportadoras, tromel, separadores magnéticos y de corrientes de ' +
+        'Foucault, y puestos de triaje manual. ',
+        para: 'Separar lo aprovechable de lo que hay que enterrar. Cuanto mejor ' +
+        'separada llega la basura desde los contenedores, más se recupera y ' +
+        'más limpio sale el material. ',
+        dato: 'El material recuperado SE VENDE, y cada fracción tiene su precio de ' +
+        'mercado: el aceite usado o el aluminio valen muchísimo más por ' +
+        'tonelada que la materia orgánica. Por eso separar en casa no es un ' +
+        'gesto simbólico — es lo que hace que el sistema se pague solo. '
+      }
     },
     acuifero: {
       nombre: 'Sondeo a acuífero', coste: 5000, orden: 6, color: '#a78bfa',
       terreno: ['prado', 'pastizal', 'pedregal', 'matorral', 'pinar',
                 'colina', 'sierra'], lejosDeAgua: 4,
       desc: 'El recurso de última hora: perfora y saca agua del subsuelo. ' +
-            'Solo tiene sentido lejos del cauce, y sale caro.'
+            'Solo tiene sentido lejos del cauce, y sale caro.',
+      // Ficha divulgativa: esto no es texto de juego, es lo que
+      // esta pieza ES de verdad. El objetivo del autor es que quien
+      // juegue acabe sabiendo algo del oficio.
+      ficha: {
+        que: 'Un SONDEO a un acuífero. Una perforación estrecha y profunda —decenas ' +
+        'o cientos de metros— con su entubación, su filtro a la altura del ' +
+        'acuífero y una bomba sumergida en el fondo. ',
+        para: 'Sacar agua subterránea cuando no hay río cerca o cuando el río no da ' +
+        'para más. Sale a temperatura y calidad muy constantes durante todo el ' +
+        'año, lo que la hace muy cómoda de tratar. ',
+        dato: 'Un acuífero se recarga despacio, con la lluvia de años. Si extraes ' +
+        'más de lo que entra, el nivel baja, hay que bombear desde más hondo ' +
+        '—más energía— y en la costa puede entrar agua del mar y salinizarlo ' +
+        'para siempre. Es el recurso más cómodo y el más fácil de estropear. '
+      }
     }
   },
 
