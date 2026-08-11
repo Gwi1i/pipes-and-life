@@ -485,6 +485,14 @@ Usa `estado.ultimoInstante`, que `guardar()` sella en cada guardado.
 
 ## Depuración
 
+**Medir la partida sin jugarla**: `medir_partida.mjs` es un bot que juega
+acelerado con los módulos reales (clica, compra, construye, repara, renueva
+calibres) y devuelve en qué minuto cae cada hito. Tras cualquier cambio de
+equilibrio, re-medir cuesta segundos:
+`(await import('/medir_partida.mjs')).medir(0.25, 120)` desde la consola.
+Se salta el coste de explorar, así que sus tiempos son un suelo.
+
+
 `main.js` expone `window.juego` con `estado`, `entrada`, `escena` y `CONFIG`.
 Desde la consola del navegador:
 

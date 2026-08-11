@@ -20,7 +20,9 @@
       "Bash(curl -s -o /dev/null -w \"8001:%{http_code}\\\\n\" http://localhost:8001/)",
       "Bash(py -c \"print\\(open\\('src/escena_mapa.js',encoding='utf-8'\\).read\\(\\).count\\('pintarTierra'\\)\\)\")",
       "Bash(terreno: null *)",
-      "Bash(sed -n '/const tipos = \\\\[/,/^  \\\\];/p' src/mapa.js)"
+      "Bash(sed -n '/const tipos = \\\\[/,/^  \\\\];/p' src/mapa.js)",
+      "Bash(git mv *)",
+      "Bash(git commit -q -m ' *)"
     ]
   }
 }
