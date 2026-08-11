@@ -43,9 +43,18 @@ let escena = new EscenaMapa(lienzo);
 ui.escena = escena;
 
 if(!habiaPartida){
-  estado.anotar(`Nueva mancomunidad. ${estado.activo.nombre} espera agua: dale a BOMBEAR.`, 'info');
+  estado.anotar(`Nueva mancomunidad. ${estado.activo.nombre} espera agua: clica el pueblo para bombear.`, 'info');
 } else {
   progresoOffline();
+}
+
+// LA PORTADA: un telón, no un menú — el juego ya corre detrás. Quitarla es
+// además el primer gesto del usuario, que es justo lo que el navegador exige
+// para dejar sonar la música: entrar por aquí lo resuelve solo.
+{
+  const botonPortada = document.getElementById('portada-jugar');
+  botonPortada.textContent = habiaPartida ? 'Continuar la partida' : 'Empezar';
+  botonPortada.onclick = () => { document.getElementById('portada').hidden = true; };
 }
 ui.reconstruirPestanas(estado);
 

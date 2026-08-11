@@ -151,6 +151,22 @@ ligera.** Aquí no hay transparencia que preservar, así que el PNG no aporta na
 
 ---
 
+# EL ICONO (`icono.png`)
+
+El del navegador, la pestaña y la pantalla de inicio del móvil. **Se queda en
+PNG tal cual** (el optimizador lo ignora a propósito: un icono no se convierte
+a JPEG). Cuadrado, 512×512 o 1024×1024.
+
+### `icono.png`
+> Genera una imagen: icono de aplicación cuadrado, una gota de agua grande y
+> estilizada con una pequeña válvula de compuerta integrada en su interior,
+> estilo plano vectorial con dos o tres colores sobre fondo azul petróleo
+> oscuro liso, sin texto, sin marco, centrado y con margen alrededor
+
+Ojo: **sin texto ninguno** — a tamaño de icono cualquier letra se vuelve ruido.
+
+---
+
 # MÚSICA DE FONDO (`musica.ogg`, `musica.mp3` o `musica.wav`)
 
 El juego la busca con esos nombres, en ese orden, y **si no la encuentra no

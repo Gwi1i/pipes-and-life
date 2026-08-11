@@ -4,6 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Red Hidráulica — Abastece a tu pueblo</title>
+<meta name="theme-color" content="#0b1420">
+<meta name="description" content="Juego de gestión del agua: capta, almacena, depura y abastece a una mancomunidad de 36 pueblos. El oficio es de verdad.">
+<!-- El icono lo genera el autor (assets/icono.png); sin él, el navegador tira
+     del suyo por defecto y no pasa nada -->
+<link rel="icon" type="image/png" href="assets/icono.png">
+<link rel="apple-touch-icon" href="assets/icono.png">
+<link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -240,6 +247,20 @@
       <div id="vuelta-lineas" class="vuelta-lineas"></div>
       <button class="hito-btn" data-accion="cerrarVuelta">A seguir</button>
     </div>
+  </div>
+</div>
+
+<!-- LA PORTADA. El juego arrancaba a pelo contra el HUD: para quien lo abre
+     por primera vez —o para enseñárselo a alguien— la primera pantalla ES el
+     producto. Es un telón, no un menú: el juego ya corre detrás. -->
+<div class="hito-fondo portada" id="portada">
+  <div class="portada-caja">
+    <p class="portada-titulo">Red Hidráulica</p>
+    <p class="portada-lema">Abastece a tu mancomunidad, pueblo a pueblo.</p>
+    <p class="portada-desc">Capta el agua, guárdala en alto, llévala lejos y
+      devuélvela limpia. Treinta y seis pueblos esperan; el oficio es de
+      verdad.</p>
+    <button class="hito-btn" id="portada-jugar">Empezar</button>
   </div>
 </div>
 

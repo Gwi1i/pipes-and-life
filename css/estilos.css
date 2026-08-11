@@ -553,6 +553,29 @@ button{touch-action:manipulation;}
   background:linear-gradient(180deg,#1b3a28,#0e2418);}
 .hito.es-logro .hito-btn:hover{background:linear-gradient(180deg,#245036,#0e2418);}
 
+/* LA PORTADA: el telón de entrada. Más oscura que las tarjetas —debajo el
+   juego ya corre y no debe competir— y con el título al estilo de la marca. */
+.portada{background:rgba(2,6,12,0.88);}
+.portada-caja{
+  max-width:430px; padding:34px 30px; text-align:center;
+  background:var(--panel); border:1px solid var(--linea-viva); border-radius:8px;
+}
+.portada-titulo{
+  font-family:var(--mono); font-size:26px; font-weight:700;
+  letter-spacing:.14em; text-transform:uppercase;
+  background:linear-gradient(90deg,#2dd4bf,#38bdf8,#a78bfa);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.portada-lema{
+  font-family:var(--mono); font-size:10.5px; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--tenue); margin-top:6px;
+}
+.portada-desc{
+  font-size:13px; line-height:1.6; color:var(--texto);
+  margin-top:16px; text-align:left;
+}
+.portada .hito-btn{margin-top:22px;}
+
 /* La tarjeta de VUELTA: un parte de resultados, no un momento del juego.
    Hereda el vestido del hito pero sin imagen: los números son la imagen. */
 .hito.vuelta{max-width:420px;}
