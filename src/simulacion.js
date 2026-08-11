@@ -22,7 +22,7 @@ import { CONFIG } from './config.js';
 import { limitar } from './util.js';
 import { inventarioConectado, cuelloDeBotella, construccionesConectadas,
          celdaEn, nombreDeNucleo, tipoYacimiento, claseAcuifero,
-         masasDelMapa } from './mapa.js';
+         masasDelMapa, fugasDe } from './mapa.js';
 
 /* ---------------- HELPERS POR PUEBLO ---------------- */
 
@@ -361,12 +361,26 @@ export function capacidadPluviales(estado){
 }
 
 /**
+ * La TASA de fugas de la red: la del material del cuello... o la de la línea
+ * más VIEJA si es peor. Manda el tramo peor también en esto: una línea pasada
+ * de vida útil sangra toda la red, y renovarla es lo que lo cura.
+ */
+export function tasaFugasRed(estado){
+  const red = redDelPueblo(estado);
+  let fugas = red.def.fugas;
+  if(estado)
+    for(const { tuberia } of red.lineas || [])
+      fugas = Math.max(fugas, fugasDe(tuberia, estado.horas));
+  return fugas;
+}
+
+/**
  * Lo que se pierde por el camino. El fibrocemento viejo gotea: es la parte
  * antipática de no renovar, y la que hace que el salto de material se NOTE en
  * el contador de agua sin tener que leer ninguna cifra.
  */
 export function rendimientoRed(estado){
-  return 1 - redDelPueblo(estado).def.fugas;
+  return 1 - tasaFugasRed(estado);
 }
 
 export function litrosPorClic(pueblo, estado){
@@ -504,7 +518,7 @@ export function desgloseProduccion(pueblo, estado, estiaje = 1){
   const red = redDelPueblo(estado);
   const entra = rio + pozos;
   const tope = Math.min(entra, red.def.caudalMax);
-  const fugas = tope * red.def.fugas;
+  const fugas = tope * tasaFugasRed(estado);
   const veneno = (tope - fugas) * insalubridadCaptacion(estado);
   // Piezas de abastecimiento PARADAS por avería: están en el mapa, conectadas,
   // y no aportan nada hasta que alguien vaya con la llave.

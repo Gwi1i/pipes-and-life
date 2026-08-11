@@ -858,6 +858,30 @@ export function lineasConectadas(estado, red = 'abastecimiento'){
   return salida;
 }
 
+/* ---------- LA EDAD DE LAS LÍNEAS ----------
+   Las redes de verdad tienen vida útil: pasada, no revientan — fugan cada año
+   más. `nacida` (en horas de juego) se sella al tender y al renovar; una línea
+   sin fecha (partidas viejas, el bot) no envejece hasta que la renueven. */
+
+/** La edad de una línea en años de juego, o 0 si no consta cuándo se tendió. */
+export function edadAños(tuberia, horas){
+  if(tuberia.nacida === undefined) return 0;
+  return Math.max(0, (horas - tuberia.nacida) / CONFIG.tiempo.horasPorAño);
+}
+
+/**
+ * Las fugas REALES de una línea: las de su material más lo que le añade la
+ * vejez, con techo. Es la única cuenta de fugas por línea — el desglose y el
+ * rendimiento de la red beben de aquí.
+ */
+export function fugasDe(tuberia, horas, red = 'abastecimiento'){
+  const def = diametro(tuberia.dn, red);
+  if(!def.vidaAños) return def.fugas || 0;
+  const E = CONFIG.tuberia.envejecimiento;
+  const exceso = Math.max(0, edadAños(tuberia, horas) - def.vidaAños);
+  return (def.fugas || 0) + Math.min(E.fugasExtraMax, exceso * E.fugasPorAño);
+}
+
 /**
  * EL CUELLO DE BOTELLA: por una línea cabe lo que quepa por su tramo más
  * estrecho, y punto. Es lo que obliga a renovar la conducción ENTERA en vez de

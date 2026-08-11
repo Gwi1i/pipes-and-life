@@ -221,6 +221,18 @@ abierta, no el objeto en un museo.
 > paleontólogo con martillo y cincel y una carpa de trabajo al fondo,
 > *(+ coletilla)*
 
+## La tarjeta de vuelta (`h_vuelta.png`)
+
+Preside la tarjeta "Mientras no estabas", la que te recibe al volver tras horas
+fuera con lo que ha pasado: dinero, población, agua servida. Tiene que dar
+gusto volver — el pueblo funcionando solo, y la recaudación a la vista:
+
+### `h_vuelta.png`
+> Genera una imagen: un pueblo pequeño al amanecer con su depósito de agua en
+> la colina y las casas con las luces encendiéndose, y en primer plano una mesa
+> de oficina de aguas con monedas apiladas, billetes y un libro de cuentas
+> abierto junto a un grifo del que cae agua limpia, *(+ coletilla)*
+
 ## El sondeo que da agua (`h_acuifero.png`)
 
 Sale la primera vez que una perforación encuentra acuífero. Es un momento

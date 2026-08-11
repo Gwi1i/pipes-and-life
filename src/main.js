@@ -15,7 +15,7 @@ import { celdaEn, clicarCasilla, clicsParaDestapar, puedeColocar,
          piezaDeRuina, diametro, nivelDiametro, costeRenovar,
          averiaEn, aflorarArqueologia, tipoYacimiento,
          puedeEstudiar, estudiarZona, puedeSondear, sondear,
-         costeSondeo, claseAcuifero } from './mapa.js';
+         costeSondeo, claseAcuifero, edadAños } from './mapa.js';
 import { avanzar, bombear, costeMejora, requisitosAutobomba,
          poderExpansion, servicioActivo, costeAmpliarVertedero,
          capacidadVaso, faseActual, faltanParaFase,
@@ -166,8 +166,12 @@ function procesarAcciones(){
         if(!tub) break;
         const red = tub.red || 'abastecimiento';
         const destino = estado.dnActual[red];
-        if(nivelDiametro(destino, red) <= nivelDiametro(tub.dn, red)){
-          avisar('Elige arriba un calibre mayor que el que ya tiene.');
+        // Renovar al MISMO calibre vale si la línea está pasada de vida útil:
+        // sin esto, una fundición de 80 años no tenía cura posible.
+        const vieja = edadAños(tub, estado.horas) > (diametro(tub.dn, red).vidaAños || Infinity);
+        const salto = nivelDiametro(destino, red) - nivelDiametro(tub.dn, red);
+        if(salto < 0 || (salto === 0 && !vieja)){
+          avisar('Elige arriba un calibre mayor — o el mismo, si la línea está vieja.');
           break;
         }
         const coste = costeRenovar(estado.mapa, tub, destino, red);
@@ -179,6 +183,8 @@ function procesarAcciones(){
         const antes = diametro(tub.dn, red).nombre;
         tub.dn = destino;
         tub.coste = (tub.coste || 0) + coste;
+        // Renovar es tubería NUEVA: el reloj de la vida útil vuelve a cero
+        tub.nacida = estado.horas;
         estado.anotar(`Línea renovada de ${antes} a ${diametro(destino, red).nombre} por ${formatear(coste)} €.`, 'ok');
         avisar(`Línea renovada a ${diametro(destino, red).nombre}.`);
         ui.invalidarCache();
@@ -614,7 +620,8 @@ function rematarTuberia(){
     return;
   }
   estado.pagar(coste);
-  estado.tuberias.push({ camino: trazado.slice(), coste, dn, red });
+  estado.tuberias.push({ camino: trazado.slice(), coste, dn, red,
+                         nacida: estado.horas });
   estado.anotar(`${CONFIG.redes[red].nombre}: ${diametro(dn, red).nombre} de ` +
                 `${trazado.length} casillas por ${formatear(coste)} €.`, 'ok');
   estado.modo.trazado = [];
@@ -771,7 +778,15 @@ function progresoOffline(){
     avanzar(estado, Math.min(paso, restante));   // sin averías nuevas offline
     restante -= paso;
   }
-  const dinero = estado.dinero - antes.dinero;
+  // Sin nadie al mando, la explotación rinde MENOS: de la ganancia solo se
+  // cobra una fracción. Las pérdidas (multas, cauce) se pagan enteras — la
+  // ausencia no puede ser un escudo contra las consecuencias.
+  let dinero = estado.dinero - antes.dinero;
+  if(dinero > 0){
+    const recorte = dinero * (1 - O.rendimiento);
+    estado.dinero -= recorte;
+    dinero -= recorte;
+  }
   const minutos = Math.round(aSimular / 60);
   estado.anotar(`Mientras no estabas (${minutos} min): ${dinero >= 0 ? '+' : ''}${formatear(dinero)} €.`, 'info');
 
@@ -808,6 +823,9 @@ function mostrarVuelta(r){
 
   fila('La caja', `${r.dinero >= 0 ? '+' : ''}${formatear(r.dinero)} €`,
        r.dinero >= 0 ? 'bien' : 'mal');
+  if(r.dinero > 0)
+    filas.push(`<p class="m-desc vuelta-nota">Al ${Math.round(CONFIG.offline.rendimiento * 100)} %:
+      sin nadie al mando, la explotación rinde la mitad.</p>`);
   if(Math.abs(r.hab) >= 1)
     fila('La población', `${r.hab >= 0 ? '+' : ''}${Math.round(r.hab)} habitantes`,
          r.hab >= 0 ? 'bien' : 'mal');
@@ -817,8 +835,11 @@ function mostrarVuelta(r){
   if(contPct > 2) fila('El cauce', `se ensució ${Math.round(contPct)} puntos`, 'mal');
   else if(contPct < -2) fila('El cauce', `se recuperó ${Math.round(-contPct)} puntos`, 'bien');
 
-  const horas = Math.floor(r.minutos / 60);
-  const tiempoReal = horas > 0 ? `${horas} h ${r.minutos % 60} min` : `${r.minutos} min`;
+  // El tiempo FUERA es el real entero, no el simulado: decir "fuera 3 h" a
+  // quien estuvo 5 es mentirle justo en la línea que explica el recorte.
+  const minFuera = Math.round(r.seg / 60);
+  const horas = Math.floor(minFuera / 60);
+  const tiempoReal = horas > 0 ? `${horas} h ${minFuera % 60} min` : `${minFuera} min`;
   // El tiempo de juego, en el calendario DEL JUEGO (el año son 360 horas):
   // decir "961 horas" es verdad y no significa nada; "casi 3 años", sí.
   const años = r.horasJuego / CONFIG.tiempo.horasPorAño;

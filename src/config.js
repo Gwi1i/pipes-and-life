@@ -436,7 +436,15 @@ export const CONFIG = {
   /* ---------- PROGRESO OFFLINE ---------- */
   offline: {
     minSegundos: 60,
-    maxHoras: 8,
+    /* Tres horas y a MEDIO rendimiento: la explotación sin nadie al mando rinde
+       menos, y el juego es estar. Además deja hueco para la monetización
+       futura: pagar por más horas o por el rendimiento completo sería la
+       ventaja natural a vender. Como el auto-bombeo y los aceleradores:
+       `desbloqueoExterno` es el GANCHO — NO hay pago ni anuncio implementado y
+       no se debe simular ninguno falso. */
+    maxHoras: 3,
+    rendimiento: 0.5,          // fracción de la ganancia que se cobra offline
+    desbloqueoExterno: null,
     /* La TARJETA de vuelta solo desde ausencias de verdad: por debajo, la línea
        del registro basta. Con el umbral en cero, cada recarga rápida taparía el
        juego con una tarjeta, y taparlo es un privilegio que hay que ganarse. */
@@ -836,17 +844,30 @@ export const CONFIG = {
        medio recorrido no sirve de nada. Por eso `caudalMax` y `habitantesMax`
        van de la mano (≈ litros/hab/día): el tope de población de cada diámetro
        es justo la gente a la que puede dar de beber. */
+    /* `vidaAños` es la VIDA ÚTIL del material: pasada esa edad la línea no
+       revienta, pero fuga cada año más (ver `envejecimiento`). El dato de los
+       40 años del fibrocemento es del oficio —una canalización de más de 40 se
+       considera susceptible de cambiarse— y el calendario del juego lo deja en
+       ~10 horas reales de partida: mantenimiento de fondo, no un fastidio. Los
+       materiales mejores viven más: pagar fundición también compra paz. */
     diametros: [
       { id: 'dn63',  nombre: 'DN 63',  material: 'fibrocemento',
-        caudalMax: 0.80, habitantesMax: 400,  fugas: 0.12,
+        caudalMax: 0.80, habitantesMax: 400,  fugas: 0.12, vidaAños: 40,
         costeRelativo: 1,   color: '#9aa08a' },
       { id: 'dn110', nombre: 'DN 110', material: 'polietileno',
-        caudalMax: 3.20, habitantesMax: 1600, fugas: 0.04,
+        caudalMax: 3.20, habitantesMax: 1600, fugas: 0.04, vidaAños: 50,
         costeRelativo: 3.5, color: '#38bdf8' },
       { id: 'dn200', nombre: 'DN 200', material: 'fundición dúctil',
-        caudalMax: 12.0, habitantesMax: 6000, fugas: 0.01,
+        caudalMax: 12.0, habitantesMax: 6000, fugas: 0.01, vidaAños: 70,
         costeRelativo: 11, color: '#cbd5e1' }
     ],
+    /* Cómo envejece una línea pasada su vida útil: las fugas crecen despacio y
+       con TECHO — una red vieja sangra, no mata. Renovarla (aunque sea al mismo
+       calibre ya no: a uno mayor) la deja nueva y el reloj vuelve a cero. */
+    envejecimiento: {
+      fugasPorAño: 0.012,     // puntos de fuga extra por año pasado de vida
+      fugasExtraMax: 0.15     // techo del castigo: nunca más de esto de propina
+    },
     // Al renovar un tramo se recupera parte del material viejo: renovar es más
     // barato que tender de cero, pero no gratis.
     valorRecuperado: 0.25

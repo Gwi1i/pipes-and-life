@@ -17,14 +17,14 @@ import { capacidad, demandaMedia, caudalCaptacion, costeMejora,
          faseActual, faltanParaFase, canonIncorporacion,
          llenadoVaso, capacidadVaso, costeAmpliarVertedero,
          nivelMasa, pozosPorMasa, caudalPozo, caudalSostenible,
-         desgloseProduccion } from './simulacion.js';
+         desgloseProduccion, tasaFugasRed } from './simulacion.js';
 import { formatear } from './util.js';
 import { celdaEn, piezaDeRuina, diametro, nivelDiametro, costeRenovar,
          nombreDeNucleo, tipoYacimiento,
          costeCasillaTuberia, puedeColocar,
          lineasConectadas, cuelloDeBotella, escalaDeRed,
          claseAcuifero, puedeSondear, costeSondeo,
-         masasDelMapa } from './mapa.js';
+         masasDelMapa, edadAños, fugasDe } from './mapa.js';
 import { pasoActual } from './tutorial.js';
 import { dibujarDiagrama, hayDiagrama } from './diagramas.js';
 
@@ -129,7 +129,10 @@ export class UI {
                    redEstrangula(p, estado),
                    p.habitantes >= cuello.def.habitantesMax * 0.95,
                    !!(estado._conectadoSan || {}).depuradora,
-                   lineas.map(l => l.tuberia.dn).join('')].join('|');
+                   lineas.map(l => l.tuberia.dn).join(''),
+                   // La edad entra en la firma: sin ella el panel se quedaría
+                   // enseñando "39 años" para siempre
+                   lineas.map(l => Math.floor(edadAños(l.tuberia, estado.horas))).join(',')].join('|');
     if(this.cache.redFirma === firma) return;
     this.cache.redFirma = firma;
 
@@ -157,17 +160,27 @@ export class UI {
              de la red vieja: ${D[0].nombre} de ${D[0].material}.`}</p>`
       : lineas.map(({ tuberia, indice }) => {
           const d = diametro(tuberia.dn, clave);
+          const años = Math.floor(edadAños(tuberia, estado.horas));
+          const vieja = d.vidaAños && años > d.vidaAños;
           const sube = nivelDiametro(tuberia.dn, clave) < nivelDiametro(objetivo.id, clave);
-          const coste = sube ? costeRenovar(estado.mapa, tuberia, objetivo.id, clave) : 0;
+          // Al mismo calibre solo se renueva lo VIEJO: lo demás sería tirar dinero
+          const renovable = sube
+            || (vieja && nivelDiametro(objetivo.id, clave) === nivelDiametro(tuberia.dn, clave));
+          const coste = renovable ? costeRenovar(estado.mapa, tuberia, objetivo.id, clave) : 0;
           return `
-            <button class="mejora obra linea${sube ? '' : ' hecha'}"
-                    ${sube ? `data-accion="renovarLinea" data-clave="${indice}"` : 'disabled'}
-                    style="--tono:${d.color}">
-              <span class="m-cab"><span class="m-nom">${tuberia.camino.length} casillas · ${d.nombre}</span></span>
+            <button class="mejora obra linea${renovable ? '' : ' hecha'}"
+                    ${renovable ? `data-accion="renovarLinea" data-clave="${indice}"` : 'disabled'}
+                    style="--tono:${vieja ? '#f0a04a' : d.color}">
+              <span class="m-cab"><span class="m-nom">${tuberia.camino.length} casillas · ${d.nombre}
+                ${d.vidaAños ? `<i class="linea-edad${vieja ? ' vieja' : ''}">${años} años</i>` : ''}
+              </span></span>
               <span class="m-desc">${sube
                 ? `Renovar a ${objetivo.nombre} de ${objetivo.material}.`
-                : 'Ya está a la altura del diámetro elegido.'}</span>
-              <span class="m-coste">${sube ? formatear(coste) + ' €' : '—'}</span>
+                : vieja
+                  ? `Pasada de vida útil (${d.vidaAños} años del ${d.material}): fuga cada
+                     vez más. Renovarla la deja nueva.`
+                  : 'Ya está a la altura del diámetro elegido.'}</span>
+              <span class="m-coste">${renovable ? formatear(coste) + ' €' : '—'}</span>
             </button>`;
         }).join('');
 
@@ -256,9 +269,13 @@ export class UI {
       f.push(`<div class="casilla-fila"><span>No cabe por ${d.red.def.nombre}
         <em class="diag-nota mala">renovar la línea lo libera</em></span>
         <b class="diag-perdida">−${L(d.perdidaTope)}</b></div>`);
-    if(d.fugas > 0.005)
-      f.push(`<div class="casilla-fila"><span>Fugas del ${d.red.def.material}</span>
+    if(d.fugas > 0.005){
+      // Si la tasa supera la del material es que hay una línea vieja fugando
+      const envejecida = tasaFugasRed(estado) > d.red.def.fugas + 0.005;
+      f.push(`<div class="casilla-fila"><span>Fugas del ${d.red.def.material}
+        ${envejecida ? '<em class="diag-nota mala">hay una línea vieja: renovarla lo corta</em>' : ''}</span>
         <b class="diag-perdida">−${L(d.fugas)}</b></div>`);
+    }
     if(d.veneno > 0.005)
       f.push(`<div class="casilla-fila"><span>Agua insalubre
         <em class="diag-nota mala">lixiviados sobre tu toma</em></span>
@@ -290,6 +307,19 @@ export class UI {
     const p = estado.activo;
     const fuera = [];
     if(clave === 'abastecimiento'){
+      // La vejez se avisa aquí porque su síntoma —producir menos— tiene otras
+      // cinco causas posibles, y esta es la única que empeora sola y despacio.
+      for(const { tuberia } of cuello.lineas || []){
+        const d = diametro(tuberia.dn, clave);
+        const extra = fugasDe(tuberia, estado.horas) - d.fugas;
+        if(extra > 0.005){
+          fuera.push(`Una línea de ${Math.floor(edadAños(tuberia, estado.horas))} años
+            (${d.material}, vida útil ${d.vidaAños}): fuga un
+            ${Math.round((d.fugas + extra) * 100)} % y cada año irá a más.
+            Renovarla —aunque sea al mismo calibre— la deja nueva.`);
+          break;   // con avisar de la peor basta: el panel ya las lista todas
+        }
+      }
       if(redEstrangula(p, estado)) fuera.push(`Tu captación da más agua de la que
         cabe por ${cuello.def.nombre}: se está perdiendo lo que sobra. Comprar más
         captación no servirá de nada hasta que ensanches la línea.`);

@@ -602,8 +602,29 @@ nivel. Se activa con `requisitosAutobomba(pueblo)` + pago alto. El campo
 ni anuncio real implementado, y no se debe simular uno falso.
 
 **Offline.** `progresoOffline()` en `main.js` simula el tiempo ausente a pasos
-(la curva diaria y el estiaje cambian por el camino) con tope `offline.maxHoras`.
-Usa `estado.ultimoInstante`, que `guardar()` sella en cada guardado.
+(la curva diaria y el estiaje cambian por el camino) con tope `offline.maxHoras`
+(3 h) y al `offline.rendimiento` (50%): de la GANANCIA solo se cobra la mitad —
+las pérdidas se pagan enteras, la ausencia no es un escudo—. Ampliar horas o
+rendimiento es el gancho de monetización (`offline.desbloqueoExterno`): NO hay
+pago implementado y no se simula ninguno falso. Usa `estado.ultimoInstante`,
+que `guardar()` sella en cada guardado Y al esconderse la pestaña
+(`visibilitychange`): sin eso, volver de otra aplicación —el caso normal del
+móvil— perdía el tiempo ausente. La tarjeta de vuelta (`mostrarVuelta`) cuenta
+el resultado con el tiempo en el calendario del juego; el tiempo FUERA se dice
+entero aunque se simule menos.
+
+**Las líneas ENVEJECEN, y el dato es del oficio.** Cada material tiene
+`vidaAños` (fibrocemento 40 —una canalización de más de 40 se considera
+susceptible de cambiarse—, polietileno 50, fundición 70). Pasada la vida, la
+línea no revienta: FUGA cada año más (`tuberia.envejecimiento`, con techo — una
+red vieja sangra, no mata). `fugasDe(tuberia, horas)` es la única cuenta;
+`tasaFugasRed()` toma la peor línea conectada y de ahí beben el desglose y
+`rendimientoRed()`. `nacida` (horas de juego) se sella al tender y al renovar;
+renovar AL MISMO calibre solo se ofrece para líneas pasadas de vida — sin eso,
+una fundición vieja no tenía cura. Las líneas sin fecha (bot, partidas viejas)
+nacen al cargar: estrenar la mecánica robando 40 años sería un timo. El
+calendario deja la vida útil en ~10 horas reales de partida: mantenimiento de
+fondo, no un fastidio continuo.
 
 ## Trampas conocidas
 

@@ -177,6 +177,9 @@ export class Estado {
       for(const t of estado.tuberias){
         if(!t.dn) t.dn = CONFIG.tuberia.diametros[0].id;
         if(!t.red) t.red = 'abastecimiento';
+        // Las de antes de existir la vida útil nacen HOY: castigar una partida
+        // vieja con cuarenta años de golpe sería estrenar la mecánica robando.
+        if(t.nacida === undefined) t.nacida = d.horas ?? 0;
       }
       // Antes había un solo calibre para todo; ahora hay uno por red. Una
       // partida vieja traía una cadena suelta, y hay que ignorarla.

@@ -565,3 +565,11 @@ button{touch-action:manipulation;}
 .vuelta-fila b{font-family:var(--mono);}
 .vuelta-fila.bien b{color:var(--ok);}
 .vuelta-fila.mal b{color:var(--alarma);}
+.vuelta-nota{font-size:10.5px; color:var(--tenue); margin-top:-3px;}
+
+/* La edad de cada línea, al lado de su calibre */
+.linea-edad{
+  font-style:normal; font-family:var(--mono); font-size:9px;
+  color:var(--apagado); margin-left:7px;
+}
+.linea-edad.vieja{color:#f0a04a; font-weight:700;}
