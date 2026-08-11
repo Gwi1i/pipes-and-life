@@ -119,7 +119,7 @@ export class Entrada {
     // avisar de nada. 'casilla' entró aquí con el estudio hidrogeológico.
     for(const id of ['tienda', 'premium', 'panel-averias', 'pestanas', 'panel-cauce',
                      'construir', 'hallazgo', 'almacen', 'panel-guia', 'red', 'obra',
-                     'hito', 'casilla', 'vuelta']){
+                     'hito', 'casilla', 'vuelta', 'lugares']){
       const cont = document.getElementById(id);
       if(cont) cont.addEventListener('click', e => {
         const b = e.target.closest('[data-accion]');

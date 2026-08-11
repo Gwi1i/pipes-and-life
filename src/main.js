@@ -23,6 +23,8 @@ import { avanzar, bombear, costeMejora, requisitosAutobomba,
 import { formatear } from './util.js';
 import { comprobar as comprobarGuia, saltar as saltarGuia } from './tutorial.js';
 import * as sonido from './sonido.js';
+import { pedirUbicacion, buscarNombres, guardarNombres,
+         quitar as quitarLugares } from './lugares.js';
 
 const lienzo  = document.getElementById('escena');
 const estado  = new Estado();
@@ -476,6 +478,39 @@ function procesarAcciones(){
       case 'limpiarCauce':
         estado.contaminacion = Math.max(0, estado.contaminacion - CONFIG.cauce.limpiezaPorClic);
         escena.destelloCauce();
+        break;
+
+      /* --- LUGARES: nombres de la zona del jugador, si él quiere --- */
+
+      case 'usarLugares': {
+        avisar('Pidiendo la ubicación al navegador…');
+        // Asíncrono de verdad (permiso + consulta): el juego sigue corriendo
+        // y el resultado se anuncia cuando llega.
+        (async () => {
+          try{
+            const pos = await pedirUbicacion();
+            avisar('Preguntando a OpenStreetMap por tu comarca…');
+            const nombres = await buscarNombres(pos);
+            if(!nombres.length){
+              avisar('El mapa no da nombres por tu zona: se quedan los inventados.');
+              return;
+            }
+            guardarNombres(nombres);
+            estado.anotar(`Pueblos de tu zona activados: ${nombres.length} nombres, ` +
+                          `empezando por ${nombres.slice(0, 3).join(', ')}.`, 'ok');
+            avisar('¡Hecho! Los pueblos por descubrir llevarán nombres de tu comarca.');
+            ui.invalidarCache();
+          }catch(err){
+            avisar(err.message || 'No se ha podido: se quedan los nombres inventados.');
+          }
+        })();
+        break;
+      }
+
+      case 'quitarLugares':
+        quitarLugares();
+        ui.invalidarCache();
+        avisar('Nombres inventados de vuelta.');
         break;
     }
   }

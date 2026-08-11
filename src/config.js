@@ -375,6 +375,16 @@ export const CONFIG = {
     }
   },
 
+  /* ---------- LUGARES: pueblos con nombres de la zona del jugador ----------
+     Opcional SIEMPRE (ver src/lugares.js: la ubicación no se guarda y solo
+     sale en una consulta anónima a OpenStreetMap). Es la única pieza del juego
+     que habla con un servicio externo. */
+  lugares: {
+    radioKm: 30,          // hasta dónde se buscan municipios alrededor
+    maxNombres: 48,       // 36 núcleos + margen para repoblar
+    servicio: 'https://overpass-api.de/api/interpreter'
+  },
+
   /* ---------- TIEMPO ---------- */
   tiempo: {
     horasPorAño: 360

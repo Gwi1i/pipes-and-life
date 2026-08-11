@@ -18,6 +18,9 @@
 
 import { CONFIG } from './config.js';
 import { generadorAleatorio } from './util.js';
+// La única concesión de este módulo "puro": el semillero de nombres puede
+// venir de los lugares del jugador. Es leer una lista, no tocar el mundo.
+import { lista as listaLugares } from './lugares.js';
 
 /* ---------- ruido de valor, para que el terreno tenga formas ---------- */
 
@@ -364,8 +367,17 @@ function sembrarPueblos(celdas, azar){
   });
 }
 
-/** El nombre estable de un núcleo a partir de su índice de siembra. */
+/**
+ * El nombre estable de un núcleo a partir de su índice de siembra. Si el
+ * jugador activó los LUGARES de su zona, mandan esos —los más cercanos a su
+ * casa son los primeros índices, que son los primeros núcleos en aparecer—;
+ * si no, o si la lista se queda corta, los inventados de siempre.
+ * OJO: los pueblos YA incorporados guardan su nombre en la partida y no
+ * cambian; esto bautiza a los que quedan por descubrir.
+ */
 export function nombreDeNucleo(idx){
+  const cercanos = listaLugares();
+  if(cercanos && cercanos[idx]) return cercanos[idx];
   const N = CONFIG.nucleos;
   const pre = N.prefijos[idx % N.prefijos.length];
   const suf = N.sufijos[Math.floor(idx / N.prefijos.length) % N.sufijos.length];

@@ -613,6 +613,19 @@ móvil— perdía el tiempo ausente. La tarjeta de vuelta (`mostrarVuelta`) cuen
 el resultado con el tiempo en el calendario del juego; el tiempo FUERA se dice
 entero aunque se simule menos.
 
+**LUGARES: pueblos con nombres de la comarca del jugador.** `src/lugares.js` es
+la ÚNICA pieza que habla con un servicio externo (Overpass/OpenStreetMap) y esa
+dependencia se queda encapsulada ahí. Dos reglas sagradas: SIEMPRE opcional (un
+botón en Mancomunidad; sin permiso, sin internet o sin ganas, los nombres
+inventados de siempre) y la ubicación NO SE GUARDA — sale una sola vez, en la
+consulta anónima; lo que se guarda es la lista de nombres
+(`redHidraulica_lugares`, ordenada por cercanía: los pueblos que el jugador
+reconoce son los primeros en aparecer). `nombreDeNucleo()` mira esa lista antes
+que los inventados; los pueblos ya incorporados conservan su nombre guardado.
+OJO: la geolocalización exige contexto seguro (https o localhost) — desde el
+móvil por http://IP-local el navegador la negará; funcionará cuando el juego se
+sirva con https.
+
 **Las líneas ENVEJECEN, y el dato es del oficio.** Cada material tiene
 `vidaAños` (fibrocemento 40 —una canalización de más de 40 se considera
 susceptible de cambiarse—, polietileno 50, fundición 70). Pasada la vida, la

@@ -25,6 +25,7 @@ import { celdaEn, piezaDeRuina, diametro, nivelDiametro, costeRenovar,
          lineasConectadas, cuelloDeBotella, escalaDeRed,
          claseAcuifero, puedeSondear, costeSondeo,
          masasDelMapa, edadAños, fugasDe } from './mapa.js';
+import { lista as listaLugares } from './lugares.js';
 import { pasoActual } from './tutorial.js';
 import { dibujarDiagrama, hayDiagrama } from './diagramas.js';
 
@@ -217,6 +218,34 @@ export class UI {
     if(clave === 'residuos')
       return d.caudalMax.toFixed(2) + ' t/h';
     return 'hasta ' + formatear(d.habitantesMax) + ' hab';
+  }
+
+  /**
+   * PUEBLOS DE TU ZONA: el estado del semillero de nombres. Todo el texto de
+   * privacidad está AQUÍ, a la vista y antes del botón: pedir la ubicación sin
+   * decir para qué y qué se guarda sería ganarse una desinstalación.
+   */
+  refrescarLugares(estado){
+    const nombres = listaLugares();
+    const firma = nombres ? 'si' + nombres.length : 'no';
+    if(this.cache.lugaresFirma === firma) return;
+    this.cache.lugaresFirma = firma;
+    document.getElementById('lugares').innerHTML = nombres
+      ? `<p class="m-desc">Los pueblos por descubrir llevan nombres de tu comarca
+           (${nombres.length}): <b>${nombres.slice(0, 4).join('</b>, <b>')}</b>…
+           Los ya incorporados conservan el suyo.</p>
+         <button class="mejora obra" data-accion="quitarLugares">
+           <span class="m-cab"><span class="m-nom">Volver a los inventados</span></span>
+           <span class="m-desc">La lista de nombres se borra de este navegador.</span>
+         </button>`
+      : `<p class="m-desc">Los pueblos del mapa pueden llamarse como los de tu
+           comarca: encontrar tu zona en el juego tiene su gracia. Tu ubicación
+           se usa UNA sola vez para preguntar a OpenStreetMap por los municipios
+           cercanos, no se guarda, y aquí solo queda la lista de nombres.</p>
+         <button class="mejora obra" data-accion="usarLugares">
+           <span class="m-cab"><span class="m-nom">Usar pueblos de mi zona</span></span>
+           <span class="m-desc">El navegador te pedirá permiso de ubicación.</span>
+         </button>`;
   }
 
   /**
@@ -1175,6 +1204,7 @@ export class UI {
     this.refrescarPaletaObra(estado);
     this.refrescarRed(estado, resultado);
     this.refrescarDiagnostico(estado, resultado);
+    this.refrescarLugares(estado);
     this.refrescarObra(estado);
     this.refrescarCasilla(estado, this.escena);
     this.refrescarFichaObra(estado);
