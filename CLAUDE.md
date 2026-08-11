@@ -107,6 +107,13 @@ límites que hay que respetar:
     exploración: niebla, hallazgos, construcciones, las redes con su color y su
     grosor, las averías y la previsualización de lo que vas a hacer. Hereda de
     `Escena` para reutilizar destellos, clima y helpers de color.
+    Las piezas ENSEÑAN lo que pasa: `this.vivo` se cachea una vez por fotograma
+    (nivel del depósito, si produce, si trata, si recicla) y de ahí salen la
+    lámina de agua dentro del depósito, el humo de la chimenea del reciclaje, el
+    vaivén del cable del sondeo y el giro del puente de rasquetas. Son datos que
+    la simulación YA calcula: no hay que inventar nada, solo enchufarlos. Y si el
+    dato dice que no, la pieza se para —un puente barriendo un decantador vacío
+    contaría una mentira—.
     **La sombra va DESPLAZADA abajo-derecha** (`sombraPieza`), nunca centrada
     debajo: una sombra centrada es la de una luz cenital y aquí la luz viene de
     arriba a la izquierda, así que poner la elipse justo debajo hacía que todo

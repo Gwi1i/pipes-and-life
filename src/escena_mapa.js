@@ -14,7 +14,8 @@ import { CONFIG } from './config.js';
 import { celdaEn, clicsParaDestapar, esAlcanzable, puedeColocar,
          puedeSeguirTrazado, costeTrazado, costeCasillaTuberia,
          diametro, nivelDiametro, redDe } from './mapa.js';
-import { poderExpansion, llenadoVaso, factorEstiaje } from './simulacion.js';
+import { poderExpansion, llenadoVaso, factorEstiaje,
+         capacidad } from './simulacion.js';
 import { formatear } from './util.js';
 import { limitar } from './util.js';
 import { Escena, mezclarColor, oscurecer, aclarar } from './escena.js';
@@ -108,6 +109,18 @@ export class EscenaMapa extends Escena {
     this.paletaAño = this.colorDeEstacion(estado.horas);
     // Cuánto de invierno hay ahora mismo (0..1): lo usa la nieve de los árboles.
     this.invierno = this.gradoInvierno(estado.horas);
+
+    // LO QUE ESTÁ PASANDO AHORA, para que las piezas lo enseñen. Se cachea aquí
+    // porque lo consulta cada construcción visible y son datos que ya calcula la
+    // simulación: no hay que inventarse nada, solo enchufarlos al dibujo.
+    const p = estado.activo, r = resultado || {};
+    const cap = capacidad(p, estado);
+    this.vivo = {
+      lleno: cap > 0 ? limitar(p.agua / cap, 0, 1) : 0,   // nivel del depósito
+      produce: !!r.produciendo,                            // entra agua
+      trata: !!r.saneamiento,                              // hay saneamiento activo
+      recicla: (r.recicladaTh || 0) > 0                    // la planta separa
+    };
 
     const t = this.tam, M = CONFIG.mapaMundo;
     const c0 = Math.max(0, Math.floor(estado.camara.x / t));
@@ -866,7 +879,7 @@ export class EscenaMapa extends Escena {
       ctx.save();
       ctx.translate(ox, oy);
       ctx.scale(lado / t, lado / t);
-      this.silueta(obra.tipo, 0, 0, t, def.color);
+      this.silueta(obra.tipo, 0, 0, t, def.color, obra);
       ctx.restore();
 
       // El vertedero enseña cuánto vaso le queda: cuando se llena deja de
@@ -1108,8 +1121,45 @@ export class EscenaMapa extends Escena {
     }
   }
 
+  /**
+   * Humo saliendo de una chimenea. Las bocanadas suben, se abren y se
+   * desvanecen; el desfase por índice hace que no salgan todas a la vez.
+   */
+  humo(px, py, r, n = 3){
+    const ctx = this.ctx;
+    for(let i = 0; i < n; i++){
+      const fase = (this.tiempo * 0.5 + i / n) % 1;
+      const sube = fase * r * 5;
+      const crece = r * (0.5 + fase * 1.5);
+      ctx.fillStyle = `rgba(220,228,236,${0.30 * (1 - fase)})`;
+      ctx.beginPath();
+      ctx.arc(px + Math.sin(fase * 3 + i) * r * 0.8, py - sube, crece, 0, 7);
+      ctx.fill();
+    }
+  }
+
+  /**
+   * Lámina de agua dentro de un cilindro abierto, hasta la fracción `frac`.
+   * Es el detalle que convierte el depósito en un depósito: se ve lo que tienes.
+   */
+  laminaEnCilindro(cx, baseY, W, H, alto, frac, color){
+    if(frac <= 0.01) return;
+    const ctx = this.ctx;
+    const y = baseY - alto * frac;
+    ctx.fillStyle = mezclarColor(color, '#0b3550', 0.55);
+    ctx.beginPath();
+    ctx.moveTo(cx - W, y);
+    ctx.lineTo(cx - W, baseY);
+    ctx.ellipse(cx, baseY, W, H, 0, Math.PI, 0, true);
+    ctx.lineTo(cx + W, y);
+    ctx.ellipse(cx, y, W, H, 0, 0, Math.PI);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = aclarar(mezclarColor(color, '#2b7fa8', 0.5), 0.20);
+    ctx.beginPath(); ctx.ellipse(cx, y, W, H, 0, 0, 7); ctx.fill();
+  }
+
   /** La forma concreta de cada pieza, ya en isométrica y con sus detalles. */
-  silueta(tipo, x, y, t, color){
+  silueta(tipo, x, y, t, color, obra){
     const ctx = this.ctx;
     const cx = x + t * 0.5, suelo = y + t * 0.70;
     const W = t * 0.30, H = W * 0.5;
@@ -1121,6 +1171,16 @@ export class EscenaMapa extends Escena {
         this.isoCaja(cx, suelo, W * 0.34, H * 0.34, t * 0.20, oscurecer(color, 0.42));
         const alto = t * 0.30, rw = W * 0.72, rh = H * 0.72;
         this.isoCilindro(cx, suelo - t * 0.20, rw, rh, alto, color);
+        // EL NIVEL SE VE. `vivo.lleno` sale del agua que de verdad tienes en el
+        // pueblo activo: el depósito deja de ser un adorno y pasa a ser el
+        // mismo dato que la barra de abajo, pero puesto donde está la cosa.
+        if(this.vivo){
+          ctx.save();
+          ctx.globalAlpha = 0.85;
+          this.laminaEnCilindro(cx, suelo - t * 0.20, rw * 0.86, rh * 0.86,
+                                alto * 0.88, this.vivo.lleno, color);
+          ctx.restore();
+        }
         this.zunchos(cx, suelo - t * 0.20, rw, rh, alto, 2, 'rgba(0,0,0,0.22)');
         this.escalerilla(cx - rw * 0.72, suelo - t * 0.20, alto * 0.92, W * 0.13, metal);
         this.barandilla(cx, suelo - t * 0.20 - alto, rw, rh, t * 0.045, metal);
@@ -1181,7 +1241,10 @@ export class EscenaMapa extends Escena {
           ctx.ellipse(px, suelo - t * 0.08, rw * 0.76, rh * 0.76, 0, 0, 7);
           ctx.fill();
           // el puente gira despacio: es lo que dice que la planta ESTÁ tratando
-          const ang = this.tiempo * 0.5 + (dx > 0 ? 1.7 : 0);
+          // El puente gira SOLO si el pueblo genera aguas residuales. Una planta
+          // barriendo un decantador vacío contaría una mentira.
+          const marcha = (this.vivo && this.vivo.trata) ? 1 : 0;
+          const ang = this.tiempo * 0.5 * marcha + (dx > 0 ? 1.7 : 0);
           ctx.strokeStyle = metal;
           ctx.lineWidth = Math.max(1, t * 0.020);
           ctx.beginPath();
@@ -1220,10 +1283,18 @@ export class EscenaMapa extends Escena {
         ctx.stroke();
         ctx.fillStyle = metal;
         ctx.beginPath(); ctx.arc(cx, suelo - t * 0.36, t * 0.022, 0, 7); ctx.fill();
+        // El cable sube y baja mientras se capta: es el gesto que dice que el
+        // sondeo está trabajando y no es un castillete abandonado.
+        const bombeando = this.vivo && this.vivo.produce;
+        const vaiven = bombeando
+          ? (0.5 + Math.sin(this.tiempo * 2.2) * 0.5) * t * 0.16 : 0;
         ctx.strokeStyle = 'rgba(230,240,250,0.55)'; ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.moveTo(cx, suelo - t * 0.36); ctx.lineTo(cx, suelo - t * 0.05);
+        ctx.moveTo(cx, suelo - t * 0.36);
+        ctx.lineTo(cx, suelo - t * 0.09 - vaiven);
         ctx.stroke();
+        ctx.fillStyle = 'rgba(200,215,230,0.9)';
+        ctx.fillRect(cx - t * 0.018, suelo - t * 0.09 - vaiven, t * 0.036, t * 0.04);
         break;
       }
 
@@ -1262,9 +1333,11 @@ export class EscenaMapa extends Escena {
         ctx.moveTo(cx - an * 1.15, suelo + t * 0.02);
         ctx.lineTo(cx - an * 0.35, suelo - al * 0.75);
         ctx.stroke();
-        // chimenea
+        // chimenea, y humo SOLO cuando la planta está separando de verdad
         ctx.fillStyle = oscurecer(color, 0.40);
         ctx.fillRect(cx + an * 0.30, suelo - al - t * 0.16, t * 0.035, t * 0.16);
+        if(this.vivo && this.vivo.recicla)
+          this.humo(cx + an * 0.30 + t * 0.017, suelo - al - t * 0.17, t * 0.026);
         // el triángulo del reciclaje, en la fachada
         ctx.strokeStyle = '#0b1a12'; ctx.lineWidth = Math.max(1.2, t * 0.024);
         {
