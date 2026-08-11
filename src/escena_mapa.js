@@ -51,13 +51,19 @@ export class EscenaMapa extends Escena {
    * esto la vista salta y te pierdes el sitio que estabas mirando.
    */
   ampliar(estado, delta, px, py){
+    // La rueda manda "muescas"; el pellizco manda factor directo. Las dos
+    // acaban aquí abajo: una sola cuenta de zoom para los dos mundos.
+    this.ampliarFactor(estado, Math.exp(-delta * CONFIG.mapaMundo.velocidadZoom), px, py);
+  }
+
+  /** Zoom por factor directo (1 = quieto). Es lo que manda el pellizco. */
+  ampliarFactor(estado, factor, px, py){
     const M = CONFIG.mapaMundo;
     // qué casilla (con decimales) hay bajo el cursor ANTES de ampliar
     const antesCol = (px + estado.camara.x) / this.tam;
     const antesFila = (py + estado.camara.y) / this.tam;
 
-    this.zoom = limitar(this.zoom * Math.exp(-delta * M.velocidadZoom),
-                        M.zoomMin, M.zoomMax);
+    this.zoom = limitar(this.zoom * factor, M.zoomMin, M.zoomMax);
 
     // recolocar la cámara para que esa misma casilla siga bajo el cursor
     estado.camara.x = antesCol * this.tam - px;

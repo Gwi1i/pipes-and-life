@@ -90,6 +90,10 @@ function procesarAcciones(){
         escena.ampliar(estado, a.delta, a.x, a.y);
         break;
 
+      case 'pellizco':
+        escena.ampliarFactor(estado, a.factor, a.x, a.y);
+        break;
+
       /* --- MODO CONSTRUCCIÓN --- */
 
       case 'elegirConstruible': {

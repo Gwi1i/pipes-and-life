@@ -19,9 +19,15 @@ body{
   background:var(--fondo); color:var(--texto);
   font-family:var(--sans); font-size:13px; line-height:1.5;
   -webkit-font-smoothing:antialiased;
+  /* En tacto, el clic rápido es EL juego: sin esto, dos toques seguidos al
+     pueblo eran un doble-tap de zoom del navegador y un resalte azul. */
+  -webkit-tap-highlight-color:transparent;
 }
+button{touch-action:manipulation;}
 
-.app{display:flex; flex-direction:column; height:100vh;}
+/* 100dvh y no 100vh: en el móvil, la barra del navegador aparece y desaparece,
+   y con vh el borde de abajo (las solapas) quedaba escondido tras ella. */
+.app{display:flex; flex-direction:column; height:100vh; height:100dvh;}
 
 /* ---------- BARRA SUPERIOR ---------- */
 .superior{
@@ -87,7 +93,10 @@ body{
 .pestana.bloqueada{color:var(--apagado); background:transparent;
   border-style:dashed; cursor:default;}
 .pestana:focus-visible{outline:2px solid var(--agua); outline-offset:2px;}
-#escena{display:block; width:100%; height:100%; cursor:pointer;}
+/* touch-action:none = los gestos del lienzo son NUESTROS (arrastrar, pellizcar);
+   sin esto el navegador se queda el movimiento para hacer scroll y corta el
+   arrastre a mitad con un pointercancel. */
+#escena{display:block; width:100%; height:100%; cursor:pointer; touch-action:none;}
 
 /* Barra de agua superpuesta abajo del lienzo */
 .barra-agua-caja{position:absolute; left:16px; right:16px; bottom:12px; pointer-events:none;}
@@ -439,10 +448,52 @@ body{
 .aviso-flotante.visible{opacity:1; transform:translateX(-50%) translateY(0);}
 
 /* ---------- MÓVIL ---------- */
+/* ---------- PANTALLA ESTRECHA (tablet en vertical, móvil grande) ---------- */
 @media(max-width:900px){
   .cuerpo{flex-direction:column;}
-  .lateral{width:100%; max-height:38vh; border:none; border-top:1px solid var(--linea);}
+  .lateral{width:100%; max-height:42vh; border:none; border-top:1px solid var(--linea);}
   .mapa{min-height:44vh;}
+  /* Con menos de 900px los ocho números ya no caben en una fila: el último
+     acababa debajo del botón Reiniciar. En rejilla caben TODOS, siempre. */
+  .superior{gap:6px 10px;}
+  .acciones{order:2; margin-left:auto;}
+  .hud{
+    order:3; flex:1 1 100%; min-width:0;
+    display:grid; grid-template-columns:repeat(4, 1fr);
+  }
+  .hud-item{min-width:0;}
+  .hud-item .v{white-space:nowrap;}
+}
+
+/* ---------- MÓVIL ----------
+   Lo que manda aquí: el MAPA es el juego y se queda con la pantalla; los
+   números del HUD caben TODOS (antes se cortaban cuatro de ocho por la
+   derecha, y entre ellos Servicio, que es el que dice si vas bien); y todo
+   lo que se toca con el dedo crece hasta ser tocable. */
+@media(max-width:640px){
+  .superior{
+    gap:6px 10px; padding:5px 8px 6px;
+    padding-left:calc(8px + env(safe-area-inset-left));
+    padding-right:calc(8px + env(safe-area-inset-right));
+  }
+  .marca-titulo{font-size:11px; letter-spacing:.09em;}
+  .marca-sub{display:none;}          /* el lema no paga su sitio en 375px */
+  .acciones button{padding:4px 8px; font-size:8px;}
+
+  /* La rejilla viene del corte de 900px; aquí solo se encoge la letra */
+  .hud-item{padding:3px 7px;}
+  .hud-item .e{font-size:6.5px; letter-spacing:.08em;}
+  .hud-item .v{font-size:11.5px;}
+
+  /* El dedo no es un puntero: mínimo ~40px de alto en lo tocable */
+  .solapa{padding:11px 4px; font-size:10px;}
+  .pestana{padding:9px 12px;}
+  .lateral{
+    max-height:46vh; padding:8px;
+    padding-bottom:calc(8px + env(safe-area-inset-bottom));
+  }
+  .mapa{min-height:40vh;}
+  .lienzo-caja{min-height:0;}
 }
 
 

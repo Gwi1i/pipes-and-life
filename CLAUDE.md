@@ -499,6 +499,17 @@ texto de los primeros pasos no lo relee nadie al refactorizar. Si quitas o
 renombras algo con lo que interactúa el jugador, busca su nombre en
 `CONFIG.tutorial` y en los hitos.
 
+**El tacto es un ciudadano de primera.** El zoom táctil es el PELLIZCO:
+`entrada.js` lleva los dedos en un mapa y con dos reparte el gesto en `pellizco`
+(factor) + `arrastrar`; `ampliarFactor()` es la única cuenta de zoom y la rueda
+pasa por ella. Tres detalles que costaron caro: `#escena` lleva
+`touch-action:none` (sin él el navegador se queda el gesto para hacer scroll y
+corta el arrastre con un `pointercancel`); `setPointerCapture` va en try/catch
+(si falla, tumbaba el manejador entero); y el clic fantasma — al soltar un dedo
+del pellizco antes que el otro colaba un tap — se bloquea con `fuePellizco`
+hasta soltar TODOS los dedos. En móvil (≤640px) el HUD pasa a rejilla 4×2
+porque en fila se cortaban cuatro números de ocho, entre ellos Servicio.
+
 **El mapa y el abastecimiento son UN SOLO bucle.** `poderExpansion(estado)` sale
 de la población, el nivel de servicio, el desgaste y las averías, y DIVIDE el
 coste en clics de destapar casillas (`clicsParaDestapar`). Es lo que impide que
