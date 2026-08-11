@@ -180,6 +180,17 @@ body{
   --tono:#8b8578; background:rgba(139,133,120,0.05);
 }
 .subsuelo .mejora{margin-top:7px;}
+/* El desglose de producción: números con su porqué al lado */
+.diagnostico{display:grid; gap:3px;}
+.diag-nota{
+  display:block; font-style:normal; font-size:9.5px; color:var(--tenue);
+}
+.diag-nota.mala{color:#f0a04a;}
+.diag-nota.buena{color:var(--ok);}
+.diag-perdida{color:#f0a04a;}
+.diag-total{border-top:1px solid var(--linea-viva); padding-top:4px; margin-top:2px;}
+.diag-total b{color:var(--ok);}
+
 /* El nivel del acuífero: lo único que se ve de un depósito que está bajo tierra */
 .nivel-acuifero{display:flex; align-items:center; gap:7px; margin:6px 0 7px;}
 .nivel-barra{

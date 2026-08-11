@@ -486,25 +486,50 @@ export function tickAcuiferos(estado, dtHoras, lluvia, estiaje){
   return avisos;
 }
 
+/**
+ * EL DESGLOSE de la producción: de dónde sale el agua y dónde se pierde, paso
+ * a paso. Es la ÚNICA cuenta — `caudalCaptacion()` sale de aquí — porque si el
+ * panel hiciera su propia versión acabarían contando dos verdades distintas,
+ * que es exactamente lo que pasó una vez con la demanda.
+ *
+ * Existe porque el juego tiene cinco cosas capaces de mermar la producción a la
+ * vez (estiaje, tubería, fugas, lixiviados, averías) y cuando el número del HUD
+ * baja, el jugador necesita saber CUÁL ha sido. Sin esto, parece un fallo.
+ */
+export function desgloseProduccion(pueblo, estado, estiaje = 1){
+  const rioBruto = pueblo.mejoras.captacion * CONFIG.mejoras.captacion.caudalPorNivel
+                 + (piezas(estado).captacion || 0) * CONFIG.aportePorPieza.captacion;
+  const rio = rioBruto * estiaje;
+  const pozos = caudalAcuiferos(estado, estiaje);
+  const red = redDelPueblo(estado);
+  const entra = rio + pozos;
+  const tope = Math.min(entra, red.def.caudalMax);
+  const fugas = tope * red.def.fugas;
+  const veneno = (tope - fugas) * insalubridadCaptacion(estado);
+  // Piezas de abastecimiento PARADAS por avería: están en el mapa, conectadas,
+  // y no aportan nada hasta que alguien vaya con la llave.
+  const suyas = CONFIG.redes.abastecimiento.piezas;
+  const paradas = (estado.averias || []).filter(a =>
+    estado.construcciones.some(o => o.col === a.col && o.fila === a.fila
+      && suyas.includes(o.tipo))).length;
+  return {
+    rioBruto, rio, pozos, entra,
+    perdidaTope: entra - tope,
+    fugas, veneno, paradas, red,
+    neto: (tope - fugas) - veneno
+  };
+}
+
 export function caudalCaptacion(pueblo, estado, estiaje = 1){
-  // El estiaje se aplica AQUÍ y por fuente, no fuera y a todo por igual: el río
+  // El estiaje se aplica por fuente, no fuera y a todo por igual: el río
   // baja en verano y el pozo casi no. Antes multiplicaba `avanzar()` al final,
   // que con una sola fuente daba lo mismo y con dos ya no.
-  const bruto = (pueblo.mejoras.captacion * CONFIG.mejoras.captacion.caudalPorNivel
-              + (piezas(estado).captacion || 0) * CONFIG.aportePorPieza.captacion) * estiaje
-              + caudalAcuiferos(estado, estiaje);
-  const red = redDelPueblo(estado);
-  // Un agua envenenada por los lixiviados rinde menos: hay que tratarla más.
-  const veneno = 1 - insalubridadCaptacion(estado);
-  return Math.min(bruto, red.def.caudalMax) * rendimientoRed(estado) * veneno;
+  return desgloseProduccion(pueblo, estado, estiaje).neto;
 }
 
 /** ¿Está la tubería estrangulando la captación? Para poder avisar en la UI. */
 export function redEstrangula(pueblo, estado){
-  const bruto = pueblo.mejoras.captacion * CONFIG.mejoras.captacion.caudalPorNivel
-              + (piezas(estado).captacion || 0) * CONFIG.aportePorPieza.captacion
-              + caudalAcuiferos(estado);
-  return bruto > redDelPueblo(estado).def.caudalMax + 1e-9;
+  return desgloseProduccion(pueblo, estado, 1).perdidaTope > 1e-9;
 }
 
 export function clicsAutoPorSeg(pueblo){

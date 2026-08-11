@@ -16,7 +16,8 @@ import { capacidad, demandaMedia, caudalCaptacion, costeMejora,
          servicioActivo, nivelReciclaje, fraccionesActivas,
          faseActual, faltanParaFase, canonIncorporacion,
          llenadoVaso, capacidadVaso, costeAmpliarVertedero,
-         nivelMasa, pozosPorMasa, caudalPozo, caudalSostenible } from './simulacion.js';
+         nivelMasa, pozosPorMasa, caudalPozo, caudalSostenible,
+         desgloseProduccion } from './simulacion.js';
 import { formatear } from './util.js';
 import { celdaEn, piezaDeRuina, diametro, nivelDiametro, costeRenovar,
          nombreDeNucleo, tipoYacimiento,
@@ -203,6 +204,80 @@ export class UI {
     if(clave === 'residuos')
       return d.caudalMax.toFixed(2) + ' t/h';
     return 'hasta ' + formatear(d.habitantesMax) + ' hab';
+  }
+
+  /**
+   * DE DÓNDE SALE EL AGUA: el desglose de la producción del pueblo activo.
+   * Contesta a "¿por qué produzco menos que antes?", que con cinco mermas
+   * posibles a la vez (estiaje, tubería, fugas, lixiviados, averías) no se
+   * puede contestar mirando un solo número. Cada línea sale solo si pinta
+   * algo: un desglose siempre lleno de ceros no lo lee nadie.
+   */
+  refrescarDiagnostico(estado, resultado = {}){
+    const p = estado.activo;
+    const estiaje = resultado.estiaje ?? 1;
+    const d = desgloseProduccion(p, estado, estiaje);
+    const dem = demandaMedia(p.habitantes);
+
+    // ¿Algún acuífero en uso está por debajo del umbral? Merma silenciosa.
+    let pozosMermados = false;
+    for(const [masa] of pozosPorMasa(estado))
+      if(nivelMasa(estado, masa) < CONFIG.acuiferos.umbralMerma) pozosMermados = true;
+
+    const firma = [d.rio, d.pozos, d.perdidaTope, d.fugas, d.veneno,
+                   d.paradas, dem, pozosMermados ? 1 : 0]
+      .map(x => (+x).toFixed(2)).join(',');
+    if(this.cache.diagFirma === firma) return;
+    this.cache.diagFirma = firma;
+
+    const L = x => x.toFixed(2) + ' L/s';
+    const f = [];
+
+    // Las fuentes
+    if(d.rioBruto > 0){
+      const nota = estiaje < 0.95
+        ? ` <em class="diag-nota">estiaje: el río viene bajo, −${(d.rioBruto - d.rio).toFixed(2)}</em>`
+        : estiaje > 1.05
+          ? ` <em class="diag-nota buena">deshielo: viene crecido, +${(d.rio - d.rioBruto).toFixed(2)}</em>`
+          : '';
+      f.push(`<div class="casilla-fila"><span>Del río${nota}</span><b>${L(d.rio)}</b></div>`);
+    }
+    if(d.pozos > 0 || pozosMermados){
+      const nota = pozosMermados
+        ? ' <em class="diag-nota mala">acuífero bajo: dan menos</em>' : '';
+      f.push(`<div class="casilla-fila"><span>De los pozos${nota}</span><b>${L(d.pozos)}</b></div>`);
+    }
+    if(d.rioBruto <= 0 && d.pozos <= 0)
+      f.push(`<p class="m-desc">Sin captación conectada: toda el agua sale de tus
+        clics. Una captación en el río —o un pozo— produce sola.</p>`);
+
+    // Las mermas, solo las que están doliendo
+    if(d.perdidaTope > 0.005)
+      f.push(`<div class="casilla-fila"><span>No cabe por ${d.red.def.nombre}
+        <em class="diag-nota mala">renovar la línea lo libera</em></span>
+        <b class="diag-perdida">−${L(d.perdidaTope)}</b></div>`);
+    if(d.fugas > 0.005)
+      f.push(`<div class="casilla-fila"><span>Fugas del ${d.red.def.material}</span>
+        <b class="diag-perdida">−${L(d.fugas)}</b></div>`);
+    if(d.veneno > 0.005)
+      f.push(`<div class="casilla-fila"><span>Agua insalubre
+        <em class="diag-nota mala">lixiviados sobre tu toma</em></span>
+        <b class="diag-perdida">−${L(d.veneno)}</b></div>`);
+    if(d.paradas > 0)
+      f.push(`<div class="casilla-fila"><span>${d.paradas === 1
+          ? 'Una pieza parada por avería' : d.paradas + ' piezas paradas por avería'}
+        <em class="diag-nota mala">repárala sobre el mapa</em></span>
+        <b class="diag-perdida">parada</b></div>`);
+
+    // El cierre: lo que queda contra lo que pide el pueblo
+    const cubre = d.neto >= dem;
+    f.push(`<div class="casilla-fila diag-total"><span>Produce</span><b>${L(d.neto)}</b></div>
+      <div class="casilla-fila"><span>El pueblo pide de media</span><b>${L(dem)}</b></div>
+      <p class="m-desc">${cubre
+        ? 'La captación cubre la demanda media; el depósito absorbe las puntas y tus clics son propina.'
+        : 'La captación NO cubre la demanda: lo que falte sale de tus clics, o el pueblo pasa sed.'}</p>`);
+
+    document.getElementById('diagnostico').innerHTML = f.join('');
   }
 
   /**
@@ -1063,6 +1138,7 @@ export class UI {
     this.refrescarGuia(estado);
     this.refrescarPaletaObra(estado);
     this.refrescarRed(estado, resultado);
+    this.refrescarDiagnostico(estado, resultado);
     this.refrescarObra(estado);
     this.refrescarCasilla(estado, this.escena);
     this.refrescarFichaObra(estado);

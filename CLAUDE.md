@@ -500,6 +500,16 @@ el mapa se convierta en un juego aparte: si desatiendes el abastecimiento,
 explorar se encarece; si lo cuidas, el territorio se abre. Cualquier mecánica
 nueva del mapa debería engancharse aquí y no vivir por su cuenta.
 
+**El desglose de producción es LA fuente, no un espejo.** La solapa Pueblo abre
+con "De dónde sale el agua" (`refrescarDiagnostico`): río, pozos y cada merma
+—estiaje, tope de tubería, fugas, lixiviados, averías— con su número y su
+remedio, y el cierre produce-contra-demanda. Lo importante es el orden de las
+dependencias: `desgloseProduccion()` en `simulacion.js` ES la cuenta, y
+`caudalCaptacion()` y `redEstrangula()` derivan de ella. Se hizo así a propósito
+—el panel podría haber calculado su propia versión— porque duplicar una fórmula
+ya provocó una vez dos verdades distintas con la demanda. Cada línea sale solo
+si duele: un desglose lleno de ceros no lo lee nadie.
+
 **Ojo con el tope de ingresos.** Solo se factura el agua SERVIDA, así que la
 recaudación está topada por la demanda del pueblo: en cuanto la superas, clicar
 más no da nada. Por eso el crecimiento de población es agresivo
