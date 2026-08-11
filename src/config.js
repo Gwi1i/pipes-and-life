@@ -356,6 +356,15 @@ export const CONFIG = {
     horasPorSegundo: 0.4
   },
 
+  /* ---------- SONIDO ----------
+     Sintetizado entero (src/sonido.js): aquí solo los mandos de volumen. Los
+     "parches" de cada efecto —frecuencias, envolventes— son decisiones
+     musicales y viven con el código, como los trazos del dibujo. */
+  sonido: {
+    volumen: 0.35,        // general; el interruptor de la cabecera lo apaga
+    volumenLluvia: 0.05   // el ambiente de lluvia, muy por debajo del resto
+  },
+
   /* ---------- TIEMPO ---------- */
   tiempo: {
     horasPorAño: 360

@@ -78,6 +78,7 @@ red-hidraulica/
     ├── escena_svg.js   Estilo B: sprites SVG dibujados a mano (hereda de escena)
     ├── escena_assets.js Estilo C: imágenes PNG de assets/ (hereda de escena)
     ├── escena_teselas.js Estilo D: vista cenital sobre cuadrícula (hereda)
+    ├── sonido.js       Efectos sintetizados con Web Audio (sin archivos de audio)
     ├── tutorial.js     La guía de los primeros pasos (solo lee estado)
     ├── diagramas.js    Los esquemas animados de cada instalación (módulo puro)
     ├── entrada.js      Ratón, tacto, teclado → acciones
@@ -498,6 +499,19 @@ BOMBEAR" y "engrasa la instalación" dos versiones después de quitarse ambos: e
 texto de los primeros pasos no lo relee nadie al refactorizar. Si quitas o
 renombras algo con lo que interactúa el jugador, busca su nombre en
 `CONFIG.tutorial` y en los hitos.
+
+**El sonido se fabrica por código, como el dibujo.** `sonido.js` sintetiza todo
+con Web Audio: ni un archivo de audio en el repo. Es un módulo como la escena
+—solo reacciona, nunca toca el estado— y despierta perezoso porque el navegador
+no deja sonar nada antes del primer gesto. Reglas: el clic de bombear lleva azar
+en el tono (es el sonido más repetido con diferencia y sin azar suena a martillo
+pilón); `contarHito()` es el ÚNICO sitio que suena la tarjeta, para que ningún
+momento suene dos veces; la lluvia es lo único continuo y va bajísimo; y la
+preferencia de silencio vive en su propia clave de localStorage
+(`redHidraulica_sonido`), no en el guardado — tiene que sobrevivir al botón
+Reiniciar. Los volúmenes van en `CONFIG.sonido`; las frecuencias y envolventes
+de cada efecto son decisiones musicales y viven con el código, como los trazos
+del dibujo.
 
 **El tacto es un ciudadano de primera.** El zoom táctil es el PELLIZCO:
 `entrada.js` lleva los dedos en un mapa y con dos reparte el gesto en `pellizco`

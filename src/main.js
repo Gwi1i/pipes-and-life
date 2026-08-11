@@ -22,6 +22,7 @@ import { avanzar, bombear, costeMejora, requisitosAutobomba,
          incorporarPueblo, canonIncorporacion } from './simulacion.js';
 import { formatear } from './util.js';
 import { comprobar as comprobarGuia, saltar as saltarGuia } from './tutorial.js';
+import * as sonido from './sonido.js';
 
 const lienzo  = document.getElementById('escena');
 const estado  = new Estado();
@@ -68,6 +69,7 @@ function procesarAcciones(){
         // Que la caseta de bombeo acuse el clic: hasta ahora bombear solo movía
         // números y la pieza del mapa se quedaba igual.
         escena.golpeBomba();
+        sonido.bombear();
         break;
       }
 
@@ -247,6 +249,7 @@ function procesarAcciones(){
           bombear(estado.activo, estado);
           escena.destello(a.x, a.y);
           escena.golpeBomba();
+          sonido.bombear();
           break;
         }
 
@@ -259,7 +262,8 @@ function procesarAcciones(){
           const r = clicarCasilla(estado.mapa, col, fila, poderExpansion(estado));
           if(r === null){ avisar('Ahí no llegas todavía: abre primero una casilla de al lado.'); break; }
           escena.destello(a.x, a.y);
-          if(r === 'descubierta') anunciarHallazgo(celda, col, fila);
+          if(r === 'descubierta'){ sonido.destapar(); anunciarHallazgo(celda, col, fila); }
+          else sonido.picar();
         } else if(celda.hallazgo && !celda.resuelto){
           // Un hallazgo sin atender se selecciona: sus acciones salen en el panel
           estado.seleccion = { col, fila };
@@ -336,9 +340,11 @@ function procesarAcciones(){
         const clase = sondear(estado.mapa, sel.col, sel.fila);
         if(clase){
           contarHito('acuifero');
+          sonido.agua();
           estado.anotar(`¡Sondeo positivo! ${clase.nombre} bajo esa casilla.`, 'ok');
           avisar(`¡Ha dado agua! ${clase.nombre}. Ya puedes poner el pozo encima.`);
         } else {
+          sonido.seco();
           // El sondeo seco es la lección cara, y por eso se cuenta entero: lo que
           // ha costado y que ese punto ya está descartado para siempre.
           estado.anotar(`Sondeo seco: ${formatear(coste)} € y ni gota.`, 'critico');
@@ -374,6 +380,7 @@ function procesarAcciones(){
         habPrev.push(Math.floor(nuevo.habitantes));
         estado.anotar(`${nuevo.nombre} entra en la mancomunidad: ya recibe agua.`, 'ok');
         avisar(`¡${nuevo.nombre} incorporado! (${estado.pueblos.length} núcleos)`);
+        sonido.pueblo();
         ui.reconstruirPestanas(estado);
         contarHito('mancomunidad');
         if(faseActual(estado) > faseAntes){
@@ -418,6 +425,7 @@ function procesarAcciones(){
         }
         estado.pagar(coste);
         p.mejoras[a.clave]++;
+        sonido.compra();
         estado.anotar(`${p.nombre} · ${m.nombre} nivel ${p.mejoras[a.clave]}.`, 'ok');
         if(a.clave === 'deposito'   && p.mejoras.deposito   === 1) escena.aparecerDeposito();
         if(a.clave === 'captacion'  && p.mejoras.captacion  === 1) escena.aparecerCaptacion();
@@ -508,6 +516,7 @@ function colocarElemento(col, fila){
     estado.modo = { tipo: null, elemento: null, trazado: [], deInventario: false };
   }
   estado.construcciones.push({ tipo: clave, col, fila });
+  sonido.colocar();
   // Se queda la herramienta puesta: normalmente se colocan varias seguidas
   ui.refrescarConstruccion(estado);
 }
@@ -588,6 +597,7 @@ function clicTuberia(col, fila){
   const v = puedeSeguirTrazado(estado.mapa, trazado, col, fila);
   if(!v.ok){ avisar(v.motivo); return; }
   trazado.push({ col, fila });
+  sonido.tramo();
 }
 
 function rematarTuberia(){
@@ -604,6 +614,7 @@ function rematarTuberia(){
   estado.anotar(`${CONFIG.redes[red].nombre}: ${diametro(dn, red).nombre} de ` +
                 `${trazado.length} casillas por ${formatear(coste)} €.`, 'ok');
   estado.modo.trazado = [];
+  sonido.rematar();
 }
 
 /**
@@ -619,6 +630,7 @@ function anunciarHallazgo(celda, col, fila){
   };
   estado.anotar(textos[celda.hallazgo], 'ok');
   avisar(textos[celda.hallazgo]);
+  sonido.hallazgo();
 }
 const distancia = (c, f) =>
   Math.hypot(c - CONFIG.mapaMundo.origen.col, f - CONFIG.mapaMundo.origen.fila);
@@ -668,6 +680,7 @@ function tickAverias(dtHoras){
   });
   estado.anotar(`Avería: ${def.nombre} fuera de servicio hasta que lo repares.`, 'critico');
   avisar(`¡Avería en ${def.nombre}! Ve al mapa y clica encima.`);
+  sonido.averia();
 }
 
 /** Golpes de llave que pide una avería. El personal contratado deja menos faena. */
@@ -692,11 +705,13 @@ function clicAveria(col, fila){
   }
   estado.pagar(coste);
   av.clics--;
+  sonido.llave();
   if(av.clics > 0){
     avisar(`Reparando... quedan ${av.clics} (−${formatear(coste)} €)`);
     return true;
   }
   estado.averias.splice(estado.averias.indexOf(av), 1);
+  sonido.reparada();
   const obra = estado.construcciones.find(o => o.col === col && o.fila === fila);
   const nombre = obra ? CONFIG.construibles[obra.tipo].nombre : 'La instalación';
   estado.anotar(`${nombre}: avería reparada, vuelve a estar en servicio.`, 'ok');
@@ -773,6 +788,9 @@ function contarHito(id){
   if(estado.hitosVistos.includes(id)) return;
   estado.hitosVistos.push(id);
   estado.hitoPendiente = id;
+  // Único embudo de hitos Y logros: el sonido de tarjeta va aquí y en ningún
+  // otro sitio, así ningún momento suena dos veces.
+  sonido.hito();
 }
 
 /**
@@ -884,6 +902,9 @@ function bucle(ahora){
     estado.guardar();
   }
 
+  // El ambiente de lluvia sigue a la intensidad real: el otoño se OYE.
+  sonido.ambiente(resultado.lluvia || 0);
+
   escena.dibujar(estado, resultado, dt);
   requestAnimationFrame(bucle);
 }
@@ -897,6 +918,13 @@ document.getElementById('btn-reiniciar').onclick = () => {
   Estado.borrar();
   location.reload();
 };
+
+// El interruptor del sonido. La preferencia sobrevive al Reiniciar: va en su
+// propia clave de localStorage, no en el guardado de la partida.
+const btnSonido = document.getElementById('btn-sonido');
+const rotularSonido = () => { btnSonido.textContent = sonido.activo() ? 'Sonido: sí' : 'Sonido: no'; };
+btnSonido.onclick = () => { sonido.alternar(); rotularSonido(); };
+rotularSonido();
 
 // Solapas del lateral: enseñar una hoja y esconder las demás. Es DOM puro y no
 // toca el estado, así que vive aquí y no en entrada.js.

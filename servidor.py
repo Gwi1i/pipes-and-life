@@ -51,6 +51,17 @@ def puerto_libre(inicio):
     return None
 
 
+def ip_local():
+    """La IP de esta maquina en la red de casa, para jugar desde el movil."""
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            # No manda nada: solo pregunta que interfaz usaria para salir.
+            s.connect(('8.8.8.8', 80))
+            return s.getsockname()[0]
+    except OSError:
+        return None
+
+
 def main():
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
@@ -62,11 +73,18 @@ def main():
         return 1
 
     url = 'http://localhost:%d/' % puerto
-    servidor = http.server.HTTPServer(('127.0.0.1', puerto), Manejador)
+    # Escucha en todas las interfaces para poder jugar TAMBIEN desde el movil
+    # (misma wifi). El precio: mientras este abierto, cualquier aparato de tu
+    # red puede entrar. En una red domestica es un precio pequeno.
+    servidor = http.server.HTTPServer(('0.0.0.0', puerto), Manejador)
 
     print('')
     print('  RED HIDRAULICA')
     print('  ' + url)
+    ip = ip_local()
+    if ip:
+        print('')
+        print('  Desde el movil (misma wifi):  http://%s:%d/' % (ip, puerto))
     print('')
     print('  Deja esta ventana abierta mientras juegas.')
     print('  Para cerrar el juego: cierra la ventana o pulsa Ctrl+C.')
