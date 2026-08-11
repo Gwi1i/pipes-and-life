@@ -983,11 +983,17 @@ export class EscenaMapa extends Escena {
       // Sobre agua no hay sombra arrojada: hay reflejo y ondas alrededor de los
       // pilotes. Una elipse negra sobre el río era justo lo que hacía que la
       // captación pareciera flotar en el aire.
+      // La sombra va DONDE APOYA LA PIEZA, no en un punto fijo de la casilla.
+      // Estaba puesta a ojo en y+0.72t mientras la silueta, ya escalada y subida
+      // por `alturaPieza`, apoyaba en y+0.53t: veinte centesimas de casilla de
+      // aire debajo, y de ahi que el bombeo pareciera flotar. Se calcula igual
+      // que la silueta para que no puedan volver a separarse.
+      const baseY = oy + lado * 0.70;
       const suelo = celdaEn(estado.mapa, obra.col, obra.fila);
       if(suelo && (suelo.tipo === 'agua' || suelo.tipo === 'lago'))
-        this.reflejoEnAgua(x + t * 0.5, y + t * 0.70, t * 0.22, t * 0.075);
+        this.reflejoEnAgua(x + t * 0.5, baseY, lado * 0.22, lado * 0.075);
       else
-        this.sombraPieza(x + t * 0.5, y + t * 0.72, t * 0.26, t * 0.085);
+        this.sombraPieza(x + t * 0.5, baseY, lado * 0.26, lado * 0.085);
 
       // La silueta se dibuja siempre en su caja de t x t y se ESCALA aquí, así
       // ningún dibujo de pieza tiene que saber nada del tamaño final.

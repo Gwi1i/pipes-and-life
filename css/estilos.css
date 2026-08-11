@@ -101,50 +101,39 @@ body{
   transition:width .12s linear;
 }
 
-/* ---------- BOTONERA (los dos clics del juego) ---------- */
-.botonera{display:flex; flex:none; gap:2px;}
-.botonera .btn-bombear{flex:1;}
-
-.btn-mantener{
-  flex:none; width:170px; cursor:pointer; user-select:none;
-  display:flex; flex-direction:column; align-items:center; gap:2px;
-  padding:12px 10px;
-  background:linear-gradient(180deg,#4a3a1d,#2a2110);
+/* ---------- TIRA DE ENGRASADO ----------
+   Lo que queda de los dos botonazos de antes. Bombear se hace clicando el pueblo
+   en el mapa; engrasar no tiene sitio propio sobre el terreno, así que se queda
+   aquí abajo en una tira fina con su barra de desgaste. */
+.botonera{display:flex; flex:none;}
+.btn-engrasar{
+  flex:1; cursor:pointer; user-select:none;
+  display:flex; align-items:center; gap:10px; padding:7px 14px;
+  background:linear-gradient(180deg,#33280f,#20190a);
   border:none; border-top:2px solid var(--alarma); color:var(--texto);
-  font-family:inherit; transition:transform .05s, background .2s;
+  font-family:inherit; transition:background .2s;
 }
-.btn-mantener:hover{background:linear-gradient(180deg,#634d26,#2a2110);}
-.btn-mantener:active{transform:scale(.985);}
-.btn-mantener:focus-visible{outline:2px solid var(--alarma); outline-offset:-2px;}
-.btn-mantener .bb-txt{color:var(--alarma); font-size:13px; letter-spacing:.16em;}
-.btn-mantener.urge{animation:urgeMant 1.1s ease-in-out infinite;}
+.btn-engrasar:hover{background:linear-gradient(180deg,#4a3a17,#20190a);}
+.btn-engrasar:active{filter:brightness(1.15);}
+.btn-engrasar:focus-visible{outline:2px solid var(--alarma); outline-offset:-2px;}
+.be-icono{font-size:14px; line-height:1;}
+.be-txt{
+  font-family:var(--mono); font-size:10px; font-weight:700;
+  letter-spacing:.16em; color:var(--alarma);
+}
+.be-sub{font-family:var(--mono); font-size:9px; color:var(--tenue); white-space:nowrap;}
+.btn-engrasar .bm-barra{flex:1; max-width:none;}
+.btn-engrasar.urge{animation:urgeMant 1.1s ease-in-out infinite;}
 @keyframes urgeMant{
   0%,100%{box-shadow:inset 0 3px 0 -1px rgba(245,165,36,0);}
   50%{box-shadow:inset 0 3px 0 -1px rgba(245,165,36,.9);}
 }
 .bm-barra{
-  display:block; width:100%; height:6px; border-radius:4px;
+  display:block; height:6px; border-radius:4px;
   background:rgba(8,18,28,.8); border:1px solid var(--linea-viva); overflow:hidden;
 }
 .bm-barra i{display:block; height:100%; width:0%; background:var(--ok); transition:width .12s linear;}
 .bm-barra i.alto{background:var(--critico);}
-
-/* ---------- BOTÓN DE BOMBEO (el clic principal) ---------- */
-.btn-bombear{
-  flex:none; margin:0; cursor:pointer; user-select:none;
-  display:flex; flex-direction:column; align-items:center; gap:1px;
-  padding:12px 10px;
-  background:linear-gradient(180deg,#1d3a52,#0e2434);
-  border:none; border-top:2px solid var(--agua); color:var(--texto);
-  font-family:inherit; transition:transform .05s, background .2s;
-}
-.btn-bombear:hover{background:linear-gradient(180deg,#24506f,#0e2434);}
-.btn-bombear:active{transform:scale(.985);}
-.btn-bombear:focus-visible{outline:2px solid var(--agua); outline-offset:-2px;}
-.bb-icono{font-size:20px; line-height:1;}
-.bb-txt{font-family:var(--mono); font-size:15px; font-weight:700;
-  letter-spacing:.22em; color:var(--agua);}
-.bb-sub{font-family:var(--mono); font-size:9px; letter-spacing:.06em; color:var(--tenue);}
 
 /* ---------- BLOQUES DE PANEL ---------- */
 .bloque{border:1px solid var(--linea); background:var(--panel);}

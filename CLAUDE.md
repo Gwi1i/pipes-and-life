@@ -101,71 +101,14 @@ límites que hay que respetar:
   atmosférica (mezcla hacia `this.bruma` según lejanía). Si hace falta más
   detalle sin perder fluidez, pre-renderiza a un canvas oculto (como hacía el
   terreno en `master`).
-- **Estilos visuales intercambiables**, todos con la MISMA interfaz
-  (`dibujar`, `destello`, `aparecer*`, `destelloCauce`, `ajustar`):
-  - **M** — `escena_mapa.js` (`EscenaMapa`): **el juego de verdad**. El mapa de
-    exploración: niebla, hallazgos, construcciones, las redes con su color y su
-    grosor, las averías y la previsualización de lo que vas a hacer. Hereda de
-    `Escena` para reutilizar destellos, clima y helpers de color.
-    Las piezas ENSEÑAN lo que pasa: `this.vivo` se cachea una vez por fotograma
-    (nivel del depósito, si produce, si trata, si recicla) y de ahí salen la
-    lámina de agua dentro del depósito, el humo de la chimenea del reciclaje, el
-    vaivén del cable del sondeo y el giro del puente de rasquetas. Son datos que
-    la simulación YA calcula: no hay que inventar nada, solo enchufarlos. Y si el
-    dato dice que no, la pieza se para —un puente barriendo un decantador vacío
-    contaría una mentira—.
-    **La sombra va DESPLAZADA abajo-derecha** (`sombraPieza`), nunca centrada
-    debajo: una sombra centrada es la de una luz cenital y aquí la luz viene de
-    arriba a la izquierda, así que poner la elipse justo debajo hacía que todo
-    pareciera flotar. Y no todo lleva sombra: la MONTAÑA no (es el suelo
-    levantado, no algo apoyado encima) y lo que está sobre AGUA tampoco
-    (`reflejoEnAgua`: reflejo pegado a la base y ondas, nunca una mancha oscura
-    despegada).
-    Las piezas van en ISOMETRICA de verdad (`isoCaja`/`isoCilindro`/`isoTejado`):
-    tapa en rombo y dos laterales, con la luz SIEMPRE de arriba a la izquierda
-    —tapa clara, cara izquierda media, derecha oscura—. Si añades una pieza y no
-    respetas esa luz, canta al lado de las demás. Cada silueta se dibuja en su
-    caja de t x t y `dibujarConstrucciones` la escala, así ningún dibujo sabe el
-    tamaño final. El terreno son FICHAS separadas y redondeadas
-    (`CONFIG.estiloMapa`), no un campo continuo con rejilla encima: es lo que
-    hace que parezca un tablero de piezas. Y `contornoExplorado()` rodea el
-    territorio abierto con una línea dorada dibujando solo el lado de cada
-    casilla que da a lo desconocido, así el conjunto sale como un perímetro
-    único.
-    Todo el dibujo es Canvas 2D a mano y corre por casilla visible y fotograma,
-    así que las operaciones son baratas a propósito. Tres cosas cargan con casi
-    todo el aspecto: el BISEL (luz arriba, sombra abajo) que despega la casilla
-    del plano; la ORILLA (`pintarOrilla`), una franja de arena por el lado que da
-    al agua —es el detalle que más cambia la cara del mapa, sin él el río es un
-    rectángulo recortado con tijera—; y la SILUETA de cada pieza
-    (`silueta`/`caja3d`/`cilindro`), porque antes todas eran el mismo recuadro con
-    una inicial dentro y eso no es un mapa, es una leyenda. La luz viene siempre
-    de arriba a la izquierda: si añades una pieza, respétalo.
-  - **A** — `escena.js` (`Escena`): todo por código ("falso 3D").
-  - **B** — `escena_svg.js` (`EscenaSVG`): hereda de `Escena` y sustituye las
-    estructuras por sprites SVG dibujados a mano.
-  - **C** — `escena_assets.js` (`EscenaAssets`): hereda de `Escena` y sustituye
-    las estructuras por imágenes PNG cargadas desde `assets/` (arte generado con
-    IA; ver `assets/PROMPTS.md`). `dibujarSprite()` respeta la proporción real de
-    cada PNG y lo ancla al suelo; el nivel del depósito se muestra con un medidor
-    lateral (funciona con cualquier arte).
-  - **D** — `escena_teselas.js` (`EscenaTeselas`): vista CENITAL sobre
-    cuadrícula ortogonal, al estilo idle builder. No hay cielo ni horizonte: el
-    terreno es una rejilla y las tuberías se trazan en ortogonal entre celdas.
-    Las posiciones viven en `CONFIG.mapa.celdas`, con `desdeOrilla` contando
-    columnas hacia la izquierda desde el río, para que la composición quede
-    anclada al agua sea cual sea el ancho. El alto fija el tamaño de tesela y se
-    añaden columnas hasta llenar el lienzo. **Las teselas están dibujadas por
-    código a propósito** (prototipo): cuando haya arte, se sustituye el dibujo
-    de cada celda sin tocar posiciones ni tuberías.
-  B y C, mientras un sprite no ha cargado —o el archivo no existe—, recurren al
-  método del padre (`super.metodo()`), así nunca desaparece nada y puedes añadir
-  imágenes de una en una. `main.js` elige con `crearEscena()` según
-  `localStorage.rh_estilo`; el orden es `['m','d','a','b','c']` y **'m' es el
-  predeterminado**. A, B, C y D son vistas de la PARCELA y se quedan como
-  alternativas para comparar: no tienen mapa, así que en ellas el clic bombea en
-  vez de explorar (lo distingue `main.js` con `escena instanceof EscenaMapa`).
-  Los helpers `mezclarColor`/`oscurecer`/`aclarar` se exportan desde `escena.js`.
+- **`escena_mapa.js` (`EscenaMapa`) es LA vista del juego.** Hubo cuatro estilos
+  mas para tantear por donde tirar (diorama en falso 3D, sprites SVG, PNG de IA y
+  una vista cenital de la parcela); se borraron al quedar claro cual valia.
+  `escena.js` se queda como CLASE BASE: de ahi salen los destellos, el clima, las
+  estaciones y los helpers `mezclarColor`/`oscurecer`/`aclarar`. No se dibuja
+  nunca por si sola.
+  El mapa de exploracion: niebla, hallazgos, construcciones, las redes con su
+  color y su grosor, las averias y la previsualizacion de lo que vas a hacer.
 - **`entrada.js` no toca el estado.** Traduce eventos del navegador a acciones y
   las encola; `main.js` es quien las ejecuta. La lógica de juego queda en un
   solo sitio.
@@ -407,6 +350,14 @@ densidad ES la informacion: si lo ves tupido, ya sabes que cruzarlo cuesta.
 Y `suavizarArranque()` rebaja cada familia a su variante barata cerca del pueblo
 (`radioAmable`). Empezar rodeado de roca viva por capricho de la semilla no es
 dificultad, es mala suerte.
+
+**El clic vive EN EL MAPA.** Bombear es clicar EL PUEBLO, y solo el pueblo.
+Antes habia un botonazo BOMBEAR ocupando un cuarto de pantalla y ademas clicar
+cualquier casilla vacia bombeaba, que no significaba nada. Ahora cada clic sobre
+el terreno hace lo que corresponde a lo que hay debajo: repara si esta roto,
+selecciona si es tuyo, destapa si esta en niebla, bombea si es el pueblo. Del
+botonazo solo queda una tira fina para ENGRASAR, que no tiene sitio propio sobre
+el terreno.
 
 **El mapa y el abastecimiento son UN SOLO bucle.** `poderExpansion(estado)` sale
 de la población, el nivel de servicio, el desgaste y las averías, y DIVIDE el

@@ -36,26 +36,57 @@ export class UI {
 
   /* ---------------- CONSTRUIR EN EL MAPA ---------------- */
 
+  /**
+   * La paleta de obra, AGRUPADA POR RED. Era una lista plana de ocho piezas más
+   * el botón de tender, y ahí dentro convivían el bombeo, la depuradora y el
+   * vertedero como si fueran lo mismo. Ahora cada red trae sus piezas y su
+   * botón de tender justo debajo, que es como se usan: eliges red, colocas lo
+   * suyo y tiendes lo suyo.
+   */
   construirPaletaObra(){
     const cont = document.getElementById('construir');
     if(!cont) return;
-    const obras = Object.entries(CONFIG.construibles)
-      .sort((a, b) => (a[1].orden || 0) - (b[1].orden || 0));
-    cont.innerHTML = obras.map(([clave, d]) => `
-      <button class="mejora obra" data-accion="elegirConstruible" data-clave="${clave}"
-              id="obra-${clave}" style="--tono:${d.color}">
-        <span class="m-cab"><span class="m-nom">${d.nombre}</span></span>
-        <span class="m-desc">${d.desc}</span>
-        <span class="m-coste">${formatear(d.coste)} €</span>
-      </button>`).join('') + `
-      <button class="mejora obra tuberia" data-accion="modoTuberia" id="obra-tuberia"
-              style="--tono:${CONFIG.color.agua}">
-        <span class="m-cab"><span class="m-nom">Tender tubería</span></span>
-        <span class="m-desc">Tú marcas el recorrido, casilla a casilla. Clic en
-          la última para rematar, en la anterior para deshacer. Cada terreno
-          cuesta lo suyo: rodear un bosque puede salir mejor que desbrozarlo.</span>
-        <span class="m-coste">según el terreno</span>
-      </button>`;
+
+    cont.innerHTML = Object.entries(CONFIG.redes).map(([clave, r]) => {
+      const piezas = (r.piezas || [])
+        .filter(k => CONFIG.construibles[k])
+        .map(k => {
+          const d = CONFIG.construibles[k];
+          return `
+            <button class="mejora obra" data-accion="elegirConstruible" data-clave="${k}"
+                    id="obra-${k}" style="--tono:${d.color}">
+              <span class="m-cab"><span class="m-nom">${d.nombre}</span>
+                <span class="m-coste">${formatear(d.coste)} €</span></span>
+              <span class="m-desc">${d.desc}</span>
+            </button>`;
+        }).join('');
+
+      return `
+        <div class="servicio red-obra" id="obra-red-${clave}" style="--tono:${r.color}">
+          <p class="sv-cab"><span class="sv-nom">${r.nombre}</span></p>
+          ${piezas}
+          <button class="mejora obra tender" data-accion="elegirRedYTender" data-clave="${clave}"
+                  id="tender-${clave}" style="--tono:${r.color}">
+            <span class="m-cab"><span class="m-nom">Tender ${r.corto}</span>
+              <span class="m-coste" id="tender-coste-${clave}">—</span></span>
+            <span class="m-desc">Marca el recorrido casilla a casilla. Clic en la
+              última para rematar, en la anterior para deshacer.</span>
+          </button>
+        </div>`;
+    }).join('');
+  }
+
+  /** Oculta las redes cuyo servicio aún no está en marcha. */
+  refrescarPaletaObra(estado){
+    const p = estado.activo;
+    for(const [clave, r] of Object.entries(CONFIG.redes)){
+      const caja = document.getElementById('obra-red-' + clave);
+      if(!caja) continue;
+      const abierta = !r.requiere || servicioActivo(p, r.requiere);
+      caja.style.display = abierta ? '' : 'none';
+      const etq = document.getElementById('tender-coste-' + clave);
+      if(etq && abierta) etq.textContent = diametro(estado.dnActual[clave], clave).nombre;
+    }
   }
 
   /* ---------------- LA RED: DIÁMETROS Y RENOVACIÓN ---------------- */
@@ -392,7 +423,8 @@ export class UI {
     const modo = estado.modo;
     document.querySelectorAll('#construir .obra').forEach(b => {
       const activa = (b.dataset.accion === 'elegirConstruible' && modo.elemento === b.dataset.clave)
-                  || (b.dataset.accion === 'modoTuberia' && modo.tipo === 'tuberia');
+                  || (b.dataset.accion === 'elegirRedYTender'
+                      && modo.tipo === 'tuberia' && estado.redActual === b.dataset.clave);
       b.classList.toggle('activa', activa);
     });
   }
@@ -686,6 +718,7 @@ export class UI {
     resultado.multaHora = (resultado.suciedad || 0) * CONFIG.cauce.multaMaxPorHora;
 
     this.refrescarGuia(estado);
+    this.refrescarPaletaObra(estado);
     this.refrescarRed(estado, resultado);
     this.refrescarObra(estado);
     this.refrescarHallazgo(estado);

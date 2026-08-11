@@ -32,7 +32,6 @@
     </div>
 
     <div class="acciones">
-      <button id="btn-estilo" title="Alternar estilo visual A/B">Estilo: A · 3D</button>
       <button id="btn-reiniciar">Reiniciar</button>
     </div>
   </header>
@@ -50,17 +49,16 @@
           <div class="barra-agua-fondo"><div class="barra-agua-relleno" id="barra-agua"></div></div>
         </div>
       </div>
+      <!-- El clic vive EN EL MAPA: se bombea clicando el pueblo. Aquí solo queda
+           una tira fina con el desgaste, que no tiene sitio propio sobre el
+           terreno. Los dos botonazos de antes ocupaban un cuarto de pantalla
+           para hacer lo que ahora se hace donde está la cosa. -->
       <div class="botonera">
-        <button class="btn-bombear" id="btn-bombear">
-          <span class="bb-icono">💧</span>
-          <span class="bb-txt">BOMBEAR</span>
-          <span class="bb-sub">clic en la escena · o barra espaciadora</span>
-        </button>
-        <button class="btn-mantener" id="btn-mantener">
-          <span class="bb-icono">🔧</span>
-          <span class="bb-txt">ENGRASAR</span>
+        <button class="btn-engrasar" id="btn-mantener" title="Baja el desgaste de la instalación">
+          <span class="be-icono">🔧</span>
+          <span class="be-txt">ENGRASAR</span>
           <span class="bm-barra"><i id="barra-desgaste"></i></span>
-          <span class="bb-sub" id="desgaste-txt">desgaste 0 %</span>
+          <span class="be-sub" id="desgaste-txt">desgaste 0 %</span>
         </button>
       </div>
     </main>

@@ -9,10 +9,6 @@ import { CONFIG } from './config.js';
 import { Estado } from './estado.js';
 import { Entrada } from './entrada.js';
 import { UI } from './ui.js';
-import { Escena } from './escena.js';
-import { EscenaSVG } from './escena_svg.js';
-import { EscenaAssets } from './escena_assets.js';
-import { EscenaTeselas } from './escena_teselas.js';
 import { EscenaMapa } from './escena_mapa.js';
 import { celdaEn, clicarCasilla, clicsParaDestapar, puedeColocar,
          puedeSeguirTrazado, costeTrazado, casillaEnRed,
@@ -30,20 +26,12 @@ const habiaPartida = Estado.cargar(estado);
 const entrada = new Entrada(lienzo);
 const ui      = new UI(entrada);
 
-// Estilo visual: A (Canvas "falso 3D"), B (sprites SVG) o C (imágenes de IA en
-// assets/). Se recuerda la elección; el botón de la barra superior cicla A→B→C.
-// 'm' (el mapa) es la vista principal del juego; el resto quedan como estilos
-// antiguos de la parcela, accesibles con el botón para comparar.
-const ESTILOS = ['m', 'd', 'a', 'b', 'c'];
-let estiloEscena = ESTILOS.includes(localStorage.getItem('rh_estilo')) ? localStorage.getItem('rh_estilo') : 'm';
-function crearEscena(){
-  if(estiloEscena === 'b') return new EscenaSVG(lienzo);
-  if(estiloEscena === 'c') return new EscenaAssets(lienzo);
-  if(estiloEscena === 'd') return new EscenaTeselas(lienzo);
-  if(estiloEscena === 'm') return new EscenaMapa(lienzo);
-  return new Escena(lienzo);
-}
-let escena = crearEscena();
+// El mapa de exploracion ES el juego. Hubo cuatro estilos mas (diorama en falso
+// 3D, sprites SVG, PNG de IA y una vista cenital de la parcela) que sirvieron
+// para tantear por donde tirar; se han quitado al quedar claro cual valia.
+// `escena.js` se queda porque `EscenaMapa` hereda de el: destellos, clima,
+// estaciones y los helpers de color viven ahi.
+let escena = new EscenaMapa(lienzo);
 
 if(!habiaPartida){
   estado.anotar(`Nueva mancomunidad. ${estado.activo.nombre} espera agua: dale a BOMBEAR.`, 'info');
@@ -64,31 +52,35 @@ function procesarAcciones(){
     switch(a.tipo){
 
       case 'bombear': {
+        // Sin coordenadas (barra espaciadora): el destello va sobre el pueblo.
+        const O = CONFIG.mapaMundo, t = escena.tam;
+        const px = a.x != null ? a.x : O.origen.col * t - estado.camara.x + t / 2;
+        const py = a.y != null ? a.y : O.origen.fila * t - estado.camara.y + t / 2;
         bombear(estado.activo, estado);
-        escena.destello(a.x, a.y);
+        escena.destello(px, py);
         // Que la caseta de bombeo acuse el clic: hasta ahora bombear solo movía
         // números y la pieza del mapa se quedaba igual.
-        if(escena.golpeBomba) escena.golpeBomba();
+        escena.golpeBomba();
         break;
       }
 
       /* --- EL MAPA: arrastrar para mirar, clicar para destapar --- */
 
       case 'arrastrar':
-        if(escena instanceof EscenaMapa){
+        {
           estado.camara.x -= a.dx;
           estado.camara.y -= a.dy;
         }
         break;
 
       case 'senalar':
-        if(escena instanceof EscenaMapa){
+        {
           escena.resaltada = escena.celdaEnPantalla(estado, a.x, a.y);
         }
         break;
 
       case 'zoom':
-        if(escena instanceof EscenaMapa) escena.ampliar(estado, a.delta, a.x, a.y);
+        escena.ampliar(estado, a.delta, a.x, a.y);
         break;
 
       /* --- MODO CONSTRUCCIÓN --- */
@@ -100,6 +92,25 @@ function procesarAcciones(){
         estado.modo = estado.modo.elemento === a.clave
           ? { tipo: null, elemento: null, trazado: [] }
           : { tipo: 'colocar', elemento: a.clave, trazado: [] };
+        ui.refrescarConstruccion(estado);
+        break;
+      }
+
+      // Elegir red y ponerse a tender, de una: en la paleta cada red trae su
+      // propio botón de tender, así que pulsarlo ya dice cuál.
+      case 'elegirRedYTender': {
+        const def = CONFIG.redes[a.clave];
+        if(!def) break;
+        if(def.requiere && !servicioActivo(estado.activo, def.requiere)){
+          avisar(`Esa red llega con el servicio de ${CONFIG.servicios[def.requiere].nombre.toLowerCase()}.`);
+          break;
+        }
+        const yaEstaba = estado.modo.tipo === 'tuberia' && estado.redActual === a.clave;
+        estado.redActual = a.clave;
+        estado.modo = yaEstaba
+          ? { tipo: null, elemento: null, trazado: [] }
+          : { tipo: 'tuberia', elemento: null, trazado: [] };
+        ui.invalidarCache();
         ui.refrescarConstruccion(estado);
         break;
       }
@@ -191,12 +202,6 @@ function procesarAcciones(){
         break;
 
       case 'clicEscena': {
-        // En el mapa el clic explora; en las vistas de parcela, bombea.
-        if(!(escena instanceof EscenaMapa)){
-            bombear(estado.activo, estado);
-          escena.destello(a.x, a.y);
-          break;
-        }
         const { col, fila } = escena.celdaEnPantalla(estado, a.x, a.y);
         const celda = celdaEn(estado.mapa, col, fila);
         if(!celda) break;
@@ -207,6 +212,18 @@ function procesarAcciones(){
 
         // Lo roto manda: si hay una avería aquí, el clic la repara
         if(clicAveria(col, fila)){ escena.destello(a.x, a.y); break; }
+
+        // EL PUEBLO ES EL BOTÓN DE BOMBEAR. Antes había un botonazo ocupando un
+        // cuarto de la pantalla para hacer esto, y era el resto del mapa —terreno
+        // vacío— el que bombeaba al clicarlo, que no significaba nada. Ahora se
+        // clica donde está la cosa: sobre el pueblo, y solo sobre el pueblo.
+        if(col === CONFIG.mapaMundo.origen.col && fila === CONFIG.mapaMundo.origen.fila){
+          estado.seleccion = null;
+          bombear(estado.activo, estado);
+          escena.destello(a.x, a.y);
+          escena.golpeBomba();
+          break;
+        }
 
         // Clicar una instalación tuya la selecciona para verla de cerca: es la
         // única forma de saber cómo va de lleno un vertedero.
@@ -222,10 +239,9 @@ function procesarAcciones(){
           // Un hallazgo sin atender se selecciona: sus acciones salen en el panel
           estado.seleccion = { col, fila };
         } else {
-          // Casilla ya abierta y sin nada que hacer: el clic sigue bombeando
+          // Terreno abierto y sin nada que hacer: no pasa nada. Que clicar
+          // hierba vacía bombeara agua no lo entendía nadie.
           estado.seleccion = null;
-          bombear(estado.activo, estado);
-          escena.destello(a.x, a.y);
         }
         break;
       }
@@ -345,7 +361,7 @@ function procesarAcciones(){
       case 'irAAveria': {
         const av = estado.averias[parseInt(a.clave, 10)] || estado.averias[0];
         if(!av) break;
-        if(escena instanceof EscenaMapa) escena.centrarEn(estado, av.col, av.fila);
+        escena.centrarEn(estado, av.col, av.fila);
         estado.seleccion = { col: av.col, fila: av.fila };
         avisar('Ahí la tienes: clica encima hasta dejarla arreglada.');
         break;
@@ -727,19 +743,6 @@ document.getElementById('btn-reiniciar').onclick = () => {
   Estado.borrar();
   location.reload();
 };
-
-// Alternar estilo visual A/B para compararlos, sin recargar
-const btnEstilo = document.getElementById('btn-estilo');
-const ETIQUETAS = { m: 'Mapa', d: 'Parcela', a: 'A · 3D', b: 'B · SVG', c: 'C · IA' };
-function etiquetaEstilo(){ btnEstilo.textContent = 'Estilo: ' + ETIQUETAS[estiloEscena]; }
-btnEstilo.onclick = () => {
-  estiloEscena = ESTILOS[(ESTILOS.indexOf(estiloEscena) + 1) % ESTILOS.length];
-  localStorage.setItem('rh_estilo', estiloEscena);
-  escena = crearEscena();
-  if(window.juego) window.juego.escena = escena;   // mantener la referencia de depuración
-  etiquetaEstilo();
-};
-etiquetaEstilo();
 
 // Depuración: `juego` en la consola. `juego.dinero(n)` fija el saldo.
 window.juego = {

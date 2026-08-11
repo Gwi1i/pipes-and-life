@@ -53,14 +53,6 @@ export class Entrada {
     l.addEventListener('pointerup', soltar);
     l.addEventListener('pointerleave', () => { pulsado = false; });
 
-    // Botón grande dedicado (accesible y para móvil)
-    const btn = document.getElementById('btn-bombear');
-    if(btn) btn.addEventListener('pointerdown', e => {
-      e.preventDefault();
-      const r = l.getBoundingClientRect();
-      this.emitir('bombear', { x: r.width * 0.26, y: r.height * 0.55 });
-    });
-
     // Rueda del ratón: zoom sobre el mapa. Se manda la posición del cursor para
     // poder ampliar SOBRE ese punto y no sobre el centro, que es lo que hace
     // que el zoom se sienta natural en vez de dar saltos.
@@ -77,12 +69,11 @@ export class Entrada {
       this.emitir('mantener');
     });
 
-    // Barra espaciadora = bombear, para quien prefiera el teclado
+    // Barra espaciadora = bombear en el pueblo, para quien prefiera el teclado
     window.addEventListener('keydown', e => {
       if(e.code === 'Space' && e.target === document.body){
         e.preventDefault();
-        const r = l.getBoundingClientRect();
-        this.emitir('bombear', { x: r.width * 0.26, y: r.height * 0.55 });
+        this.emitir('bombear');
       }
     });
 
