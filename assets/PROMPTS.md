@@ -191,6 +191,17 @@ abierta, no el objeto en un museo.
 > paleontólogo con martillo y cincel y una carpa de trabajo al fondo,
 > *(+ coletilla)*
 
+## El sondeo que da agua (`h_acuifero.png`)
+
+Sale la primera vez que una perforación encuentra acuífero. Es un momento
+alegre: el agua que no se veía, saliendo donde no hay río.
+
+### `h_acuifero.png`
+> Genera una imagen: un equipo de perforación de sondeos en un campo seco lejos
+> de cualquier río, la torre de la máquina sobre el pozo recién abierto y un
+> chorro de agua clara saliendo por la boca del entubado, con dos operarios
+> celebrándolo y un pueblo pequeño al fondo entre lomas, *(+ coletilla)*
+
 ## La zona protegida (`h_proteccion.png`)
 
 La tarjeta sale la primera vez que una obra tropieza con una zona de especial

@@ -21,7 +21,7 @@
 import { CONFIG } from './config.js';
 import { limitar } from './util.js';
 import { inventarioConectado, cuelloDeBotella, construccionesConectadas,
-         celdaEn, nombreDeNucleo, tipoYacimiento } from './mapa.js';
+         celdaEn, nombreDeNucleo, tipoYacimiento, claseAcuifero } from './mapa.js';
 
 /* ---------------- HELPERS POR PUEBLO ---------------- */
 
@@ -387,9 +387,30 @@ export function capacidad(pueblo, estado){
  * tengas, por la tubería cabe lo que cabe: el tramo más estrecho tapa el resto.
  * Es el motivo de renovar la conducción y no seguir comprando bombas.
  */
-export function caudalCaptacion(pueblo, estado){
-  const bruto = pueblo.mejoras.captacion * CONFIG.mejoras.captacion.caudalPorNivel
-              + (piezas(estado).captacion || 0) * CONFIG.aportePorPieza.captacion;
+/**
+ * Lo que dan los POZOS conectados, en L/s. Cada uno rinde según la clase de
+ * acuífero que tiene debajo, no según una cifra única: el de montaña casi no
+ * nota el año seco y el aluvial sí, que es la diferencia que los hace elegibles.
+ */
+export function caudalAcuiferos(estado, estiaje = 1){
+  let total = 0;
+  for(const obra of construccionesConectadas(estado, 'abastecimiento')){
+    if(obra.tipo !== 'acuifero') continue;
+    const clase = claseAcuifero(celdaEn(estado.mapa, obra.col, obra.fila));
+    if(!clase) continue;
+    // Un estiaje de 0,6 con sensibilidad 0,15 deja el pozo al 94%: se nota, no manda.
+    total += clase.caudal * (1 - clase.sensibilidadEstiaje * (1 - estiaje));
+  }
+  return total;
+}
+
+export function caudalCaptacion(pueblo, estado, estiaje = 1){
+  // El estiaje se aplica AQUÍ y por fuente, no fuera y a todo por igual: el río
+  // baja en verano y el pozo casi no. Antes multiplicaba `avanzar()` al final,
+  // que con una sola fuente daba lo mismo y con dos ya no.
+  const bruto = (pueblo.mejoras.captacion * CONFIG.mejoras.captacion.caudalPorNivel
+              + (piezas(estado).captacion || 0) * CONFIG.aportePorPieza.captacion) * estiaje
+              + caudalAcuiferos(estado, estiaje);
   const red = redDelPueblo(estado);
   // Un agua envenenada por los lixiviados rinde menos: hay que tratarla más.
   const veneno = 1 - insalubridadCaptacion(estado);
@@ -399,7 +420,8 @@ export function caudalCaptacion(pueblo, estado){
 /** ¿Está la tubería estrangulando la captación? Para poder avisar en la UI. */
 export function redEstrangula(pueblo, estado){
   const bruto = pueblo.mejoras.captacion * CONFIG.mejoras.captacion.caudalPorNivel
-              + (piezas(estado).captacion || 0) * CONFIG.aportePorPieza.captacion;
+              + (piezas(estado).captacion || 0) * CONFIG.aportePorPieza.captacion
+              + caudalAcuiferos(estado);
   return bruto > redDelPueblo(estado).def.caudalMax + 1e-9;
 }
 
@@ -537,7 +559,7 @@ function avanzarPueblo(estado, p, dt, dtHoras, punta, estiaje, frenoCrec, lluvia
   // Entrada: producción pasiva (parada si hay avería)
   // La instalación se gasta con el tiempo; el personal de mantenimiento lo frena
   const ef = eficiencia(p);
-  const prodCaptacion = caudalCaptacion(p, estado) * estiaje * ef * 3600 * dtHoras;
+  const prodCaptacion = caudalCaptacion(p, estado, estiaje) * ef * 3600 * dtHoras;
   const prodAuto = clicsAutoPorSeg(p) * litrosPorClic(p, estado) * dt;
   const antes = p.agua;
   p.agua = Math.min(cap, p.agua + prodCaptacion + prodAuto);

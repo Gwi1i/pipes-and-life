@@ -171,6 +171,39 @@ los trazados dan rodeos enormes para no tocar espacios protegidos.
 El logro `todosServidos` pide **seis** pueblos bien atendidos a la vez: con dos
 saltaba nada más empezar en el mundo de 36 núcleos.
 
+**El agua que no se ve.** Más de la mitad de los núcleos están lejos de un río
+—25 de 37, medido— y a esos hay que llegar con kilómetros de tubería. El
+subsuelo es la otra respuesta, en TRES pasos que no se saltan (`CONFIG.acuiferos`):
+
+1. **Estudio hidrogeológico** (`estudiarZona`): barato, cubre 5×5, y NO encuentra
+   agua — revela qué casillas tienen `indicios`.
+2. **Sondeo** (`sondear`): caro, una casilla, y puede salir **seco**. Ahí es donde
+   se pierde el dinero, y es la lección entera.
+3. **Pozo**: la pieza `acuifero` ya solo se puede poner sobre un sondeo positivo
+   (`requiereSondeo`); antes pedía `terreno` + `lejosDeAgua` y no producía nada.
+
+**Los indicios NO son el acuífero, y esa separación es la mecánica.** Se marcan
+sobre las masas con agua Y sobre `señuelos` sin ella. Está medido: con
+`haloIndicios: 1` acertabas el 19% de las veces —el estudio no se pagaba— y con
+el halo a 0 más los señuelos sale **65% con indicios contra 1,2% a ciegas**. Si
+el estudio acertara siempre, perforar dejaría de ser una decisión.
+
+El resultado del sondeo **no es un dado**: depende de si hay agua ahí debajo,
+sembrada con la semilla. La misma casilla da siempre lo mismo, así que no se
+puede recargar la partida hasta acertar; lo que decides es *dónde* perforas.
+
+**Dos clases, y son distintas a propósito** (`acuiferos.clases`): la de montaña
+(karst, en relieve y pedregal) da menos y perforar cuesta más, pero le da igual
+el año seco; la aluvial (en llano) da más y es más barata, y sí nota el estiaje.
+Por eso `caudalCaptacion(pueblo, estado, estiaje)` aplica el estiaje **por
+fuente** en vez de multiplicar al final: con una sola fuente daba lo mismo, con
+dos ya no.
+
+**`garantizarAcceso()` en `mapa.js` es una garantía, no un adorno**: recorre el
+mapa desde el origen y, si una zona protegida ha dejado un núcleo incomunicado,
+le abre el pasillo mínimo. Que llegar cueste una fortuna es dificultad; que no
+haya manera de llegar es una partida rota que además no se ve venir.
+
 Lo que es de cada pueblo y lo que es común está separado a propósito:
 
 - **Por pueblo** (`estado.pueblos[i]`): agua, habitantes, servicio, racha,
@@ -514,7 +547,7 @@ Usa `estado.ultimoInstante`, que `guardar()` sella en cada guardado.
 - Los botones van por delegación (`data-accion`, y `data-clave` para la mejora,
   el índice de pueblo, el diámetro o la red). `entrada.js` escucha varios
   contenedores: `tienda`, `premium`, `panel-averias`, `pestanas`, `panel-cauce`,
-  `construir`, `hallazgo`, `almacen`, `panel-guia` y `red`. Añadir un botón
+  `construir`, `hallazgo`, `almacen`, `panel-guia`, `casilla` y `red`. Añadir un botón
   dentro de uno de ellos no obliga a tocar el listener; añadir un contenedor
   NUEVO sí, y es un fallo silencioso: el botón se pinta y no hace nada.
 

@@ -13,7 +13,9 @@ import { EscenaMapa } from './escena_mapa.js';
 import { celdaEn, clicarCasilla, clicsParaDestapar, puedeColocar,
          puedeSeguirTrazado, costeTrazado, casillaEnRed,
          piezaDeRuina, diametro, nivelDiametro, costeRenovar,
-         averiaEn, aflorarArqueologia, tipoYacimiento } from './mapa.js';
+         averiaEn, aflorarArqueologia, tipoYacimiento,
+         puedeEstudiar, estudiarZona, puedeSondear, sondear,
+         costeSondeo, claseAcuifero } from './mapa.js';
 import { avanzar, bombear, costeMejora, requisitosAutobomba,
          poderExpansion, servicioActivo, costeAmpliarVertedero,
          capacidadVaso, faseActual, faltanParaFase,
@@ -284,6 +286,60 @@ function procesarAcciones(){
         const tipoY = tipoYacimiento(celda);
         estado.anotar(`${tipoY.nombre} puesto en valor: renta ${formatear(tipoY.renta)} €/h.`, 'ok');
         avisar(`¡${tipoY.nombre}! Empieza a rentar.`);
+        ui.invalidarCache();
+        break;
+      }
+
+      /* --- EL AGUA QUE NO SE VE: estudiar, perforar --- */
+
+      case 'estudiarZona': {
+        const sel = estado.seleccion;
+        if(!sel) break;
+        const A = CONFIG.acuiferos;
+        const puede = puedeEstudiar(estado.mapa, sel.col, sel.fila);
+        if(!puede.ok){ avisar(puede.motivo); break; }
+        if(!estado.puedePagar(A.estudio.coste)){
+          avisar(`El estudio cuesta ${formatear(A.estudio.coste)} € y no hay fondos.`);
+          break;
+        }
+        estado.pagar(A.estudio.coste);
+        const conIndicios = estudiarZona(estado.mapa, sel.col, sel.fila);
+        // Un estudio sin indicios NO es dinero tirado y hay que decirlo así:
+        // descartar una zona es la mitad del trabajo de un hidrogeólogo.
+        if(conIndicios > 0){
+          estado.anotar(`Estudio hidrogeológico: ${conIndicios} casillas con indicios.`, 'ok');
+          avisar(`Indicios favorables en ${conIndicios} casillas. Ahí vale la pena perforar.`);
+        } else {
+          estado.anotar('Estudio hidrogeológico: sin indicios en esta zona.', 'aviso');
+          avisar('Nada prometedor por aquí. Zona descartada: prueba en otro sitio.');
+        }
+        ui.invalidarCache();
+        break;
+      }
+
+      case 'sondear': {
+        const sel = estado.seleccion;
+        if(!sel) break;
+        const celda = celdaEn(estado.mapa, sel.col, sel.fila);
+        const puede = puedeSondear(estado.mapa, sel.col, sel.fila);
+        if(!puede.ok){ avisar(puede.motivo); break; }
+        const coste = costeSondeo(celda);
+        if(!estado.puedePagar(coste)){
+          avisar(`Perforar aquí cuesta ${formatear(coste)} € y no hay fondos.`);
+          break;
+        }
+        estado.pagar(coste);
+        const clase = sondear(estado.mapa, sel.col, sel.fila);
+        if(clase){
+          contarHito('acuifero');
+          estado.anotar(`¡Sondeo positivo! ${clase.nombre} bajo esa casilla.`, 'ok');
+          avisar(`¡Ha dado agua! ${clase.nombre}. Ya puedes poner el pozo encima.`);
+        } else {
+          // El sondeo seco es la lección cara, y por eso se cuenta entero: lo que
+          // ha costado y que ese punto ya está descartado para siempre.
+          estado.anotar(`Sondeo seco: ${formatear(coste)} € y ni gota.`, 'critico');
+          avisar('Seco. Ahí abajo no hay nada, y la perforación ya está pagada.');
+        }
         ui.invalidarCache();
         break;
       }

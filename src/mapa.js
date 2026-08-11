@@ -84,6 +84,10 @@ export function generarMapa(){
   suavizarArranque(celdas);
   sembrarPueblos(celdas, azar);
   sembrarProteccion(celdas, azar);
+  // La garantía va DESPUÉS de proteger y ANTES de nada más: si una zona ha
+  // dejado un pueblo incomunicado, aquí se le abre el paso.
+  garantizarAcceso(celdas);
+  sembrarAcuiferos(celdas, azar);
   sembrarHallazgos(celdas, azar);
   sembrarArqueologia(celdas, azar);
   abrirZonaInicial(celdas);
@@ -125,7 +129,10 @@ function sembrarProteccion(celdas, azar){
     const objetivo = Z.tamMin + Math.floor(azar() * (Z.tamMax - Z.tamMin + 1));
     const mancha = [{ c: c0, f: f0 }];
     semilla.protegida = tipo;
-    while(mancha.length < objetivo){
+    // El tope de vueltas no es adorno: una mancha encajonada entre hallazgos no
+    // puede crecer más y sin él este bucle se queda dando vueltas para siempre.
+    let vueltas = 0;
+    while(mancha.length < objetivo && vueltas++ < objetivo * 60){
       const base = mancha[Math.floor(azar() * mancha.length)];
       const [dc, df] = [[1,0],[-1,0],[0,1],[0,-1]][Math.floor(azar() * 4)];
       const cel = celdaEn(celdas, base.c + dc, base.f + df);
@@ -136,6 +143,141 @@ function sembrarProteccion(celdas, azar){
     }
     zonas++;
   }
+}
+
+/**
+ * Siembra el AGUA SUBTERRÁNEA: masas de acuífero invisibles, de las dos clases,
+ * cada una en los terrenos que le tocan. Y siembra también los INDICIOS, que es
+ * lo que el estudio hidrogeológico ve: cubren la masa, se salen un poco de ella
+ * (`haloIndicios`) y aparecen además en manchas SIN agua (`señuelos`).
+ *
+ * Esa separación es toda la mecánica: si los indicios coincidieran exactamente
+ * con el agua, el estudio sería un detector y perforar dejaría de ser una
+ * apuesta. Con señuelos, el estudio hace lo que hace de verdad — mejorar mucho
+ * las probabilidades, sin garantizar nada.
+ */
+function sembrarAcuiferos(celdas, azar){
+  const M = CONFIG.mapaMundo, A = CONFIG.acuiferos;
+
+  // Crece una mancha desde una semilla y devuelve sus casillas
+  const manchaDesde = (c0, f0, objetivo, valida) => {
+    const mancha = [{ c: c0, f: f0 }];
+    let vueltas = 0;
+    while(mancha.length < objetivo && vueltas++ < objetivo * 60){
+      const base = mancha[Math.floor(azar() * mancha.length)];
+      const [dc, df] = [[1,0],[-1,0],[0,1],[0,-1]][Math.floor(azar() * 4)];
+      const c = base.c + dc, f = base.f + df;
+      if(mancha.some(q => q.c === c && q.f === f)) continue;
+      if(!valida(celdaEn(celdas, c, f), c, f)) continue;
+      mancha.push({ c, f });
+    }
+    return mancha;
+  };
+
+  const marcarIndicios = mancha => {
+    for(const q of mancha)
+      for(let df = -A.haloIndicios; df <= A.haloIndicios; df++)
+        for(let dc = -A.haloIndicios; dc <= A.haloIndicios; dc++){
+          const cel = celdaEn(celdas, q.c + dc, q.f + df);
+          if(cel && cel.tipo !== 'agua' && cel.tipo !== 'lago') cel.indicios = true;
+        }
+  };
+
+  // 1. Las masas con agua de verdad, clase por clase
+  for(const [clave, def] of Object.entries(A.clases)){
+    const valida = (cel, c, f) => cel && !cel.acuifero && !cel.hallazgo
+      && def.terrenos.includes(cel.tipo)
+      && distanciaAlOrigen(c, f) >= A.distanciaMinima;
+    let puestas = 0, intentos = 0;
+    while(puestas < def.masas && intentos++ < def.masas * 400){
+      const c0 = Math.floor(azar() * M.cols), f0 = Math.floor(azar() * M.filas);
+      if(!valida(celdaEn(celdas, c0, f0), c0, f0)) continue;
+      const objetivo = def.tamMin + Math.floor(azar() * (def.tamMax - def.tamMin + 1));
+      const mancha = manchaDesde(c0, f0, objetivo, valida);
+      for(const q of mancha) celdaEn(celdas, q.c, q.f).acuifero = clave;
+      marcarIndicios(mancha);
+      puestas++;
+    }
+  }
+
+  // 2. Los señuelos: geología que promete y no cumple. El sondeo aquí sale seco.
+  const terrenosPosibles = Object.values(A.clases).flatMap(d => d.terrenos);
+  const validaSeñuelo = (cel, c, f) => cel && !cel.acuifero && !cel.hallazgo
+    && terrenosPosibles.includes(cel.tipo)
+    && distanciaAlOrigen(c, f) >= A.distanciaMinima;
+  let puestos = 0, intentos = 0;
+  while(puestos < A.señuelos && intentos++ < A.señuelos * 400){
+    const c0 = Math.floor(azar() * M.cols), f0 = Math.floor(azar() * M.filas);
+    if(!validaSeñuelo(celdaEn(celdas, c0, f0), c0, f0)) continue;
+    marcarIndicios(manchaDesde(c0, f0, A.tamSeñuelo, validaSeñuelo));
+    puestos++;
+  }
+}
+
+/**
+ * LA GARANTÍA: ningún núcleo puede quedar sin manera de recibir agua.
+ *
+ * Lo único que corta el paso para siempre son las zonas protegidas, y basta con
+ * que una caiga cerrando el único paso a un pueblo para dejarlo incomunicado sin
+ * que el jugador pueda hacer nada. Aquí se recorre el mapa desde el origen y, si
+ * algún núcleo se ha quedado al otro lado, se le abre un pasillo quitando la
+ * protección de las casillas justas. Un pueblo inalcanzable no es dificultad:
+ * es una partida rota que además no se ve venir.
+ */
+function garantizarAcceso(celdas){
+  const M = CONFIG.mapaMundo;
+  const idx = (c, f) => f * M.cols + c;
+  const dentro = (c, f) => c >= 0 && f >= 0 && c < M.cols && f < M.filas;
+
+  // Camino más corto desde el origen contando las casillas protegidas como
+  // caras: así el pasillo que se abre es el que menos protección destruye.
+  const abrirHasta = (cd, fd) => {
+    const coste = new Float64Array(M.cols * M.filas).fill(Infinity);
+    const previo = new Int32Array(M.cols * M.filas).fill(-1);
+    const o = M.origen;
+    coste[idx(o.col, o.fila)] = 0;
+    const cola = [{ c: o.col, f: o.fila, g: 0 }];
+    while(cola.length){
+      cola.sort((a, b) => a.g - b.g);
+      const act = cola.shift();
+      if(act.g > coste[idx(act.c, act.f)]) continue;
+      if(act.c === cd && act.f === fd) break;
+      for(const [dc, df] of [[1,0],[-1,0],[0,1],[0,-1]]){
+        const c = act.c + dc, f = act.f + df;
+        if(!dentro(c, f)) continue;
+        const g = act.g + (celdas[idx(c, f)].protegida ? 1 : 0.001);
+        if(g >= coste[idx(c, f)]) continue;
+        coste[idx(c, f)] = g;
+        previo[idx(c, f)] = idx(act.c, act.f);
+        cola.push({ c, f, g });
+      }
+    }
+    for(let i = idx(cd, fd); i >= 0; i = previo[i]) celdas[i].protegida = null;
+  };
+
+  // ¿A quién no se llega? Recorrido normal, saltando lo protegido.
+  const visto = new Uint8Array(M.cols * M.filas);
+  const o = M.origen;
+  const pila = [[o.col, o.fila]];
+  visto[idx(o.col, o.fila)] = 1;
+  while(pila.length){
+    const [c, f] = pila.pop();
+    for(const [dc, df] of [[1,0],[-1,0],[0,1],[0,-1]]){
+      const nc = c + dc, nf = f + df;
+      if(!dentro(nc, nf) || visto[idx(nc, nf)]) continue;
+      if(celdas[idx(nc, nf)].protegida) continue;
+      visto[idx(nc, nf)] = 1;
+      pila.push([nc, nf]);
+    }
+  }
+  recorrer(celdas, (celda, c, f) => {
+    if(celda.hallazgo === 'pueblo' && !visto[idx(c, f)]) abrirHasta(c, f);
+  });
+}
+
+/** La clase de acuífero que hay bajo una casilla, si la hay. */
+export function claseAcuifero(celda){
+  return celda && celda.acuifero ? CONFIG.acuiferos.clases[celda.acuifero] : null;
 }
 
 /**
@@ -370,6 +512,85 @@ export function aflorarArqueologia(celdas, col, fila){
   return true;
 }
 
+/* ---------- LA BÚSQUEDA DE AGUA SUBTERRÁNEA ---------- */
+
+/**
+ * ¿Se puede estudiar aquí? El estudio se paga por área, así que lo único que se
+ * pide es haber explorado el sitio: no se estudia lo que no se ha pisado.
+ */
+export function puedeEstudiar(celdas, col, fila){
+  const celda = celdaEn(celdas, col, fila);
+  if(!celda) return { ok: false, motivo: 'Fuera del mapa.' };
+  if(celda.oculta) return { ok: false, motivo: 'Primero hay que destapar esa zona.' };
+  if(celda.estudiada) return { ok: false, motivo: 'Esta zona ya está estudiada.' };
+  return { ok: true, motivo: '' };
+}
+
+/**
+ * Pasa el estudio hidrogeológico por el área. Marca las casillas como
+ * estudiadas: a partir de ahí se ve cuáles tienen indicios. Devuelve cuántas
+ * con indicios han salido, para poder contarlo.
+ */
+export function estudiarZona(celdas, col, fila){
+  const A = CONFIG.acuiferos;
+  let conIndicios = 0;
+  for(let df = -A.estudio.radio; df <= A.estudio.radio; df++)
+    for(let dc = -A.estudio.radio; dc <= A.estudio.radio; dc++){
+      const celda = celdaEn(celdas, col + dc, fila + df);
+      if(!celda || celda.oculta) continue;
+      celda.estudiada = true;
+      if(celda.indicios) conIndicios++;
+    }
+  return conIndicios;
+}
+
+/**
+ * ¿Se puede perforar aquí? Perforar a ciegas se DEJA hacer: es carísimo y casi
+ * siempre sale seco, y esa es justo la lección que el estudio ahorra.
+ */
+export function puedeSondear(celdas, col, fila){
+  const celda = celdaEn(celdas, col, fila);
+  if(!celda) return { ok: false, motivo: 'Fuera del mapa.' };
+  if(celda.oculta) return { ok: false, motivo: 'Primero hay que destapar esa casilla.' };
+  if(celda.protegida)
+    return { ok: false, motivo: 'Zona de especial conservación: aquí no se perfora.' };
+  if(celda.tipo === 'agua' || celda.tipo === 'lago')
+    return { ok: false, motivo: 'Eso es agua superficial: se capta, no se perfora.' };
+  if(celda.hallazgo === 'pueblo')
+    return { ok: false, motivo: 'Ahí está el pueblo.' };
+  if(arqueologiaBloquea(celda))
+    return { ok: false, motivo: 'Yacimiento arqueológico: no se puede tocar.' };
+  if(celda.sondeo)
+    return { ok: false, motivo: celda.sondeo === 'seco'
+      ? 'Aquí ya se perforó y salió seco.' : 'Aquí ya hay un sondeo con agua.' };
+  return { ok: true, motivo: '' };
+}
+
+/** Lo que cuesta perforar aquí. En roca cuesta más que en la vega. */
+export function costeSondeo(celda){
+  const A = CONFIG.acuiferos;
+  const clase = claseAcuifero(celda);
+  if(clase) return clase.costeSondeo;
+  // Sin agua debajo se paga por el terreno que haya que atravesar: la roca es
+  // cara aunque no haya nada al final. Perforar en balde también se cobra.
+  const dura = ['colina', 'sierra', 'roca', 'pedregal'].includes(celda.tipo);
+  return dura ? A.clases.karst.costeSondeo : A.clases.aluvial.costeSondeo;
+}
+
+/**
+ * Perfora. El resultado NO es un dado: depende de si hay agua ahí debajo, que
+ * se sembró con el mapa. Así la misma partida da siempre el mismo resultado en
+ * la misma casilla —nada de recargar hasta que suene— y lo que decide es dónde
+ * eliges perforar, que es de lo que va la prospección.
+ */
+export function sondear(celdas, col, fila){
+  const celda = celdaEn(celdas, col, fila);
+  if(!celda || celda.sondeo) return null;
+  celda.sondeo = celda.acuifero ? 'positivo' : 'seco';
+  celda.estudiada = true;     // perforar es la forma más cara de estudiar
+  return celda.sondeo === 'positivo' ? claseAcuifero(celda) : null;
+}
+
 export function puedeColocar(celdas, construcciones, tipo, col, fila){
   const def = CONFIG.construibles[tipo];
   if(!def) return { ok: false, motivo: 'Eso no se puede construir.' };
@@ -386,7 +607,14 @@ export function puedeColocar(celdas, construcciones, tipo, col, fila){
   if(celda.hallazgo === 'pueblo')
     return { ok: false, motivo: 'Ahí está el pueblo.' };
 
-  if(!def.terreno.includes(celda.tipo)){
+  // El pozo no va "en un terreno": va donde el sondeo ha dado agua. Por eso su
+  // definición no lleva `terreno` y la comprobación es esta.
+  if(def.requiereSondeo && celda.sondeo !== 'positivo')
+    return { ok: false, motivo: celda.sondeo === 'seco'
+      ? 'Ese sondeo salió seco: ahí abajo no hay agua.'
+      : 'Ahí no se ha perforado todavía. Hay que sondear antes y que dé agua.' };
+
+  if(def.terreno && !def.terreno.includes(celda.tipo)){
     const nombres = def.terreno.map(t => CONFIG.terrenos[t].nombre.toLowerCase()).join(' o ');
     return { ok: false, motivo: `${def.nombre} solo va en ${nombres}.` };
   }
@@ -639,7 +867,7 @@ export function inventarioConectado(estado, red = 'abastecimiento'){
 
 export function comprimir(celdas){
   const abiertas = [], progresos = [], resueltos = [], insalubres = [];
-  const aflorados = [], excavados = [];
+  const aflorados = [], excavados = [], estudiadas = [], sondeos = [];
   recorrer(celdas, (celda, c, f) => {
     const i = f * CONFIG.mapaMundo.cols + c;
     if(!celda.oculta) abiertas.push(i);
@@ -652,8 +880,13 @@ export function comprimir(celdas){
     // excavado eso es cosa del jugador y hay que guardarlo.
     if(celda.aflorado) aflorados.push(i);
     if(celda.excavado) excavados.push(i);
+    // El agua subterránea se regenera de la semilla, pero lo que has PAGADO por
+    // saber —el estudio y cada perforación— es tuyo y no se puede olvidar.
+    if(celda.estudiada) estudiadas.push(i);
+    if(celda.sondeo) sondeos.push([i, celda.sondeo === 'positivo' ? 1 : 0]);
   });
-  return { abiertas, progresos, resueltos, insalubres, aflorados, excavados };
+  return { abiertas, progresos, resueltos, insalubres, aflorados, excavados,
+           estudiadas, sondeos };
 }
 
 /** La pieza que esconde una ruina, ya resuelta o no. */
@@ -667,4 +900,7 @@ export function aplicarGuardado(celdas, datos){
   for(const [i, v] of datos.insalubres || []) if(celdas[i]) celdas[i].insalubre = v;
   for(const i of datos.aflorados || []) if(celdas[i]) celdas[i].aflorado = true;
   for(const i of datos.excavados || []) if(celdas[i]) celdas[i].excavado = true;
+  for(const i of datos.estudiadas || []) if(celdas[i]) celdas[i].estudiada = true;
+  for(const [i, v] of datos.sondeos || [])
+    if(celdas[i]) celdas[i].sondeo = v ? 'positivo' : 'seco';
 }

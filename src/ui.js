@@ -20,7 +20,8 @@ import { formatear } from './util.js';
 import { celdaEn, piezaDeRuina, diametro, nivelDiametro, costeRenovar,
          nombreDeNucleo, tipoYacimiento,
          costeCasillaTuberia, puedeColocar,
-         lineasConectadas, cuelloDeBotella, escalaDeRed } from './mapa.js';
+         lineasConectadas, cuelloDeBotella, escalaDeRed,
+         claseAcuifero, puedeSondear, costeSondeo } from './mapa.js';
 import { pasoActual } from './tutorial.js';
 import { dibujarDiagrama, hayDiagrama } from './diagramas.js';
 
@@ -544,7 +545,8 @@ export class UI {
       || estado.construcciones.some(o => o.col === sel.col && o.fila === sel.fila));
     const vale = celda && !celda.oculta && !hayOtra;
 
-    const firma = vale ? `${sel.col},${sel.fila},${celda.tipo},${celda.protegida || ''}` : 'nada';
+    const firma = vale ? `${sel.col},${sel.fila},${celda.tipo},${celda.protegida || ''},`
+                       + `${celda.estudiada ? 1 : 0}${celda.sondeo || ''}` : 'nada';
     if(this.cache.casillaFirma === firma) return;
     this.cache.casillaFirma = firma;
 
@@ -597,11 +599,77 @@ export class UI {
         <div class="casilla-fila"><span>Destapar</span><b>×${def.costeExtra}</b></div>
         ${redes}
       </div>
+      ${this.bloqueSubsuelo(estado, celda, sel)}
       <p class="casilla-cabe">${cabe.length
         ? 'Aquí cabe: <b>' + cabe.join('</b>, <b>') + '</b>.'
         : 'Aquí no cabe ninguna instalación.'}</p>`;
 
     this.pintarMiniCasilla(estado, escena, celda, sel);
+  }
+
+  /**
+   * EL SUBSUELO de la casilla: lo único que se ve del agua subterránea. Cuenta
+   * en qué punto de la cadena está esta casilla —sin estudiar, estudiada con o
+   * sin indicios, perforada— y ofrece el paso siguiente con su precio.
+   *
+   * Lo que NUNCA dice es si hay agua debajo: eso solo lo sabe la perforación, y
+   * si la ficha lo adelantara no habría prospección que valiera.
+   */
+  bloqueSubsuelo(estado, celda, sel){
+    const A = CONFIG.acuiferos;
+    if(celda.tipo === 'agua' || celda.tipo === 'lago') return '';
+
+    if(celda.sondeo === 'positivo'){
+      const clase = claseAcuifero(celda);
+      return `<div class="subsuelo" style="--tono:${clase.color}">
+        <div class="subsuelo-cab">Sondeo con agua · ${clase.nombre}</div>
+        <p class="m-desc">${clase.desc}</p>
+        <p class="m-desc">Construye aquí el pozo y engánchalo a la red de
+          abastecimiento para que cuente.</p></div>`;
+    }
+    if(celda.sondeo === 'seco'){
+      return `<div class="subsuelo seco">
+        <div class="subsuelo-cab">Sondeo seco</div>
+        <p class="m-desc">Aquí se perforó y no había nada. Un punto descartado
+          también es información: el acuífero, si lo hay, está en otro sitio.</p></div>`;
+    }
+
+    const puedeS = puedeSondear(estado.mapa, sel.col, sel.fila);
+    const botonSondeo = puedeS.ok
+      ? `<button class="mejora obra" data-accion="sondear" style="--tono:${A.color}">
+           <span class="m-cab"><span class="m-nom">Perforar un sondeo</span></span>
+           <span class="m-desc">${celda.indicios && celda.estudiada
+             ? 'Con indicios favorables: aquí es donde hay que probar.'
+             : 'Sin indicios, es una apuesta cara: casi siempre sale seco.'}</span>
+           <span class="m-coste">${formatear(costeSondeo(celda))} €</span>
+         </button>`
+      : '';
+
+    if(!celda.estudiada){
+      return `<div class="subsuelo" style="--tono:${A.color}">
+        <div class="subsuelo-cab">Subsuelo sin estudiar</div>
+        <p class="m-desc">Nadie ha mirado qué hay debajo. El estudio cubre
+          ${A.estudio.radio * 2 + 1}×${A.estudio.radio * 2 + 1} casillas y dice
+          dónde hay indicios de agua — que no es lo mismo que encontrarla.</p>
+        <button class="mejora obra" data-accion="estudiarZona" style="--tono:${A.color}">
+          <span class="m-cab"><span class="m-nom">Estudio hidrogeológico</span></span>
+          <span class="m-desc">Cartografía y geofísica de la zona.</span>
+          <span class="m-coste">${formatear(A.estudio.coste)} €</span>
+        </button>
+        ${botonSondeo}</div>`;
+    }
+    return celda.indicios
+      ? `<div class="subsuelo" style="--tono:${A.color}">
+           <div class="subsuelo-cab">Indicios de agua</div>
+           <p class="m-desc">La geología promete: formación permeable y
+             estructura favorable. No garantiza nada — hay que perforar para
+             saberlo.</p>
+           ${botonSondeo}</div>`
+      : `<div class="subsuelo esteril">
+           <div class="subsuelo-cab">Estudiado · sin indicios</div>
+           <p class="m-desc">Terreno impermeable. Perforar aquí sería tirar el
+             dinero.</p>
+           ${botonSondeo}</div>`;
   }
 
   /**
@@ -970,7 +1038,7 @@ export class UI {
     const P = CONFIG.poblacion;
     const dem = demandaMedia(p.habitantes);
     const consumoAhora = dem * (resultado.punta || 1) * 3600 / 1000;
-    const prodAhora = caudalCaptacion(p, estado) * (resultado.estiaje || 1) * 3600 / 1000;
+    const prodAhora = caudalCaptacion(p, estado, resultado.estiaje || 1) * 3600 / 1000;
 
     let tendencia, claseT;
     if((estado.averias || []).length){ tendencia = 'Avería sin reparar'; claseT = 'critico'; }

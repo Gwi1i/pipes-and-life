@@ -248,6 +248,11 @@ export class EscenaMapa extends Escena {
       ctx.globalAlpha = 1;
     }
 
+    // EL SUBSUELO. El acuífero no se dibuja NUNCA —si se viera, sobraría todo
+    // el trabajo de buscarlo—; lo que se dibuja es lo que el jugador ha pagado
+    // por saber: la zona estudiada, los indicios y cada perforación.
+    if(celda.estudiada || celda.sondeo) this.marcaSubsuelo(celda, fx, fy, fl);
+
     // Luz arriba y sombra abajo DENTRO de la ficha: es lo que le da grosor y la
     // separa del fondo sin necesidad de contorno duro.
     ctx.fillStyle = 'rgba(255,255,255,0.10)';
@@ -626,6 +631,56 @@ export class EscenaMapa extends Escena {
     }
     ctx.stroke();
     ctx.lineCap = 'butt';
+  }
+
+  /**
+   * La marca del subsuelo en una casilla. Cuatro estados y se distinguen de un
+   * vistazo, porque la decisión de dónde perforar se toma mirando el mapa:
+   * estudiada sin nada (una trama tenue), con indicios (gotas), sondeo seco (un
+   * aspa) y sondeo con agua (la gota llena y su halo).
+   */
+  marcaSubsuelo(celda, fx, fy, fl){
+    const ctx = this.ctx, A = CONFIG.acuiferos;
+    const px = fx + fl * 0.22, py = fy + fl * 0.78;   // esquina de abajo a la izquierda
+    const r = fl * 0.10;
+
+    if(celda.sondeo === 'positivo'){
+      const clase = CONFIG.acuiferos.clases[celda.acuifero];
+      const tono = clase ? clase.color : A.color;
+      ctx.fillStyle = tono; ctx.globalAlpha = 0.22;
+      ctx.beginPath(); ctx.arc(px, py, r * 2, 0, 7); ctx.fill();
+      ctx.globalAlpha = 1;
+      this.gota(px, py, r, tono, true);
+      return;
+    }
+    if(celda.sondeo === 'seco'){
+      ctx.strokeStyle = '#8b8578';
+      ctx.lineWidth = Math.max(1, fl * 0.035);
+      ctx.globalAlpha = 0.9;
+      ctx.beginPath();
+      ctx.moveTo(px - r, py - r); ctx.lineTo(px + r, py + r);
+      ctx.moveTo(px + r, py - r); ctx.lineTo(px - r, py + r);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      return;
+    }
+    // Estudiada: una trama de puntos muy tenue para saber por dónde has pasado
+    ctx.fillStyle = A.color;
+    ctx.globalAlpha = celda.indicios ? 0.9 : 0.16;
+    if(celda.indicios) this.gota(px, py, r * 0.85, A.color, false);
+    else { ctx.beginPath(); ctx.arc(px, py, fl * 0.022, 0, 7); ctx.fill(); }
+    ctx.globalAlpha = 1;
+  }
+
+  /** Una gota: el símbolo del agua subterránea, rellena o solo perfilada. */
+  gota(x, y, r, color, llena){
+    const ctx = this.ctx;
+    ctx.beginPath();
+    ctx.moveTo(x, y - r * 1.4);
+    ctx.bezierCurveTo(x + r, y - r * 0.2, x + r * 0.9, y + r, x, y + r);
+    ctx.bezierCurveTo(x - r * 0.9, y + r, x - r, y - r * 0.2, x, y - r * 1.4);
+    if(llena){ ctx.fillStyle = color; ctx.fill(); }
+    else { ctx.strokeStyle = color; ctx.lineWidth = Math.max(1, r * 0.34); ctx.stroke(); }
   }
 
   /**

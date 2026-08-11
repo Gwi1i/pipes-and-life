@@ -692,11 +692,13 @@ export const CONFIG = {
       }
     },
     acuifero: {
-      nombre: 'Sondeo a acuífero', coste: 5000, orden: 6, color: '#a78bfa',
-      terreno: ['prado', 'pastizal', 'pedregal', 'matorral', 'pinar',
-                'colina', 'sierra'], lejosDeAgua: 4,
-      desc: 'El recurso de última hora: perfora y saca agua del subsuelo. ' +
-            'Solo tiene sentido lejos del cauce, y sale caro.',
+      nombre: 'Pozo de explotación', coste: 5000, orden: 6, color: '#a78bfa',
+      // No lleva `terreno`: va donde el SONDEO haya dado agua y en ningún otro
+      // sitio. Antes pedía estar a 4 casillas del río y podía ponerse en
+      // cualquier parte, que era tanto como decir que el agua estaba en todas.
+      requiereSondeo: true,
+      desc: 'Explota el agua que ha encontrado el sondeo. Solo puede ir sobre ' +
+            'una perforación que haya dado agua.',
       // Ficha divulgativa: esto no es texto de juego, es lo que
       // esta pieza ES de verdad. El objetivo del autor es que quien
       // juegue acabe sabiendo algo del oficio.
@@ -917,6 +919,68 @@ export const CONFIG = {
     color: '#2dd48f'
   },
 
+  /* ---------- EL AGUA QUE NO SE VE ----------
+     Más de la mitad de los núcleos del mapa están lejos de un río, y llegar
+     hasta ellos son kilómetros de tubería. El subsuelo es la otra respuesta: a
+     veces hay agua justo debajo y a veces no, y averiguarlo cuesta dinero.
+
+     La cadena es la del oficio, y son TRES pasos que no se saltan:
+       1. ESTUDIO hidrogeológico — barato, cubre un área, y NO encuentra agua:
+          dice dónde hay indicios favorables. Es cartografía y geofísica.
+       2. SONDEO de prospección — caro, una casilla, y puede salir SECO. Ahí es
+          donde se pierde el dinero, y es la lección: por eso se estudia antes.
+       3. Explotación — si dio agua, ya se puede construir el pozo encima.
+
+     Los indicios NO son el acuífero: se marcan también donde la geología se
+     parece pero no hay agua (`señuelos`). Si el estudio acertara siempre, el
+     sondeo dejaría de ser una apuesta y no habría nada que decidir. */
+  acuiferos: {
+    /* Dos clases, y son distintas a propósito: la de montaña es más difícil de
+       perforar y da menos, pero le da igual el año seco; la del llano da más y
+       es más barata, y en estiaje se resiente. Es la diferencia real entre una
+       caliza fisurada y los gravas de una vega. */
+    clases: {
+      karst: {
+        nombre: 'Acuífero de montaña', corto: 'montaña',
+        terrenos: ['colina', 'sierra', 'roca', 'pedregal'],
+        masas: 7, tamMin: 3, tamMax: 6,
+        caudal: 0.85,          // L/s que da el pozo, en la escala de captación
+        costeSondeo: 4200,     // perforar roca cuesta más
+        sensibilidadEstiaje: 0.15,   // 0 = le da igual el año; 1 = como el río
+        color: '#a78bfa',
+        desc: 'Agua metida en las grietas de la roca. Cuesta perforar y da menos, ' +
+              'pero el nivel apenas se mueve en todo el año.'
+      },
+      aluvial: {
+        nombre: 'Acuífero aluvial', corto: 'aluvial',
+        terrenos: ['prado', 'pastizal', 'matorral'],
+        masas: 6, tamMin: 4, tamMax: 8,
+        caudal: 1.35,
+        costeSondeo: 2600,
+        sensibilidadEstiaje: 0.5,
+        color: '#67e8f9',
+        desc: 'Agua entre las gravas de una vega antigua. Barato de perforar y ' +
+              'generoso, pero nota el verano: se recarga del río y de la lluvia.'
+      }
+    },
+    distanciaMinima: 5,     // ninguno pegado al pueblo de origen
+    /* El halo a 0 y los señuelos aparte, y esto está medido: con halo 1 los
+       indicios acertaban el 19% de las veces —el estudio no se pagaba y
+       perforar volvía a ser una lotería— porque el borde de cada masa mete
+       muchísima casilla seca. Así los indicios dibujan la formación tal cual y
+       lo que engaña son los señuelos, que es lo que engaña de verdad: una
+       geología que promete y no cumple. Sale en torno a dos aciertos de cada
+       tres, que es lo que hace que estudiar valga la pena SIN volverlo seguro. */
+    haloIndicios: 0,        // casillas de indicios alrededor de cada masa
+    señuelos: 11,           // manchas con indicios y SIN agua: el sondeo seco
+    tamSeñuelo: 4,
+    estudio: {
+      coste: 900,           // por estudio, cubre un área
+      radio: 2              // 5x5 casillas alrededor de la elegida
+    },
+    color: '#38bdf8'
+  },
+
   /* ---------- MAPA DE TESELAS (estilo D, vista cenital) ----------
      Cuadrícula ortogonal vista desde arriba, al estilo de los idle builders:
      cada elemento ocupa su celda y las tuberías se trazan entre ellas. El río
@@ -1064,6 +1128,18 @@ export const CONFIG = {
       porque: 'Las redes de verdad se diseñan así: los trazados dan rodeos ' +
               'enormes para no tocar espacios protegidos. Un pueblo necesita ' +
               'agua, pero el territorio no es solo suyo.'
+    },
+
+    acuifero: {
+      titulo: 'Ha dado agua',
+      pasa: 'El sondeo ha encontrado acuífero. Debajo de esa casilla hay agua ' +
+            'que no se ve desde la superficie y que no depende de ningún río.',
+      hacer: 'Construye el pozo encima y engánchalo a la red. Da menos que una ' +
+             'captación de río, pero está donde no hay río.',
+      porque: 'Media España bebe de pozos. Donde no llega el cauce, la ' +
+              'alternativa a treinta kilómetros de conducción es mirar hacia ' +
+              'abajo: sale a temperatura y calidad constantes todo el año, y ' +
+              'por eso es el recurso más cómodo... y el más fácil de estropear.'
     },
 
     /* --- LOS LOGROS: la otra cara ---

@@ -166,6 +166,21 @@ body{
 .casilla-cabe{font-size:10.5px; line-height:1.45; color:var(--tenue);}
 .casilla-cabe b{color:var(--ok);}
 
+/* El subsuelo: lo que se sabe del agua que no se ve. Va con su propio borde
+   izquierdo porque no es un dato del terreno, es otra capa del mismo sitio. */
+.subsuelo{
+  border-left:2px solid var(--tono, #38bdf8); padding:6px 0 2px 8px;
+  margin:2px 0 9px; background:rgba(56,189,248,0.04);
+}
+.subsuelo-cab{
+  font-family:var(--mono); font-size:8.5px; font-weight:700; letter-spacing:.13em;
+  text-transform:uppercase; color:var(--tono, #38bdf8); margin-bottom:4px;
+}
+.subsuelo.seco, .subsuelo.esteril{
+  --tono:#8b8578; background:rgba(139,133,120,0.05);
+}
+.subsuelo .mejora{margin-top:7px;}
+
 /* ---------- BLOQUES DE PANEL ---------- */
 .bloque{border:1px solid var(--linea); background:var(--panel);}
 .bloque h2{
