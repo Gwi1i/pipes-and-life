@@ -195,6 +195,26 @@
   </div>
 </div>
 
+<!-- TARJETA DE HITO. Se ve tres o cuatro veces en toda la partida —cuando se
+     abre un servicio nuevo— y por eso puede permitirse tapar el juego: es
+     justo el momento en que cambia lo que hay que hacer. Un panel lateral más
+     se lo saltaría todo el mundo. -->
+<div class="hito-fondo" id="hito-fondo" hidden>
+  <div class="hito" id="hito">
+    <img class="hito-img" id="hito-img" alt="">
+    <div class="hito-cuerpo">
+      <p class="hito-titulo" id="hito-titulo">—</p>
+      <p class="hito-eti">Qué ha pasado</p>
+      <p class="hito-txt" id="hito-pasa">—</p>
+      <p class="hito-eti hito-eti-hacer">Qué tienes que hacer</p>
+      <p class="hito-txt" id="hito-hacer">—</p>
+      <p class="hito-eti hito-eti-porque">Por qué importa</p>
+      <p class="hito-txt hito-porque" id="hito-porque">—</p>
+      <button class="hito-btn" data-accion="cerrarHito">Entendido</button>
+    </div>
+  </div>
+</div>
+
 <script type="module" src="src/main.js"></script>
 </body>
 </html>

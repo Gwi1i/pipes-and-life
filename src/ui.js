@@ -264,6 +264,37 @@ export class UI {
     return fuera;
   }
 
+  /**
+   * LA TARJETA DE HITO. Aparece cuando se abre un servicio nuevo y cuenta las
+   * tres cosas que hacen falta en ese momento: qué ha pasado, qué hay que hacer
+   * y por qué. El "por qué" es el que justifica pararlo todo — es justo lo que
+   * el jugador se está preguntando.
+   *
+   * La imagen se pone solo si carga: si falta, la tarjeta sale igual con su
+   * texto y no queda un hueco roto.
+   */
+  refrescarHito(estado){
+    const fondo = document.getElementById('hito-fondo');
+    const id = estado.hitoPendiente;
+    if(this.cache.hitoFirma === id) return;
+    this.cache.hitoFirma = id;
+
+    if(!id || !CONFIG.hitos[id]){ fondo.hidden = true; return; }
+    const h = CONFIG.hitos[id];
+    fondo.hidden = false;
+
+    const img = document.getElementById('hito-img');
+    img.hidden = true;
+    img.onload = () => { img.hidden = false; };
+    img.onerror = () => { img.hidden = true; };
+    img.src = `assets/h_${id}.jpg`;
+
+    document.getElementById('hito-titulo').textContent = h.titulo;
+    document.getElementById('hito-pasa').textContent = h.pasa;
+    document.getElementById('hito-hacer').textContent = h.hacer;
+    document.getElementById('hito-porque').textContent = h.porque;
+  }
+
   /* ---------------- LA GUÍA DE LOS PRIMEROS PASOS ---------------- */
 
   refrescarGuia(estado){
@@ -864,6 +895,7 @@ export class UI {
     // Multa por hora, para el panel de cauce
     resultado.multaHora = (resultado.suciedad || 0) * CONFIG.cauce.multaMaxPorHora;
 
+    this.refrescarHito(estado);
     this.refrescarGuia(estado);
     this.refrescarPaletaObra(estado);
     this.refrescarRed(estado, resultado);

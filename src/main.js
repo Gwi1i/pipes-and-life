@@ -194,6 +194,11 @@ function procesarAcciones(){
         break;
       }
 
+      case 'cerrarHito':
+        estado.hitoPendiente = null;
+        ui.invalidarCache();
+        break;
+
       case 'saltarGuia':
         saltarGuia(estado);
         estado.anotar('Guía saltada. Suerte ahí fuera.', 'info');
@@ -287,6 +292,7 @@ function procesarAcciones(){
           estado.anotar(`${nuevo.nombre} entra en la mancomunidad: ya recibe agua.`, 'ok');
           avisar(`¡${nuevo.nombre} incorporado! Míralo en las pestañas.`);
           ui.reconstruirPestanas(estado);
+      contarHito('mancomunidad');
         } else {
           estado.anotar('Pueblo abastecido.', 'ok');
         }
@@ -689,6 +695,17 @@ function avisar(texto){
   tempAviso = setTimeout(() => el.classList.remove('visible'), 2800);
 }
 
+/**
+ * Encola un hito para que se cuente. Solo la primera vez: un hito repetido deja
+ * de ser un momento y pasa a ser un estorbo.
+ */
+function contarHito(id){
+  if(!CONFIG.hitos[id]) return;
+  if(estado.hitosVistos.includes(id)) return;
+  estado.hitosVistos.push(id);
+  estado.hitoPendiente = id;
+}
+
 /* ==================================================================
    BUCLE PRINCIPAL
    ================================================================== */
@@ -711,6 +728,9 @@ function bucle(ahora){
   comprobarDesbloqueo();
   anotarCrecimiento();
 
+  if(resultado.serviciosNuevos && resultado.serviciosNuevos.length){
+    for(const clave of resultado.serviciosNuevos) contarHito(clave);
+  }
   if(resultado.saneamientoNuevo && resultado.saneamientoNuevo.length){
     for(const nombre of resultado.saneamientoNuevo){
       estado.anotar(`${nombre} genera aguas residuales. Vigila el cauce y piensa en una depuradora.`, 'alarma');

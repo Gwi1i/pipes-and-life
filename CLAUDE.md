@@ -373,6 +373,18 @@ que se mueve es siempre lo que la pieza le hace al agua. Van a 60 fps aunque el
 HUD se refresque a 10: una animación a tirones no llama la atención, que es
 precisamente su trabajo.
 
+**Los HITOS paran el juego, y por eso son pocos.** `CONFIG.hitos` tiene una
+tarjeta por momento en que CAMBIA EL PROBLEMA: se abre el saneamiento, las
+pluviales, los residuos, entra el segundo pueblo. Cuenta tres cosas y en este
+orden: qué ha pasado, qué hay que conseguir ahora y POR QUÉ importa. Ese tercero
+es el que justifica tapar la pantalla — es lo que el jugador se está preguntando
+justo en ese momento.
+
+Se enseña UNA vez (`estado.hitosVistos`, se guarda). Si se repitiera dejaría de
+ser un momento y pasaría a ser un estorbo, y con tres o cuatro en toda la partida
+puede permitirse interrumpir; un panel lateral más se lo saltaría todo el mundo.
+La imagen es `assets/h_<id>.jpg` y si falta la tarjeta sale igual con su texto.
+
 **Cada pieza tiene su FICHA DIVULGATIVA** (`construibles[x].ficha`): qué es de
 verdad, para qué sirve y un dato del oficio. El autor trabaja en abastecimiento y
 quiere que quien juegue acabe sabiendo algo, así que esto NO es texto de juego —

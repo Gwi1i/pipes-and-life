@@ -594,7 +594,7 @@ function avanzarPueblo(estado, p, dt, dtHoras, punta, estiaje, frenoCrec, lluvia
   crecer(p, servicio, dtHoras, frenoCrec * frenoBasura, calidadServicio(p), topeRed);
 
   return {
-    residual, recienSaneamiento,
+    residual, recienSaneamiento, serviciosNuevos,
     res: {
       servicio, demandaAhora: dem * punta, punta, estiaje,
       prodLps: dt > 0 ? entrada / dt : 0,
@@ -658,6 +658,7 @@ export function avanzar(estado, dt){
   let totalResidual = 0;
   let activoRes = null;
   const saneamientoNuevo = [];
+  const serviciosNuevos = [];
 
   for(let i = 0; i < estado.pueblos.length; i++){
     const p = estado.pueblos[i];
@@ -665,6 +666,11 @@ export function avanzar(estado, dt){
     const out = avanzarPueblo(estado, p, dt, dtHoras, punta, estiaje, frenoCrec, lluvia);
     totalResidual += out.residual;
     if(out.recienSaneamiento) saneamientoNuevo.push(p.nombre);
+    // Los servicios que se acaban de abrir suben hasta aquí para que `main.js`
+    // pueda contar su hito. Solo los del pueblo activo: los hitos son del
+    // jugador, no de cada núcleo.
+    if(i === estado.puebloActivo && out.serviciosNuevos)
+      serviciosNuevos.push(...out.serviciosNuevos);
     if(i === estado.puebloActivo) activoRes = out.res;
   }
 
@@ -697,7 +703,8 @@ export function avanzar(estado, dt){
     multa,
     frenoCrec,
     lluvia,
-    saneamientoNuevo
+    saneamientoNuevo,
+    serviciosNuevos
   };
 }
 

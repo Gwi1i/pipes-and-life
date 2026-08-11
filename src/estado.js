@@ -86,6 +86,10 @@ export class Estado {
     this.modo = { tipo: null, elemento: null, trazado: [], deInventario: false };
     this.seleccion = null;          // { col, fila } de la casilla que miras
     this.tutorial = { paso: 0, terminado: false };   // la guía de los primeros pasos
+    // Hitos ya contados. Cada uno se enseña UNA vez en toda la partida: si se
+    // repitiera dejaría de ser un momento y pasaría a ser un estorbo.
+    this.hitosVistos = [];
+    this.hitoPendiente = null;      // el que hay que enseñar ahora mismo
 
     this.registro = [];
     this.ultimoInstante = Date.now();
@@ -115,7 +119,8 @@ export class Estado {
       inventario: this.inventario, camara: this.camara,
       construcciones: this.construcciones, tuberias: this.tuberias,
       dnActual: this.dnActual, redActual: this.redActual,
-      averias: this.averias, tutorial: this.tutorial
+      averias: this.averias, tutorial: this.tutorial,
+      hitosVistos: this.hitosVistos
     };
     try{
       localStorage.setItem(CONFIG.guardado.clave, JSON.stringify(datos));
@@ -182,6 +187,7 @@ export class Estado {
       // donde ir a arreglarlo.
       estado.averias = (d.averias || []).filter(a => a && a.col != null);
       estado.tutorial = d.tutorial || { paso: 0, terminado: false };
+      estado.hitosVistos = d.hitosVistos || [];
       if(d.camara) estado.camara = d.camara;
       return true;
     }catch(e){

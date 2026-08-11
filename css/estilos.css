@@ -410,3 +410,52 @@ body{
   .lateral{width:100%; max-height:38vh; border:none; border-top:1px solid var(--linea);}
   .mapa{min-height:44vh;}
 }
+
+
+/* ---------- TARJETA DE HITO ----------
+   Tapa el juego a propósito. Se ve tres o cuatro veces en toda la partida, en el
+   momento exacto en que cambia el problema: hasta ahora solo había que traer
+   agua y de golpe hay que llevársela sucia. Eso no se anuncia con una línea en
+   el registro. */
+.hito-fondo{
+  position:fixed; inset:0; z-index:50;
+  display:flex; align-items:center; justify-content:center; padding:24px;
+  background:rgba(4,10,16,.82);
+  animation:hitoEntra .25s ease-out;
+}
+.hito-fondo[hidden]{display:none;}
+@keyframes hitoEntra{ from{opacity:0} to{opacity:1} }
+
+.hito{
+  width:min(560px, 100%); max-height:92vh; overflow-y:auto;
+  background:var(--panel); border:1px solid var(--linea-viva);
+  border-radius:8px; box-shadow:0 24px 60px -20px #000;
+}
+.hito-img{
+  display:block; width:100%; height:auto;
+  border-radius:8px 8px 0 0; border-bottom:1px solid var(--linea-viva);
+}
+.hito-img[hidden]{display:none;}
+.hito-cuerpo{padding:16px 20px 20px;}
+.hito-titulo{
+  font-family:var(--mono); font-size:17px; font-weight:700;
+  color:var(--agua); letter-spacing:.02em; margin-bottom:12px;
+}
+.hito-eti{
+  font-family:var(--mono); font-size:8.5px; font-weight:700;
+  letter-spacing:.14em; text-transform:uppercase; color:var(--tenue);
+  margin-top:13px;
+}
+.hito-eti-hacer{color:var(--ok);}
+.hito-eti-porque{color:var(--alarma);}
+.hito-txt{font-size:12.5px; line-height:1.6; color:var(--texto); margin-top:3px;}
+.hito-porque{color:var(--tenue); font-style:italic;}
+.hito-btn{
+  display:block; width:100%; margin-top:18px; padding:11px; cursor:pointer;
+  background:linear-gradient(180deg,#1d3a52,#0e2434);
+  border:1px solid var(--agua); border-radius:4px; color:var(--agua);
+  font-family:var(--mono); font-size:11px; font-weight:700;
+  letter-spacing:.16em; text-transform:uppercase; transition:.15s;
+}
+.hito-btn:hover{background:linear-gradient(180deg,#24506f,#0e2434);}
+.hito-btn:focus-visible{outline:2px solid var(--agua); outline-offset:2px;}

@@ -912,6 +912,63 @@ export const CONFIG = {
              'el saneamiento, las pluviales y la basura, cada uno con SU red.' }
   ],
 
+  /* ---------- LOS HITOS ----------
+     Cuando se abre un servicio nuevo, el juego CAMBIA de problema: hasta ese
+     momento solo había que traer agua, y de repente hay que llevársela sucia, o
+     separar la lluvia, o sacar la basura. Eso no se puede anunciar con una línea
+     en el registro que se pierde entre las demás.
+
+     Cada hito para el juego una vez —tres o cuatro veces en toda la partida— y
+     cuenta tres cosas en este orden: QUÉ acaba de pasar, QUÉ hay que conseguir
+     ahora y POR QUÉ importa. El "por qué" es el que justifica todo esto: es el
+     momento en que el jugador se lo está preguntando.
+
+     `img` es `assets/h_<id>.jpg`; si no está, la tarjeta sale igual sin imagen. */
+  hitos: {
+    saneamiento: {
+      titulo: 'El pueblo ya ensucia',
+      pasa: 'Ha crecido lo bastante como para generar aguas residuales. Todo lo ' +
+            'que sirves acaba volviendo, y de momento vuelve al río tal cual.',
+      hacer: 'Tiende un COLECTOR desde el pueblo hasta una DEPURADORA junto al ' +
+             'agua. Es una red aparte: la tubería de beber no sirve para esto.',
+      porque: 'Un río puede con una cierta carga y se limpia solo, pero por encima ' +
+              'de ahí se muere. Y es el mismo río del que estás captando: lo que ' +
+              'viertes sin depurar te lo acabas bebiendo tú.'
+    },
+    pluviales: {
+      titulo: 'Cuando llueve, revienta',
+      pasa: 'La mancomunidad ya gestiona tres pueblos, y con el tamaño llega el ' +
+            'problema clásico: la lluvia entra al mismo colector que las fecales.',
+      hacer: 'Tiende la red de PLUVIALES para separar el agua de lluvia, y pon un ' +
+             'TANQUE DE TORMENTAS para retener la punta del aguacero.',
+      porque: 'Una depuradora está dimensionada para el caudal de un día normal. ' +
+              'En una tormenta le puede llegar diez veces más, y lo que no cabe ' +
+              'se alivia crudo al río. Separar la lluvia es quitarle de encima ' +
+              'un agua que ni siquiera venía sucia.'
+    },
+    residuos: {
+      titulo: 'Y ahora, la basura',
+      pasa: 'El pueblo genera residuos todos los días. Sin nadie que se los lleve, ' +
+            'se quedan en la calle y la gente se marcha.',
+      hacer: 'Tiende una CARRETERA hasta un VERTEDERO lejos del agua. Después, una ' +
+             'PLANTA DE RECICLAJE: cada nivel abre una fracción nueva.',
+      porque: 'Enterrar solo cuesta dinero. Lo que se separa SE VENDE, y cada ' +
+              'fracción tiene su precio real: el aceite vale mucho más por ' +
+              'tonelada que la orgánica. Es el primer servicio que da beneficio ' +
+              'en vez de gasto.'
+    },
+    mancomunidad: {
+      titulo: 'Ya no es un pueblo, es una mancomunidad',
+      pasa: 'Otro núcleo entra a formar parte de la gestión. Tiene sus propios ' +
+            'habitantes, su propio depósito y sus propias mejoras.',
+      hacer: 'Cambia entre pueblos con las pestañas de arriba. Cada uno lleva su ' +
+             'sistema, pero la caja es UNA sola.',
+      porque: 'Así funciona de verdad: los pueblos pequeños no pueden pagarse un ' +
+              'servicio de agua cada uno, así que se juntan para compartir ' +
+              'personal, obras y tarifa. Eso es una mancomunidad.'
+    }
+  },
+
   /* ---------- GUARDADO ----------
      v2: el formato multi-pueblo no es compatible con el de un solo pueblo. */
   guardado: { clave: 'redHidraulica_clicker_v2', intervaloSegundos: 10 }
