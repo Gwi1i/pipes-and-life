@@ -53,11 +53,15 @@ export function nombreEstacion(horas){
 }
 
 /**
- * Rendimiento de la instalación según su desgaste (1 = a estrenar). Afecta al
- * clic Y a la producción pasiva: si no la cuidas, todo rinde menos.
+ * Rendimiento de la instalación. Hubo un contador de DESGASTE que bajaba solo y
+ * se subía con un botón de ENGRASAR: dos mecánicas de mantenimiento a la vez, y
+ * la abstracta —un número oculto y un botonazo— no significaba nada. El
+ * mantenimiento del juego son las AVERÍAS, que tienen sitio en el mapa y se
+ * arreglan yendo allí. Esto se queda como gancho por si algún día algo vuelve a
+ * mermar el rendimiento.
  */
 export function eficiencia(pueblo){
-  return 1 - (pueblo.desgaste || 0) * CONFIG.desgaste.efectoMax;
+  return 1;
 }
 
 /**
@@ -314,13 +318,6 @@ export function litrosPorClic(pueblo, estado){
   return base * eficiencia(pueblo) * rendimientoRed(estado);
 }
 
-/** Engrasado a mano: lo que baja el desgaste por cada clic de mantenimiento. */
-export function engrasar(pueblo){
-  const antes = pueblo.desgaste || 0;
-  pueblo.desgaste = Math.max(0, antes - CONFIG.desgaste.reparaPorClic);
-  return antes - pueblo.desgaste;
-}
-
 export function capacidad(pueblo, estado){
   const extra = (piezas(estado).deposito || 0) * CONFIG.aportePorPieza.deposito;
   const n = pueblo.mejoras.deposito;
@@ -404,14 +401,14 @@ export function factorLluvia(horas){
  * PODER DE EXPANSIÓN — lo que enlaza el mapa con el juego de abastecer.
  *
  * Sale de lo bien que lleves tu red: población servida, nivel de servicio,
- * desgaste de la maquinaria y averías pendientes. Divide el coste en clics de
+ * y averías pendientes. Divide el coste en clics de
  * destapar casillas, así que cuidar la instalación no solo produce más agua:
  * también abre territorio. Y al revés: si desatiendes el servicio, explorar se
  * pone cuesta arriba.
  */
 export function poderExpansion(estado){
   const E = CONFIG.expansion;
-  let hab = 0, servicio = 0, desgaste = 0, n = 0;
+  let hab = 0, servicio = 0, n = 0;
   // Las averías ya no son del pueblo sino de las piezas del mapa: basta con que
   // haya alguna sin reparar para que explorar cueste más.
   const averiado = (estado.averias || []).length > 0;
@@ -419,7 +416,6 @@ export function poderExpansion(estado){
     if(!p.desbloqueado) continue;
     hab += p.habitantes;
     servicio += p.servicio;
-    desgaste += p.desgaste || 0;
     n++;
   }
   if(n === 0) return 1;
@@ -427,10 +423,9 @@ export function poderExpansion(estado){
   // La población de partida es el listón: crecer por encima es lo que premia
   const porPoblacion = 1 + Math.log2(1 + hab / E.habitantesReferencia) * E.factorPoblacion;
   const porServicio = Math.max(E.servicioMinimo, servicio / n);
-  const porDesgaste = 1 - (desgaste / n) * E.penalizacionDesgaste;
   const porAveria = averiado ? E.penalizacionAveria : 1;
 
-  return limitar(porPoblacion * porServicio * porDesgaste * porAveria,
+  return limitar(porPoblacion * porServicio * porAveria,
                  E.poderMin, E.poderMax);
 }
 
@@ -463,7 +458,6 @@ export function requisitosAutobomba(pueblo){
 export function bombear(pueblo, estado){
   const cap = capacidad(pueblo, estado);
   const antes = pueblo.agua;
-  pueblo.desgaste = Math.min(1, (pueblo.desgaste || 0) + CONFIG.desgaste.porClic);
   pueblo.agua = Math.min(cap, pueblo.agua + litrosPorClic(pueblo, estado));
   return pueblo.agua - antes;
 }
@@ -485,10 +479,6 @@ function avanzarPueblo(estado, p, dt, dtHoras, punta, estiaje, frenoCrec, lluvia
 
   // Entrada: producción pasiva (parada si hay avería)
   // La instalación se gasta con el tiempo; el personal de mantenimiento lo frena
-  const D = CONFIG.desgaste;
-  p.desgaste = Math.min(1, (p.desgaste || 0) +
-    D.porHoraJuego * dtHoras * Math.pow(D.frenoPorNivelMant, p.mejoras.mantenimiento));
-
   const ef = eficiencia(p);
   const prodCaptacion = caudalCaptacion(p, estado) * estiaje * ef * 3600 * dtHoras;
   const prodAuto = clicsAutoPorSeg(p) * litrosPorClic(p, estado) * dt;
@@ -611,7 +601,6 @@ function avanzarPueblo(estado, p, dt, dtHoras, punta, estiaje, frenoCrec, lluvia
       produciendo: entrada > 0.0001,
       bombeoAuto: prodAuto > 0.0001,
       averiada: (estado.averias || []).length > 0,
-      desgaste: p.desgaste || 0,
       eficiencia: ef,
       saneamiento: servicioActivo(p, 'saneamiento'),
       lluvia, aliviando: alivio > 0.0001,

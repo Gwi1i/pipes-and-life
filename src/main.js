@@ -14,7 +14,7 @@ import { celdaEn, clicarCasilla, clicsParaDestapar, puedeColocar,
          puedeSeguirTrazado, costeTrazado, casillaEnRed,
          piezaDeRuina, diametro, nivelDiametro, costeRenovar,
          averiaEn, aflorarArqueologia } from './mapa.js';
-import { avanzar, bombear, costeMejora, requisitosAutobomba, engrasar,
+import { avanzar, bombear, costeMejora, requisitosAutobomba,
          poderExpansion, servicioActivo, costeAmpliarVertedero,
          capacidadVaso } from './simulacion.js';
 import { formatear } from './util.js';
@@ -32,6 +32,9 @@ const ui      = new UI(entrada);
 // `escena.js` se queda porque `EscenaMapa` hereda de el: destellos, clima,
 // estaciones y los helpers de color viven ahi.
 let escena = new EscenaMapa(lienzo);
+// La ficha de casilla pinta su miniatura con el MISMO dibujo del mapa, asi que
+// necesita la escena. Se la damos aqui para que ui.js no tenga que importarla.
+ui.escena = escena;
 
 if(!habiaPartida){
   estado.anotar(`Nueva mancomunidad. ${estado.activo.nombre} espera agua: dale a BOMBEAR.`, 'info');
@@ -239,9 +242,9 @@ function procesarAcciones(){
           // Un hallazgo sin atender se selecciona: sus acciones salen en el panel
           estado.seleccion = { col, fila };
         } else {
-          // Terreno abierto y sin nada que hacer: no pasa nada. Que clicar
-          // hierba vacía bombeara agua no lo entendía nadie.
-          estado.seleccion = null;
+          // Terreno pelado: se selecciona y su ficha cuenta qué es, qué cuesta
+          // cruzarlo y qué cabe encima. Mirar tiene que ser gratis.
+          estado.seleccion = { col, fila };
         }
         break;
       }
@@ -298,12 +301,6 @@ function procesarAcciones(){
         estado.modo = { tipo: 'colocar', elemento: pieza.tipo, trazado: [],
                         deInventario: i };
         ui.refrescarConstruccion(estado);
-        break;
-      }
-
-      case 'mantener': {
-        const bajo = engrasar(estado.activo);
-        if(bajo > 0) escena.destelloMantenimiento();
         break;
       }
 
@@ -743,6 +740,16 @@ document.getElementById('btn-reiniciar').onclick = () => {
   Estado.borrar();
   location.reload();
 };
+
+// Solapas del lateral: enseñar una hoja y esconder las demás. Es DOM puro y no
+// toca el estado, así que vive aquí y no en entrada.js.
+const solapas = document.getElementById('solapas');
+if(solapas) solapas.addEventListener('click', e => {
+  const b = e.target.closest('.solapa');
+  if(!b) return;
+  for(const s of solapas.querySelectorAll('.solapa')) s.classList.toggle('activa', s === b);
+  for(const h of document.querySelectorAll('.hoja')) h.hidden = h.dataset.hoja !== b.dataset.solapa;
+});
 
 // Depuración: `juego` en la consola. `juego.dinero(n)` fija el saldo.
 window.juego = {

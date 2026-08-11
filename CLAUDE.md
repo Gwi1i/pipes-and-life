@@ -199,11 +199,12 @@ REAL en segundos. Dentro distingue:
 Por eso el auto-bombeo se compara con el clic y la captación con la demanda, no
 al revés. Si mezclas las escalas, los números se van por órdenes de magnitud.
 
-**Desgaste = la segunda tecla.** `pueblo.desgaste` (0..1) sube con el tiempo y
-con cada clic de bombeo, y `eficiencia()` recorta el clic Y la producción pasiva.
-Se baja clicando ENGRASAR (`engrasar()`, gratis) o comprando mantenimiento, que
-frena la acumulación. Existe para que el jugador alterne entre dos botones en
-vez de machacar siempre el mismo.
+**Solo hay UNA mecánica de mantenimiento: las averías.** Hubo un contador de
+DESGASTE que bajaba solo y se subía con un botonazo ENGRASAR. Se quitó entero:
+eran dos mantenimientos a la vez y el abstracto —un número oculto y un botón—
+no significaba nada. Lo que se rompe tiene sitio en el mapa y se arregla yendo
+allí. `eficiencia()` se queda devolviendo 1 como gancho por si algo vuelve a
+mermar el rendimiento.
 
 **El operario.** Vive en `main.js` (`tickOperario`), no en el estado: aparece
 cada `CONFIG.visita` segundos, y `recogerOperario()` intercepta el clic de
@@ -350,6 +351,17 @@ densidad ES la informacion: si lo ves tupido, ya sabes que cruzarlo cuesta.
 Y `suavizarArranque()` rebaja cada familia a su variante barata cerca del pueblo
 (`radioAmable`). Empezar rodeado de roca viva por capricho de la semilla no es
 dificultad, es mala suerte.
+
+**El lateral va por SOLAPAS.** Los paneles contextuales (guía, averías,
+instalación, casilla, hallazgo, almacén) siguen arriba porque salen solos cuando
+tocan; el resto se reparte en tres hojas —Mapa, Pueblo, Mancomunidad—. Eran doce
+bloques apilados y había que bajar media pantalla para llegar al registro.
+
+**Clicar terreno pelado abre su FICHA** (`refrescarCasilla`): qué terreno es, qué
+cuesta cruzarlo con cada red y qué piezas admite. Con nueve terrenos y precios de
+12 a 190 €, mirar antes de decidir tiene que ser gratis. La miniatura NO es un
+icono aparte: se pinta prestándole el contexto a `escena.dibujarTerreno()`, así
+no hay dos verdades sobre qué aspecto tiene un pedregal.
 
 **El clic vive EN EL MAPA.** Bombear es clicar EL PUEBLO, y solo el pueblo.
 Antes habia un botonazo BOMBEAR ocupando un cuarto de pantalla y ademas clicar

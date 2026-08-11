@@ -101,39 +101,47 @@ body{
   transition:width .12s linear;
 }
 
-/* ---------- TIRA DE ENGRASADO ----------
-   Lo que queda de los dos botonazos de antes. Bombear se hace clicando el pueblo
-   en el mapa; engrasar no tiene sitio propio sobre el terreno, así que se queda
-   aquí abajo en una tira fina con su barra de desgaste. */
-.botonera{display:flex; flex:none;}
-.btn-engrasar{
-  flex:1; cursor:pointer; user-select:none;
-  display:flex; align-items:center; gap:10px; padding:7px 14px;
-  background:linear-gradient(180deg,#33280f,#20190a);
-  border:none; border-top:2px solid var(--alarma); color:var(--texto);
-  font-family:inherit; transition:background .2s;
+/* ---------- SOLAPAS DEL LATERAL ----------
+   Doce bloques apilados obligaban a bajar media pantalla para llegar al
+   registro. Lo contextual (guía, avería, casilla, hallazgo) sigue arriba porque
+   aparece solo cuando toca; el resto se reparte en tres solapas. */
+.solapas{display:flex; gap:2px; flex:none;}
+.solapa{
+  flex:1; cursor:pointer; padding:8px 4px;
+  background:var(--panel); border:1px solid var(--linea); border-bottom:none;
+  border-radius:4px 4px 0 0; color:var(--tenue);
+  font-family:var(--mono); font-size:9.5px; letter-spacing:.08em;
+  text-transform:uppercase; transition:.15s;
 }
-.btn-engrasar:hover{background:linear-gradient(180deg,#4a3a17,#20190a);}
-.btn-engrasar:active{filter:brightness(1.15);}
-.btn-engrasar:focus-visible{outline:2px solid var(--alarma); outline-offset:-2px;}
-.be-icono{font-size:14px; line-height:1;}
-.be-txt{
-  font-family:var(--mono); font-size:10px; font-weight:700;
-  letter-spacing:.16em; color:var(--alarma);
+.solapa:hover{color:var(--texto); background:var(--panel-alto);}
+.solapa.activa{
+  color:var(--agua); background:var(--panel-alto);
+  border-color:var(--linea-viva); box-shadow:inset 0 2px 0 var(--agua);
 }
-.be-sub{font-family:var(--mono); font-size:9px; color:var(--tenue); white-space:nowrap;}
-.btn-engrasar .bm-barra{flex:1; max-width:none;}
-.btn-engrasar.urge{animation:urgeMant 1.1s ease-in-out infinite;}
-@keyframes urgeMant{
-  0%,100%{box-shadow:inset 0 3px 0 -1px rgba(245,165,36,0);}
-  50%{box-shadow:inset 0 3px 0 -1px rgba(245,165,36,.9);}
+.solapa:focus-visible{outline:2px solid var(--agua); outline-offset:2px;}
+.hoja{display:flex; flex-direction:column; gap:11px;}
+.hoja[hidden]{display:none;}
+
+/* ---------- FICHA DE LA CASILLA ---------- */
+.casilla-cab{display:flex; align-items:center; gap:10px; margin-bottom:8px;}
+#casilla-lienzo{
+  width:64px; height:64px; flex:none; border-radius:6px;
+  border:1px solid var(--linea-viva); background:#0a141d;
 }
-.bm-barra{
-  display:block; height:6px; border-radius:4px;
-  background:rgba(8,18,28,.8); border:1px solid var(--linea-viva); overflow:hidden;
+.casilla-nom{font-family:var(--mono); font-size:12px; font-weight:700; color:var(--tono);}
+.casilla-fam{
+  font-family:var(--mono); font-size:8.5px; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--tenue);
 }
-.bm-barra i{display:block; height:100%; width:0%; background:var(--ok); transition:width .12s linear;}
-.bm-barra i.alto{background:var(--critico);}
+.casilla-datos{display:grid; gap:3px; margin-bottom:8px;}
+.casilla-fila{
+  display:flex; justify-content:space-between; gap:8px;
+  font-size:11px; color:var(--tenue);
+  border-bottom:1px dotted var(--linea); padding-bottom:2px;
+}
+.casilla-fila b{font-family:var(--mono); color:var(--texto);}
+.casilla-cabe{font-size:10.5px; line-height:1.45; color:var(--tenue);}
+.casilla-cabe b{color:var(--ok);}
 
 /* ---------- BLOQUES DE PANEL ---------- */
 .bloque{border:1px solid var(--linea); background:var(--panel);}

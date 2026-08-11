@@ -17,6 +17,7 @@ import { capacidad, demandaMedia, caudalCaptacion, costeMejora,
          llenadoVaso, capacidadVaso, costeAmpliarVertedero } from './simulacion.js';
 import { formatear } from './util.js';
 import { celdaEn, piezaDeRuina, diametro, nivelDiametro, costeRenovar,
+         costeCasillaTuberia, puedeColocar,
          lineasConectadas, cuelloDeBotella, escalaDeRed } from './mapa.js';
 import { pasoActual } from './tutorial.js';
 
@@ -398,6 +399,97 @@ export class UI {
            </button>`}`;
   }
 
+  /**
+   * LA FICHA DE LA CASILLA. Clicar terreno vacío no hacía nada; ahora cuenta qué
+   * es, qué cuesta cruzarlo con cada red y qué cabe encima. Con nueve terrenos y
+   * precios que se van de 12 a 190 €, el jugador necesita poder mirar antes de
+   * decidir por dónde tira la conducción — y mirar tiene que ser gratis.
+   *
+   * El dibujo NO es un icono aparte: es la misma casilla del mapa, pintada por
+   * la escena en un lienzo pequeño. Así no hay dos verdades sobre qué aspecto
+   * tiene un pedregal, y si algún día cambia el dibujo la ficha cambia sola.
+   */
+  refrescarCasilla(estado, escena){
+    const panel = document.getElementById('panel-casilla');
+    const sel = estado.seleccion;
+    const celda = sel ? celdaEn(estado.mapa, sel.col, sel.fila) : null;
+
+    // La ficha solo sale para terreno pelado: si hay obra, hallazgo o restos, ya
+    // tienen su propio panel y este estorbaría.
+    const hayOtra = celda && (celda.hallazgo || (celda.arqueologia && celda.aflorado)
+      || estado.construcciones.some(o => o.col === sel.col && o.fila === sel.fila));
+    const vale = celda && !celda.oculta && !hayOtra;
+
+    const firma = vale ? `${sel.col},${sel.fila},${celda.tipo}` : 'nada';
+    if(this.cache.casillaFirma === firma) return;
+    this.cache.casillaFirma = firma;
+
+    if(!vale){ panel.style.display = 'none'; return; }
+    panel.style.display = '';
+
+    const def = CONFIG.terrenos[celda.tipo] || CONFIG.terrenos.prado;
+    const FAM = { llano: 'Terreno llano', arbolado: 'Arbolado',
+                  relieve: 'Relieve', agua: 'Masa de agua' };
+
+    // Lo que cuesta meter cada red por aquí, con el calibre que tengas elegido
+    const redes = Object.entries(CONFIG.redes)
+      .filter(([, r]) => !r.requiere || servicioActivo(estado.activo, r.requiere))
+      .map(([k, r]) => {
+        const c = costeCasillaTuberia(celda, estado.dnActual[k], k);
+        const obra = CONFIG.tuberia.nombreObra[celda.tipo] || 'obra';
+        return `<div class="casilla-fila"><span>${r.nombre} · ${obra}</span>
+                  <b style="color:${r.color}">${formatear(c)} €</b></div>`;
+      }).join('');
+
+    // Y qué piezas admite. Es la pregunta que de verdad se hace uno al mirar.
+    const cabe = Object.entries(CONFIG.construibles)
+      .filter(([k]) => puedeColocar(estado.mapa, estado.construcciones, k, sel.col, sel.fila).ok)
+      .map(([, d]) => d.nombre);
+
+    document.getElementById('casilla').innerHTML = `
+      <div class="casilla-cab" style="--tono:${def.color}">
+        <canvas id="casilla-lienzo" width="128" height="128"></canvas>
+        <div>
+          <div class="casilla-nom">${def.nombre}</div>
+          <div class="casilla-fam">${FAM[def.familia] || ''}</div>
+        </div>
+      </div>
+      <div class="casilla-datos">
+        <div class="casilla-fila"><span>Destapar</span><b>×${def.costeExtra}</b></div>
+        ${redes}
+      </div>
+      <p class="casilla-cabe">${cabe.length
+        ? 'Aquí cabe: <b>' + cabe.join('</b>, <b>') + '</b>.'
+        : 'Aquí no cabe ninguna instalación.'}</p>`;
+
+    this.pintarMiniCasilla(estado, escena, celda, sel);
+  }
+
+  /**
+   * Pinta la casilla en el lienzo pequeño de la ficha reutilizando el dibujo de
+   * la escena. Se le presta el contexto y se le pide una sola casilla: es el
+   * mismo codigo que pinta el mapa, asi que no pueden acabar diciendo cosas
+   * distintas.
+   */
+  pintarMiniCasilla(estado, escena, celda, sel){
+    const lienzo = document.getElementById('casilla-lienzo');
+    if(!lienzo || !escena) return;
+    const ctx = lienzo.getContext('2d');
+    const lado = lienzo.width;
+    ctx.clearRect(0, 0, lado, lado);
+
+    // La escena dibuja sobre SU contexto y con SU tamaño de casilla: se los
+    // cambiamos un momento y se los devolvemos. Feo pero honrado, y evita
+    // duplicar doscientas líneas de dibujo para una miniatura.
+    const ctxReal = escena.ctx, wReal = escena._W, hReal = escena._H;
+    escena.ctx = ctx; escena._W = lado; escena._H = lado;
+    try{
+      escena.dibujarTerreno(celda, sel.col, sel.fila, 0, 0, lado);
+    } finally {
+      escena.ctx = ctxReal; escena._W = wReal; escena._H = hReal;
+    }
+  }
+
   /** El almacén: piezas rescatadas, listas para colocar sin volver a pagarlas. */
   refrescarAlmacen(estado){
     const firma = estado.inventario.map(p => p.tipo).join(',');
@@ -703,17 +795,6 @@ export class UI {
     const barra = document.getElementById('barra-agua');
     if(barra) barra.style.width = limitarPct(pct) + '%';
 
-    // Desgaste: barra y aviso en el botón de engrasar
-    const des = Math.round((resultado.desgaste || 0) * 100);
-    const bd = document.getElementById('barra-desgaste');
-    if(bd){
-      bd.style.width = limitarPct(des) + '%';
-      bd.className = des >= CONFIG.desgaste.avisoEn * 100 ? 'alto' : '';
-    }
-    this.fijar('desgaste-txt', `desgaste ${des} %  ·  rinde ${Math.round((resultado.eficiencia ?? 1) * 100)} %`);
-    const btnM = document.getElementById('btn-mantener');
-    if(btnM) btnM.classList.toggle('urge', des >= CONFIG.desgaste.avisoEn * 100);
-
     // Multa por hora, para el panel de cauce
     resultado.multaHora = (resultado.suciedad || 0) * CONFIG.cauce.multaMaxPorHora;
 
@@ -721,6 +802,7 @@ export class UI {
     this.refrescarPaletaObra(estado);
     this.refrescarRed(estado, resultado);
     this.refrescarObra(estado);
+    this.refrescarCasilla(estado, this.escena);
     this.refrescarHallazgo(estado);
     this.refrescarAlmacen(estado);
     this.refrescarTienda(estado);

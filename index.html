@@ -49,18 +49,6 @@
           <div class="barra-agua-fondo"><div class="barra-agua-relleno" id="barra-agua"></div></div>
         </div>
       </div>
-      <!-- El clic vive EN EL MAPA: se bombea clicando el pueblo. Aquí solo queda
-           una tira fina con el desgaste, que no tiene sitio propio sobre el
-           terreno. Los dos botonazos de antes ocupaban un cuarto de pantalla
-           para hacer lo que ahora se hace donde está la cosa. -->
-      <div class="botonera">
-        <button class="btn-engrasar" id="btn-mantener" title="Baja el desgaste de la instalación">
-          <span class="be-icono">🔧</span>
-          <span class="be-txt">ENGRASAR</span>
-          <span class="bm-barra"><i id="barra-desgaste"></i></span>
-          <span class="be-sub" id="desgaste-txt">desgaste 0 %</span>
-        </button>
-      </div>
     </main>
 
     <!-- Panel derecho -->
@@ -94,95 +82,109 @@
         <div id="almacen" class="tienda"></div>
       </section>
 
-      <section class="bloque">
-        <h2>Construir en el mapa</h2>
-        <div id="construir" class="tienda"></div>
+      <section class="bloque" id="panel-casilla" style="display:none">
+        <h2>La casilla</h2>
+        <div id="casilla"></div>
       </section>
 
-      <section class="bloque" id="panel-red">
-        <h2>La red</h2>
-        <div id="red" class="tienda"></div>
-      </section>
+      <!-- PESTAÑAS. Antes eran doce bloques apilados y había que bajar media
+           pantalla para llegar al registro. Los paneles de arriba son
+           contextuales (salen solos cuando toca) y todo lo demás se reparte
+           aquí en tres solapas. -->
+      <nav class="solapas" id="solapas">
+        <button class="solapa activa" data-solapa="mapa">Mapa</button>
+        <button class="solapa" data-solapa="pueblo">Pueblo</button>
+        <button class="solapa" data-solapa="comun">Mancomunidad</button>
+      </nav>
 
-      <section class="bloque">
-        <h2>Mejoras</h2>
-        <div id="tienda" class="tienda"></div>
-      </section>
+      <div class="hoja" data-hoja="mapa">
+        <section class="bloque">
+          <h2>Construir en el mapa</h2>
+          <div id="construir" class="tienda"></div>
+        </section>
+        <section class="bloque" id="panel-red">
+          <h2>La red</h2>
+          <div id="red" class="tienda"></div>
+        </section>
+      </div>
 
-      <section class="bloque" id="panel-cauce" style="display:none">
-        <h2>Cauce (común)</h2>
-        <div class="cauce">
-          <div class="cauce-cab">
-            <span class="v" id="cauce-pct">—</span>
-            <span class="cauce-multa">multa: <b id="cauce-multa">0</b> €/h</span>
+      <div class="hoja" data-hoja="pueblo" hidden>
+        <section class="bloque">
+          <h2>Mejoras</h2>
+          <div id="tienda" class="tienda"></div>
+        </section>
+        <section class="bloque">
+          <h2>Función especial</h2>
+          <div id="premium"></div>
+        </section>
+        <section class="bloque">
+          <h2>Tu población</h2>
+          <div id="detalle" class="detalle"></div>
+        </section>
+      </div>
+
+      <div class="hoja" data-hoja="comun" hidden>
+        <section class="bloque" id="panel-cauce" style="display:none">
+          <h2>Cauce (común)</h2>
+          <div class="cauce">
+            <div class="cauce-cab">
+              <span class="v" id="cauce-pct">—</span>
+              <span class="cauce-multa">multa: <b id="cauce-multa">0</b> €/h</span>
+            </div>
+            <div class="barra-cauce-fondo"><div class="barra-cauce-relleno" id="barra-cauce"></div></div>
+            <button class="btn-limpiar" data-accion="limpiarCauce">
+              <span>LIMPIAR CAUCE</span>
+              <em>a mano, hasta que las depuradoras lo dominen</em>
+            </button>
           </div>
-          <div class="barra-cauce-fondo"><div class="barra-cauce-relleno" id="barra-cauce"></div></div>
-          <button class="btn-limpiar" data-accion="limpiarCauce">
-            <span>LIMPIAR CAUCE</span>
-            <em>a mano, hasta que las depuradoras lo dominen</em>
-          </button>
-        </div>
-      </section>
+        </section>
+        <section class="bloque">
+          <h2>Registro</h2>
+          <div id="registro" class="registro"></div>
+        </section>
+        <section class="bloque">
+          <h2>Cómo jugar</h2>
+          <div class="explica">
+            <p><b>1. Clica tu pueblo.</b> Cada clic sobre él saca agua del río.
+               Sin depósito va directa a los grifos: si dejas de clicar, se queda
+               seco. Y si te has arruinado, clicar el pueblo es lo que te saca
+               del apuro.</p>
+            <p><b>2. Destapa terreno.</b> Clica las casillas en penumbra que
+               tengas al lado. Cuanto mejor sirvas al pueblo, menos clics cuesta
+               abrir cada una.</p>
+            <p><b>3. Construye el depósito.</b> Va en relieve, y con una colina
+               le basta. El agua se acumula y el pueblo bebe de la reserva
+               mientras descansas.</p>
+            <p><b>4. Mira lo que pisas.</b> Clica cualquier casilla y verás qué
+               terreno es, lo que cuesta cruzarlo con cada red y qué cabe encima.
+               Hay nueve terrenos y los precios no se parecen: a veces compensa
+               rodear por un pinar antes que zanjar un pedregal.</p>
+            <p><b>5. Repara yendo allí.</b> Lo que se rompe es una PIEZA concreta:
+               se marca en rojo y deja de contar en la red. Ve hasta ella y clica
+               encima hasta arreglarla; cada golpe de llave cuesta dinero.</p>
+            <p><b>6. Haz crecer el pueblo.</b> Bien servido y sin cortes, crece y
+               pide más agua. Mal servido, se despuebla.</p>
+            <p><b>7. Ensancha la red.</b> Por una tubería cabe lo que cabe, y
+               manda su tramo más estrecho. Cuando el pueblo deje de crecer o la
+               captación se ahogue, renueva la línea ENTERA: media conducción
+               nueva no sirve de nada.</p>
+            <p><b>8. Depura antes de verter.</b> Al crecer, el pueblo genera aguas
+               residuales y necesitan su PROPIA red: un colector hasta una
+               depuradora junto al agua. La tubería de beber no sirve para esto.</p>
+            <p><b>9. Gestiona la lluvia.</b> Con el tercer pueblo se abre la red
+               de PLUVIALES. Sin ella la lluvia y las fecales bajan juntas y en
+               otoño revientan la depuradora.</p>
+            <p><b>10. Recoge la basura, y véndela.</b> Su red no es una tubería:
+               es una CARRETERA hasta un vertedero lejos del agua. Enterrar solo
+               cuesta; con una planta de reciclaje empiezas a separar fracciones
+               y a venderlas. Es la única fuente de dinero aparte del agua.</p>
+            <p><b>11. Respeta lo que salga.</b> Al picar pueden aparecer restos
+               arqueológicos. No se quitan ni se puede construir encima: hay que
+               rodearlos. Excavarlos cuesta, pero luego rentan siempre.</p>
+          </div>
+        </section>
+      </div>
 
-      <section class="bloque">
-        <h2>Función especial</h2>
-        <div id="premium"></div>
-      </section>
-
-      <section class="bloque">
-        <h2>Tu población</h2>
-        <div id="detalle" class="detalle"></div>
-      </section>
-
-      <section class="bloque">
-        <h2>Registro</h2>
-        <div id="registro" class="registro"></div>
-      </section>
-
-      <section class="bloque">
-        <h2>Cómo jugar</h2>
-        <div class="explica">
-          <p><b>1. Bombea.</b> Cada clic saca agua del río. Sin depósito va
-             directa al pueblo: si dejas de clicar, se queda seco.</p>
-          <p><b>2. Construye el depósito.</b> Con lo que ganes, cómpralo: el agua
-             se acumula y el pueblo bebe de la reserva mientras descansas.</p>
-          <p><b>3. Automatiza.</b> La captación produce agua sola (pero en verano
-             el estiaje la baja). El consumo tiene punta de mañana y de tarde:
-             por eso importa el depósito. Reparte el dinero entre las mejoras.</p>
-          <p><b>4. Vigila las averías.</b> Lo que se rompe es una PIEZA concreta
-             del mapa: se marca en rojo y deja de contar en la red. Ve hasta ella
-             y clica encima hasta arreglarla; cada golpe de llave cuesta dinero.
-             El personal de mantenimiento deja menos faena y acaba el arreglo
-             solo, pero tarda.</p>
-          <p><b>5. Haz crecer el pueblo.</b> Bien servido y sin cortes, crece y
-             pide más agua. Mal servido, se despuebla. No te duermas.</p>
-          <p><b>6. Depura antes de verter.</b> Al crecer, el pueblo genera aguas
-             residuales. Necesitan su PROPIA red: un colector desde el pueblo
-             hasta una depuradora junto al agua. La tubería de beber no sirve
-             para esto. Si el colector se queda corto, el agua sucia se sale
-             antes de llegar y va cruda al río.</p>
-          <p><b>7. Amplía la mancomunidad.</b> Al crecer se abre un segundo
-             pueblo con su propio sistema, y más tarde un tercero. Cambia entre
-             ellos con las pestañas de arriba.</p>
-          <p><b>8. Ensancha la red.</b> Por una tubería cabe lo que cabe, y manda
-             su tramo más estrecho. Cuando el pueblo deje de crecer o la captación
-             se ahogue, renueva la línea ENTERA a un diámetro mayor: media
-             conducción nueva no sirve de nada.</p>
-          <p><b>9. Gestiona la lluvia.</b> Con el tercer pueblo se abre la red de
-             PLUVIALES: una tercera red, aparte del colector. Sin ella la lluvia
-             y las fecales bajan juntas y en otoño revientan la depuradora. La
-             pluvial se lleva lo que le quepa —otra vez, el diámetro— y el tanque
-             de tormentas corta la punta.</p>
-          <p><b>10. Recoge la basura, y véndela.</b> Al crecer se abre el servicio
-             de RESIDUOS, y su red no es una tubería: es una CARRETERA. Tiéndela
-             hasta un vertedero lejos del agua o la basura se pudrirá en la calle
-             y el pueblo dejará de crecer. Enterrar solo cuesta dinero; con una
-             planta de reciclaje conectada empiezas a separar fracciones —envases,
-             orgánica, vidrio, papel...— y a vendérselas a quien las compra. Cada
-             nivel de la planta abre un contenedor más: cuanto más reciclas, más
-             ingresas. Es la única fuente de dinero aparte del agua.</p>
-        </div>
-      </section>
     </aside>
 
   </div>

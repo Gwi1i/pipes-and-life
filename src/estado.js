@@ -44,8 +44,7 @@ function crearPueblo(def){
     servicios: serviciosIniciales(),
     autobombaActivo: false,
     tanqueAgua: 0,              // litros retenidos ahora en el tanque de tormentas
-    basuraCalle: 0,             // 0..1; basura sin recoger pudriéndose en el pueblo
-    desgaste: 0                 // 0..1; a más desgaste, menos rinde todo
+    basuraCalle: 0              // 0..1; basura sin recoger pudriéndose en el pueblo
   };
 }
 

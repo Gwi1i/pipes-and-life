@@ -340,21 +340,7 @@ export const CONFIG = {
   // colores base están arriba (color/estaciones); las intensidades de sombreado
   // son detalle de dibujo y viven en escena.js.
 
-  /* ---------- DESGASTE ----------
-     La instalación se va gastando y pierde eficacia. Es la SEGUNDA tecla del
-     juego: obliga a alternar entre el botón de bombear y el de mantenimiento,
-     en vez de machacar siempre el mismo sitio. Se puede engrasar a mano
-     (gratis, clicando) o comprar personal de mantenimiento, que lo frena. */
-  desgaste: {
-    porHoraJuego: 0.010,     // sube solo con el tiempo
-    porClic: 0.0008,         // y además usar la bomba la gasta: clicar castiga
-    efectoMax: 0.72,         // a desgaste 1 se produce solo el 28 %
-    reparaPorClic: 0.05,     // cuánto baja cada clic de mantenimiento
-    frenoPorNivelMant: 0.65, // cada nivel de mantenimiento multiplica el desgaste acumulado
-    avisoEn: 0.45            // a partir de aquí, la UI avisa
-  },
-
-  
+    
   /* ---------- AVERÍAS (por pueblo) ---------- */
   averias: {
     probBasePorHora: 0.006,
@@ -411,7 +397,6 @@ export const CONFIG = {
     factorPoblacion: 0.55,     // cuánto ayuda la población (crece logarítmico)
     habitantesReferencia: 200, // la población de partida no da ventaja: es el listón
     servicioMinimo: 0.35,      // suelo, para que un corte puntual no te bloquee
-    penalizacionDesgaste: 0.50,// cuánto castiga no engrasar
     penalizacionAveria: 0.70,  // multiplicador si hay alguna avería sin reparar
     poderMin: 0.35, poderMax: 6
   },
