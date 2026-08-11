@@ -365,7 +365,14 @@ export const CONFIG = {
     volumenLluvia: 0.05,  // el ambiente de lluvia, muy por debajo del resto
     /* La música de fondo (assets/musica.ogg|mp3|wav, generada por el autor).
        De fondo DE VERDAD: si compite con los efectos, cansa en diez minutos. */
-    volumenMusica: 0.18
+    volumenMusica: 0.18,
+    /* El recorte del bucle: la música generada trae fundido a silencio al
+       final, y en bucle eso es morirse y arrancar de golpe. Se mide el volumen
+       por ventanas y se repite solo el tramo que supera `umbral` × mediana. */
+    bucle: {
+      ventana: 0.25,   // segundos por ventana de medida
+      umbral: 0.5      // fracción de la mediana por debajo de la cual es "cola"
+    }
   },
 
   /* ---------- TIEMPO ---------- */

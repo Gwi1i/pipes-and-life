@@ -203,6 +203,33 @@ let musicaOn = localStorage.getItem(CLAVE_MUSICA) !== '0';
 let musicaBuf = null;    // el archivo decodificado, si lo hay
 let musicaGan = null;    // su mando de volumen
 let musicaSrc = null;    // la fuente sonando ahora mismo
+let bucleIni = 0, bucleFin = 0;   // el tramo del archivo que se repite
+
+/**
+ * Dónde EMPIEZA y ACABA la música de verdad dentro del archivo. La música
+ * generada suele venir con un fundido a silencio al final (y a veces al
+ * principio): en bucle, eso es morirse el sonido y arrancar de golpe. Se mide
+ * el volumen por ventanas y el bucle se queda solo con el tramo fuerte — la
+ * cola se oye UNA vez, en la primera pasada, y no vuelve.
+ */
+function extremosFuertes(buf){
+  const B = CONFIG.sonido.bucle;
+  const c = buf.getChannelData(0);
+  const vent = Math.max(1, Math.floor(buf.sampleRate * B.ventana));
+  const rms = [];
+  for(let i = 0; i + vent <= c.length; i += vent){
+    let s = 0;
+    for(let j = i; j < i + vent; j++) s += c[j] * c[j];
+    rms.push(Math.sqrt(s / vent));
+  }
+  if(!rms.length) return [0, buf.duration];
+  const mediana = [...rms].sort((a, b) => a - b)[Math.floor(rms.length / 2)];
+  const umbral = mediana * B.umbral;
+  let ini = 0, fin = rms.length - 1;
+  while(ini < fin && rms[ini] < umbral) ini++;
+  while(fin > ini && rms[fin] < umbral) fin--;
+  return [ini * B.ventana, Math.min(buf.duration, (fin + 1) * B.ventana)];
+}
 
 /**
  * Busca y decodifica el archivo de música. Se llama al arrancar (descargar y
@@ -217,6 +244,7 @@ export async function cargarMusica(){
       const datos = await resp.arrayBuffer();
       if(!despertar()) return false;
       musicaBuf = await ctx.decodeAudioData(datos);
+      [bucleIni, bucleFin] = extremosFuertes(musicaBuf);
       return true;
     }catch(_){ /* probar el siguiente formato */ }
   }
@@ -231,6 +259,10 @@ export function empezarMusica(){
   musicaSrc = ctx.createBufferSource();
   musicaSrc.buffer = musicaBuf;
   musicaSrc.loop = true;
+  // El bucle salta los fundidos: empieza desde 0 (la entrada se oye una vez)
+  // pero repite solo el tramo con música de verdad.
+  musicaSrc.loopStart = bucleIni;
+  musicaSrc.loopEnd = bucleFin;
   musicaSrc.connect(musicaGan);
   musicaGan.connect(ctx.destination);   // NO pasa por maestro: mando propio
   musicaSrc.start();
