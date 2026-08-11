@@ -489,9 +489,15 @@ instalación sin explicar rompe justo lo que el juego quiere hacer.
 Antes habia un botonazo BOMBEAR ocupando un cuarto de pantalla y ademas clicar
 cualquier casilla vacia bombeaba, que no significaba nada. Ahora cada clic sobre
 el terreno hace lo que corresponde a lo que hay debajo: repara si esta roto,
-selecciona si es tuyo, destapa si esta en niebla, bombea si es el pueblo. Del
-botonazo solo queda una tira fina para ENGRASAR, que no tiene sitio propio sobre
-el terreno.
+selecciona si es tuyo, destapa si esta en niebla, bombea si es el pueblo. (La
+tira de ENGRASAR se fue con el desgaste; no queda ningún botón de acción fuera
+del mapa.)
+
+**La guía envejece mal y nadie lo ve.** El tutorial llegó a pedir "pulsa
+BOMBEAR" y "engrasa la instalación" dos versiones después de quitarse ambos: el
+texto de los primeros pasos no lo relee nadie al refactorizar. Si quitas o
+renombras algo con lo que interactúa el jugador, busca su nombre en
+`CONFIG.tutorial` y en los hitos.
 
 **El mapa y el abastecimiento son UN SOLO bucle.** `poderExpansion(estado)` sale
 de la población, el nivel de servicio, el desgaste y las averías, y DIVIDE el

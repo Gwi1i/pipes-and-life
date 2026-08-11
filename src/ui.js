@@ -1102,8 +1102,14 @@ export class UI {
 
     this.fijar('hud-agua', `${formatear(p.agua)} / ${formatear(cap)} L`,
       p.agua < cap * 0.08 ? 'critico' : 'agua');
-    this.fijar('hud-produccion', formatear(resultado.prodLps) + ' L/s',
-      resultado.averiada ? 'critico' : (resultado.prodLps > 0 ? 'ok' : 'neutro'));
+    // En caudal DE JUEGO, la unidad del oficio: 0,41 L/s para un pueblo de 200
+    // habitantes es un dato de verdad. Antes mostraba litros por segundo REAL
+    // (clics incluidos) y con el desglose al lado eran dos verdades a la vista.
+    // El clic no entra aquí: su respuesta es la escena y el nivel del depósito.
+    const caudal = caudalCaptacion(p, estado, resultado.estiaje || 1);
+    this.fijar('hud-produccion',
+      (caudal < 10 ? caudal.toFixed(2) : formatear(caudal)) + ' L/s',
+      resultado.averiada ? 'critico' : (caudal > 0 ? 'ok' : 'neutro'));
     this.fijar('hud-dinero', formatear(estado.dinero) + ' €',
       estado.dinero < 0 ? 'critico' : 'dinero');
     this.fijar('hud-poblacion',

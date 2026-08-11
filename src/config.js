@@ -344,7 +344,12 @@ export const CONFIG = {
 
   /* ---------- ECONOMÍA ---------- */
   economia: {
-    dineroInicial: 25,     // anticipo de la concesión: un empujón para arrancar
+    /* El anticipo de la concesión. Medido con el bot: con 25 € la primera obra
+       llegaba al minuto 5 — cinco minutos de clicar sin nada que decidir, y un
+       jugador nuevo decide si se queda en menos de uno. Con 260 la captación
+       (300 €) queda a un puñado de clics: se aprende igual que clicar es
+       dinero, pero la primera DECISIÓN llega cuando aún hay alguien mirando. */
+    dineroInicial: 260,
     // Alta a propósito: el esfuerzo de clicar se paga en DINERO, no en agua
     // regalada. Es lo que evita la desesperación de los primeros minutos.
     tarifa: 14.00,
@@ -1074,10 +1079,17 @@ export const CONFIG = {
      Acompaña hasta que el pueblo bebe por primera vez, y se quita de en medio.
      Cada paso se da por hecho SOLO cuando el jugador lo consigue de verdad (la
      comprobación está en tutorial.js): nada de "pulsa siguiente". */
+  /* La guía se lee en los TRES PRIMEROS MINUTOS, que es cuando el jugador
+     decide si se queda. Dos reglas aprendidas a base de dejarla envejecer mal:
+     cada texto nombra SOLO cosas que existen hoy (llegó a pedir un botón
+     BOMBEAR y un engrase que se quitaron hace dos versiones), y el primer
+     paso cuenta el OBJETIVO del juego — sin el "para qué", destapar casillas
+     es un trámite. */
   tutorial: [
     { id: 'explorar',  titulo: 'Destapa el terreno',
-      texto: 'Clica sobre una casilla en penumbra, junto a tu pueblo. Cada una ' +
-             'necesita varios clics: el número que ves es lo que le falta.' },
+      texto: 'Ahí fuera hay TREINTA Y SEIS pueblos esperando agua, y esta ' +
+             'mancomunidad empieza en el tuyo. Clica una casilla en penumbra, ' +
+             'junto al pueblo: el número que ves es los clics que le faltan.' },
     { id: 'captacion', titulo: 'Busca de dónde sacar agua',
       texto: 'Encuentra el río y pon una CAPTACIÓN sobre una casilla de agua. ' +
              'La eliges en «Construir en el mapa»; en verde es que ahí vale.' },
@@ -1088,14 +1100,14 @@ export const CONFIG = {
              'tu pueblo hasta el bombeo. Clic en la última para rematar. Ojo: ' +
              'lo que no queda conectado no sirve de nada.' },
     { id: 'bombear',   titulo: 'A bombear',
-      texto: 'Pulsa BOMBEAR (o la barra espaciadora) para llenar el depósito. ' +
-             'Si dejas de clicar, el pueblo se queda seco.' },
+      texto: 'Clica TU PUEBLO (o dale a la barra espaciadora): cada clic sube ' +
+             'agua. Si dejas de clicar, el pueblo se queda seco.' },
     { id: 'servido',   titulo: '¡Tu pueblo bebe!',
-      texto: 'Ya está abastecido. A partir de aquí: engrasa la instalación para ' +
-             'que no pierda fuelle, explora más lejos para encontrar pueblos a ' +
-             'los que dar servicio, y vigila «La red»: por la tubería estrecha ' +
-             'que has puesto no cabe agua para siempre. Cuando algo se rompa, ' +
-             'búscalo en el mapa: se repara clicando encima. Y al crecer llegarán ' +
+      texto: 'Ya está abastecido, y solo se factura el agua SERVIDA: un pueblo ' +
+             'bien atendido es el que paga las obras. A partir de aquí: explora ' +
+             'hacia los pueblos vecinos, vigila «La red» —por una tubería ' +
+             'estrecha no cabe agua para siempre— y cuando algo se rompa, ' +
+             'búscalo en el mapa y repáralo clicando encima. Al crecer llegarán ' +
              'el saneamiento, las pluviales y la basura, cada uno con SU red.' }
   ],
 
