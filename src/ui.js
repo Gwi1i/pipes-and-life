@@ -15,13 +15,15 @@ import { capacidad, demandaMedia, caudalCaptacion, costeMejora,
          poderExpansion, redEstrangula, capacidadTratamiento,
          servicioActivo, nivelReciclaje, fraccionesActivas,
          faseActual, faltanParaFase, canonIncorporacion,
-         llenadoVaso, capacidadVaso, costeAmpliarVertedero } from './simulacion.js';
+         llenadoVaso, capacidadVaso, costeAmpliarVertedero,
+         nivelMasa, pozosPorMasa, caudalPozo, caudalSostenible } from './simulacion.js';
 import { formatear } from './util.js';
 import { celdaEn, piezaDeRuina, diametro, nivelDiametro, costeRenovar,
          nombreDeNucleo, tipoYacimiento,
          costeCasillaTuberia, puedeColocar,
          lineasConectadas, cuelloDeBotella, escalaDeRed,
-         claseAcuifero, puedeSondear, costeSondeo } from './mapa.js';
+         claseAcuifero, puedeSondear, costeSondeo,
+         masasDelMapa } from './mapa.js';
 import { pasoActual } from './tutorial.js';
 import { dibujarDiagrama, hayDiagrama } from './diagramas.js';
 
@@ -418,7 +420,16 @@ export class UI {
     const panel = document.getElementById('panel-obra');
     const sel = estado.seleccion;
     const obra = sel && estado.construcciones.find(o => o.col === sel.col && o.fila === sel.fila);
-    const firma = obra ? `${obra.tipo},${obra.col},${obra.fila},${obra.nivel || 1},${Math.round(obra.lleno || 0)}` : 'nada';
+    // El nivel del acuífero entra en la firma: es lo único de una obra que
+    // cambia sola con el tiempo, y si no se refresca el panel se queda mintiendo.
+    const celdaObra = obra && celdaEn(estado.mapa, obra.col, obra.fila);
+    // Del pozo cambian solas DOS cosas: el nivel y cuántos pozos más han
+    // enganchado a la misma masa. Sin las dos en la firma, el panel se queda
+    // enseñando el reparto de ayer.
+    const nivelPozo = obra && obra.tipo === 'acuifero'
+      ? Math.round(nivelMasa(estado, celdaObra?.masa) * 20)
+        + ':' + (pozosPorMasa(estado).get(celdaObra?.masa) || 0) : '';
+    const firma = obra ? `${obra.tipo},${obra.col},${obra.fila},${obra.nivel || 1},${Math.round(obra.lleno || 0)},${nivelPozo}` : 'nada';
     if(this.cache.obraFirma === firma) return;
     this.cache.obraFirma = firma;
 
@@ -426,6 +437,16 @@ export class UI {
     panel.style.display = '';
     const def = CONFIG.construibles[obra.tipo];
     const cont = document.getElementById('obra');
+
+    // EL POZO: aquí es donde hace falta ver el acuífero, no en la ficha de
+    // terreno — en cuanto construyes encima, aquella deja de salir.
+    if(obra.tipo === 'acuifero'){
+      cont.innerHTML = `
+        <p class="red-cuello" style="--tono:${def.color}"><b>${def.nombre}</b></p>
+        ${this.bloqueSubsuelo(estado, celdaObra, { col: obra.col, fila: obra.fila })}
+        ${this.fichaHTML(def, obra.tipo)}`;
+      return;
+    }
 
     if(obra.tipo !== 'vertedero'){
       cont.innerHTML = `
@@ -621,11 +642,42 @@ export class UI {
 
     if(celda.sondeo === 'positivo'){
       const clase = claseAcuifero(celda);
+      const info = masasDelMapa(estado.mapa).get(celda.masa);
+      const nivel = nivelMasa(estado, celda.masa);
+      const pozos = pozosPorMasa(estado).get(celda.masa) || 0;
+      // El dato que de verdad importa y que nadie enseña: cuánto se puede sacar
+      // sin vaciarlo. Con eso se decide si cabe un segundo pozo o no.
+      const sostenible = info ? caudalSostenible(info) : 0;
+      // Lo que los pozos PIDEN (a acuífero lleno) contra lo que da ahora. La
+      // comparación tiene que ser con lo que piden: con lo que sacan ya mermado,
+      // un acuífero hundido daba "extracción sostenible" — que es justo lo que
+      // el jugador necesita NO creerse.
+      const pidiendo = pozos * caudalPozo(clase, 1, 1);
+      const sacando = pozos * caudalPozo(clase, nivel, 1);
+      const pasado = pidiendo > sostenible + 1e-6;
       return `<div class="subsuelo" style="--tono:${clase.color}">
         <div class="subsuelo-cab">Sondeo con agua · ${clase.nombre}</div>
         <p class="m-desc">${clase.desc}</p>
-        <p class="m-desc">Construye aquí el pozo y engánchalo a la red de
-          abastecimiento para que cuente.</p></div>`;
+        <div class="nivel-acuifero">
+          <div class="nivel-barra"><i style="width:${Math.round(nivel * 100)}%;
+            background:${nivel < CONFIG.acuiferos.umbralMerma ? '#f0a04a' : clase.color}"></i></div>
+          <span>${Math.round(nivel * 100)}%</span>
+        </div>
+        <div class="casilla-fila"><span>Caudal sostenible</span>
+          <b>${sostenible.toFixed(2)} L/s</b></div>
+        <div class="casilla-fila"><span>${pozos === 1 ? 'Pide el pozo' : 'Piden los pozos'}</span>
+          <b style="color:${pasado ? '#f0a04a' : 'inherit'}">${pidiendo.toFixed(2)} L/s</b></div>
+        ${nivel < CONFIG.acuiferos.umbralMerma ? `<div class="casilla-fila">
+          <span>Está dando</span><b style="color:#f0a04a">${sacando.toFixed(2)} L/s</b></div>` : ''}
+        <p class="m-desc">${pozos === 0
+          ? 'Construye aquí el pozo y engánchalo a la red para que cuente.'
+          : pasado
+            ? 'Sacas más de lo que entra: el nivel baja y el pozo da cada vez ' +
+              'menos. Y no lo arregla otro pozo — el acuífero acaba entregando ' +
+              'lo que le devuelve la lluvia y nada más; lo único que consigues ' +
+              'perforando otra vez es tener el nivel por los suelos.'
+            : 'Extracción sostenible: entra tanto como sale y el nivel aguanta.'}</p>
+      </div>`;
     }
     if(celda.sondeo === 'seco'){
       return `<div class="subsuelo seco">

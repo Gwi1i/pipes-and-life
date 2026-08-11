@@ -58,6 +58,9 @@ export class Estado {
     this.m3Servidos = 0;
     this.contaminacion = 0;     // del cauce, 0..CONFIG.cauce.contaminacionMax
     this.pluvialesActivas = false;   // se abre al desbloquear el tercer pueblo
+    // Nivel de cada masa de acuífero (número de masa → 0..1). Lo que no está
+    // aquí está lleno: solo se anota lo que has empezado a bombear.
+    this.acuiferos = {};
 
     // Los pueblos son DINÁMICOS: se arranca solo con el de origen y el resto
     // se incorporan al alcanzarlos por el mapa. No hay tope de lista.
@@ -115,7 +118,7 @@ export class Estado {
     const datos = {
       dinero: this.dinero, horas: this.horas, m3Servidos: this.m3Servidos,
       contaminacion: this.contaminacion, puebloActivo: this.puebloActivo,
-      pluvialesActivas: this.pluvialesActivas,
+      pluvialesActivas: this.pluvialesActivas, acuiferos: this.acuiferos,
       pueblos: this.pueblos, ultimoInstante: this.ultimoInstante,
       // El terreno se regenera de la semilla: solo se guarda lo que has tocado
       mapa: comprimir(this.mapa),
@@ -144,6 +147,7 @@ export class Estado {
       estado.m3Servidos = d.m3Servidos ?? 0;
       estado.contaminacion = d.contaminacion ?? 0;
       estado.pluvialesActivas = d.pluvialesActivas ?? false;
+      estado.acuiferos = d.acuiferos ?? {};
       estado.puebloActivo = d.puebloActivo ?? 0;
       estado.ultimoInstante = d.ultimoInstante ?? Date.now();
 

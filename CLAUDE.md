@@ -199,6 +199,30 @@ Por eso `caudalCaptacion(pueblo, estado, estiaje)` aplica el estiaje **por
 fuente** en vez de multiplicar al final: con una sola fuente daba lo mismo, con
 dos ya no.
 
+**El acuífero se agota, y la unidad es la MASA, no la casilla.** Cada mancha
+sembrada lleva su número (`celda.masa`) y su nivel vive en `estado.acuiferos`
+(0..1, se guarda). `tickAcuiferos()` hace el balance una vez por paso: entra la
+recarga (que es lluvia, así que en verano casi nada) y sale lo que bombean los
+pozos CONECTADOS de esa masa. Por debajo de `umbralMerma` el pozo da cada vez
+menos, que es lo que pasa de verdad cuando hay que bombear desde más hondo.
+
+Está calibrado para que **UN pozo se sostenga en la masa más pequeña y DOS no**,
+y ojo con el número: la recarga se calibra contra la lluvia MEDIA del año (0,64
+del máximo), no contra el máximo. Calibrarlo contra el máximo fue un fallo real —
+un solo pozo dejaba el acuífero al 39% y parecía que la mecánica estaba rota—.
+`caudalSostenible()` es la función que dice la verdad y la que se enseña.
+
+Lo bonito sale solo de las cuentas: en equilibrio la extracción iguala a la
+recarga, así que **dos pozos acaban dando lo mismo que uno** (medido: 0,88 L/s
+contra 0,85). Has pagado un pozo de más para tener el nivel por los suelos. No se
+prohíbe: se avisa una vez al cruzar `avisoNivel` y el panel lo cuenta.
+
+El panel compara lo que los pozos **PIDEN** (a acuífero lleno) con lo sostenible,
+nunca lo que están sacando ya mermado: con eso, un acuífero hundido se anunciaba
+como "extracción sostenible", que es justo lo que no hay que creerse. Y va en la
+ficha de OBRA además de en la de casilla, porque al construir el pozo la de
+casilla deja de salir — justo cuando el nivel importa.
+
 **`garantizarAcceso()` en `mapa.js` es una garantía, no un adorno**: recorre el
 mapa desde el origen y, si una zona protegida ha dejado un núcleo incomunicado,
 le abre el pasillo mínimo. Que llegar cueste una fortuna es dificultad; que no

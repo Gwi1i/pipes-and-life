@@ -712,7 +712,10 @@ export const CONFIG = {
         dato: 'Un acuífero se recarga despacio, con la lluvia de años. Si extraes ' +
         'más de lo que entra, el nivel baja, hay que bombear desde más hondo ' +
         '—más energía— y en la costa puede entrar agua del mar y salinizarlo ' +
-        'para siempre. Es el recurso más cómodo y el más fácil de estropear. '
+        'para siempre. Es el recurso más cómodo y el más fácil de estropear. ' +
+        'Por eso lo que se mira no es lo que da la bomba, sino el CAUDAL ' +
+        'SOSTENIBLE: lo que la lluvia devuelve cada año. Sacar más que eso no ' +
+        'es abastecer, es minar agua. '
       }
     }
   },
@@ -947,6 +950,18 @@ export const CONFIG = {
         caudal: 0.85,          // L/s que da el pozo, en la escala de captación
         costeSondeo: 4200,     // perforar roca cuesta más
         sensibilidadEstiaje: 0.15,   // 0 = le da igual el año; 1 = como el río
+        /* Lo que ENTRA por casilla de masa, en L/s A LLUVIA MÁXIMA. Ojo con este
+           número: la recarga la modula la lluvia, que de media anual es 0,64, así
+           que lo que de verdad entra es el 64% de esto. Calibrado con la media —no
+           con el máximo, que fue el fallo la primera vez y dejaba un solo pozo
+           agotando el acuífero— para que UN pozo se sostenga en la masa más
+           pequeña (3 celdas × 0,47 × 0,64 = 0,90 contra 0,85 que saca) y DOS no.
+           El caudal sostenible no lo decide la bomba, lo decide el acuífero. */
+        recargaPorCelda: 0.47,
+        // Lo que la masa GUARDA, en L/s·hora por casilla: el colchón que te deja
+        // pasarte una temporada antes de notarlo. La montaña guarda más y se
+        // recarga más despacio; es agua de muchos años.
+        reservaPorCelda: 85,
         color: '#a78bfa',
         desc: 'Agua metida en las grietas de la roca. Cuesta perforar y da menos, ' +
               'pero el nivel apenas se mueve en todo el año.'
@@ -958,6 +973,8 @@ export const CONFIG = {
         caudal: 1.35,
         costeSondeo: 2600,
         sensibilidadEstiaje: 0.5,
+        recargaPorCelda: 0.56,   // 4 celdas × 0,56 × 0,64 = 1,44 contra 1,35 de un pozo
+        reservaPorCelda: 55,     // guarda menos que la montaña, pero se repone antes
         color: '#67e8f9',
         desc: 'Agua entre las gravas de una vega antigua. Barato de perforar y ' +
               'generoso, pero nota el verano: se recarga del río y de la lluvia.'
@@ -978,6 +995,25 @@ export const CONFIG = {
       coste: 900,           // por estudio, cubre un área
       radio: 2              // 5x5 casillas alrededor de la elegida
     },
+    /* ---- SOBREEXPLOTACIÓN ----
+       Un acuífero no es un grifo: es un depósito que se llena solo, despacio.
+       Si sacas más de lo que entra, el nivel baja, y cuando baja de
+       `umbralMerma` el pozo empieza a dar menos — que es lo que pasa de verdad:
+       hay que bombear desde más hondo hasta que el pozo se queda seco.
+
+       No se prohíbe poner dos pozos en la misma masa. Se deja, se avisa, y el
+       acuífero pasa la factura. Es la misma regla que el vertedero junto al
+       río: poder equivocarte a sabiendas es lo que hace que la decisión exista.
+
+       Y sale solo de las cuentas, sin programarlo: en equilibrio la extracción
+       iguala a la recarga, así que DOS pozos acaban dando lo mismo que uno —lo
+       único que has comprado es un nivel por los suelos y un pozo de más—. Es
+       exactamente lo que pasa en un acuífero sobreexplotado de verdad. */
+    umbralMerma: 0.5,       // por debajo de este nivel el pozo empieza a flojear
+    avisoNivel: 0.7,        // cuándo se avisa de que está bajando
+    // La recarga es de la LLUVIA, así que en verano no entra casi nada. Este es
+    // el suelo: lo que sigue llegando aunque no llueva (el agua de años atrás).
+    recargaMinima: 0.35,
     color: '#38bdf8'
   },
 

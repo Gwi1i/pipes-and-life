@@ -852,6 +852,15 @@ function bucle(ahora){
   } else if(resultado.celdasProtegidasSucias === 0){
     multaZECAvisada = false;
   }
+
+  // El acuífero bajando es lo ÚNICO que no se ve en ninguna parte: no hay
+  // avería, ni multa, ni humo. Solo el pozo dando cada vez menos. Si no se
+  // cuenta, el jugador ve caer la producción y no entiende por qué.
+  for(const av of resultado.avisosAcuifero || []){
+    estado.anotar(`El nivel del ${av.clase.nombre.toLowerCase()} está bajando: ` +
+      `${av.pozos} pozos sacan más de lo que entra.`, 'alarma');
+    avisar('El acuífero se está agotando: sacas más agua de la que se repone.');
+  }
   if(resultado.saneamientoNuevo && resultado.saneamientoNuevo.length){
     for(const nombre of resultado.saneamientoNuevo){
       estado.anotar(`${nombre} genera aguas residuales. Vigila el cauce y piensa en una depuradora.`, 'alarma');

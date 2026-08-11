@@ -183,7 +183,10 @@ function sembrarAcuiferos(celdas, azar){
         }
   };
 
-  // 1. Las masas con agua de verdad, clase por clase
+  // 1. Las masas con agua de verdad, clase por clase. Cada MASA lleva su número:
+  //    es la unidad que se explota y que se agota, no la casilla. Dos pozos
+  //    clavados en la misma masa se están quitando el agua el uno al otro.
+  let masa = 0;
   for(const [clave, def] of Object.entries(A.clases)){
     const valida = (cel, c, f) => cel && !cel.acuifero && !cel.hallazgo
       && def.terrenos.includes(cel.tipo)
@@ -194,7 +197,12 @@ function sembrarAcuiferos(celdas, azar){
       if(!valida(celdaEn(celdas, c0, f0), c0, f0)) continue;
       const objetivo = def.tamMin + Math.floor(azar() * (def.tamMax - def.tamMin + 1));
       const mancha = manchaDesde(c0, f0, objetivo, valida);
-      for(const q of mancha) celdaEn(celdas, q.c, q.f).acuifero = clave;
+      masa++;
+      for(const q of mancha){
+        const cel = celdaEn(celdas, q.c, q.f);
+        cel.acuifero = clave;
+        cel.masa = masa;
+      }
       marcarIndicios(mancha);
       puestas++;
     }
@@ -278,6 +286,24 @@ function garantizarAcceso(celdas){
 /** La clase de acuífero que hay bajo una casilla, si la hay. */
 export function claseAcuifero(celda){
   return celda && celda.acuifero ? CONFIG.acuiferos.clases[celda.acuifero] : null;
+}
+
+/**
+ * Las masas de acuífero del mapa: número de masa → { clase, celdas }. Se calcula
+ * una vez y se guarda en el propio mapa, que no cambia en toda la partida (el
+ * agua subterránea viene de la semilla y ahí se queda).
+ */
+export function masasDelMapa(celdas){
+  if(celdas._masas) return celdas._masas;
+  const masas = new Map();
+  for(const celda of celdas){
+    if(!celda || !celda.masa) continue;
+    const m = masas.get(celda.masa);
+    if(m) m.celdas++;
+    else masas.set(celda.masa, { clase: celda.acuifero, celdas: 1 });
+  }
+  Object.defineProperty(celdas, '_masas', { value: masas, enumerable: false });
+  return masas;
 }
 
 /**

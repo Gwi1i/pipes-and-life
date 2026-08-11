@@ -180,6 +180,14 @@ body{
   --tono:#8b8578; background:rgba(139,133,120,0.05);
 }
 .subsuelo .mejora{margin-top:7px;}
+/* El nivel del acuífero: lo único que se ve de un depósito que está bajo tierra */
+.nivel-acuifero{display:flex; align-items:center; gap:7px; margin:6px 0 7px;}
+.nivel-barra{
+  flex:1; height:7px; background:rgba(0,0,0,0.35);
+  border:1px solid var(--linea); overflow:hidden;
+}
+.nivel-barra i{display:block; height:100%; transition:width .4s;}
+.nivel-acuifero span{font-family:var(--mono); font-size:10px; color:var(--tenue);}
 
 /* ---------- BLOQUES DE PANEL ---------- */
 .bloque{border:1px solid var(--linea); background:var(--panel);}

@@ -21,7 +21,8 @@
 import { CONFIG } from './config.js';
 import { limitar } from './util.js';
 import { inventarioConectado, cuelloDeBotella, construccionesConectadas,
-         celdaEn, nombreDeNucleo, tipoYacimiento, claseAcuifero } from './mapa.js';
+         celdaEn, nombreDeNucleo, tipoYacimiento, claseAcuifero,
+         masasDelMapa } from './mapa.js';
 
 /* ---------------- HELPERS POR PUEBLO ---------------- */
 
@@ -387,21 +388,102 @@ export function capacidad(pueblo, estado){
  * tengas, por la tubería cabe lo que cabe: el tramo más estrecho tapa el resto.
  * Es el motivo de renovar la conducción y no seguir comprando bombas.
  */
+/* ---------------- EL AGUA SUBTERRÁNEA ---------------- */
+
+/** El nivel de una masa de acuífero, 0..1. Sin tocar, está llena. */
+export function nivelMasa(estado, masa){
+  const v = (estado.acuiferos || {})[masa];
+  return v === undefined ? 1 : v;
+}
+
+/**
+ * Lo que da UN pozo, en L/s. Depende de tres cosas y las tres se ven en el
+ * panel: la clase de acuífero, el año (estiaje) y lo bajo que esté el nivel.
+ * Mientras el nivel esté por encima del umbral el pozo da lo suyo; por debajo,
+ * cae en picado — hay que bombear desde más hondo hasta que ya no sale.
+ */
+export function caudalPozo(clase, nivel, estiaje = 1){
+  const A = CONFIG.acuiferos;
+  const merma = nivel >= A.umbralMerma ? 1 : nivel / A.umbralMerma;
+  return clase.caudal * (1 - clase.sensibilidadEstiaje * (1 - estiaje)) * merma;
+}
+
+/** Los pozos CONECTADOS agrupados por masa: es la masa la que se agota. */
+export function pozosPorMasa(estado){
+  const porMasa = new Map();
+  for(const obra of construccionesConectadas(estado, 'abastecimiento')){
+    if(obra.tipo !== 'acuifero') continue;
+    const celda = celdaEn(estado.mapa, obra.col, obra.fila);
+    if(!celda || !celda.masa) continue;
+    porMasa.set(celda.masa, (porMasa.get(celda.masa) || 0) + 1);
+  }
+  return porMasa;
+}
+
 /**
  * Lo que dan los POZOS conectados, en L/s. Cada uno rinde según la clase de
  * acuífero que tiene debajo, no según una cifra única: el de montaña casi no
  * nota el año seco y el aluvial sí, que es la diferencia que los hace elegibles.
  */
 export function caudalAcuiferos(estado, estiaje = 1){
+  const masas = masasDelMapa(estado.mapa);
   let total = 0;
-  for(const obra of construccionesConectadas(estado, 'abastecimiento')){
-    if(obra.tipo !== 'acuifero') continue;
-    const clase = claseAcuifero(celdaEn(estado.mapa, obra.col, obra.fila));
-    if(!clase) continue;
-    // Un estiaje de 0,6 con sensibilidad 0,15 deja el pozo al 94%: se nota, no manda.
-    total += clase.caudal * (1 - clase.sensibilidadEstiaje * (1 - estiaje));
+  for(const [masa, pozos] of pozosPorMasa(estado)){
+    const info = masas.get(masa);
+    if(!info) continue;
+    const clase = CONFIG.acuiferos.clases[info.clase];
+    total += pozos * caudalPozo(clase, nivelMasa(estado, masa), estiaje);
   }
   return total;
+}
+
+/** Lo que ENTRA en una masa, en L/s. Es lluvia, así que en verano entra poco. */
+export function recargaMasa(info, lluvia = 1){
+  const A = CONFIG.acuiferos;
+  const clase = CONFIG.acuiferos.clases[info.clase];
+  return info.celdas * clase.recargaPorCelda
+       * (A.recargaMinima + (1 - A.recargaMinima) * lluvia);
+}
+
+/**
+ * El CAUDAL SOSTENIBLE de una masa: lo que se puede sacar año tras año sin
+ * vaciarla. Es la recarga con la lluvia MEDIA del año, no con la de un día de
+ * otoño — enseñar el máximo sería mentir, y es justo el error que hace que un
+ * acuífero se sobreexplote creyendo que va sobrado.
+ */
+export function caudalSostenible(info){
+  const P = CONFIG.lluvia.porEstacion;
+  const media = P.reduce((a, b) => a + b, 0) / P.length;
+  return recargaMasa(info, media);
+}
+
+/**
+ * El balance del acuífero, una vez por paso. Sube el nivel si entra más de lo
+ * que sale y lo baja si es al revés. Devuelve las masas que acaban de cruzar el
+ * umbral de aviso, para poder contarlo UNA vez y no cada hora.
+ */
+export function tickAcuiferos(estado, dtHoras, lluvia, estiaje){
+  const masas = masasDelMapa(estado.mapa);
+  const pozos = pozosPorMasa(estado);
+  if(!estado.acuiferos) estado.acuiferos = {};
+  const A = CONFIG.acuiferos;
+  const avisos = [];
+
+  for(const [masa, info] of masas){
+    const nPozos = pozos.get(masa) || 0;
+    const nivel = nivelMasa(estado, masa);
+    // Una masa llena y sin pozos no hace falta ni tocarla
+    if(!nPozos && nivel >= 1) continue;
+    const clase = CONFIG.acuiferos.clases[info.clase];
+    const extraccion = nPozos * caudalPozo(clase, nivel, estiaje);
+    const balance = recargaMasa(info, lluvia) - extraccion;
+    const reserva = info.celdas * clase.reservaPorCelda;
+    const nuevo = limitar(nivel + balance * dtHoras / reserva, 0, 1);
+    if(nPozos && nivel >= A.avisoNivel && nuevo < A.avisoNivel)
+      avisos.push({ masa, clase, pozos: nPozos });
+    estado.acuiferos[masa] = nuevo;
+  }
+  return avisos;
 }
 
 export function caudalCaptacion(pueblo, estado, estiaje = 1){
@@ -758,6 +840,11 @@ export function avanzar(estado, dt){
   // mancomunidad, no de un pueblo.
   const lixiviados = lixiviar(estado, dtHoras);
 
+  // El balance de los acuíferos. Va aquí por lo mismo: el agua subterránea es
+  // del territorio, no de un pueblo, y un pozo del quinto la comparte con el
+  // del primero si están sobre la misma masa.
+  const avisosAcuifero = tickAcuiferos(estado, dtHoras, lluvia, estiaje);
+
   // LA MULTA DEL ESTADO: cada casilla protegida con daño (lixiviados que le han
   // llegado) cuesta dinero mientras el daño dure. No es un castigo de una vez:
   // es un goteo que solo para cuando el agua se recupera.
@@ -789,6 +876,7 @@ export function avanzar(estado, dt){
     contaminacion: estado.contaminacion,
     multaProtegida,
     celdasProtegidasSucias: celdasZEC,
+    avisosAcuifero,
     suciedad,
     multa,
     frenoCrec,
