@@ -20,6 +20,7 @@ import { celdaEn, piezaDeRuina, diametro, nivelDiametro, costeRenovar,
          costeCasillaTuberia, puedeColocar,
          lineasConectadas, cuelloDeBotella, escalaDeRed } from './mapa.js';
 import { pasoActual } from './tutorial.js';
+import { dibujarDiagrama, hayDiagrama } from './diagramas.js';
 
 const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 
@@ -371,7 +372,7 @@ export class UI {
       cont.innerHTML = `
         <p class="red-cuello" style="--tono:${def.color}"><b>${def.nombre}</b></p>
         <p class="m-desc">${def.desc}</p>
-        ${this.fichaHTML(def)}`;
+        ${this.fichaHTML(def, obra.tipo)}`;
       return;
     }
 
@@ -391,7 +392,7 @@ export class UI {
           : ''}</p>
       <p class="m-desc">Gotea sobre el agua que tiene alrededor, y cuanto más
         lleno, más. Un agua insalubre da menos caudal.</p>
-      ${this.fichaHTML(def)}
+      ${this.fichaHTML(def, 'vertedero')}
       ${tope
         ? '<p class="m-desc">No se puede ampliar más: abre otro vertedero en otra parte.</p>'
         : `<button class="mejora obra" data-accion="ampliarVertedero" style="--tono:${def.color}">
@@ -399,6 +400,20 @@ export class UI {
              <span class="m-desc">+${formatear(V.capacidadPorNivel)} t de capacidad.</span>
              <span class="m-coste">${formatear(coste)} €</span>
            </button>`}`;
+  }
+
+  /**
+   * Anima los diagramas que haya en pantalla. Los llama `main.js` en cada
+   * fotograma con el dt real: son uno o dos como mucho y solo se pintan si están
+   * visibles, así que no hace falta ni observador ni temporizadores.
+   */
+  animarDiagramas(dt){
+    this.relojDiagrama = (this.relojDiagrama || 0) + dt;
+    for(const c of document.querySelectorAll('canvas[data-diagrama]')){
+      if(!c.isConnected || !c.offsetParent) continue;
+      dibujarDiagrama(c.getContext('2d'), c.dataset.diagrama,
+                      c.width, c.height, this.relojDiagrama);
+    }
   }
 
   /**
@@ -410,11 +425,18 @@ export class UI {
    * propósito para que se pueda leer sin ruido y para que sea evidente, al
    * añadir una pieza nueva, que también hay que explicarla.
    */
-  fichaHTML(def){
+  fichaHTML(def, clave){
     if(!def || !def.ficha) return '';
     const f = def.ficha;
+    // El DIAGRAMA va primero y es lo que hace que se lea lo de abajo. Un muro de
+    // texto no lo abre nadie; una animación pequeña con algo corriendo por
+    // dentro sí se mira, y una vez mirada ya estás leyendo.
+    const dib = clave && hayDiagrama(clave)
+      ? `<canvas class="ficha-dib" data-diagrama="${clave}" width="440" height="240"></canvas>`
+      : '';
     return `
       <div class="ficha" style="--tono:${def.color}">
+        ${dib}
         <p class="ficha-tit">¿Qué es?</p>
         <p class="ficha-txt">${f.que}</p>
         <p class="ficha-tit">¿Para qué sirve?</p>
@@ -440,7 +462,7 @@ export class UI {
     panel.style.display = '';
     document.getElementById('ficha').innerHTML = `
       <p class="red-cuello" style="--tono:${def.color}"><b>${def.nombre}</b></p>
-      ${this.fichaHTML(def)}`;
+      ${this.fichaHTML(def, clave)}`;
   }
 
   /**

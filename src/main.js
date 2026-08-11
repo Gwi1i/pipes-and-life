@@ -720,6 +720,9 @@ function bucle(ahora){
 
   acumHUD += dt;
   if(acumHUD > 0.1){ acumHUD = 0; ui.actualizar(estado, resultado); }
+  // Los diagramas de las fichas van a 60 fps aunque el HUD se refresque a 10:
+  // una animacion a tirones no llama la atencion, que es justo su trabajo.
+  ui.animarDiagramas(dt);
 
   acumGuardado += dt;
   if(acumGuardado > CONFIG.guardado.intervaloSegundos){

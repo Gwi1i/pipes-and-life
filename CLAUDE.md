@@ -79,6 +79,7 @@ red-hidraulica/
     ├── escena_assets.js Estilo C: imágenes PNG de assets/ (hereda de escena)
     ├── escena_teselas.js Estilo D: vista cenital sobre cuadrícula (hereda)
     ├── tutorial.js     La guía de los primeros pasos (solo lee estado)
+    ├── diagramas.js    Los esquemas animados de cada instalación (módulo puro)
     ├── entrada.js      Ratón, tacto, teclado → acciones
     ├── ui.js           DOM fuera de la escena: HUD, tienda, paneles
     └── main.js         Ensamblado y bucle principal
@@ -362,6 +363,15 @@ cuesta cruzarlo con cada red y qué piezas admite. Con nueve terrenos y precios 
 12 a 190 €, mirar antes de decidir tiene que ser gratis. La miniatura NO es un
 icono aparte: se pinta prestándole el contexto a `escena.dibujarTerreno()`, así
 no hay dos verdades sobre qué aspecto tiene un pedregal.
+
+**Los DIAGRAMAS (`diagramas.js`) no son el dibujo del mapa.** En el mapa la pieza
+se ve DESDE ARRIBA y lo que importa es reconocerla; en la ficha se ve EN SECCIÓN
+y lo que importa es entender por dónde va el agua. Una vista cenital de un
+depósito no explica que el agua baja por gravedad, y ese es justo el dato. Son
+esquemas de manual —pocas formas, mucho contraste, UNA sola cosa moviéndose— y lo
+que se mueve es siempre lo que la pieza le hace al agua. Van a 60 fps aunque el
+HUD se refresque a 10: una animación a tirones no llama la atención, que es
+precisamente su trabajo.
 
 **Cada pieza tiene su FICHA DIVULGATIVA** (`construibles[x].ficha`): qué es de
 verdad, para qué sirve y un dato del oficio. El autor trabaja en abastecimiento y
