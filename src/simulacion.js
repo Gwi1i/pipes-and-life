@@ -126,6 +126,17 @@ export function capacidadColector(estado){
 
 /* ---------------- RESIDUOS ---------------- */
 
+/**
+ * Cuántos yacimientos hay excavados. Se recorre el mapa entero una vez por paso;
+ * son mil casillas y una comprobación tonta, sale más barato que mantener otra
+ * lista sincronizada a mano.
+ */
+export function yacimientosExcavados(estado){
+  let n = 0;
+  for(const celda of estado.mapa) if(celda.excavado) n++;
+  return n;
+}
+
 /** Basura que genera el pueblo, en toneladas por hora de juego. */
 export function basuraGenerada(pueblo){
   return pueblo.habitantes * CONFIG.residuos.kgPorHabitanteDia / 1000 / 24;
@@ -672,6 +683,10 @@ export function avanzar(estado, dt){
   // cauce común. Va aquí, fuera del bucle de pueblos: los vertederos son de la
   // mancomunidad, no de un pueblo.
   const lixiviados = lixiviar(estado, dtHoras);
+
+  // Los yacimientos excavados rentan mientras sigan ahí: es el premio por haber
+  // tropezado con uno y haberlo tratado bien en vez de maldecirlo.
+  estado.dinero += yacimientosExcavados(estado) * CONFIG.arqueologia.rentaPorHora * dtHoras;
 
   // Cauce común: sube con el vertido crudo, baja solo poco a poco
   estado.contaminacion = Math.max(0, Math.min(K.contaminacionMax,

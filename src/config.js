@@ -647,9 +647,9 @@ export const CONFIG = {
      se pueden reparar en el sitio o llevarse al inventario para colocarlas
      donde convenga. */
   hallazgos: {
-    pueblos: 7, ruinas: 14, yacimientos: 10,
+    pueblos: 7, ruinas: 14,
     distanciaMinima: 4,      // nada de hallazgos pegados al origen
-    color: { pueblo: '#facc15', ruina: '#c084fc', yacimiento: '#38bdf8' },
+    color: { pueblo: '#facc15', ruina: '#c084fc', arqueologia: '#d9a441' },
 
     // Qué pieza puede salir de una instalación abandonada, y con qué peso
     piezasRuina: ['bomba', 'bomba', 'deposito', 'captacion', 'depuradora', 'tanque'],
@@ -657,7 +657,27 @@ export const CONFIG = {
     // pero cuesta más porque hay que trasladarla.
     costeReparar: 0.35,      // fracción del precio de la pieza
     costeDesmontar: 0.55,
-    primaYacimiento: 900     // lo que deja explotar un yacimiento
+  },
+
+  /* ---------- YACIMIENTOS ARQUEOLÓGICOS ----------
+     Están BAJO TIERRA: no se ven en el mapa. Aparecen al EXCAVAR, o sea cuando
+     intentas tender una tubería o una carretera por esa casilla o levantar algo
+     encima. Y ya no se van: no se pueden eliminar, hay que RODEARLOS.
+
+     Es el primer obstáculo del juego que sale DESPUÉS de haber decidido. Todo lo
+     demás lo ves antes de pagar; esto te obliga a replantear un trazado ya
+     empezado, y de ahí salen las historias. Por eso mismo tiene que ser RARO: si
+     apareciera a menudo dejaría de ser un contratiempo con carácter y sería un
+     impuesto aleatorio y molesto.
+
+     Excavarlo cuesta, pero luego renta todos los meses: el premio a haber
+     tropezado con él y haberlo tratado bien. */
+  arqueologia: {
+    cantidad: 14,            // cuántos esconde el mapa entero
+    distanciaMinima: 3,      // ninguno pegado al pueblo de origen
+    costeExcavar: 2600,
+    rentaPorHora: 26,        // ingreso mientras siga excavado y cuidado
+    color: '#d9a441'
   },
 
   /* ---------- MAPA DE TESELAS (estilo D, vista cenital) ----------

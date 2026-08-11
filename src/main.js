@@ -17,7 +17,7 @@ import { EscenaMapa } from './escena_mapa.js';
 import { celdaEn, clicarCasilla, clicsParaDestapar, puedeColocar,
          puedeSeguirTrazado, costeTrazado, casillaEnRed,
          piezaDeRuina, diametro, nivelDiametro, costeRenovar,
-         averiaEn } from './mapa.js';
+         averiaEn, aflorarArqueologia } from './mapa.js';
 import { avanzar, bombear, costeMejora, requisitosAutobomba, engrasar,
          poderExpansion, servicioActivo, costeAmpliarVertedero,
          capacidadVaso } from './simulacion.js';
@@ -235,15 +235,20 @@ function procesarAcciones(){
       case 'repararRuina':     accionRuina(false); break;
       case 'desmontarRuina':   accionRuina(true);  break;
 
-      case 'explotarYacimiento': {
-        const celda = celdaSeleccionada();
-        if(!celda || celda.hallazgo !== 'yacimiento' || celda.resuelto) break;
-        const prima = CONFIG.hallazgos.primaYacimiento;
-        celda.resuelto = true;
-        estado.dinero += prima;
-        estado.anotar(`Yacimiento explotado: ${formatear(prima)} € en materiales.`, 'ok');
-        avisar(`+${formatear(prima)} € del yacimiento.`);
-        estado.seleccion = null;
+      case 'excavarYacimiento': {
+        const sel = estado.seleccion;
+        const celda = sel && celdaEn(estado.mapa, sel.col, sel.fila);
+        if(!celda || !celda.arqueologia || !celda.aflorado || celda.excavado) break;
+        const A = CONFIG.arqueologia;
+        if(!estado.puedePagar(A.costeExcavar)){
+          avisar(`La excavación cuesta ${formatear(A.costeExcavar)} € y no hay fondos.`);
+          break;
+        }
+        estado.pagar(A.costeExcavar);
+        celda.excavado = true;
+        estado.anotar(`Yacimiento excavado y puesto en valor: renta ${formatear(A.rentaPorHora)} €/h.`, 'ok');
+        avisar('Yacimiento excavado. Empieza a rentar.');
+        ui.invalidarCache();
         break;
       }
 
@@ -358,7 +363,23 @@ function procesarAcciones(){
    CONSTRUIR SOBRE EL MAPA
    ================================================================== */
 
+/**
+ * ¿Ha salido un yacimiento al picar aquí? Se comprueba SOLO al confirmar una
+ * obra. Devuelve true si acaba de aflorar, y en ese caso la obra se cancela: lo
+ * que estabas haciendo ya no se puede hacer ahí.
+ */
+function tropiezoArqueologico(col, fila){
+  if(!aflorarArqueologia(estado.mapa, col, fila)) return false;
+  estado.seleccion = { col, fila };
+  estado.modo.trazado = [];
+  estado.anotar('¡Restos arqueológicos al excavar! No se puede construir ahí: hay que rodearlos.', 'alarma');
+  avisar('¡Restos arqueológicos! Rodéalos... o excávalos y ponlos en valor.');
+  ui.invalidarCache();
+  return true;
+}
+
 function colocarElemento(col, fila){
+  if(tropiezoArqueologico(col, fila)) return;
   const clave = estado.modo.elemento;
   const def = CONFIG.construibles[clave];
   const veredicto = puedeColocar(estado.mapa, estado.construcciones, clave, col, fila);
@@ -441,6 +462,7 @@ function accionRuina(desmontar){
  *   · Esc                               → cancela entero
  */
 function clicTuberia(col, fila){
+  if(tropiezoArqueologico(col, fila)) return;
   const trazado = estado.modo.trazado;
 
   if(trazado.length){
@@ -484,7 +506,6 @@ function anunciarHallazgo(celda, col, fila){
   const textos = {
     pueblo:     `¡Un pueblo sin abastecer! Está a ${Math.round(distancia(col, fila))} casillas.`,
     ruina:      'Instalación abandonada. Se podrá reparar o llevar al inventario.',
-    yacimiento: 'Yacimiento localizado.'
   };
   estado.anotar(textos[celda.hallazgo], 'ok');
   avisar(textos[celda.hallazgo]);

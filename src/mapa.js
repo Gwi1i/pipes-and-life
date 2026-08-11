@@ -76,11 +76,32 @@ export function generarMapa(){
   }
 
   sembrarHallazgos(celdas, azar);
+  sembrarArqueologia(celdas, azar);
   abrirZonaInicial(celdas);
   return celdas;
 }
 
-/** Reparte pueblos, ruinas y yacimientos por el mapa, sin amontonarlos. */
+/**
+ * Esconde yacimientos arqueológicos BAJO TIERRA. No llevan `hallazgo` porque no
+ * son algo que se encuentre mirando: `celda.arqueologia` no se dibuja ni se
+ * anuncia hasta que alguien pica ahí (`aflorado`).
+ */
+function sembrarArqueologia(celdas, azar){
+  const A = CONFIG.arqueologia, M = CONFIG.mapaMundo;
+  let puestos = 0, intentos = 0;
+  while(puestos < A.cantidad && intentos < A.cantidad * 200){
+    intentos++;
+    const c = Math.floor(azar() * M.cols), f = Math.floor(azar() * M.filas);
+    const celda = celdaEn(celdas, c, f);
+    if(!celda || celda.arqueologia || celda.hallazgo) continue;
+    if(celda.tipo === 'agua' || celda.tipo === 'lago') continue;
+    if(distanciaAlOrigen(c, f) < A.distanciaMinima) continue;
+    celda.arqueologia = true;   // dormido: nadie sabe que está ahí
+    puestos++;
+  }
+}
+
+/** Reparte pueblos y ruinas por el mapa, sin amontonarlos. */
 function sembrarHallazgos(celdas, azar){
   const M = CONFIG.mapaMundo, H = CONFIG.hallazgos;
   const puestos = [];
@@ -90,7 +111,7 @@ function sembrarHallazgos(celdas, azar){
   const tipos = [
     { clave: 'pueblo',     n: H.pueblos,     separacion: 6, terreno: ['hierba', 'bosque'] },
     { clave: 'ruina',      n: H.ruinas,      separacion: 4, terreno: ['hierba', 'bosque', 'montana'] },
-    { clave: 'yacimiento', n: H.yacimientos, separacion: 4, terreno: ['montana', 'bosque'] }
+
   ];
 
   for(const t of tipos){
@@ -223,6 +244,27 @@ export function hayAguaCerca(celdas, col, fila, radio){
  * ¿Se puede plantar `tipo` en esta casilla? Devuelve { ok, motivo } — el motivo
  * se le enseña al jugador, que si no no entiende por qué no le deja.
  */
+/**
+ * ¿Hay un yacimiento ya AFLORADO en esa casilla? Solo bloquea cuando ha salido a
+ * la luz: mientras siga dormido nadie sabe que está ahí, que es toda la gracia.
+ */
+export function arqueologiaBloquea(celda){
+  return !!(celda && celda.arqueologia && celda.aflorado);
+}
+
+/**
+ * Saca a la luz el yacimiento de esa casilla, si lo hay. Se llama SOLO cuando el
+ * jugador confirma una obra, nunca al pasar el ratón: si aflorara en la
+ * previsualización, bastaría con barrer el mapa con el cursor para descubrirlos
+ * todos sin pagar ni una zanja.
+ */
+export function aflorarArqueologia(celdas, col, fila){
+  const celda = celdaEn(celdas, col, fila);
+  if(!celda || !celda.arqueologia || celda.aflorado) return false;
+  celda.aflorado = true;
+  return true;
+}
+
 export function puedeColocar(celdas, construcciones, tipo, col, fila){
   const def = CONFIG.construibles[tipo];
   if(!def) return { ok: false, motivo: 'Eso no se puede construir.' };
@@ -241,6 +283,8 @@ export function puedeColocar(celdas, construcciones, tipo, col, fila){
   }
   if(def.junto && !vecinas(celdas, col, fila).some(v => def.junto.includes(v.celda.tipo)))
     return { ok: false, motivo: `${def.nombre} tiene que estar pegado al agua.` };
+  if(arqueologiaBloquea(celda))
+    return { ok: false, motivo: 'Yacimiento arqueológico: no se puede tocar. Hay que rodearlo.' };
   if(def.lejosDeAgua && hayAguaCerca(celdas, col, fila, def.lejosDeAgua))
     return { ok: false, motivo: 'Hay agua cerca: sale mucho más barato captarla que perforar.' };
 
@@ -293,6 +337,8 @@ export function puedeSeguirTrazado(celdas, trazado, col, fila){
   const celda = celdaEn(celdas, col, fila);
   if(!celda) return { ok: false, motivo: 'Fuera del mapa.' };
   if(celda.oculta) return { ok: false, motivo: 'Por ahí no has explorado todavía.' };
+  if(arqueologiaBloquea(celda))
+    return { ok: false, motivo: 'Yacimiento arqueológico: no se puede atravesar. Rodéalo.' };
   if(!trazado.length) return { ok: true, motivo: '' };
 
   if(trazado.some(p => p.col === col && p.fila === fila))
@@ -465,6 +511,7 @@ export function inventarioConectado(estado, red = 'abastecimiento'){
 
 export function comprimir(celdas){
   const abiertas = [], progresos = [], resueltos = [], insalubres = [];
+  const aflorados = [], excavados = [];
   recorrer(celdas, (celda, c, f) => {
     const i = f * CONFIG.mapaMundo.cols + c;
     if(!celda.oculta) abiertas.push(i);
@@ -473,8 +520,12 @@ export function comprimir(celdas){
     // El agua envenenada por los lixiviados hay que guardarla: es daño que se
     // queda, y regenerar el terreno de la semilla lo borraría.
     if(celda.insalubre > 0) insalubres.push([i, +celda.insalubre.toFixed(3)]);
+    // Los yacimientos se regeneran de la semilla, pero SI han aflorado o se han
+    // excavado eso es cosa del jugador y hay que guardarlo.
+    if(celda.aflorado) aflorados.push(i);
+    if(celda.excavado) excavados.push(i);
   });
-  return { abiertas, progresos, resueltos, insalubres };
+  return { abiertas, progresos, resueltos, insalubres, aflorados, excavados };
 }
 
 /** La pieza que esconde una ruina, ya resuelta o no. */
@@ -486,4 +537,6 @@ export function aplicarGuardado(celdas, datos){
   for(const [i, p] of datos.progresos || []) if(celdas[i]) celdas[i].progreso = p;
   for(const i of datos.resueltos || []) if(celdas[i]) celdas[i].resuelto = true;
   for(const [i, v] of datos.insalubres || []) if(celdas[i]) celdas[i].insalubre = v;
+  for(const i of datos.aflorados || []) if(celdas[i]) celdas[i].aflorado = true;
+  for(const i of datos.excavados || []) if(celdas[i]) celdas[i].excavado = true;
 }

@@ -675,9 +675,11 @@ export class EscenaMapa extends Escena {
     for(let f = f0; f <= f1; f++){
       for(let c = c0; c <= c1; c++){
         const celda = celdaEn(estado.mapa, c, f);
-        if(!celda || celda.oculta || !celda.hallazgo) continue;
-        this.dibujarHallazgo(celda, Math.round(c * t - estado.camara.x),
-                             Math.round(f * t - estado.camara.y), t);
+        if(!celda || celda.oculta) continue;
+        const x = Math.round(c * t - estado.camara.x);
+        const y = Math.round(f * t - estado.camara.y);
+        if(celda.arqueologia && celda.aflorado) this.dibujarYacimiento(celda, x, y, t);
+        if(celda.hallazgo) this.dibujarHallazgo(celda, x, y, t);
       }
     }
   }
@@ -718,9 +720,73 @@ export class EscenaMapa extends Escena {
 
     if(celda.hallazgo === 'pueblo') this.caserio(cx, y + t * 0.70, t, col);
     else if(celda.hallazgo === 'ruina') this.ruina(cx, y + t * 0.70, t, col);
-    else this.yacimiento(cx, y + t * 0.70, t, col);
+    else return;
 
     ctx.globalAlpha = 1;
+  }
+
+  /**
+   * Yacimiento aflorado: la cata abierta con sus catas cuadriculadas y los muros
+   * de piedra asomando. Sin excavar sale con el cordón de obra puesto; excavado,
+   * con la pasarela de visita, que es lo que dice que ya renta.
+   */
+  dibujarYacimiento(celda, x, y, t){
+    const ctx = this.ctx;
+    const A = CONFIG.arqueologia;
+    const cx = x + t * 0.5, cy = y + t * 0.56;
+
+    ctx.fillStyle = '#6b5a3e';
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, t * 0.34, t * 0.20, 0, 0, 7);
+    ctx.fill();
+    ctx.fillStyle = '#7d6b4c';
+    ctx.beginPath();
+    ctx.ellipse(cx, cy - t * 0.012, t * 0.28, t * 0.16, 0, 0, 7);
+    ctx.fill();
+
+    // cuadrícula de la cata
+    ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+    ctx.lineWidth = 1;
+    ctx.save();
+    ctx.beginPath(); ctx.ellipse(cx, cy, t * 0.28, t * 0.16, 0, 0, 7); ctx.clip();
+    for(let i = -2; i <= 2; i++){
+      ctx.beginPath();
+      ctx.moveTo(cx + i * t * 0.10, cy - t * 0.20);
+      ctx.lineTo(cx + i * t * 0.10, cy + t * 0.20);
+      ctx.moveTo(cx - t * 0.32, cy + i * t * 0.06);
+      ctx.lineTo(cx + t * 0.32, cy + i * t * 0.06);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // muros asomando
+    ctx.fillStyle = '#b9ae95';
+    for(const p of [[-0.13, -0.02, 0.10, 0.030], [0.05, 0.03, 0.13, 0.026],
+                    [-0.02, -0.07, 0.06, 0.024]]){
+      ctx.fillRect(cx + t * p[0], cy + t * p[1], t * p[2], t * p[3]);
+    }
+
+    if(celda.excavado){
+      // pasarela de visita: es lo que se ve cuando el sitio ya está en valor
+      ctx.strokeStyle = '#c9a97f';
+      ctx.lineWidth = Math.max(1.5, t * 0.026);
+      ctx.beginPath();
+      ctx.moveTo(cx - t * 0.30, cy + t * 0.10);
+      ctx.lineTo(cx + t * 0.06, cy - t * 0.02);
+      ctx.lineTo(cx + t * 0.30, cy + t * 0.06);
+      ctx.stroke();
+    } else {
+      // cordón de obra a rayas mientras no se excave
+      const pulso = 0.55 + Math.sin(this.tiempo * 2.4) * 0.45;
+      ctx.strokeStyle = A.color;
+      ctx.lineWidth = Math.max(1.5, t * 0.024);
+      ctx.setLineDash([t * 0.06, t * 0.05]);
+      ctx.globalAlpha = 0.55 + pulso * 0.4;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, t * 0.36, t * 0.22, 0, 0, 7);
+      ctx.stroke();
+      ctx.setLineDash([]); ctx.globalAlpha = 1;
+    }
   }
 
   /** Un caserío: tres casas con su tejado, en isométrica. */

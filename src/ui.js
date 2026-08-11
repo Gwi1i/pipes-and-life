@@ -258,14 +258,36 @@ export class UI {
     const panel = document.getElementById('panel-hallazgo');
     const sel = estado.seleccion;
     const celda = sel ? celdaEn(estado.mapa, sel.col, sel.fila) : null;
-    const firma = sel ? `${sel.col},${sel.fila},${celda?.resuelto}` : 'nada';
+    const firma = sel ? `${sel.col},${sel.fila},${celda?.resuelto},${celda?.excavado}` : 'nada';
     if(this.cache.hallazgoFirma === firma) return;
     this.cache.hallazgoFirma = firma;
 
-    if(!celda || !celda.hallazgo || celda.resuelto){ panel.style.display = 'none'; return; }
-    panel.style.display = '';
     const cont = document.getElementById('hallazgo');
     const H = CONFIG.hallazgos;
+
+    // Un yacimiento aflorado no es un "hallazgo" de los de destapar casilla:
+    // sale al picar. Se atiende aquí igual porque el sitio es el mismo.
+    if(celda && celda.arqueologia && celda.aflorado){
+      const A = CONFIG.arqueologia;
+      panel.style.display = '';
+      cont.innerHTML = celda.excavado
+        ? `<p class="red-cuello" style="--tono:${A.color}"><b>Yacimiento excavado</b></p>
+           <p class="m-desc">Puesto en valor. Renta <b>${formatear(A.rentaPorHora)} €/h</b>
+             y seguirá haciéndolo. La casilla queda para siempre fuera de obra.</p>`
+        : `<p class="red-cuello" style="--tono:${A.color}"><b>Restos arqueológicos</b></p>
+           <p class="m-desc">Han salido al picar. No se pueden quitar ni se puede
+             construir encima: hay que rodearlos. Excavarlos cuesta, pero los pone
+             en valor y pasan a rentar todos los meses.</p>
+           <button class="mejora obra" data-accion="excavarYacimiento" style="--tono:${A.color}">
+             <span class="m-cab"><span class="m-nom">Excavar y poner en valor</span></span>
+             <span class="m-desc">+${formatear(A.rentaPorHora)} €/h para siempre.</span>
+             <span class="m-coste">${formatear(A.costeExcavar)} €</span>
+           </button>`;
+      return;
+    }
+
+    if(!celda || !celda.hallazgo || celda.resuelto){ panel.style.display = 'none'; return; }
+    panel.style.display = '';
 
     if(celda.hallazgo === 'ruina'){
       const tipo = piezaDeRuina(celda);
@@ -283,13 +305,6 @@ export class UI {
           <span class="m-cab"><span class="m-nom">Desmontar y guardar</span></span>
           <span class="m-desc">Va al almacén para levantarla donde te convenga.</span>
           <span class="m-coste">${formatear(desmontar)} €</span>
-        </button>`;
-    } else if(celda.hallazgo === 'yacimiento'){
-      cont.innerHTML = `
-        <button class="mejora obra" data-accion="explotarYacimiento" style="--tono:${H.color.yacimiento}">
-          <span class="m-cab"><span class="m-nom">Explotar el yacimiento</span></span>
-          <span class="m-desc">Materiales que se venden de una vez.</span>
-          <span class="m-coste">+${formatear(H.primaYacimiento)} €</span>
         </button>`;
     } else {
       cont.innerHTML = `
