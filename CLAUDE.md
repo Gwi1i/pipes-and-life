@@ -387,6 +387,27 @@ no se despuebla de golpe. Sin ninguna línea conectada se supone la red heredada
 COMÚN porque solo hay una conducción, la del pueblo de origen; cuando cada pueblo
 tenga la suya, `estado._red` pasará a calcularse por pueblo.
 
+**NUEVE terrenos en tres familias.** `CONFIG.terrenos` ya no son tres tipos a
+secas: llano (prado/pastizal/pedregal), arbolado (matorral/pinar/bosque cerrado)
+y relieve (colina/sierra/roca viva), cada uno con su `costeExtra` al destapar y
+su entrada en `tuberia.costePorCasilla` al atravesar. Los saltos de precio son
+grandes A PROPOSITO: con diferencias pequenas rodear no compensaria nunca y
+trazar volveria a ser ir en linea recta.
+
+No es solo precio. `construibles[x].terreno` decide donde cabe cada pieza, y ahi
+el terreno deja de ser decorado: al deposito le vale una COLINA (barata de
+encontrar) aunque tambien acepte sierra y roca — exigirle sierra dejaba a media
+partida sin sitio para el primer deposito.
+
+El dibujo va por `familia`, no por tipo, y dentro de cada familia cambia lo que
+se ve ENCIMA: el pastizal echa matas altas, el pedregal esta sembrado de piedras,
+el matorral son arbustos sin tronco y el bosque cerrado una masa apretada. La
+densidad ES la informacion: si lo ves tupido, ya sabes que cruzarlo cuesta.
+
+Y `suavizarArranque()` rebaja cada familia a su variante barata cerca del pueblo
+(`radioAmable`). Empezar rodeado de roca viva por capricho de la semilla no es
+dificultad, es mala suerte.
+
 **El mapa y el abastecimiento son UN SOLO bucle.** `poderExpansion(estado)` sale
 de la población, el nivel de servicio, el desgaste y las averías, y DIVIDE el
 coste en clics de destapar casillas (`clicsParaDestapar`). Es lo que impide que

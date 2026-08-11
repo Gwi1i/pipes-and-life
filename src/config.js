@@ -385,7 +385,11 @@ export const CONFIG = {
     cols: 40, filas: 28,
     semilla: 20260809,
     origen: { col: 20, fila: 14 },   // aquí está tu pueblo inicial
-    radioInicial: 3,                 // casillas ya abiertas al empezar
+    radioInicial: 3,                // casillas ya abiertas al empezar
+    // Alrededor del pueblo, el terreno se rebaja a su variante barata: empezar
+    // rodeado de roca viva por capricho de la semilla no es dificultad, es mala
+    // suerte. Más allá de este radio manda el mapa.
+    radioAmable: 5,
     tamTesela: 74,                   // píxeles por casilla al zoom 1
 
     // Zoom con la rueda del ratón
@@ -414,12 +418,36 @@ export const CONFIG = {
 
   /* ---------- TERRENOS ----------
      `costeExtra` multiplica los clics necesarios para abrir la casilla. */
+  /* ---------- LOS TERRENOS ----------
+     NUEVE tipos en tres familias, y cada uno con su precio. Antes eran tres a
+     secas y el mapa era monótono, pero sobre todo trazar era casi siempre ir en
+     línea recta: dentro de un tipo el coste era plano y no había nada que
+     decidir. Con nueve, cada tramo es una elección — a veces compensa rodear por
+     un pinar antes que zanjar un pedregal, aunque el pedregal sea llano.
+
+     `familia` la usa el dibujo (llano / arbolado / relieve) y `costeExtra`
+     multiplica lo que cuesta destaparlo. Lo que cuesta ATRAVESARLO con una red
+     está en `CONFIG.tuberia.costePorCasilla`, que tiene una entrada por tipo.
+
+     Y ojo, no es solo precio: `CONFIG.construibles[x].terreno` decide dónde cabe
+     cada pieza, así que el depósito puede conformarse con una colina o exigir
+     sierra. Ahí es donde el terreno deja de ser decorado. */
   terrenos: {
-    hierba:  { nombre: 'Prado',   color: '#6aab4e', costeExtra: 1.0 },
-    bosque:  { nombre: 'Bosque',  color: '#4b8b43', costeExtra: 1.4 },
-    montana: { nombre: 'Montaña', color: '#9aa0a8', costeExtra: 2.0 },
-    agua:    { nombre: 'Río',     color: '#3d84c6', costeExtra: 1.2 },
-    lago:    { nombre: 'Lago',    color: '#2f6ea8', costeExtra: 1.2 }
+    // --- LLANO: barato de cruzar, pero el pedregal engaña ---
+    prado:     { nombre: 'Prado',        familia: 'llano',    color: '#6aab4e', costeExtra: 1.0 },
+    pastizal:  { nombre: 'Pastizal',     familia: 'llano',    color: '#8fae52', costeExtra: 1.15 },
+    pedregal:  { nombre: 'Pedregal',     familia: 'llano',    color: '#9c9a7e', costeExtra: 1.7 },
+    // --- ARBOLADO: hay que desbrozar, y no todo cuesta igual ---
+    matorral:  { nombre: 'Matorral',     familia: 'arbolado', color: '#6d9a4a', costeExtra: 1.25 },
+    pinar:     { nombre: 'Pinar',        familia: 'arbolado', color: '#4b8b43', costeExtra: 1.5 },
+    bosque:    { nombre: 'Bosque cerrado', familia: 'arbolado', color: '#356b38', costeExtra: 1.9 },
+    // --- RELIEVE: donde va el depósito, y lo que más cuesta perforar ---
+    colina:    { nombre: 'Colina',       familia: 'relieve',  color: '#a8a48c', costeExtra: 1.8 },
+    sierra:    { nombre: 'Sierra',       familia: 'relieve',  color: '#9aa0a8', costeExtra: 2.3 },
+    roca:      { nombre: 'Roca viva',    familia: 'relieve',  color: '#8b93a0', costeExtra: 3.0 },
+    // --- AGUA ---
+    agua:      { nombre: 'Río',          familia: 'agua',     color: '#3d84c6', costeExtra: 1.2 },
+    lago:      { nombre: 'Lago',         familia: 'agua',     color: '#2f6ea8', costeExtra: 1.2 }
   },
 
   /* ---------- ESTILO DEL MAPA ----------
@@ -480,27 +508,29 @@ export const CONFIG = {
     },
     bomba: {
       nombre: 'Bombeo', coste: 250, orden: 2, color: '#7aa7c7',
-      terreno: ['hierba'], junto: ['agua', 'lago'],
-      desc: 'Impulsa el agua. En tierra llana, pegado al agua.'
+      terreno: ['prado', 'pastizal'], junto: ['agua', 'lago'],
+      desc: 'Impulsa el agua. En tierra llana y despejada, pegado al agua.'
     },
     deposito: {
       nombre: 'Depósito', coste: 400, orden: 3, color: '#7dd3fc',
-      terreno: ['montana'],
-      desc: 'Guarda agua EN ALTO para que baje por gravedad: por eso va en montaña.'
+      // Le vale una COLINA, que es barata de encontrar: obligarle a sierra
+      // dejaría a media partida sin sitio donde poner el primer depósito.
+      terreno: ['colina', 'sierra', 'roca'],
+      desc: 'Guarda agua EN ALTO para que baje por gravedad: va en relieve, y con una colina le basta.'
     },
     depuradora: {
       nombre: 'Depuradora', coste: 2000, orden: 4, color: '#34d399',
-      terreno: ['hierba'], junto: ['agua', 'lago'],
+      terreno: ['prado', 'pastizal'], junto: ['agua', 'lago'],
       desc: 'Trata las aguas residuales antes de devolverlas al cauce.'
     },
     tanque: {
       nombre: 'Tanque de tormentas', coste: 1500, orden: 5, color: '#818cf8',
-      terreno: ['hierba', 'bosque'],
-      desc: 'Retiene la punta de lluvia. En llano o desbrozando bosque.'
+      terreno: ['prado', 'pastizal', 'matorral'],
+      desc: 'Retiene la punta de lluvia. En llano, o desbrozando matorral.'
     },
     vertedero: {
       nombre: 'Vertedero', coste: 1800, orden: 7, color: '#a8896a',
-      terreno: ['hierba', 'bosque'],
+      terreno: ['prado', 'pastizal', 'pedregal', 'matorral'],
       // NO se prohíbe ponerlo junto al agua, se AVISA. Prohibirlo dejaba la
       // mecánica de lixiviados muerta —un vertedero legal nunca podía alcanzar
       // una masa de agua— y encima quitaba la decisión: que puedas equivocarte
@@ -511,13 +541,14 @@ export const CONFIG = {
     },
     reciclaje: {
       nombre: 'Planta de reciclaje', coste: 6000, orden: 8, color: '#4ade80',
-      terreno: ['hierba'],
+      terreno: ['prado', 'pastizal'],
       desc: 'Separa y vende lo aprovechable. Cuanto mejor sea, más fracciones ' +
             'recupera y más te pagan por ellas.'
     },
     acuifero: {
       nombre: 'Sondeo a acuífero', coste: 5000, orden: 6, color: '#a78bfa',
-      terreno: ['hierba', 'bosque', 'montana'], lejosDeAgua: 4,
+      terreno: ['prado', 'pastizal', 'pedregal', 'matorral', 'pinar',
+                'colina', 'sierra'], lejosDeAgua: 4,
       desc: 'El recurso de última hora: perfora y saca agua del subsuelo. ' +
             'Solo tiene sentido lejos del cauce, y sale caro.'
     }
@@ -585,9 +616,21 @@ export const CONFIG = {
      No van por donde quieran: cada casilla cuesta según lo que haya que hacer
      para atravesarla. Rodear un bosque o pagar por desbrozarlo es la decisión. */
   tuberia: {
-    costePorCasilla: { hierba: 12, bosque: 45, montana: 120, agua: 70, lago: 70 },
-    nombreObra: { hierba: 'zanja', bosque: 'desbroce', montana: 'excavación',
-                  agua: 'cruce del cauce', lago: 'cruce del lago' },
+    /* Lo que cuesta meter una red por cada terreno. Los saltos son grandes a
+       propósito: si la diferencia fuera pequeña, rodear no compensaría nunca y
+       volveríamos a la línea recta de siempre. */
+    costePorCasilla: {
+      prado: 12, pastizal: 16, pedregal: 52,
+      matorral: 26, pinar: 45, bosque: 78,
+      colina: 70, sierra: 120, roca: 190,
+      agua: 70, lago: 70
+    },
+    nombreObra: {
+      prado: 'zanja', pastizal: 'zanja', pedregal: 'picado de piedra',
+      matorral: 'desbroce', pinar: 'tala', bosque: 'tala y destoconado',
+      colina: 'excavación', sierra: 'excavación en roca', roca: 'voladura',
+      agua: 'cruce del cauce', lago: 'cruce del lago'
+    },
 
     /* --- DIÁMETROS Y MATERIALES ---
        Una tubería no es solo un camino: tiene un tamaño. `caudalMax` es lo que

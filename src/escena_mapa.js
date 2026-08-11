@@ -178,7 +178,7 @@ export class EscenaMapa extends Escena {
   dibujarTerreno(celda, c, f, x, y, t){
     const ctx = this.ctx;
     const E = CONFIG.estiloMapa;
-    const def = CONFIG.terrenos[celda.tipo] || CONFIG.terrenos.hierba;
+    const def = CONFIG.terrenos[celda.tipo] || CONFIG.terrenos.prado;
     const v = ruido(c, f);
     const esAgua = celda.tipo === 'agua' || celda.tipo === 'lago';
 
@@ -186,11 +186,13 @@ export class EscenaMapa extends Escena {
     // variación fuerte por celda el prado parece papel pintado descosido.
     const par = (c + f) % 2 === 0;
     let color = def.color;
-    // El año tiñe el suelo. Solo prado y bosque: la roca y el agua no cambian
+    // El año tiñe el suelo. Solo llano y arbolado: la roca y el agua no cambian
     // de color con la estación, y teñirlas se veía falso.
     if(this.paletaAño && E.tinteEstacion > 0){
-      if(celda.tipo === 'hierba') color = mezclarColor(color, this.paletaAño.hierba, E.tinteEstacion);
-      else if(celda.tipo === 'bosque') color = mezclarColor(color, this.paletaAño.hierba, E.tinteEstacion * 0.7);
+      // Por FAMILIA, no por tipo: las tres variantes de llano amarillean igual.
+      const fam = def.familia;
+      if(fam === 'llano') color = mezclarColor(color, this.paletaAño.hierba, E.tinteEstacion);
+      else if(fam === 'arbolado') color = mezclarColor(color, this.paletaAño.hierba, E.tinteEstacion * 0.7);
     }
     let base = mezclarColor(color, par ? '#ffffff' : '#000000', E.damero);
     base = mezclarColor(base, v > 0.5 ? '#ffffff' : '#000000', Math.abs(v - 0.5) * E.variacion);
@@ -340,153 +342,82 @@ export class EscenaMapa extends Escena {
     }
   }
 
-  /**
-   * 0 fuera del invierno y 1 en su centro, con subida y bajada suaves. Sirve
-   * para lo que solo debe verse cuando de verdad hace frío.
-   */
-  gradoInvierno(horas){
-    const E = CONFIG.estaciones;
-    const frac = ((horas % CONFIG.tiempo.horasPorAño) / CONFIG.tiempo.horasPorAño + 1) % 1;
-    const pos = frac * E.length;
-    const i = Math.floor(pos) % E.length;
-    if(E[i].nombre !== 'Invierno') return 0;
-    return Math.sin((pos - Math.floor(pos)) * Math.PI);
-  }
-
-  /**
-   * Los colores del año, mezclando siempre entre la estación actual y la
-   * siguiente en proporción al trozo de estación transcurrido. Sin escalones.
-   */
-  colorDeEstacion(horas){
-    const E = CONFIG.estaciones;
-    const frac = ((horas % CONFIG.tiempo.horasPorAño) / CONFIG.tiempo.horasPorAño + 1) % 1;
-    const pos = frac * E.length;
-    const i = Math.floor(pos) % E.length;
-    const k = pos - Math.floor(pos);
-    const sig = E[(i + 1) % E.length];
-    return {
-      hierba: mezclarColor(E[i].hierba, sig.hierba, k),
-      follaje: mezclarColor(E[i].follaje, sig.follaje, k)
-    };
-  }
-
-  /**
-   * El agua CORRE. Las ondas no se mueven en el sitio: se desplazan siguiendo el
-   * cauce, y para saber por dónde va se mira si la casilla tiene agua a los
-   * lados (corriente horizontal) o arriba y abajo (vertical).
-   *
-   * Y el ESTIAJE se ve. En verano el río baja y deja lecho al descubierto por
-   * las orillas. Es el dato que ya calcula la simulación, puesto en pantalla:
-   * hasta ahora el estiaje solo existía en un número del panel.
-   */
-  pintarAgua(celda, c, f, x, y, t, base){
-    const ctx = this.ctx;
-    const mapa = this._estado && this._estado.mapa;
-
-    // ¿Por dónde va la corriente? Se deduce de los vecinos con agua.
-    let horizontal = true;
-    if(mapa){
-      const esAgua = (dc, df) => {
-        const v = celdaEn(mapa, c + dc, f + df);
-        return !!v && (v.tipo === 'agua' || v.tipo === 'lago');
-      };
-      const lados = (esAgua(-1, 0) ? 1 : 0) + (esAgua(1, 0) ? 1 : 0);
-      const vert = (esAgua(0, -1) ? 1 : 0) + (esAgua(0, 1) ? 1 : 0);
-      horizontal = lados >= vert;
-    }
-
-    // Lecho al descubierto por el estiaje: cuanto menos caudal, más orilla seca.
-    // Ojo con la normalización: `factorEstiaje` va de factorMin a factorMax y el
-    // máximo pasa de 1, así que restarle a 1 daba negativo casi todo el año y el
-    // lecho no aparecía nunca.
-    const Q = CONFIG.estiaje;
-    const seco = limitar((Q.factorMax - this.estiaje) / (Q.factorMax - Q.factorMin), 0, 1) * 0.34;
-    if(seco > 0.01){
-      ctx.fillStyle = 'rgba(150,132,96,0.55)';
-      const b = t * seco * 0.5;
-      if(horizontal){ ctx.fillRect(x, y, t, b); ctx.fillRect(x, y + t - b, t, b); }
-      else { ctx.fillRect(x, y, b, t); ctx.fillRect(x + t - b, y, b, t); }
-    }
-
-    if(celda.insalubre > 0){
-      ctx.fillStyle = `rgba(130,110,50,${0.22 * celda.insalubre})`;
-      for(const p of [[0.28, 0.34, 0.10], [0.62, 0.55, 0.08], [0.44, 0.72, 0.07]]){
-        ctx.beginPath(); ctx.arc(x + t * p[0], y + t * p[1], t * p[2], 0, 7); ctx.fill();
-      }
-    }
-
-    // Las crestas se DESPLAZAN a lo largo del cauce. El desfase por casilla hace
-    // que el río se lea como una corriente continua y no como celdas sueltas.
-    const corre = this.tiempo * t * 0.28;
-    for(let k = 0; k < 2; k++){
-      ctx.strokeStyle = `rgba(255,255,255,${0.17 - k * 0.05})`;
-      ctx.lineWidth = Math.max(1, t * 0.024);
-      const carril = 0.32 + k * 0.30;
-      const paso = t / 6;
-      ctx.beginPath();
-      for(let i = 0; i <= 6; i++){
-        let px, py;
-        if(horizontal){
-          px = x + paso * i;
-          const s = (px + corre + f * 37) * 0.09;
-          py = y + t * carril + Math.sin(s + k) * t * 0.035;
-        } else {
-          py = y + paso * i;
-          const s = (py + corre + c * 37) * 0.09;
-          px = x + t * carril + Math.sin(s + k) * t * 0.035;
-        }
-        i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
-      }
-      ctx.stroke();
-    }
-  }
-
-  /** Tierra: mata de hierba, arbolado o roca, según lo que sea. */
+  /** Tierra: llano, arbolado o relieve. Cada familia con sus tres variantes. */
   pintarTierra(celda, c, f, x, y, t, base, v){
     const ctx = this.ctx;
+    const def = CONFIG.terrenos[celda.tipo] || CONFIG.terrenos.prado;
+    const fam = def.familia;
 
-    if(celda.tipo === 'hierba'){
+    if(fam === 'llano'){
+      // Las tres se distinguen por lo que tienen ENCIMA, no solo por el color:
+      // el prado va peinado, el pastizal echa matas altas y el pedregal está
+      // sembrado de piedras. Es lo que hace que veas de un vistazo por dónde
+      // sale caro pasar, sin tener que consultar ninguna tabla.
       ctx.strokeStyle = mezclarColor(base, '#000000', 0.18);
       ctx.lineWidth = Math.max(1, t * 0.02);
-      for(let k = 0; k < 3; k++){
-        const px = x + t * (0.2 + ((v * 7 + k * 0.37) % 1) * 0.6);
-        const py = y + t * (0.35 + ((v * 13 + k * 0.61) % 1) * 0.5);
-        const alto = t * 0.09;
+      const briznas = celda.tipo === 'pastizal' ? 6 : 3;
+      const largo = celda.tipo === 'pastizal' ? 0.15 : 0.09;
+      for(let k = 0; k < briznas; k++){
+        const px = x + t * (0.15 + ((v * 7 + k * 0.37) % 1) * 0.7);
+        const py = y + t * (0.30 + ((v * 13 + k * 0.61) % 1) * 0.55);
+        const alto = t * largo;
         ctx.beginPath();
         ctx.moveTo(px, py);
         ctx.quadraticCurveTo(px + alto * 0.4, py - alto * 0.6, px + alto * 0.15, py - alto);
         ctx.stroke();
       }
+      if(celda.tipo === 'pedregal'){
+        for(let k = 0; k < 5; k++){
+          const px = x + t * (0.14 + ((v * 11 + k * 0.29) % 1) * 0.72);
+          const py = y + t * (0.24 + ((v * 5 + k * 0.53) % 1) * 0.60);
+          const r = t * (0.030 + ((v * 3 + k * 0.17) % 1) * 0.028);
+          this.sombraPieza(px, py, r * 0.9, r * 0.34, 0.18);
+          ctx.fillStyle = aclarar(base, 0.22);
+          ctx.beginPath(); ctx.ellipse(px, py - r * 0.3, r, r * 0.72, 0, 0, 7); ctx.fill();
+          ctx.fillStyle = oscurecer(base, 0.20);
+          ctx.beginPath(); ctx.ellipse(px + r * 0.3, py - r * 0.15, r * 0.55, r * 0.42, 0, 0, 7); ctx.fill();
+        }
+      }
       return;
     }
 
-    if(celda.tipo === 'bosque'){
-      // Las copas siguen al follaje del año: en otoño tiran a ocre y en invierno
-      // se apagan, con la misma amplitud contenida que el suelo.
-      let verde = CONFIG.terrenos.bosque.color;
+    if(fam === 'arbolado'){
+      let verde = def.color;
       if(this.paletaAño && CONFIG.estiloMapa.tinteEstacion > 0)
         verde = mezclarColor(verde, this.paletaAño.follaje, CONFIG.estiloMapa.tinteEstacion * 1.3);
+      const nieve = Math.max(0, this.invierno || 0);
 
-      // Un bosque no son tres árboles iguales. Cada uno saca su altura, su tono
-      // y su número de faldones del ruido de la celda, así ninguna casilla se
-      // repite y el conjunto deja de parecer un sello estampado.
-      const sitios = [[0.28, 0.60, 1.00], [0.60, 0.50, 0.88], [0.44, 0.82, 0.76],
-                      [0.76, 0.74, 0.62]];
-      const nieve = this.paletaAño && celda.tipo === 'bosque'
-        ? Math.max(0, (this.invierno || 0)) : 0;
+      // Cuántos árboles y cómo de altos. La DENSIDAD es la información: el
+      // matorral son arbustos bajos y dispersos y el bosque cerrado una masa
+      // apretada, así que si te lo encuentras tupido ya sabes que cruzarlo va a
+      // costar sin necesidad de leer el precio.
+      const perfil = {
+        matorral: { n: 3, alto: 0.24, an: 0.13, mata: true },
+        pinar:    { n: 4, alto: 0.44, an: 0.15, mata: false },
+        bosque:   { n: 6, alto: 0.50, an: 0.16, mata: false }
+      }[celda.tipo] || { n: 4, alto: 0.44, an: 0.15, mata: false };
 
-      for(let i = 0; i < sitios.length; i++){
+      const sitios = [[0.26, 0.58], [0.60, 0.48], [0.42, 0.80], [0.76, 0.70],
+                      [0.16, 0.82], [0.66, 0.90]];
+      for(let i = 0; i < perfil.n; i++){
         const rnd = (v * 13.7 + i * 2.31) % 1;
         const px = x + t * sitios[i][0], baseY = y + t * sitios[i][1];
-        const esc = sitios[i][2] * (0.86 + rnd * 0.34);
-        const an = t * 0.155 * esc, alto = t * 0.46 * esc;
-        // cada árbol con su tono: unos más viejos y oscuros que otros
+        const esc = 0.86 + rnd * 0.34;
+        const an = t * perfil.an * esc, alto = t * perfil.alto * esc;
         const claro = aclarar(verde, 0.14 + rnd * 0.16);
         const oscuro = oscurecer(verde, 0.34 + rnd * 0.14);
 
         this.sombraPieza(px, baseY, an * 0.9, an * 0.30, 0.22);
 
-        // tronco visible bajo el primer faldón
+        if(perfil.mata){
+          // arbusto: dos bollos y sin tronco. Un matorral no tiene copa.
+          ctx.fillStyle = oscuro;
+          ctx.beginPath(); ctx.arc(px, baseY - alto * 0.42, an * 0.78, 0, 7); ctx.fill();
+          ctx.fillStyle = claro;
+          ctx.beginPath(); ctx.arc(px - an * 0.3, baseY - alto * 0.60, an * 0.52, 0, 7); ctx.fill();
+          continue;
+        }
+
         ctx.fillStyle = '#4a3524';
         ctx.fillRect(px - an * 0.09, baseY - alto * 0.18, an * 0.18, alto * 0.19);
         ctx.fillStyle = '#33251a';
@@ -507,9 +438,8 @@ export class EscenaMapa extends Escena {
           ctx.moveTo(px, yt); ctx.lineTo(px + w, yb);
           ctx.lineTo(px + w * 0.45, yb); ctx.lineTo(px, yb - alto * 0.05);
           ctx.closePath(); ctx.fill();
-          // nieve posada en el faldón, solo en invierno
           if(nieve > 0.02){
-            ctx.fillStyle = `rgba(240,248,255,${0.55 * nieve})`;
+            ctx.fillStyle = 'rgba(240,248,255,' + (0.55 * nieve) + ')';
             ctx.beginPath();
             ctx.moveTo(px, yt); ctx.lineTo(px - w * 0.55, yb - alto * 0.03);
             ctx.lineTo(px - w * 0.2, yb - alto * 0.04);
@@ -520,21 +450,25 @@ export class EscenaMapa extends Escena {
       return;
     }
 
-    if(celda.tipo === 'montana'){
-      // Un macizo isométrico con ESTRATOS y desprendimientos al pie. Antes eran
-      // tres triángulos lisos y todas las montañas del mapa idénticas; ahora
-      // cada una saca del ruido de su celda la altura, la inclinación de la
-      // cumbre y si le sale un pico secundario.
-      const roca = CONFIG.terrenos.montana.color;
+    if(fam === 'relieve'){
+      // Lo que cambia entre colina, sierra y roca viva es la ALTURA, las aristas
+      // y si tiene nevero: una colina es un lomo bajo y pelado, la roca viva un
+      // pico agudo y nevado. El depósito cabe en las tres, pero cruzarlas cuesta
+      // muy distinto.
+      const perfil = {
+        colina: { alto: 0.26, nevero: false, aristas: 1 },
+        sierra: { alto: 0.46, nevero: true,  aristas: 3 },
+        roca:   { alto: 0.58, nevero: true,  aristas: 4 }
+      }[celda.tipo] || { alto: 0.46, nevero: true, aristas: 3 };
+
+      const roca = def.color;
       const cx = x + t * (0.46 + v * 0.08), base = y + t * 0.80;
       const W = t * (0.32 + v * 0.05), H = W * 0.5;
-      const alto = t * (0.42 + v * 0.16);
+      const alto = t * (perfil.alto + v * 0.10);
       const cumbre = base - alto;
-      const ladeo = (v - 0.5) * W * 0.35;      // la cumbre no siempre centrada
-      const cima = cx + ladeo;
+      const cima = cx + (v - 0.5) * W * 0.35;
 
-      // pico secundario detrás, en algunas casillas
-      if(v > 0.55){
+      if(v > 0.55 && perfil.alto > 0.3){
         const px2 = cx - W * 0.62, alto2 = alto * 0.62;
         ctx.fillStyle = oscurecer(roca, 0.34);
         ctx.beginPath();
@@ -544,7 +478,6 @@ export class EscenaMapa extends Escena {
         ctx.closePath(); ctx.fill();
       }
 
-      // cara izquierda (al sol) y derecha (en sombra)
       ctx.fillStyle = aclarar(roca, 0.28);
       ctx.beginPath();
       ctx.moveTo(cima, cumbre); ctx.lineTo(cx - W, base - H);
@@ -554,16 +487,14 @@ export class EscenaMapa extends Escena {
       ctx.moveTo(cima, cumbre); ctx.lineTo(cx + W, base - H);
       ctx.lineTo(cx, base); ctx.closePath(); ctx.fill();
 
-      // ESTRATOS: tres vetas que siguen la pendiente. Es lo que convierte un
-      // triángulo liso en roca.
       ctx.save();
       ctx.beginPath();
       ctx.moveTo(cima, cumbre); ctx.lineTo(cx - W, base - H);
       ctx.lineTo(cx, base); ctx.lineTo(cx + W, base - H);
       ctx.closePath(); ctx.clip();
-      for(let k = 1; k <= 3; k++){
-        const q = k / 4;
-        ctx.strokeStyle = `rgba(0,0,0,${0.13 - k * 0.02})`;
+      for(let k = 1; k <= perfil.aristas; k++){
+        const q = k / (perfil.aristas + 1);
+        ctx.strokeStyle = 'rgba(0,0,0,' + (0.13 - k * 0.02) + ')';
         ctx.lineWidth = Math.max(1, t * 0.018);
         ctx.beginPath();
         ctx.moveTo(cx - W * q * 1.05, base - H + (cumbre - base + H) * (1 - q));
@@ -573,18 +504,18 @@ export class EscenaMapa extends Escena {
       }
       ctx.restore();
 
-      // nevero irregular colgando de la cumbre
-      ctx.fillStyle = '#f4f8fc';
-      ctx.beginPath();
-      ctx.moveTo(cima, cumbre);
-      ctx.lineTo(cima - W * 0.40, cumbre + alto * 0.30);
-      ctx.lineTo(cima - W * 0.16, cumbre + alto * 0.19);
-      ctx.lineTo(cima - W * 0.02, cumbre + alto * 0.34);
-      ctx.lineTo(cima + W * 0.16, cumbre + alto * 0.17);
-      ctx.lineTo(cima + W * 0.38, cumbre + alto * 0.28);
-      ctx.closePath(); ctx.fill();
+      if(perfil.nevero){
+        ctx.fillStyle = '#f4f8fc';
+        ctx.beginPath();
+        ctx.moveTo(cima, cumbre);
+        ctx.lineTo(cima - W * 0.40, cumbre + alto * 0.30);
+        ctx.lineTo(cima - W * 0.16, cumbre + alto * 0.19);
+        ctx.lineTo(cima - W * 0.02, cumbre + alto * 0.34);
+        ctx.lineTo(cima + W * 0.16, cumbre + alto * 0.17);
+        ctx.lineTo(cima + W * 0.38, cumbre + alto * 0.28);
+        ctx.closePath(); ctx.fill();
+      }
 
-      // pedrera al pie, del lado en sombra
       ctx.fillStyle = oscurecer(roca, 0.42);
       for(let k = 0; k < 3; k++){
         const rr = t * (0.020 + ((v * 7 + k * 0.4) % 1) * 0.018);
@@ -594,7 +525,6 @@ export class EscenaMapa extends Escena {
         ctx.fill();
       }
 
-      // arista de la cumbre
       ctx.strokeStyle = oscurecer(roca, 0.50);
       ctx.lineWidth = Math.max(0.8, t * 0.012);
       ctx.beginPath();

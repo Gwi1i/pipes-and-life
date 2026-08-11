@@ -62,12 +62,18 @@ export function generarMapa(){
                                  + Math.sin(f * 0.11) * M.cols * 0.08;
       const enCauce = Math.abs(c - cauce) < 1.1;
 
+      // Primero la FAMILIA con la altura, como siempre. La variante dentro de
+      // cada familia la decide una tercera capa de ruido, más fina y con otra
+      // semilla: así el pinar y el bosque cerrado se agrupan en manchas en vez
+      // de salpicarse al azar casilla por casilla, que se vería como ruido.
+      const veta = ruidoSuave(M.semilla + 313, c, f, 5);
+
       let tipo;
-      if(enCauce)          tipo = 'agua';
-      else if(h > 0.74)    tipo = 'montana';
-      else if(h > 0.60)    tipo = 'bosque';
-      else if(h < 0.26)    tipo = 'lago';
-      else                 tipo = 'hierba';
+      if(enCauce)        tipo = 'agua';
+      else if(h < 0.26)  tipo = 'lago';
+      else if(h > 0.74)  tipo = veta > 0.66 ? 'roca'     : (veta > 0.36 ? 'sierra' : 'colina');
+      else if(h > 0.60)  tipo = veta > 0.66 ? 'bosque'   : (veta > 0.36 ? 'pinar'  : 'matorral');
+      else               tipo = veta > 0.72 ? 'pedregal' : (veta > 0.40 ? 'pastizal' : 'prado');
 
       celdas[f * M.cols + c] = {
         tipo, hallazgo: null, oculta: true, progreso: 0, resuelto: false
@@ -75,10 +81,29 @@ export function generarMapa(){
     }
   }
 
+  suavizarArranque(celdas);
   sembrarHallazgos(celdas, azar);
   sembrarArqueologia(celdas, azar);
   abrirZonaInicial(celdas);
   return celdas;
+}
+
+/**
+ * El arranque tiene que ser amable. Con nueve terrenos, la semilla podía dejar
+ * al pueblo de origen rodeado de pedregal y roca viva, y entonces la primera
+ * tubería costaba una fortuna y el juego empezaba cuesta arriba sin motivo.
+ * Cerca del pueblo se rebaja cada familia a su variante barata; a partir de ahí,
+ * el terreno es el que toque.
+ */
+function suavizarArranque(celdas){
+  const M = CONFIG.mapaMundo;
+  const rebaja = { pedregal: 'prado', pastizal: 'prado',
+                   bosque: 'matorral', pinar: 'matorral',
+                   roca: 'colina', sierra: 'colina' };
+  recorrer(celdas, (celda, c, f) => {
+    if(distanciaAlOrigen(c, f) > M.radioAmable) return;
+    if(rebaja[celda.tipo]) celda.tipo = rebaja[celda.tipo];
+  });
 }
 
 /**
@@ -109,9 +134,10 @@ function sembrarHallazgos(celdas, azar){
     puestos.every(p => Math.hypot(p.c - c, p.f - f) >= min);
 
   const tipos = [
-    { clave: 'pueblo',     n: H.pueblos,     separacion: 6, terreno: ['hierba', 'bosque'] },
-    { clave: 'ruina',      n: H.ruinas,      separacion: 4, terreno: ['hierba', 'bosque', 'montana'] },
-
+    { clave: 'pueblo',     n: H.pueblos,     separacion: 6, terreno: ['prado', 'pastizal', 'matorral'] },
+    // Las ruinas salen en cualquier tierra firme: son instalaciones viejas y
+    // las hubo de todo tipo. El agua es lo unico que se descarta.
+    { clave: 'ruina',      n: H.ruinas,      separacion: 4, terreno: null }
   ];
 
   for(const t of tipos){
@@ -121,7 +147,9 @@ function sembrarHallazgos(celdas, azar){
       const f = Math.floor(azar() * M.filas);
       const celda = celdas[f * M.cols + c];
       const dist = Math.hypot(c - M.origen.col, f - M.origen.fila);
-      if(!t.terreno.includes(celda.tipo)) continue;
+      //  = vale cualquier tierra firme
+      if(celda.tipo === 'agua' || celda.tipo === 'lago') continue;
+      if(t.terreno && !t.terreno.includes(celda.tipo)) continue;
       if(celda.hallazgo) continue;
       if(dist < H.distanciaMinima) continue;      // que no salga todo en la puerta
       if(!lejosDeOtros(c, f, t.separacion)) continue;
@@ -148,7 +176,7 @@ function abrirZonaInicial(celdas){
   });
   // La casilla de origen es siempre tu pueblo
   const o = celdaEn(celdas, M.origen.col, M.origen.fila);
-  if(o){ o.tipo = 'hierba'; o.hallazgo = 'pueblo'; o.resuelto = true; }
+  if(o){ o.tipo = 'prado'; o.hallazgo = 'pueblo'; o.resuelto = true; }
 }
 
 /* ---------- consulta ---------- */
