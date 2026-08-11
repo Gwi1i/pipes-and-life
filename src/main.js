@@ -66,6 +66,9 @@ function procesarAcciones(){
       case 'bombear': {
         bombear(estado.activo, estado);
         escena.destello(a.x, a.y);
+        // Que la caseta de bombeo acuse el clic: hasta ahora bombear solo movía
+        // números y la pieza del mapa se quedaba igual.
+        if(escena.golpeBomba) escena.golpeBomba();
         break;
       }
 

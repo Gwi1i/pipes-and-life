@@ -462,7 +462,8 @@ export const CONFIG = {
        siguiente. Un año son 15 minutos reales y una estación 3,8: a ese ritmo un
        cambio de color fuerte sería un parpadeo molesto cada pocos minutos.
        Se busca que lo notes sin que te distraiga. A 0 se apaga del todo. */
-    tinteEstacion: 0.16
+    tinteEstacion: 0.16,
+    duracionGolpe: 0.45     // segundos que dura el respingo de la bomba al clicar
   },
 
   /* ---------- QUÉ SE PUEDE CONSTRUIR Y DÓNDE ----------

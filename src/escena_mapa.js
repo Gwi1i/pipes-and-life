@@ -25,6 +25,10 @@ export class EscenaMapa extends Escena {
   constructor(lienzo){
     super(lienzo);
     this.zoom = 1;
+    // Cuánto queda del último golpe de bombeo (segundos). El clic principal era
+    // lo ÚNICO del mapa que no se notaba en ninguna parte: solo cambiaban los
+    // números. Ahora la caseta acusa el golpe y suelta vapor.
+    this.golpe = 0;
     this.centrada = false;
     this.resaltada = null;    // { col, fila } bajo el cursor
   }
@@ -67,6 +71,9 @@ export class EscenaMapa extends Escena {
     this.centrarEn(estado, M.origen.col, M.origen.fila);
     this.centrada = true;
   }
+
+  /** Un golpe de bombeo: lo llama `main.js` con cada clic de BOMBEAR. */
+  golpeBomba(){ this.golpe = CONFIG.estiloMapa.duracionGolpe; }
 
   /** Lleva la vista a una casilla concreta (el botón de "ir a la avería"). */
   centrarEn(estado, col, fila){
@@ -115,6 +122,7 @@ export class EscenaMapa extends Escena {
     // simulación: no hay que inventarse nada, solo enchufarlos al dibujo.
     const p = estado.activo, r = resultado || {};
     const cap = capacidad(p, estado);
+    this.golpe = Math.max(0, this.golpe - dt);
     this.vivo = {
       lleno: cap > 0 ? limitar(p.agua / cap, 0, 1) : 0,   // nivel del depósito
       produce: !!r.produciendo,                            // entra agua
@@ -219,6 +227,117 @@ export class EscenaMapa extends Escena {
     ctx.lineWidth = Math.max(1, t * 0.02);
     ctx.beginPath(); ctx.roundRect(fx, fy, fl, fl, r); ctx.stroke();
 
+  }
+
+  /**
+   * 0 fuera del invierno y 1 en su centro, con subida y bajada suaves. Sirve
+   * para lo que solo debe verse cuando de verdad hace frío.
+   */
+  gradoInvierno(horas){
+    const E = CONFIG.estaciones;
+    const frac = ((horas % CONFIG.tiempo.horasPorAño) / CONFIG.tiempo.horasPorAño + 1) % 1;
+    const pos = frac * E.length;
+    const i = Math.floor(pos) % E.length;
+    if(E[i].nombre !== 'Invierno') return 0;
+    return Math.sin((pos - Math.floor(pos)) * Math.PI);
+  }
+
+  /**
+   * Los colores del año, mezclando siempre entre la estación actual y la
+   * siguiente en proporción al trozo de estación transcurrido. Sin escalones.
+   */
+  colorDeEstacion(horas){
+    const E = CONFIG.estaciones;
+    const frac = ((horas % CONFIG.tiempo.horasPorAño) / CONFIG.tiempo.horasPorAño + 1) % 1;
+    const pos = frac * E.length;
+    const i = Math.floor(pos) % E.length;
+    const k = pos - Math.floor(pos);
+    const sig = E[(i + 1) % E.length];
+    return {
+      hierba: mezclarColor(E[i].hierba, sig.hierba, k),
+      follaje: mezclarColor(E[i].follaje, sig.follaje, k)
+    };
+  }
+
+  /**
+   * El agua CORRE. Las ondas no se mueven en el sitio: se desplazan siguiendo el
+   * cauce, y para saber por dónde va se mira si la casilla tiene agua a los
+   * lados (corriente horizontal) o arriba y abajo (vertical).
+   *
+   * Y el ESTIAJE se ve. En verano el río baja y deja lecho al descubierto por
+   * las orillas. Es el dato que ya calcula la simulación, puesto en pantalla:
+   * hasta ahora el estiaje solo existía en un número del panel.
+   */
+  pintarAgua(celda, c, f, x, y, t, base){
+    const ctx = this.ctx;
+    const mapa = this._estado && this._estado.mapa;
+
+    // ¿Por dónde va la corriente? Se deduce de los vecinos con agua.
+    let horizontal = true;
+    if(mapa){
+      const esAgua = (dc, df) => {
+        const v = celdaEn(mapa, c + dc, f + df);
+        return !!v && (v.tipo === 'agua' || v.tipo === 'lago');
+      };
+      const lados = (esAgua(-1, 0) ? 1 : 0) + (esAgua(1, 0) ? 1 : 0);
+      const vert = (esAgua(0, -1) ? 1 : 0) + (esAgua(0, 1) ? 1 : 0);
+      horizontal = lados >= vert;
+    }
+
+    // Lecho al descubierto por el estiaje: cuanto menos caudal, más orilla seca.
+    // Ojo con la normalización: `factorEstiaje` va de factorMin a factorMax y el
+    // máximo pasa de 1, así que restarle a 1 daba negativo casi todo el año y el
+    // lecho no aparecía nunca.
+    const Q = CONFIG.estiaje;
+    const seco = limitar((Q.factorMax - this.estiaje) / (Q.factorMax - Q.factorMin), 0, 1) * 0.34;
+    if(seco > 0.01){
+      ctx.fillStyle = 'rgba(150,132,96,0.55)';
+      const b = t * seco * 0.5;
+      if(horizontal){ ctx.fillRect(x, y, t, b); ctx.fillRect(x, y + t - b, t, b); }
+      else { ctx.fillRect(x, y, b, t); ctx.fillRect(x + t - b, y, b, t); }
+    }
+
+    if(celda.insalubre > 0){
+      ctx.fillStyle = `rgba(130,110,50,${0.22 * celda.insalubre})`;
+      for(const p of [[0.28, 0.34, 0.10], [0.62, 0.55, 0.08], [0.44, 0.72, 0.07]]){
+        ctx.beginPath(); ctx.arc(x + t * p[0], y + t * p[1], t * p[2], 0, 7); ctx.fill();
+      }
+    }
+
+    // ONDAS, no líneas. Antes eran senos a lo ancho de la casilla, y una celda
+    // con corriente horizontal no se parecía en nada a una vertical: el río
+    // cambiaba de textura en cada codo. Ahora son arcos cortos repartidos por la
+    // tesela que DERIVAN en la dirección del cauce; el dibujo es el mismo mire
+    // hacia donde mire, y solo cambia por dónde se van.
+    const deriva = (this.tiempo * 0.16) % 1;
+    const filas = 3, porFila = 3;
+    for(let fy = 0; fy < filas; fy++){
+      for(let fx = 0; fx < porFila; fx++){
+        // posición base, más un corrimiento por fila para que no formen rejilla
+        let u = (fx + 0.5) / porFila + (fy % 2) * (0.5 / porFila);
+        let w = (fy + 0.5) / filas;
+        // la deriva corre a lo largo del cauce y da la vuelta por el otro lado
+        if(horizontal) u = (u + deriva) % 1;
+        else w = (w + deriva) % 1;
+
+        const px = x + t * u, py = y + t * w;
+        const r = t * 0.11;
+        // se desvanece al entrar y al salir, para que no aparezcan de golpe
+        const borde = horizontal ? u : w;
+        const alfa = 0.20 * Math.sin(borde * Math.PI);
+        if(alfa <= 0.01) continue;
+
+        ctx.strokeStyle = `rgba(255,255,255,${alfa})`;
+        ctx.lineWidth = Math.max(1, t * 0.022);
+        ctx.beginPath();
+        ctx.arc(px, py + r * 0.5, r, Math.PI * 1.15, Math.PI * 1.85);
+        ctx.stroke();
+        ctx.strokeStyle = `rgba(255,255,255,${alfa * 0.5})`;
+        ctx.beginPath();
+        ctx.arc(px, py + r * 0.9, r * 0.55, Math.PI * 1.15, Math.PI * 1.85);
+        ctx.stroke();
+      }
+    }
   }
 
   /**
@@ -1189,6 +1308,13 @@ export class EscenaMapa extends Escena {
 
       case 'bomba': {         // caseta: puerta, dos ventanas y respiradero
         const an = W * 0.82, al = t * 0.24;
+        // EL GOLPE. Al clicar, la caseta da un respingo y suelta vapor: es la
+        // pieza del clic principal y era la única que no reaccionaba al usarla.
+        const g = this.golpe > 0 ? this.golpe / CONFIG.estiloMapa.duracionGolpe : 0;
+        if(g > 0){
+          ctx.save();
+          ctx.translate(0, Math.sin(g * Math.PI * 3) * t * 0.02 * g);
+        }
         this.isoCaja(cx, suelo, an, an * 0.5, al, color);
         this.ventanas(cx - an * 0.85, suelo - al, an * 0.75, al, 2, luz);
         this.puerta(cx + an * 0.42, suelo, an * 0.26, al * 0.62, color);
@@ -1201,6 +1327,19 @@ export class EscenaMapa extends Escena {
         ctx.lineTo(cx - an * 1.05, suelo - t * 0.26);
         ctx.lineTo(cx - an * 0.55, suelo - t * 0.30);
         ctx.stroke();
+        if(g > 0){
+          ctx.restore();
+          // vapor: sale de golpe y se deshace, como el escape de una bomba
+          for(let i = 0; i < 3; i++){
+            const q = 1 - g + i * 0.18;
+            if(q < 0 || q > 1) continue;
+            ctx.fillStyle = `rgba(226,238,248,${0.42 * (1 - q)})`;
+            ctx.beginPath();
+            ctx.arc(cx - an * 0.55 + q * an * 0.5, suelo - t * 0.32 - q * t * 0.16,
+                    t * (0.020 + q * 0.045), 0, 7);
+            ctx.fill();
+          }
+        }
         break;
       }
 
@@ -1298,25 +1437,78 @@ export class EscenaMapa extends Escena {
         break;
       }
 
-      case 'vertedero': {     // montera por capas, con basura suelta encima
-        const capas = [[1.00, 0.00, 0.09], [0.72, 0.08, 0.07], [0.42, 0.14, 0.055]];
-        for(let i = 0; i < capas.length; i++){
-          const e = capas[i];
-          this.isoCilindro(cx, suelo - t * e[1], W * e[0], H * e[0], t * e[2],
-                           i % 2 ? oscurecer(color, 0.20) : color);
+      case 'vertedero': {
+        // Una montera lisa por capas parecia una duna, no un vertedero. Lo que
+        // lo hace vertedero es que sea IRREGULAR y que este CERCADO: un recinto
+        // vallado, el vaso excavado y un monton de silueta dentada con cosas
+        // asomando. Lo liso y simetrico lee como terreno; lo dentado, como
+        // basura amontonada.
+        const rw = W * 1.05, rh = H * 1.05;
+
+        // el vaso: una depresion de tierra removida
+        ctx.fillStyle = '#6b5b45';
+        ctx.beginPath(); ctx.ellipse(cx, suelo, rw, rh, 0, 0, 7); ctx.fill();
+        ctx.fillStyle = '#5a4c39';
+        ctx.beginPath(); ctx.ellipse(cx, suelo, rw * 0.82, rh * 0.82, 0, 0, 7); ctx.fill();
+
+        // el monton, con el borde dentado
+        const alto = t * 0.19;
+        ctx.fillStyle = oscurecer(color, 0.10);
+        ctx.beginPath();
+        ctx.moveTo(cx - rw * 0.80, suelo);
+        const dientes = 9;
+        for(let i = 0; i <= dientes; i++){
+          const q = i / dientes;
+          const px = cx - rw * 0.80 + rw * 1.60 * q;
+          const forma = Math.sin(q * Math.PI);
+          const ruidillo = ((i * 37) % 11) / 11 - 0.5;
+          ctx.lineTo(px, suelo - alto * forma * (0.75 + ruidillo * 0.5));
         }
-        // cachivaches asomando: es lo que lo hace basura y no una duna
-        const trozos = [[-0.45, 0.02, 0.030], [0.30, 0.05, 0.026], [-0.10, -0.10, 0.022],
-                        [0.52, -0.01, 0.020], [0.05, 0.08, 0.024]];
-        for(let i = 0; i < trozos.length; i++){
-          const p = trozos[i];
-          ctx.fillStyle = i % 2 ? 'rgba(120,130,140,0.85)' : 'rgba(90,70,50,0.85)';
+        ctx.lineTo(cx + rw * 0.80, suelo);
+        ctx.closePath(); ctx.fill();
+        // cara en sombra del monton
+        ctx.fillStyle = oscurecer(color, 0.34);
+        ctx.beginPath();
+        ctx.moveTo(cx + rw * 0.10, suelo - alto * 0.72);
+        ctx.lineTo(cx + rw * 0.80, suelo);
+        ctx.lineTo(cx + rw * 0.10, suelo + rh * 0.28);
+        ctx.closePath(); ctx.fill();
+
+        // lo que asoma: chatarra, bolsas, tablones. Girado cada uno a su aire.
+        const trastos = [[-0.52, 0.10, 0.034, '#8a9099'], [-0.20, 0.16, 0.028, '#7a5a3a'],
+                         [0.12, 0.17, 0.030, '#5f6b74'], [0.44, 0.10, 0.026, '#8a7a4a'],
+                         [-0.36, 0.05, 0.022, '#6f7d86'], [0.30, 0.04, 0.024, '#7a4a3a']];
+        for(let i = 0; i < trastos.length; i++){
+          const p = trastos[i];
           ctx.save();
-          ctx.translate(cx + W * p[0], suelo - t * (0.06 + p[1]));
-          ctx.rotate(i * 0.7);
-          ctx.fillRect(-t * p[2] / 2, -t * p[2] / 3, t * p[2], t * p[2] * 0.66);
+          ctx.translate(cx + rw * p[0], suelo - alto * p[1] * 5);
+          ctx.rotate((i * 1.3) % 2 - 1);
+          ctx.fillStyle = p[3];
+          ctx.fillRect(-t * p[2] / 2, -t * p[2] / 3, t * p[2], t * p[2] * 0.62);
+          ctx.fillStyle = 'rgba(0,0,0,0.25)';
+          ctx.fillRect(-t * p[2] / 2, t * p[2] * 0.16, t * p[2], t * p[2] * 0.13);
           ctx.restore();
         }
+
+        // VALLADO perimetral: postes y malla. Es lo que dice "recinto" y no
+        // "montana de tierra".
+        ctx.strokeStyle = 'rgba(180,190,200,0.55)';
+        ctx.lineWidth = Math.max(0.8, t * 0.012);
+        ctx.beginPath();
+        ctx.ellipse(cx, suelo + rh * 0.10, rw * 1.02, rh * 1.02, 0, 0, 7);
+        ctx.stroke();
+        for(let a = 0; a < 10; a++){
+          const ang = (a / 10) * Math.PI * 2;
+          const px = cx + Math.cos(ang) * rw * 1.02;
+          const py = suelo + rh * 0.10 + Math.sin(ang) * rh * 1.02;
+          ctx.beginPath();
+          ctx.moveTo(px, py); ctx.lineTo(px, py - t * 0.055);
+          ctx.stroke();
+        }
+        ctx.strokeStyle = 'rgba(180,190,200,0.35)';
+        ctx.beginPath();
+        ctx.ellipse(cx, suelo + rh * 0.10 - t * 0.055, rw * 1.02, rh * 1.02, 0, 0, 7);
+        ctx.stroke();
         break;
       }
 

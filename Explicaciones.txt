@@ -106,3 +106,77 @@ En un momento mas avanzado se podría pensar en implementar de alguna manera los
 //   frente a SCADA automático y brigada automatizada. OJO: el auto-bombeo ya
 //   está montado como función especial CON EL GANCHO PARA UN PAGO QUE NO EXISTE.
 //   No hay pago ni anuncio real implementado, y no se debe simular uno falso.
+
+========================================================================
+IDEAS NUEVAS (11/08/2026) — anotadas por Claude a peticion del autor
+========================================================================
+
+YACIMIENTOS ARQUEOLOGICOS
+Estan BAJO TIERRA: no se ven en el mapa, aparecen al EXCAVAR, es decir al
+intentar tender una tuberia, una carretera o levantar un edificio en esa
+casilla. No se pueden eliminar. Hay que respetarlos y rodearlos: no se puede
+construir encima ni alrededor. Su excavacion se paga, y a cambio da un ingreso
+MENSUAL como premio.
+
+// Claude: ojo, esto CHOCA con lo que hay. Hoy existe un hallazgo llamado
+// "yacimiento" que se ve al destapar la casilla y da una prima de una vez. Lo
+// que describes es otra cosa distinta y mejor, asi que habria que renombrar el
+// de ahora (¿"deposito de materiales"?) o sustituirlo directamente.
+//
+// Lo interesante de diseno: es el primer obstaculo que aparece DESPUES de haber
+// decidido. Hasta ahora el mapa te ensena todo antes de que pagues; esto te
+// obliga a replantear un trazado ya empezado, y eso da historias. Cuidado con
+// una cosa: si sale demasiado a menudo se vuelve un impuesto aleatorio y
+// molesto. Yo lo pondria raro y caro, con la recompensa mensual bien visible
+// para que compense el rodeo.
+//
+// Encaja bien con "el juego no te prohibe, te avisa": aqui SI prohibe, y por eso
+// tiene que ser poco frecuente y estar muy bien explicado cuando pasa.
+
+PLANTAR BOSQUES PARA COMPENSAR
+Se pueden plantar bosques alrededor de los sitios contaminantes para reducir su
+impacto ambiental.
+
+// Claude: encaja de maravilla con lo que ya hay. El vertedero suelta lixiviados
+// por radio y la depuradora vierte al cauce; un bosque plantado dentro de ese
+// radio podria recortar el dano. Y da un uso nuevo a una casilla que hoy solo
+// estorba (el bosque cuesta mas de atravesar). Seria plantar = pagar + convertir
+// hierba en bosque, con el efecto atado al radio de contaminacion que ya existe.
+
+MAS VARIEDAD DE TERRENO
+Solo hay 3 tipos (montana, bosque, hierba) y el plano queda monotono. Al menos 3
+variantes de cada uno, cada una con distinto precio al modificarlas para
+construir o para pasar por ellas. Eso obliga a pensar el trazado.
+
+// Claude: de todo lo de esta lista, esto es lo que mas cambia el JUEGO y no solo
+// el aspecto. Hoy el coste por casilla es plano dentro de cada tipo, asi que
+// trazar es casi siempre ir en linea recta. Con nueve terrenos y precios
+// distintos, el trazado pasa a ser una decision de verdad en cada tramo.
+// Propuesta de reparto: prado/pastizal/roquedo para la hierba (barato a caro),
+// matorral/pinar/bosque cerrado para el bosque, colina/sierra/roca viva para la
+// montana. Cada uno con su coste de tuberia y su coste de desbroce.
+// Se aprovecha entero lo que ya hay: `costePorCasilla` ya es por tipo.
+
+DIFICULTAD POR DISTANCIA
+Al empezar hay que ponerlo facil, pero conforme avanza el juego se pueden situar
+poblaciones lejos del agua o lejos de la montana.
+
+// Claude: hoy los pueblos del mapa se siembran con `distanciaMinima` al origen y
+// poco mas. Bastaria con sembrar los pueblos LEJANOS en sitios malos a proposito
+// (sin agua cerca, sin montana para el deposito) y dejar los primeros faciles.
+// Es el mismo mecanismo, solo cambiando donde se siembran.
+
+CONSTRUIR UNA MONTANA
+A esos niveles, poder construir una pequena montana para colocar un deposito,
+pero a un precio bastante alto.
+
+// Claude: es la valvula de escape del punto anterior, y me gusta que sea CARA:
+// resuelve el atasco de "no tengo altura en ninguna parte" sin quitarle valor a
+// haber encontrado una montana de verdad. Tecnicamente es cambiar el tipo de una
+// casilla, que es justo lo que haria tambien "plantar bosque".
+
+// --- Claude: los tres comparten mecanica ---
+// Plantar bosque, construir montana y (al reves) desbrozar son lo mismo: PAGAR
+// POR CAMBIAR EL TIPO DE UNA CASILLA. Si se monta una sola vez bien hecha
+// —una tabla de transformaciones con su coste y sus requisitos— las tres salen
+// de ahi, y cualquier otra que se te ocurra despues tambien.
