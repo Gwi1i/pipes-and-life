@@ -20,7 +20,8 @@
 import { CONFIG } from './src/config.js';
 import { Estado } from './src/estado.js';
 import { avanzar, bombear, costeMejora, servicioActivo, redEstrangula,
-         redDelPueblo, requisitosAutobomba } from './src/simulacion.js';
+         redDelPueblo, requisitosAutobomba, faseActual,
+         incorporarPueblo, canonIncorporacion } from './src/simulacion.js';
 import { puedeColocar, costeTrazado, costeRenovar, celdaEn,
          escalaDeRed, nivelDiametro } from './src/mapa.js';
 
@@ -41,11 +42,14 @@ function buscarSitio(estado, tipo, radio = 8){
   return null;
 }
 
-/** Tubería recta en L desde el pueblo hasta quedar pegada a (c,f). */
+/** Tubería recta en L desde el pueblo incorporado más cercano hasta (c,f). */
 function tender(estado, red, c, f){
   const M = O();
   const camino = [];
-  let x = M.origen.col, y = M.origen.fila;
+  let base = estado.pueblos[0];
+  for(const p of estado.pueblos)
+    if(Math.hypot(p.col - c, p.fila - f) < Math.hypot(base.col - c, base.fila - f)) base = p;
+  let x = base.col, y = base.fila;
   camino.push({ col: x, fila: y });
   while(x !== c){ x += Math.sign(c - x); camino.push({ col: x, fila: y }); }
   while(Math.abs(y - f) > 1){ y += Math.sign(f - y); camino.push({ col: x, fila: y }); }
@@ -125,6 +129,15 @@ export async function medir(pasoSeg = 0.25, maxMin = 240, informar = () => {}){
         if(construir(estado, 'reciclaje', 'residuos')) marca('obra reciclaje');
       }
     }
+    // Con muchos pueblos hace falta MAS depuración y más vertederos: el bot
+    // amplía cuando el juego avisa, igual que haría un jugador que lee.
+    if(res && res.aliviando
+       && estado.construcciones.filter(o => o.tipo === 'depuradora').length < estado.pueblos.length)
+      construir(estado, 'depuradora', 'saneamiento');
+    if((res && (res.basuraCalle || 0) > 0.3)
+       && estado.construcciones.filter(o => o.tipo === 'vertedero').length < 4)
+      construir(estado, 'vertedero', 'residuos');
+
     if(estado.pluvialesActivas && !estado.tuberias.some(t => t.red === 'pluviales'))
       tender(estado, 'pluviales', O().origen.col + 2, O().origen.fila);
 
@@ -153,32 +166,55 @@ export async function medir(pasoSeg = 0.25, maxMin = 240, informar = () => {}){
       marca('auto-bombeo en ' + p.nombre);
     }
 
-    // --- desbloqueos de pueblos (lo que hace comprobarDesbloqueo en main) ---
-    const total = estado.pueblos.filter(x => x.desbloqueado)
-                                .reduce((a, x) => a + x.habitantes, 0);
-    for(const [i, def] of CONFIG.poblaciones.entries()){
-      if(!estado.pueblos[i].desbloqueado && total >= def.desbloqueaEn){
-        estado.pueblos[i].desbloqueado = true;
-        marca('pueblo ' + (i + 1) + ' desbloqueado');
-        if(i === 2){ estado.pluvialesActivas = true; marca('pluviales activas'); }
+    // --- incorporar núcleos: el corazón del juego largo. Cada pocos segundos
+    //     busca el núcleo alcanzable más cercano, paga la tubería real hasta él
+    //     y lo incorpora, igual que haría el jugador ---
+    // Solo se expande si los pueblos que ya tiene están bien servidos: crecer
+    // dejando morir lo anterior fue lo que hundió la primera medición.
+    const peor = Math.min(...estado.pueblos.map(x => x.servicio));
+    if(seg % 4 < pasoSeg && peor > 0.93
+       && estado.dinero > canonIncorporacion(estado) + 4000){
+      const M = O(), fase = faseActual(estado);
+      let mejor = null, mejorD = 1e9;
+      for(let f = 0; f < M.filas; f++) for(let c = 0; c < M.cols; c++){
+        const celda = celdaEn(estado.mapa, c, f);
+        if(!celda || celda.hallazgo !== 'pueblo' || celda.resuelto) continue;
+        if((celda.anillo || 1) > fase) continue;
+        for(const q of estado.pueblos){
+          const d = Math.hypot(q.col - c, q.fila - f);
+          if(d < mejorD){ mejorD = d; mejor = { c, f, celda }; }
+        }
+      }
+      if(mejor && estado.dinero >= canonIncorporacion(estado)
+         && tender(estado, 'abastecimiento', mejor.c, mejor.f)){
+        estado.pagar(canonIncorporacion(estado));
+        const faseAntes = faseActual(estado);
+        const nuevo = incorporarPueblo(estado, mejor.c, mejor.f, mejor.celda);
+        marca('nucleo ' + estado.pueblos.length + ' (' + nuevo.nombre + ')');
+        if(faseActual(estado) > faseAntes) marca('FASE ' + faseActual(estado));
+        if(estado.pluvialesActivas) marca('pluviales activas');
       }
     }
 
     // --- hitos de población y servicios ---
     if(servicioActivo(p, 'saneamiento')) marca('saneamiento abierto');
     if(servicioActivo(p, 'residuos')) marca('residuos abierto');
-    if(p.habitantes >= 1500) marca('1500 hab en ' + p.nombre);
-    if(p.habitantes >= 3000) marca('3000 hab en ' + p.nombre);
-    if(p.habitantes >= 5900) marca('tope 6000 en ' + p.nombre);
+    const totalHab = estado.pueblos.reduce((a, x) => a + x.habitantes, 0);
+    if(totalHab >= 2000) marca('2000 hab totales');
+    if(totalHab >= 5000) marca('5000 hab totales');
+    if(totalHab >= 10000) marca('10000 hab totales');
+    if(totalHab >= 20000) marca('20000 hab totales');
 
     if(seg % 600 < pasoSeg) await new Promise(r => setTimeout(r));   // respirar
     if(seg % 1800 < pasoSeg) informar({ min: +(seg / 60).toFixed(0), marcas: marcas.length });
   }
 
-  const foto = estado.pueblos.map(x => ({
-    nombre: x.nombre, abierto: x.desbloqueado,
-    hab: Math.round(x.habitantes), servicio: +(x.servicio).toFixed(2)
-  }));
+  const foto = {
+    pueblos: estado.pueblos.length,
+    fase: faseActual(estado),
+    habTotales: Math.round(estado.pueblos.reduce((a, x) => a + x.habitantes, 0)),
+    peorServicio: +Math.min(...estado.pueblos.map(x => x.servicio)).toFixed(2)
+  };
   return { marcas, foto, dinero: Math.round(estado.dinero),
            contaminacion: Math.round(estado.contaminacion) };
 }

@@ -16,7 +16,8 @@ import { celdaEn, clicarCasilla, clicsParaDestapar, puedeColocar,
          averiaEn, aflorarArqueologia } from './mapa.js';
 import { avanzar, bombear, costeMejora, requisitosAutobomba,
          poderExpansion, servicioActivo, costeAmpliarVertedero,
-         capacidadVaso } from './simulacion.js';
+         capacidadVaso, faseActual, faltanParaFase,
+         incorporarPueblo, canonIncorporacion } from './simulacion.js';
 import { formatear } from './util.js';
 import { comprobar as comprobarGuia, saltar as saltarGuia } from './tutorial.js';
 
@@ -225,7 +226,16 @@ function procesarAcciones(){
         // cuarto de la pantalla para hacer esto, y era el resto del mapa —terreno
         // vacío— el que bombeaba al clicarlo, que no significaba nada. Ahora se
         // clica donde está la cosa: sobre el pueblo, y solo sobre el pueblo.
-        if(col === CONFIG.mapaMundo.origen.col && fila === CONFIG.mapaMundo.origen.fila){
+        const puebloAqui = estado.pueblos.findIndex(p => p.col === col && p.fila === fila);
+        if(puebloAqui >= 0){
+          // Clicar un pueblo lo hace ACTIVO además de bombear: con muchos
+          // núcleos por el mapa, cambiar de pestaña buscando cuál era este
+          // rompía el ritmo del clic.
+          if(estado.puebloActivo !== puebloAqui){
+            estado.puebloActivo = puebloAqui;
+            ui.invalidarCache();
+            ui.reconstruirPestanas(estado);
+          }
           estado.seleccion = null;
           bombear(estado.activo, estado);
           escena.destello(a.x, a.y);
@@ -284,17 +294,30 @@ function procesarAcciones(){
           avisar('Primero hay que llegar hasta él con una tubería.');
           break;
         }
-        // Incorporarlo a la mancomunidad: abre el siguiente pueblo del config
-        const nuevo = estado.pueblos.find(p => !p.desbloqueado);
-        celda.resuelto = true;
-        if(nuevo){
-          nuevo.desbloqueado = true;
-          estado.anotar(`${nuevo.nombre} entra en la mancomunidad: ya recibe agua.`, 'ok');
-          avisar(`¡${nuevo.nombre} incorporado! Míralo en las pestañas.`);
-          ui.reconstruirPestanas(estado);
-      contarHito('mancomunidad');
-        } else {
-          estado.anotar('Pueblo abastecido.', 'ok');
+        // La FASE manda: los anillos lejanos exigen una mancomunidad grande.
+        if((celda.anillo || 1) > faseActual(estado)){
+          const faltan = faltanParaFase(estado);
+          avisar(`La mancomunidad aún no puede absorber este núcleo: incorpora ` +
+                 `${faltan} pueblo${faltan === 1 ? '' : 's'} más cercanos primero.`);
+          break;
+        }
+        const canon = canonIncorporacion(estado);
+        if(!estado.puedePagar(canon)){
+          avisar(`Incorporarlo cuesta un canon de ${formatear(canon)} € y no hay fondos.`);
+          break;
+        }
+        estado.pagar(canon);
+        const faseAntes = faseActual(estado);
+        const nuevo = incorporarPueblo(estado, sel.col, sel.fila, celda);
+        habPrev.push(Math.floor(nuevo.habitantes));
+        estado.anotar(`${nuevo.nombre} entra en la mancomunidad: ya recibe agua.`, 'ok');
+        avisar(`¡${nuevo.nombre} incorporado! (${estado.pueblos.length} núcleos)`);
+        ui.reconstruirPestanas(estado);
+        contarHito('mancomunidad');
+        if(faseActual(estado) > faseAntes){
+          estado.anotar(`FASE ${faseActual(estado)}: la mancomunidad puede absorber ` +
+                        `los núcleos del siguiente anillo, más lejanos.`, 'ok');
+          avisar(`¡Fase ${faseActual(estado)}! Se abre el siguiente anillo de núcleos.`);
         }
         estado.seleccion = null;
         break;
@@ -618,33 +641,11 @@ function clicAveria(col, fila){
    DESBLOQUEO DE PUEBLOS Y AVISOS DE CRECIMIENTO
    ================================================================== */
 
-function comprobarDesbloqueo(){
-  // Habitantes TOTALES de la mancomunidad (solo los pueblos ya abiertos)
-  const total = estado.pueblos.reduce(
-    (s, p) => s + (p.desbloqueado ? Math.floor(p.habitantes) : 0), 0);
-
-  for(let i = 1; i < estado.pueblos.length; i++){
-    const p = estado.pueblos[i];
-    const def = CONFIG.poblaciones[i];
-    if(p.desbloqueado || !def.desbloqueaEn || total < def.desbloqueaEn) continue;
-
-    p.desbloqueado = true;
-    estado.anotar(`¡La mancomunidad se amplía! Nuevo pueblo: ${p.nombre}.`, 'ok');
-    avisar(`Nuevo pueblo disponible: ${p.nombre}. Ábrelo en las pestañas.`);
-    ui.reconstruirPestanas(estado);
-
-    // El TERCER pueblo trae consigo la gestión de aguas pluviales
-    if(i >= 2 && !estado.pluvialesActivas){
-      estado.pluvialesActivas = true;
-      estado.anotar('Nueva competencia: red de pluviales y tanques de tormenta. ' +
-                    'Separa la lluvia del saneamiento para no aliviar al cauce.', 'ok');
-      avisar('¡Desbloqueadas la red de pluviales y el tanque de tormentas!');
-      ui.invalidarCache();
-    }
-  }
-}
 
 function anotarCrecimiento(){
+  // La lista de pueblos crece en caliente: los recién incorporados entran aquí
+  while(habPrev.length < estado.pueblos.length)
+    habPrev.push(Math.floor(estado.pueblos[habPrev.length].habitantes));
   for(let i = 0; i < estado.pueblos.length; i++){
     const p = estado.pueblos[i];
     if(!p.desbloqueado) continue;
@@ -767,7 +768,6 @@ function bucle(ahora){
   // La guía avanza sola cuando el jugador consigue de verdad cada paso
   const pasoHecho = comprobarGuia(estado);
   if(pasoHecho) estado.anotar(`Guía: ${pasoHecho.titulo} ✓`, 'ok');
-  comprobarDesbloqueo();
   anotarCrecimiento();
 
   if(resultado.serviciosNuevos && resultado.serviciosNuevos.length){

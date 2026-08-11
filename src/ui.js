@@ -14,9 +14,11 @@ import { capacidad, demandaMedia, caudalCaptacion, costeMejora,
          requisitosAutobomba, capacidadTanque, nombreEstacion,
          poderExpansion, redEstrangula, capacidadTratamiento,
          servicioActivo, nivelReciclaje, fraccionesActivas,
+         faseActual, faltanParaFase, canonIncorporacion,
          llenadoVaso, capacidadVaso, costeAmpliarVertedero } from './simulacion.js';
 import { formatear } from './util.js';
 import { celdaEn, piezaDeRuina, diametro, nivelDiametro, costeRenovar,
+         nombreDeNucleo,
          costeCasillaTuberia, puedeColocar,
          lineasConectadas, cuelloDeBotella, escalaDeRed } from './mapa.js';
 import { pasoActual } from './tutorial.js';
@@ -380,13 +382,20 @@ export class UI {
           <span class="m-coste">${formatear(desmontar)} €</span>
         </button>`;
     } else {
+      const bloqueado = (celda.anillo || 1) > faseActual(estado);
       cont.innerHTML = `
-        <button class="mejora obra" data-accion="abastecerPueblo" style="--tono:${H.color.pueblo}">
-          <span class="m-cab"><span class="m-nom">Abastecer este pueblo</span></span>
-          <span class="m-desc">Hay que haberle llevado antes una tubería. Al
-            hacerlo entra en la mancomunidad.</span>
-          <span class="m-coste">se une a tu red</span>
-        </button>`;
+        <p class="m-desc"><b>${nombreDeNucleo(celda.nombreIdx || 0)}</b> ·
+          ${celda.habIni || '?'} habitantes · anillo ${celda.anillo || 1}</p>
+        ${bloqueado
+          ? `<p class="red-aviso">Demasiado lejos para la mancomunidad de hoy:
+               incorpora ${faltanParaFase(estado)} núcleos más cercanos y se abrirá
+               este anillo.</p>`
+          : `<button class="mejora obra" data-accion="abastecerPueblo" style="--tono:${H.color.pueblo}">
+               <span class="m-cab"><span class="m-nom">Abastecer este pueblo</span></span>
+               <span class="m-desc">Hay que haberle llevado antes una tubería. Al
+                 hacerlo entra en la mancomunidad.</span>
+               <span class="m-coste">canon: ${formatear(canonIncorporacion(estado))} €</span>
+             </button>`}`;
     }
   }
 
@@ -635,15 +644,17 @@ export class UI {
   reconstruirPestanas(estado){
     const cont = document.getElementById('pestanas');
     if(!cont) return;
+    // Los pueblos son dinámicos: no hay pestañas bloqueadas, los que faltan
+    // están en el mapa esperando a que llegues. La cuenta de fase va al final.
+    const faltan = faltanParaFase(estado);
+    const conAveria = (estado.averias || []).length > 0;
     cont.innerHTML = estado.pueblos.map((p, i) => {
-      if(!p.desbloqueado){
-        return `<span class="pestana bloqueada" title="Se abre al crecer el primer pueblo">🔒 ?</span>`;
-      }
       const activa = i === estado.puebloActivo ? ' activa' : '';
-      const alerta = (estado.averias || []).length ? ' con-averia' : '';
-      return `<button class="pestana${activa}${alerta}" data-accion="cambiarPueblo" data-clave="${i}">
-        ${p.nombre}${(estado.averias || []).length ? ' ⚠' : ''}</button>`;
-    }).join('');
+      return `<button class="pestana${activa}${conAveria && i === estado.puebloActivo ? ' con-averia' : ''}"
+        data-accion="cambiarPueblo" data-clave="${i}">${p.nombre}</button>`;
+    }).join('') + (faltan != null
+      ? `<span class="pestana bloqueada" title="Incorpora ${faltan} núcleos más para abrir el siguiente anillo">fase ${faseActual(estado)} · faltan ${faltan}</span>`
+      : '');
   }
 
   /* ---------------- TIENDA (del pueblo activo) ---------------- */

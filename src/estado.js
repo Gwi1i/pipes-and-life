@@ -30,12 +30,13 @@ function serviciosIniciales(){
   return s;
 }
 
-/** Crea un pueblo a partir de su definición en CONFIG.poblaciones. */
+/** Crea un pueblo desde una definición {nombre, habitantes, col, fila}. */
 function crearPueblo(def){
   return {
     nombre: def.nombre,
     habitantes: def.habitantes,
-    desbloqueado: !!def.desbloqueada,
+    col: def.col, fila: def.fila,    // dónde vive sobre el mapa
+    desbloqueado: true,              // si está en la lista, está incorporado
     agua: 0,
     servicio: 0,
     abastecida: false,
@@ -58,8 +59,10 @@ export class Estado {
     this.contaminacion = 0;     // del cauce, 0..CONFIG.cauce.contaminacionMax
     this.pluvialesActivas = false;   // se abre al desbloquear el tercer pueblo
 
-    // Pueblos y cuál se está mirando
-    this.pueblos = CONFIG.poblaciones.map(crearPueblo);
+    // Los pueblos son DINÁMICOS: se arranca solo con el de origen y el resto
+    // se incorporan al alcanzarlos por el mapa. No hay tope de lista.
+    this.pueblos = [crearPueblo({ ...CONFIG.poblacionOrigen,
+      col: CONFIG.mapaMundo.origen.col, fila: CONFIG.mapaMundo.origen.fila })];
     this.puebloActivo = 0;
 
     // El territorio: mapa de exploración, cámara e inventario de piezas
@@ -144,25 +147,20 @@ export class Estado {
       estado.puebloActivo = d.puebloActivo ?? 0;
       estado.ultimoInstante = d.ultimoInstante ?? Date.now();
 
-      // Reconstruir pueblos: partir de la definición actual y volcar lo guardado,
-      // así añadir una mejora o un pueblo nuevo no rompe una partida vieja.
-      estado.pueblos = CONFIG.poblaciones.map((def, i) => {
-        const base = crearPueblo(def);
-        const g = (d.pueblos || [])[i];
-        if(!g) return base;
-        const pueblo = {
-          ...base, ...g,
-          mejoras: { ...base.mejoras, ...(g.mejoras || {}) },
-          // Igual que con las mejoras: se parte de la definición actual y se
-          // vuelca lo guardado encima, así añadir un servicio nuevo no rompe
-          // una partida vieja.
-          servicios: { ...base.servicios, ...(g.servicios || {}) }
-        };
-        // Partidas de antes de los servicios: el saneamiento era un booleano suelto
-        if(g.saneamientoActivo) pueblo.servicios.saneamiento = { activo: true };
-        delete pueblo.saneamientoActivo;
-        return pueblo;
-      });
+      // Reconstruir pueblos: la lista es dinámica, así que se carga la guardada
+      // volcando cada uno sobre la plantilla actual — añadir una mejora o un
+      // servicio nuevo no rompe una partida vieja.
+      const guardados = (d.pueblos || []);
+      if(guardados.length){
+        estado.pueblos = guardados.map(g => {
+          const base = crearPueblo(g);
+          return {
+            ...base, ...g,
+            mejoras: { ...base.mejoras, ...(g.mejoras || {}) },
+            servicios: { ...base.servicios, ...(g.servicios || {}) }
+          };
+        });
+      }
       if(estado.puebloActivo >= estado.pueblos.length) estado.puebloActivo = 0;
 
       aplicarGuardado(estado.mapa, d.mapa);

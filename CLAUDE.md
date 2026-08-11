@@ -135,8 +135,27 @@ ajustables (los 86400 s de un día, etc.). Esas no son parámetros de juego.
 
 ## Modelo multi-pueblo (mancomunidad)
 
-Una MANCOMUNIDAD gestiona varios pueblos. Lo que es de cada pueblo y lo que es
-común está separado a propósito:
+Una MANCOMUNIDAD gestiona varios pueblos, y desde el mapa grande los pueblos
+son DINÁMICOS: se arranca solo con el de origen y el resto viven repartidos por
+el mapa en ANILLOS de distancia (`CONFIG.nucleos`), 36 en total, con nombre y
+tamaño sembrados por la semilla. Se incorporan alcanzándolos con una tubería y
+pagando el CANON (`canonIncorporacion()`, geométrico con el tamaño de la
+mancomunidad: esa es la palanca que hace la dificultad exponencial — la tubería
+crece lineal con la distancia, el canon crece geométrico con cada núcleo).
+
+Las FASES (`CONFIG.fases.umbrales`: 5, 10, 15, 21, 28 pueblos) abren los
+anillos: el anillo N solo se puede incorporar en fase >= N. Medido con el bot:
+fase 2 a la hora, fase 3 a las dos horas y media, y de ahí en adelante el juego
+tiende a infinito, que es la intención. La red de cada tipo arranca de TODOS los
+pueblos incorporados (BFS multi-fuente en `alcanzadasPorLaRed`): una línea
+tendida desde el décimo pueblo vale igual que una del primero. Clicar cualquier
+pueblo incorporado lo hace activo Y bombea.
+
+`CONFIG.aceleradores` es el gancho para una futura monetización (anuncios/pagos
+que aceleren). Como el auto-bombeo: NO hay pago ni anuncio implementado y no se
+debe simular ninguno falso.
+
+Lo que es de cada pueblo y lo que es común está separado a propósito:
 
 - **Por pueblo** (`estado.pueblos[i]`): agua, habitantes, servicio, racha,
   `mejoras{}` (bomba, depósito, captación, depuradora, mantenimiento),
@@ -150,11 +169,11 @@ La UI muestra SIEMPRE el pueblo activo (`estado.activo`, índice en
 detalle, las averías y el premium se refieren al activo. El cauce y la caja son
 comunes. `ui.invalidarCache()` fuerza redibujar todo al cambiar de pueblo.
 
-Los pueblos 2 y 3 arrancan `desbloqueado:false` y se abren en
-`comprobarDesbloqueo()` de `main.js` al superar los habitantes TOTALES de la
-mancomunidad su `desbloqueaEn` (en `CONFIG.poblaciones`). Abrir el TERCERO activa
-además `estado.pluvialesActivas`, que desbloquea las mejoras marcadas con
-`requiere: 'pluviales'` (la UI las oculta hasta entonces).
+El TERCER pueblo incorporado activa `estado.pluvialesActivas`, que desbloquea
+las mejoras marcadas con `requiere: 'pluviales'` (la UI las oculta hasta
+entonces). Ya no existe `comprobarDesbloqueo()` ni la lista fija
+`CONFIG.poblaciones`: incorporar pasa por `incorporarPueblo()` de
+`simulacion.js`, que usan la acción `abastecerPueblo` y el bot de medida.
 
 **Lluvia, pluviales y tanque de tormentas.** `factorLluvia(horas)` da la
 intensidad por estación (misma fórmula de fase que usa la escena, para que lo
@@ -471,7 +490,7 @@ Usa `estado.ultimoInstante`, que `guardar()` sella en cada guardado.
   `py -m http.server` a pelo, vuelve el problema: editas un `.js`, recargas y
   sigues viendo el viejo. Ahí hace falta `Ctrl`+`F5`.
 - `localStorage` guarda bajo `CONFIG.guardado.clave`. La clave clicker
-  (`redHidraulica_clicker_v2`, subida al pasar a multi-pueblo) es distinta de la
+  (`redHidraulica_clicker_v3`, subida con el mapa grande y los pueblos dinámicos) es distinta de la
   de estrategia a propósito. Si un cambio rompe el formato guardado, hay que
   borrarla (botón *Reiniciar*). `Estado.cargar()` reconstruye los pueblos desde
   la definición actual y vuelca lo guardado encima, así añadir una mejora o un

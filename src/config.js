@@ -12,17 +12,61 @@
 
 export const CONFIG = {
 
-  /* ---------- LOS PUEBLOS ----------
-     Lista de núcleos que puede gestionar la mancomunidad. El primero arranca
-     desbloqueado; los demás se abren al cumplir el hito de crecimiento. */
-  poblaciones: [
-    { nombre: 'Villagua',  habitantes: 200, desbloqueada: true  },
-    { nombre: 'Riolindo',  habitantes: 180, desbloqueada: false, desbloqueaEn: 900  },
-    { nombre: 'Valdeagua', habitantes: 220, desbloqueada: false, desbloqueaEn: 2200 }
-  ],
-  // `desbloqueaEn` son habitantes TOTALES de la mancomunidad (solo cuentan los
-  // pueblos ya abiertos). Al abrir el TERCERO se desbloquea además la red de
-  // pluviales y el tanque de tormentas para toda la mancomunidad.
+  /* ---------- EL PUEBLO DE ORIGEN Y LOS NÚCLEOS ----------
+     Ya no hay una lista fija de tres pueblos: el de origen arranca contigo y el
+     resto están REPARTIDOS POR EL MAPA, sembrados en anillos de distancia.
+     Encontrarlos explorando, llegar con una tubería e incorporarlos ES el juego,
+     y no tiene final: cuantos más incorporas, más lejos están los siguientes.
+
+     Cada anillo trae núcleos algo mayores (más renta) pero mucho más caros de
+     alcanzar: la distancia, el terreno duro y el calibre necesario hacen la
+     dificultad exponencial sin tocar ningún multiplicador. */
+  poblacionOrigen: { nombre: 'Villagua', habitantes: 200 },
+
+  nucleos: {
+    // Anillos de siembra: hasta qué distancia del origen y cuántos núcleos.
+    // El anillo N solo se puede INCORPORAR en fase >= N (ver `fases`).
+    anillos: [
+      { hasta: 14, n: 5 },
+      { hasta: 24, n: 6 },
+      { hasta: 34, n: 7 },
+      { hasta: 46, n: 8 },
+      { hasta: 62, n: 10 }
+    ],
+    separacion: 6,           // casillas mínimas entre núcleos
+    // EL CANON DE INCORPORACIÓN: absorber un núcleo cuesta expediente, obra de
+    // conexión y personal, y cada uno más que el anterior. Esta es la palanca
+    // que hace la dificultad exponencial de verdad: la tubería crece lineal con
+    // la distancia, pero el canon crece geométrico con el tamaño de la
+    // mancomunidad. El decimoquinto pueblo no cuesta lo que el quinto.
+    canonBase: 400,
+    canonFactor: 1.30,
+    habitantesMin: 120,      // tamaño con el que llega cada uno (crece por anillo)
+    habitantesMax: 260,
+    habitantesPorAnillo: 60, // los lejanos son algo mayores: premio por el viaje
+    // Nombres generados combinando estas dos listas, en orden estable de semilla
+    prefijos: ['Riba', 'Fuente', 'Val', 'Puente', 'Torre', 'Molino', 'Vega',
+               'Soto', 'Pozo', 'Presa'],
+    sufijos: ['frío', 'clara', 'seca', 'hondo', 'verde', 'alto', 'chica',
+              'del Río', 'de la Peña', 'salada']
+  },
+
+  /* ---------- LAS FASES ----------
+     La mancomunidad crece a saltos: incorporar núcleos abre el siguiente
+     anillo. Los umbrales son el NÚMERO DE PUEBLOS incorporados (contando el de
+     origen) que hace falta para poder absorber los del anillo siguiente:
+     primero 5, luego 10, luego 15... El salto crece porque una administración
+     no absorbe veinte núcleos igual que absorbe tres. */
+  fases: {
+    umbrales: [5, 10, 15, 21, 28]
+  },
+
+  /* ---------- GANCHOS DE ACELERACIÓN (futuro) ----------
+     Si el juego se comercializa, aquí irían los aceleradores por anuncio o pago
+     (más clics, obras al instante...). Como con el auto-bombeo: `desbloqueoExterno`
+     es SOLO el gancho — NO hay pago ni anuncio implementado y no se debe simular
+     ninguno falso. */
+  aceleradores: { desbloqueoExterno: null },
 
   /* ---------- PARÁMETROS COMUNES DE POBLACIÓN ----------
      Se aplican igual a cada pueblo. Su tamaño de arranque está en la lista. */
@@ -82,7 +126,9 @@ export const CONFIG = {
       nombre: 'Saneamiento', orden: 2, red: 'saneamiento',
       desc: 'Llevarse lo que el pueblo devuelve sucio, y tratarlo antes del río.',
       // Se abre solo al crecer: hasta cierto tamaño un pueblo se apaña sin nada
-      activaEnHabitantes: 500,
+      // Subido de 500: el bot midió que a 500 llegaba a los SEIS minutos de
+      // partida, con el jugador aún aprendiendo a clicar.
+      activaEnHabitantes: 800,
       mejoras: ['depuradora']
     },
     pluviales: {
@@ -133,7 +179,10 @@ export const CONFIG = {
       costeBase: 2000, factorCoste: 1.8, nivelMax: 6,
       fraccionPorNivel: 0.22,   // fracción de residual que trata cada nivel
       fraccionMax: 0.96,        // ni la mejor depuradora deja el agua perfecta
-      caudalPorNivel: 2500      // L/h que es capaz de tratar cada nivel (lo que
+      // Subido de 2500: con aquello, a 6000 hab el residual (33.000 L/h)
+      // superaba el tratamiento máximo posible y el río moría hicieras lo que
+      // hicieras. La lección que enseñaba era la contraria a la buscada.
+      caudalPorNivel: 6000      // L/h que es capaz de tratar cada nivel (lo que
                                 // exceda se ALIVIA crudo al cauce)
     },
     // --- Solo cuando se abre el tercer pueblo (requiere: 'pluviales') ---
@@ -228,7 +277,7 @@ export const CONFIG = {
      pasa a ser el negocio. */
   residuos: {
     kgPorHabitanteDia: 1.4,      // lo que genera cada vecino
-    activaEnHabitantes: 800,     // cuándo se abre el servicio
+    activaEnHabitantes: 1400,    // cuándo se abre el servicio
     costeVertidoTonelada: 12,    // lo que cuesta enterrar lo que no se recicla
     // Los precios de abajo son los REALES por tonelada, y así se quedan: lo que
     // importa es que el aceite valga mucho más que la orgánica, y eso es cierto.
@@ -284,8 +333,10 @@ export const CONFIG = {
 
   cauce: {
     contaminacionMax: 100,
-    porLitroResidual: 0.0006,   // cuánto sube la contaminación por litro crudo vertido
-    recuperacionNatural: 0.6,   // cuánto baja sola por hora de juego
+    porLitroResidual: 0.00035,  // cuánto sube la contaminación por litro crudo vertido
+    // Subida junto con la depuración: con 0,6 incluso tratando el 96 % el goteo
+    // superaba lo que el río recupera, y el final era una asíntota muerta.
+    recuperacionNatural: 0.9,   // cuánto baja sola por hora de juego
     limpiezaPorClic: 4,         // cuánto baja cada clic de LIMPIAR CAUCE
     multaMaxPorHora: 45,        // € por hora de juego con el cauce al máximo de suciedad
     frenoCrecimiento: 0.85      // a suciedad máxima, el crecimiento se reduce hasta ×0,15
@@ -368,9 +419,12 @@ export const CONFIG = {
      Mucho mayor que la pantalla y casi todo tapado. Se destapa a clics, y
      cuanto más lejos del pueblo de origen, más cuesta. */
   mapaMundo: {
-    cols: 40, filas: 28,
+    // GRANDE a propósito: el juego ahora es incorporar núcleos cada vez más
+    // lejanos, y eso necesita sitio. Solo se dibuja lo visible, así que el
+    // tamaño no cuesta rendimiento: cuesta exploración, que es lo que debe.
+    cols: 96, filas: 68,
     semilla: 20260809,
-    origen: { col: 20, fila: 14 },   // aquí está tu pueblo inicial
+    origen: { col: 48, fila: 34 },   // aquí está tu pueblo inicial
     radioInicial: 3,                // casillas ya abiertas al empezar
     // Alrededor del pueblo, el terreno se rebaja a su variante barata: empezar
     // rodeado de roca viva por capricho de la semilla no es dificultad, es mala
@@ -379,7 +433,7 @@ export const CONFIG = {
     tamTesela: 74,                   // píxeles por casilla al zoom 1
 
     // Zoom con la rueda del ratón
-    zoomMin: 0.45, zoomMax: 2.2, velocidadZoom: 0.0015,
+    zoomMin: 0.22, zoomMax: 2.2, velocidadZoom: 0.0015,
 
     // Coste en clics: base + distancia^exponente * factor
     clicsBase: 3,
@@ -670,7 +724,7 @@ export const CONFIG = {
     deposito: 9000,      // litros de capacidad que suma cada depósito
     bomba: 220,          // litros por clic que suma cada bombeo
     // Estas dos van por la red de SANEAMIENTO, no por la de abastecimiento
-    depuradora: 2000,    // L/h de tratamiento que suma cada depuradora
+    depuradora: 8000,    // L/h de tratamiento que suma cada depuradora
     // ...y lo BIEN que lo trata. Sin esto una depuradora del mapa hacía pasar el
     // agua por dentro y la devolvía igual de sucia: mucho caudal y cero limpieza.
     depuradoraCalidad: 0.22,
@@ -797,7 +851,8 @@ export const CONFIG = {
      se pueden reparar en el sitio o llevarse al inventario para colocarlas
      donde convenga. */
   hallazgos: {
-    pueblos: 7, ruinas: 14,
+    // Los PUEBLOS ya no se siembran aquí: van por anillos (CONFIG.nucleos)
+    ruinas: 30,
     distanciaMinima: 4,      // nada de hallazgos pegados al origen
     color: { pueblo: '#facc15', ruina: '#c084fc', arqueologia: '#d9a441' },
 
@@ -823,7 +878,7 @@ export const CONFIG = {
      Excavarlo cuesta, pero luego renta todos los meses: el premio a haber
      tropezado con él y haberlo tratado bien. */
   arqueologia: {
-    cantidad: 14,            // cuántos esconde el mapa entero
+    cantidad: 40,            // cuántos esconde el mapa entero
     distanciaMinima: 3,      // ninguno pegado al pueblo de origen
     costeExcavar: 2600,
     rentaPorHora: 26,        // ingreso mientras siga excavado y cuidado
@@ -1021,6 +1076,6 @@ export const CONFIG = {
 
 
   /* ---------- GUARDADO ----------
-     v2: el formato multi-pueblo no es compatible con el de un solo pueblo. */
-  guardado: { clave: 'redHidraulica_clicker_v2', intervaloSegundos: 10 }
+     v3: mapa grande y pueblos dinámicos; el formato v2 no es convertible. */
+  guardado: { clave: 'redHidraulica_clicker_v3', intervaloSegundos: 10 }
 };

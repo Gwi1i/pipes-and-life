@@ -82,6 +82,7 @@ export function generarMapa(){
   }
 
   suavizarArranque(celdas);
+  sembrarPueblos(celdas, azar);
   sembrarHallazgos(celdas, azar);
   sembrarArqueologia(celdas, azar);
   abrirZonaInicial(celdas);
@@ -126,7 +127,48 @@ function sembrarArqueologia(celdas, azar){
   }
 }
 
-/** Reparte pueblos y ruinas por el mapa, sin amontonarlos. */
+/**
+ * Siembra los NÚCLEOS por anillos de distancia. Cada uno guarda en su celda el
+ * anillo (decide en qué fase se puede incorporar), sus habitantes de llegada y
+ * su nombre, todo con la semilla: la misma partida encuentra siempre los mismos
+ * pueblos en los mismos sitios.
+ */
+function sembrarPueblos(celdas, azar){
+  const M = CONFIG.mapaMundo, N = CONFIG.nucleos;
+  const puestos = [];
+  let indice = 0;
+  N.anillos.forEach((anillo, ai) => {
+    const desde = ai === 0 ? M.radioInicial + 2 : N.anillos[ai - 1].hasta;
+    let puestosAqui = 0, intentos = 0;
+    while(puestosAqui < anillo.n && intentos++ < 6000){
+      const c = Math.floor(azar() * M.cols), f = Math.floor(azar() * M.filas);
+      const celda = celdaEn(celdas, c, f);
+      if(!celda || celda.hallazgo) continue;
+      if(celda.tipo === 'agua' || celda.tipo === 'lago') continue;
+      const d = distanciaAlOrigen(c, f);
+      if(d < desde || d >= anillo.hasta) continue;
+      if(!puestos.every(q => Math.hypot(q.c - c, q.f - f) >= N.separacion)) continue;
+      celda.tipo = 'prado';            // un pueblo no se asienta en la roca
+      celda.hallazgo = 'pueblo';
+      celda.anillo = ai + 1;
+      celda.habIni = Math.round(N.habitantesMin + azar() * (N.habitantesMax - N.habitantesMin)
+                                + ai * N.habitantesPorAnillo);
+      celda.nombreIdx = indice++;
+      puestos.push({ c, f });
+      puestosAqui++;
+    }
+  });
+}
+
+/** El nombre estable de un núcleo a partir de su índice de siembra. */
+export function nombreDeNucleo(idx){
+  const N = CONFIG.nucleos;
+  const pre = N.prefijos[idx % N.prefijos.length];
+  const suf = N.sufijos[Math.floor(idx / N.prefijos.length) % N.sufijos.length];
+  return pre + suf;
+}
+
+/** Reparte ruinas por el mapa, sin amontonarlas. */
 function sembrarHallazgos(celdas, azar){
   const M = CONFIG.mapaMundo, H = CONFIG.hallazgos;
   const puestos = [];
@@ -134,10 +176,9 @@ function sembrarHallazgos(celdas, azar){
     puestos.every(p => Math.hypot(p.c - c, p.f - f) >= min);
 
   const tipos = [
-    { clave: 'pueblo',     n: H.pueblos,     separacion: 6, terreno: ['prado', 'pastizal', 'matorral'] },
     // Las ruinas salen en cualquier tierra firme: son instalaciones viejas y
     // las hubo de todo tipo. El agua es lo unico que se descarta.
-    { clave: 'ruina',      n: H.ruinas,      separacion: 4, terreno: null }
+    { clave: 'ruina', n: H.ruinas, separacion: 4, terreno: null }
   ];
 
   for(const t of tipos){
@@ -424,9 +465,20 @@ function alcanzadasPorLaRed(estado, red = 'abastecimiento'){
     for(const p of tub.camino) conTuberia.add(clave(p.col, p.fila));
   }
 
+  // La red arranca de TODOS los pueblos incorporados, no solo del origen: es
+  // una red mancomunada de verdad, y una línea tendida desde el tercer pueblo
+  // vale exactamente igual que una tendida desde el primero.
   const visitadas = new Set();
-  const cola = [clave(M.origen.col, M.origen.fila)];
-  visitadas.add(cola[0]);
+  const cola = [];
+  for(const p of (estado.pueblos || [])){
+    if(p.col == null) continue;
+    const k = clave(p.col, p.fila);
+    if(!visitadas.has(k)){ visitadas.add(k); cola.push(k); }
+  }
+  if(!cola.length){
+    cola.push(clave(M.origen.col, M.origen.fila));
+    visitadas.add(cola[0]);
+  }
   while(cola.length){
     const k = cola.shift();
     const c = k % M.cols, f = Math.floor(k / M.cols);

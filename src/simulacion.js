@@ -21,7 +21,7 @@
 import { CONFIG } from './config.js';
 import { limitar } from './util.js';
 import { inventarioConectado, cuelloDeBotella, construccionesConectadas,
-         celdaEn } from './mapa.js';
+         celdaEn, nombreDeNucleo } from './mapa.js';
 
 /* ---------------- HELPERS POR PUEBLO ---------------- */
 
@@ -82,6 +82,55 @@ function piezas(estado){ return (estado && estado._conectado) || {}; }
 export function redDelPueblo(estado, red = 'abastecimiento'){
   const cacheada = estado && (estado._redes || {})[red];
   return cacheada || { def: CONFIG.tuberia.diametros[0], lineas: [], estrechas: 0 };
+}
+
+/**
+ * LA FASE de la mancomunidad: 1 al empezar, y sube al cruzar cada umbral de
+ * pueblos incorporados (5, 10, 15...). El anillo N del mapa solo se puede
+ * incorporar en fase >= N: es lo que hace la dificultad exponencial sin tocar
+ * ningún multiplicador — cada salto exige más pueblos, y los siguientes están
+ * más lejos y en peor terreno.
+ */
+export function faseActual(estado){
+  const n = estado.pueblos.length;
+  return 1 + CONFIG.fases.umbrales.filter(u => n >= u).length;
+}
+
+/** Cuántos pueblos faltan para abrir el siguiente anillo, o null si no hay más. */
+export function faltanParaFase(estado){
+  const n = estado.pueblos.length;
+  const u = CONFIG.fases.umbrales.find(x => n < x);
+  return u == null ? null : u - n;
+}
+
+/** Lo que cuesta absorber el SIGUIENTE núcleo: geométrico con el tamaño. */
+export function canonIncorporacion(estado){
+  const N = CONFIG.nucleos;
+  return Math.round(N.canonBase * Math.pow(N.canonFactor, estado.pueblos.length - 1));
+}
+
+/**
+ * Incorpora el núcleo de esa casilla a la mancomunidad. No comprueba red ni
+ * fase: eso es cosa de quien llama (la acción de la UI o el bot de medida).
+ * Devuelve el pueblo nuevo.
+ */
+export function incorporarPueblo(estado, col, fila, celda){
+  const pueblo = {
+    nombre: nombreDeNucleo(celda.nombreIdx || 0),
+    habitantes: celda.habIni || CONFIG.nucleos.habitantesMin,
+    col, fila,
+    desbloqueado: true,
+    agua: 0, servicio: 0, abastecida: false, racha: 0,
+    mejoras: Object.fromEntries(Object.keys(CONFIG.mejoras).map(k => [k, 0])),
+    servicios: Object.fromEntries(Object.entries(CONFIG.servicios)
+      .map(([k, d]) => [k, { activo: !!d.siempre }])),
+    autobombaActivo: false, tanqueAgua: 0, basuraCalle: 0
+  };
+  celda.resuelto = true;
+  estado.pueblos.push(pueblo);
+  // El tercer núcleo trae la competencia de pluviales, como siempre
+  if(estado.pueblos.length >= 3) estado.pluvialesActivas = true;
+  return pueblo;
 }
 
 /** Piezas conectadas a una red concreta del mapa. */
