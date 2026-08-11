@@ -49,10 +49,37 @@ maquinaria inventada. Lo que hace bien es la instalación **vista por fuera, en
 tres cuartos**, como una maqueta bonita. La explicación de por dónde va el agua
 la ponen el texto y el esquema animado, que para eso están.
 
-**No le pidas la animación.** Genera imágenes fijas. El movimiento lo pone el
-juego por encima: el agua corriendo, el puente del decantador girando, la cinta
-avanzando. Una ilustración quieta con el agua moviéndose encima queda mejor que
-un GIF, pesa mil veces menos y no se descuadra al cambiar de tamaño.
+**EL VÍDEO GANA.** La primera prueba lo dejó claro: el clip del depósito hace lo
+que una imagen fija no puede —el vaso abriéndose en corte para enseñar el agua
+por dentro— y encima cierra el bucle limpio: el primer fotograma y el último son
+idénticos, comprobado midiendo píxeles. Si puedes generar vídeo, genera vídeo.
+
+Y una corrección: más arriba se avisaba de no pedirle cortes ni secciones porque
+los generadores los hacen mal. **Para imagen fija sigue siendo verdad; para vídeo
+no.** Este los resuelve bien.
+
+Lo que hay que pedirle a un vídeo:
+
+- **Diez segundos como mucho**, y que **empiece y acabe igual** para que el bucle
+  no dé un salto. Díselo con esas palabras: *"que el último fotograma sea igual
+  que el primero"*.
+- **Cámara quieta.** Nada de travellings ni zooms: se ve en un panel pequeño y al
+  lado hay texto que leer. Lo que se mueve es el agua, no el encuadre.
+- **720p sobra.** El panel mide 440 píxeles de ancho.
+
+Si solo puedes sacar imagen fija, sigue valiendo: el juego le pone el movimiento
+por encima. El orden de preferencia es `.mp4` → `.jpg` → `.png` → esquema por
+código, y lo que falte se cubre solo.
+
+## El peso, que no es un detalle
+
+La primera ilustración vino a 2752×1536 y **6,3 MB**. El panel mide 440×240: eso
+son **cuarenta veces más píxeles** de los que se van a ver. Y en JPEG al 82 % la
+misma imagen a 880 px de ancho pesa **78 KB**, doce veces menos que en PNG y sin
+diferencia apreciable.
+
+Regla: **guarda el original donde quieras, pero en `assets/` deja la copia
+ligera.** Aquí no hay transparencia que preservar, así que el PNG no aporta nada.
 
 ## Coletilla de estilo (pégala al final de CADA prompt)
 
