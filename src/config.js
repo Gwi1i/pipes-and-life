@@ -436,7 +436,11 @@ export const CONFIG = {
   /* ---------- PROGRESO OFFLINE ---------- */
   offline: {
     minSegundos: 60,
-    maxHoras: 8
+    maxHoras: 8,
+    /* La TARJETA de vuelta solo desde ausencias de verdad: por debajo, la línea
+       del registro basta. Con el umbral en cero, cada recarga rápida taparía el
+       juego con una tarjeta, y taparlo es un privilegio que hay que ganarse. */
+    tarjetaDesdeMinutos: 10
   },
 
   /* ---------- EL MUNDO: mapa grande de exploración ----------

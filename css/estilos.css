@@ -552,3 +552,16 @@ button{touch-action:manipulation;}
 .hito.es-logro .hito-btn{border-color:var(--ok); color:var(--ok);
   background:linear-gradient(180deg,#1b3a28,#0e2418);}
 .hito.es-logro .hito-btn:hover{background:linear-gradient(180deg,#245036,#0e2418);}
+
+/* La tarjeta de VUELTA: un parte de resultados, no un momento del juego.
+   Hereda el vestido del hito pero sin imagen: los números son la imagen. */
+.hito.vuelta{max-width:420px;}
+.vuelta-lineas{display:grid; gap:7px; margin-top:14px;}
+.vuelta-fila{
+  display:flex; justify-content:space-between; gap:12px; font-size:13px;
+  border-bottom:1px dotted var(--linea-viva); padding-bottom:6px;
+}
+.vuelta-fila span{color:var(--tenue);}
+.vuelta-fila b{font-family:var(--mono);}
+.vuelta-fila.bien b{color:var(--ok);}
+.vuelta-fila.mal b{color:var(--alarma);}

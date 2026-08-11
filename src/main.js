@@ -204,6 +204,10 @@ function procesarAcciones(){
         break;
       }
 
+      case 'cerrarVuelta':
+        document.getElementById('vuelta-fondo').hidden = true;
+        break;
+
       case 'cerrarHito':
         estado.hitoPendiente = null;
         ui.invalidarCache();
@@ -754,16 +758,83 @@ function progresoOffline(){
   if(seg <= O.minSegundos) return;
 
   const aSimular = Math.min(seg, O.maxHoras * 3600);
-  const dineroAntes = estado.dinero;
+  // La foto de ANTES, para poder contar la diferencia al volver
+  const antes = {
+    dinero: estado.dinero,
+    hab: estado.pueblos.reduce((a, p) => a + p.habitantes, 0),
+    m3: estado.m3Servidos,
+    cont: estado.contaminacion
+  };
   let restante = aSimular;
   const paso = 30;
   while(restante > 0){
     avanzar(estado, Math.min(paso, restante));   // sin averías nuevas offline
     restante -= paso;
   }
-  const dinero = estado.dinero - dineroAntes;
+  const dinero = estado.dinero - antes.dinero;
   const minutos = Math.round(aSimular / 60);
   estado.anotar(`Mientras no estabas (${minutos} min): ${dinero >= 0 ? '+' : ''}${formatear(dinero)} €.`, 'info');
+
+  // La tarjeta, solo desde ausencias de verdad. El momento de volver es LA
+  // razón de reabrir un incremental: merece contarse de frente, no en una
+  // línea del registro que nadie encuentra.
+  if(minutos >= O.tarjetaDesdeMinutos)
+    mostrarVuelta({
+      minutos, seg,
+      horasJuego: aSimular * CONFIG.economia.horasPorSegundo,
+      dinero,
+      hab: estado.pueblos.reduce((a, p) => a + p.habitantes, 0) - antes.hab,
+      m3: estado.m3Servidos - antes.m3,
+      cont: estado.contaminacion - antes.cont
+    });
+}
+
+// El tiempo también pasa con la pestaña ESCONDIDA. El navegador congela el
+// bucle en segundo plano, así que sin esto, volver de otra aplicación —el caso
+// NORMAL en el móvil— perdía todo el tiempo ausente salvo que recargaras: el
+// cálculo offline solo corría al cargar la página. Al esconderse se sella el
+// instante; al volver, se liquida la ausencia por el mismo camino que al abrir.
+document.addEventListener('visibilitychange', () => {
+  if(document.hidden) estado.guardar();
+  else progresoOffline();
+});
+
+/** Rellena y enseña la tarjeta de vuelta. Solo las líneas con algo que decir. */
+function mostrarVuelta(r){
+  const filas = [];
+  const fila = (eti, valor, tono) =>
+    filas.push(`<div class="vuelta-fila${tono ? ' ' + tono : ''}">
+      <span>${eti}</span><b>${valor}</b></div>`);
+
+  fila('La caja', `${r.dinero >= 0 ? '+' : ''}${formatear(r.dinero)} €`,
+       r.dinero >= 0 ? 'bien' : 'mal');
+  if(Math.abs(r.hab) >= 1)
+    fila('La población', `${r.hab >= 0 ? '+' : ''}${Math.round(r.hab)} habitantes`,
+         r.hab >= 0 ? 'bien' : 'mal');
+  if(r.m3 > 0.5) fila('Agua servida', `${formatear(r.m3)} m³`);
+  // El cauce solo se menciona si se ha movido de verdad en algún sentido
+  const contPct = r.cont / CONFIG.cauce.contaminacionMax * 100;
+  if(contPct > 2) fila('El cauce', `se ensució ${Math.round(contPct)} puntos`, 'mal');
+  else if(contPct < -2) fila('El cauce', `se recuperó ${Math.round(-contPct)} puntos`, 'bien');
+
+  const horas = Math.floor(r.minutos / 60);
+  const tiempoReal = horas > 0 ? `${horas} h ${r.minutos % 60} min` : `${r.minutos} min`;
+  // El tiempo de juego, en el calendario DEL JUEGO (el año son 360 horas):
+  // decir "961 horas" es verdad y no significa nada; "casi 3 años", sí.
+  const años = r.horasJuego / CONFIG.tiempo.horasPorAño;
+  const tiempoJuego = años >= 1
+    ? `${años.toFixed(años < 3 ? 1 : 0).replace('.', ',')} años`
+    : años >= 1 / 12
+      ? `${Math.round(años * 12)} mes${Math.round(años * 12) === 1 ? '' : 'es'}`
+      : `${Math.round(r.horasJuego)} horas`;
+  // Si estuviste fuera más del tope, se dice: creer que se simuló todo y ver
+  // menos dinero del esperado parecería un robo.
+  const tope = r.seg > CONFIG.offline.maxHoras * 3600
+    ? ` (se cuentan las primeras ${CONFIG.offline.maxHoras} h)` : '';
+  document.getElementById('vuelta-tiempo').textContent =
+    `Fuera ${tiempoReal}${tope}: ${tiempoJuego} de juego.`;
+  document.getElementById('vuelta-lineas').innerHTML = filas.join('');
+  document.getElementById('vuelta-fondo').hidden = false;
 }
 
 /* ==================================================================
