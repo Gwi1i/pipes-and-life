@@ -1,8 +1,126 @@
 # Prompts para el arte generado con IA
 
-> **Estilo D (teselas)** es el camino elegido: está justo abajo.
-> Más abajo queda el material del **estilo C** (vista de alzado), por si se
-> retoma.
+> **Lo que se usa hoy son las FICHAS**, aquí abajo: la ilustración que abre la
+> explicación de cada instalación.
+>
+> Más abajo quedan los prompts de las teselas del mapa (estilo D) y de los
+> alzados (estilo C). **Ese arte ya no lo usa el juego**: el mapa se dibuja
+> entero por código. Se conservan porque las reglas de cómo pedirle las cosas al
+> generador siguen valiendo, y por si algún día se retoma.
+
+---
+
+# FICHAS DIVULGATIVAS — ilustración por instalación
+
+Estas NO son las teselas del mapa. Son la **imagen grande que abre la ficha** de
+cada instalación, la que tiene que hacer que alguien se pare a leer. Van en el
+panel lateral, apaisadas, y debajo viene el texto de qué es y para qué sirve.
+
+Suelta los PNG en esta carpeta con el nombre exacto. **Lo que falte se sigue
+dibujando con el esquema animado por código**, así que puedes ir generándolas de
+una en una y el juego nunca se queda con un hueco.
+
+| Archivo | Instalación |
+|---|---|
+| `f_captacion.png`  | Obra de toma |
+| `f_bomba.png`      | Estación de bombeo |
+| `f_deposito.png`   | Depósito regulador |
+| `f_acuifero.png`   | Sondeo a acuífero |
+| `f_depuradora.png` | EDAR |
+| `f_tanque.png`     | Tanque de tormentas |
+| `f_vertedero.png`  | Vertedero controlado |
+| `f_reciclaje.png`  | Planta de reciclaje |
+
+## Lo que aprendimos con las teselas, y sigue valiendo
+
+- **Empieza por el verbo** y escribe **una sola frase seguida**. Nada de
+  títulos, listas ni nombres de archivo: el nombre es solo para guardar.
+- **Pocas negaciones.** En vez de "no en sección, no isométrica", di en positivo
+  *"vista en tres cuartos"*.
+- Si responde con texto, insiste: **"Genérala como imagen"**.
+- **Pide explícitamente que no lleve texto ni marca de agua.** La primera tanda
+  vino con una abajo a la derecha.
+
+## Dos avisos NUEVOS para estas
+
+**No le pidas cortes ni secciones.** Un despiece con el interior a la vista es
+justo lo que peor le sale: tuberías que no conectan con nada, rótulos ilegibles y
+maquinaria inventada. Lo que hace bien es la instalación **vista por fuera, en
+tres cuartos**, como una maqueta bonita. La explicación de por dónde va el agua
+la ponen el texto y el esquema animado, que para eso están.
+
+**No le pidas la animación.** Genera imágenes fijas. El movimiento lo pone el
+juego por encima: el agua corriendo, el puente del decantador girando, la cinta
+avanzando. Una ilustración quieta con el agua moviéndose encima queda mejor que
+un GIF, pesa mil veces menos y no se descuadra al cambiar de tamaño.
+
+## Coletilla de estilo (pégala al final de CADA prompt)
+
+> **, ilustración apaisada de formato 16:9, estilo render 3D cartoon de
+> videojuego móvil, vista en tres cuartos ligeramente elevada, colores saturados
+> y limpios, luz suave de mediodía, fondo sencillo de cielo y terreno, sin texto
+> ni marca de agua**
+
+---
+
+## Los ocho prompts
+
+### `f_captacion.png`
+> Genera una imagen: una obra de toma de agua a la orilla de un río caudaloso,
+> una pequeña torre de hormigón con compuertas metálicas y una reja de barrotes
+> verticales que filtra ramas y hojas antes de que el agua entre, con una tubería
+> gruesa que sale hacia la derecha entre la hierba de la ribera
+
+### `f_bomba.png`
+> Genera una imagen: una estación de bombeo de agua, una caseta baja de ladrillo
+> con puerta metálica y ventanas, y a su lado dos grandes bombas centrífugas
+> azules conectadas a tuberías de acero con válvulas rojas de volante, con una
+> tubería gruesa que sube y se aleja hacia una loma
+
+### `f_deposito.png`
+> Genera una imagen: un depósito de agua elevado sobre una colina verde, un gran
+> cilindro de hormigón claro con una escalera de gato metálica por el lateral y
+> barandilla en la cubierta, con un pueblo pequeño de casas de tejado rojo abajo
+> en el valle
+
+### `f_acuifero.png`
+> Genera una imagen: un sondeo de captación de agua subterránea en un campo seco,
+> un castillete metálico de perforación sobre la boca entubada del pozo, con el
+> cabezal, la tubería de impulsión y un cuadro eléctrico gris al lado
+
+### `f_depuradora.png`
+> Genera una imagen: una estación depuradora de aguas residuales con dos grandes
+> decantadores circulares de hormigón llenos de agua, cada uno con su puente de
+> rasquetas metálico cruzando el diámetro, más un tanque rectangular de aireación
+> con agua burbujeante al fondo y un río limpio detrás
+
+### `f_tanque.png`
+> Genera una imagen: un tanque de tormentas de aguas pluviales, un gran depósito
+> enterrado de hormigón del que solo asoman la losa de cubierta, dos tapas de
+> registro circulares y una torre de ventilación, bajo un cielo de tormenta con
+> lluvia y un colector de gran diámetro entrando por un lateral
+
+### `f_vertedero.png`
+> Genera una imagen: un vertedero controlado de residuos, una explanada excavada
+> en terrazas con la basura extendida en capas y cubierta de tierra, una
+> excavadora amarilla compactando arriba, chimeneas de desgasificación asomando y
+> una valla metálica rodeando todo el recinto
+
+### `f_reciclaje.png`
+> Genera una imagen: el interior luminoso de una planta de reciclaje de residuos,
+> una cinta transportadora larga con envases y cartones mezclados avanzando,
+> operarios con chaleco naranja separando a los lados, y al fondo balas
+> compactadas de plástico y cartón apiladas por colores
+
+## Si alguna sale rara
+
+- **Demasiado detalle o demasiado realista**: añade *"formas simples y limpias,
+  poco detalle"*.
+- **Se ve desde muy arriba o muy de frente**: repite *"vista en tres cuartos
+  ligeramente elevada"* al principio Y al final.
+- **Sale con carteles o números**: *"sin ningún texto, ni carteles ni números"*.
+- **Los colores no pegan con las demás**: dile *"la misma paleta y la misma luz
+  que esta"* y adjunta una que ya te guste.
 
 ---
 

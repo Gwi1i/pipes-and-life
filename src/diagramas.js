@@ -57,6 +57,69 @@ function etiqueta(ctx, texto, x, y, color, H){
 }
 
 /* ================================================================
+   ILUSTRACIONES DE assets/
+   Si existe `assets/f_<pieza>.png` se usa como fondo de la ficha y el esquema
+   pasa a dibujarse ENCIMA, solo con lo que se mueve. Si no existe, el esquema se
+   dibuja entero él solo.
+
+   Es el mismo apaño que ya se usó con los sprites: nunca hay un hueco vacío y se
+   pueden ir añadiendo imágenes de una en una. Y ojo con el orden — la
+   ilustración es fija y el movimiento va por código: una foto quieta con el agua
+   corriendo por encima queda mejor que un GIF, pesa mil veces menos y no se
+   descuadra al cambiar de tamaño.
+   ================================================================ */
+
+const CACHE = {};
+
+/** Devuelve la imagen si ya está cargada; la pide la primera vez y sigue. */
+function ilustracion(tipo){
+  if(CACHE[tipo] !== undefined) return CACHE[tipo] || null;
+  CACHE[tipo] = null;                       // marcada como "pedida"
+  const img = new Image();
+  img.onload = () => { CACHE[tipo] = img; };
+  img.onerror = () => { CACHE[tipo] = false; };   // no está, y no se vuelve a pedir
+  img.src = `assets/f_${tipo}.png`;
+  return null;
+}
+
+/**
+ * Lo único que se mueve cuando hay ilustración de fondo. Se dibuja aparte del
+ * esquema completo porque sobre una foto no hacen falta ni las cajas ni los
+ * rótulos: solo el agua yendo de un lado a otro.
+ */
+const MOVIMIENTO = {
+  captacion: (ctx, W, H, t) =>
+    corriente(ctx, q => ({ x: W * 0.62 + q * W * 0.38, y: H * 0.66 }), t, 4, W * 0.014, AGUA_CLARA, 0.6),
+  bomba: (ctx, W, H, t) =>
+    corriente(ctx, q => ({ x: W * 0.70, y: H * 0.80 - q * H * 0.60 }), t, 4, W * 0.014, AGUA_CLARA, 0.7),
+  deposito: (ctx, W, H, t) =>
+    corriente(ctx, q => ({ x: W * 0.30 + q * W * 0.55, y: H * 0.80 }), t, 5, W * 0.013, AGUA_CLARA, 0.55),
+  acuifero: (ctx, W, H, t) =>
+    corriente(ctx, q => ({ x: W * 0.48, y: H * 0.86 - q * H * 0.55 }), t, 4, W * 0.013, AGUA_CLARA, 0.5),
+  depuradora: (ctx, W, H, t) =>
+    corriente(ctx, q => ({ x: W * 0.10 + q * W * 0.82, y: H * 0.82 }), t, 5, W * 0.013, AGUA_CLARA, 0.5),
+  tanque: (ctx, W, H, t) => {
+    ctx.strokeStyle = AGUA_CLARA; ctx.lineWidth = Math.max(1, W * 0.006);
+    for(let i = 0; i < 8; i++){
+      const q = ((t * 2.2 + i / 8) % 1);
+      const x = W * (0.08 + i * 0.11);
+      ctx.beginPath();
+      ctx.moveTo(x, q * H * 0.55); ctx.lineTo(x, q * H * 0.55 + H * 0.05); ctx.stroke();
+    }
+  },
+  vertedero: (ctx, W, H, t) =>
+    corriente(ctx, q => ({ x: W * 0.50, y: H * 0.80 + q * H * 0.14 }), t, 2, W * 0.010, '#6b6a2a', 0.8),
+  reciclaje: (ctx, W, H, t) => {
+    const F = CONFIG.residuos.fracciones.filter(f => f.nivel > 0).slice(0, 4);
+    for(let i = 0; i < 6; i++){
+      const q = ((t * 0.5 + i / 6) % 1);
+      ctx.fillStyle = F[i % F.length].color;
+      ctx.fillRect(W * (0.10 + q * 0.62), H * 0.52, W * 0.020, H * 0.045);
+    }
+  }
+};
+
+/* ================================================================
    UN DIAGRAMA POR PIEZA
    ================================================================ */
 
@@ -376,10 +439,22 @@ export function dibujarDiagrama(ctx, tipo, W, H, t){
   ctx.clearRect(0, 0, W, H);
   ctx.fillStyle = FONDO;
   ctx.fillRect(0, 0, W, H);
-  const fn = DIBUJOS[tipo];
-  if(!fn) return false;
+
+  const img = ilustracion(tipo);
   ctx.save();
-  fn(ctx, W, H, t);
+  if(img){
+    // La ilustración manda: se dibuja cubriendo el lienzo sin deformarla, y
+    // encima solo va lo que se mueve.
+    const escala = Math.max(W / img.width, H / img.height);
+    const an = img.width * escala, al = img.height * escala;
+    ctx.drawImage(img, (W - an) / 2, (H - al) / 2, an, al);
+    const mov = MOVIMIENTO[tipo];
+    if(mov) mov(ctx, W, H, t);
+  } else {
+    const fn = DIBUJOS[tipo];
+    if(!fn){ ctx.restore(); return false; }
+    fn(ctx, W, H, t);
+  }
   ctx.restore();
   return true;
 }
