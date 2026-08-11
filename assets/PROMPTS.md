@@ -151,6 +151,22 @@ ligera.** Aquí no hay transparencia que preservar, así que el PNG no aporta na
 
 ---
 
+# LA PORTADA (`h_portada.png`)
+
+El cartel de la pantalla de inicio, encima del título y del botón de Empezar.
+Es lo primero que ve cualquiera que abra el juego —o a quien se lo enseñes—,
+así que tiene que ser LA promesa del juego entera: el territorio, el agua y la
+red que lo une todo.
+
+### `h_portada.png`
+> Genera una imagen: vista panorámica de un valle con varios pueblos pequeños
+> repartidos entre colinas, un río cruzándolo, un depósito de agua en lo alto
+> de una loma y una conducción de agua que va uniendo los pueblos con el río,
+> luz cálida de media tarde, sensación de mapa vivo visto desde una altura
+> suave, *(+ coletilla)*
+
+---
+
 # EL ICONO (`icono.png`)
 
 El del navegador, la pestaña y la pantalla de inicio del móvil. **Se queda en
