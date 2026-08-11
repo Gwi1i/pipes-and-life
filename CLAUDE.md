@@ -155,6 +155,22 @@ pueblo incorporado lo hace activo Y bombea.
 que aceleren). Como el auto-bombeo: NO hay pago ni anuncio implementado y no se
 debe simular ninguno falso.
 
+**Dos obstáculos de trazado, y son distintos a propósito.** Los YACIMIENTOS
+(`CONFIG.arqueologia`) están escondidos y afloran al picar: cada uno ES algo
+concreto (`tipos`, con peso de rareza y renta propia — de poblado antiguo a
+fósiles de dinosaurio, el más raro y el que más renta) y se puede excavar y
+poner en valor. Las ZONAS DE ESPECIAL CONSERVACIÓN (`CONFIG.proteccion`) se ven
+desde el principio, son manchas orgánicas de fauna o flora, y NO tienen premio:
+no se construye ni se traza dentro nunca, y `puedeColocar`/`puedeSeguirTrazado`
+dan la pega de protección ANTES que ninguna otra. Si los lixiviados de un
+vertedero las alcanzan (`celda.insalubre > 0.05`), el Estado multa por hora y
+casilla mientras dure el daño — la multa se anuncia al ARRANCAR, no cada paso.
+El hito `proteccion` sale al primer tropiezo. Es la restricción real del oficio:
+los trazados dan rodeos enormes para no tocar espacios protegidos.
+
+El logro `todosServidos` pide **seis** pueblos bien atendidos a la vez: con dos
+saltaba nada más empezar en el mundo de 36 núcleos.
+
 Lo que es de cada pueblo y lo que es común está separado a propósito:
 
 - **Por pueblo** (`estado.pueblos[i]`): agua, habitantes, servicio, racha,

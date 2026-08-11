@@ -13,7 +13,7 @@ import { EscenaMapa } from './escena_mapa.js';
 import { celdaEn, clicarCasilla, clicsParaDestapar, puedeColocar,
          puedeSeguirTrazado, costeTrazado, casillaEnRed,
          piezaDeRuina, diametro, nivelDiametro, costeRenovar,
-         averiaEn, aflorarArqueologia } from './mapa.js';
+         averiaEn, aflorarArqueologia, tipoYacimiento } from './mapa.js';
 import { avanzar, bombear, costeMejora, requisitosAutobomba,
          poderExpansion, servicioActivo, costeAmpliarVertedero,
          capacidadVaso, faseActual, faltanParaFase,
@@ -46,6 +46,7 @@ ui.reconstruirPestanas(estado);
 
 // Población de referencia para avisar solo al cruzar centenas, por pueblo
 let habPrev = estado.pueblos.map(p => Math.floor(p.habitantes));
+let multaZECAvisada = false;   // para anunciar la multa solo al empezar
 
 /* ==================================================================
    ACCIONES
@@ -280,8 +281,9 @@ function procesarAcciones(){
         }
         estado.pagar(A.costeExcavar);
         celda.excavado = true;
-        estado.anotar(`Yacimiento excavado y puesto en valor: renta ${formatear(A.rentaPorHora)} €/h.`, 'ok');
-        avisar('Yacimiento excavado. Empieza a rentar.');
+        const tipoY = tipoYacimiento(celda);
+        estado.anotar(`${tipoY.nombre} puesto en valor: renta ${formatear(tipoY.renta)} €/h.`, 'ok');
+        avisar(`¡${tipoY.nombre}! Empieza a rentar.`);
         ui.invalidarCache();
         break;
       }
@@ -414,13 +416,17 @@ function tropiezoArqueologico(col, fila){
   if(!aflorarArqueologia(estado.mapa, col, fila)) return false;
   estado.seleccion = { col, fila };
   estado.modo.trazado = [];
-  estado.anotar('¡Restos arqueológicos al excavar! No se puede construir ahí: hay que rodearlos.', 'alarma');
-  avisar('¡Restos arqueológicos! Rodéalos... o excávalos y ponlos en valor.');
+  const tipoA = tipoYacimiento(celdaEn(estado.mapa, col, fila));
+  estado.anotar(`¡${tipoA.nombre} al excavar! No se puede construir ahí: hay que rodearlo.`, 'alarma');
+  avisar(`¡${tipoA.nombre}! Rodéalo... o excávalo y ponlo en valor.`);
   ui.invalidarCache();
   return true;
 }
 
 function colocarElemento(col, fila){
+  // La primera vez que una zona protegida te rechaza, se cuenta el porqué
+  const celdaP = celdaEn(estado.mapa, col, fila);
+  if(celdaP && celdaP.protegida) contarHito('proteccion');
   if(tropiezoArqueologico(col, fila)) return;
   const clave = estado.modo.elemento;
   const def = CONFIG.construibles[clave];
@@ -504,6 +510,8 @@ function accionRuina(desmontar){
  *   · Esc                               → cancela entero
  */
 function clicTuberia(col, fila){
+  const celdaP = celdaEn(estado.mapa, col, fila);
+  if(celdaP && celdaP.protegida) contarHito('proteccion');
   if(tropiezoArqueologico(col, fila)) return;
   const trazado = estado.modo.trazado;
 
@@ -734,9 +742,11 @@ const LOGRO_CUMPLIDO = {
     && (res.basuraCalle || 0) < 0.02 && (res.recicladaTh || 0) > 0,
 
   // Todos los pueblos abiertos, bien servidos a la vez.
+  // Con dos pueblos servidos saltaba nada más empezar; con el mundo de 36
+  // núcleos, una mancomunidad de verdad son al menos SEIS bien atendidos a la vez.
   todosServidos: (estado) => {
     const abiertos = estado.pueblos.filter(p => p.desbloqueado);
-    return abiertos.length > 1
+    return abiertos.length >= 6
         && abiertos.every(p => p.servicio >= CONFIG.poblacion.servicioBueno);
   }
 };
@@ -776,6 +786,16 @@ function bucle(ahora){
   // Los logros se comprueban SIEMPRE, no solo al abrir un servicio: son el
   // premio a haber resuelto el problema, y eso pasa cuando el jugador quiere.
   comprobarLogros(resultado);
+
+  // La multa de las zonas protegidas se anuncia al ARRANCAR, no cada paso: el
+  // goteo ya se ve en la caja, lo que hay que contar es por qué ha empezado.
+  if(resultado.celdasProtegidasSucias > 0 && !multaZECAvisada){
+    multaZECAvisada = true;
+    estado.anotar('Lixiviados en una zona protegida: multa del Estado mientras dure el daño.', 'critico');
+    avisar('¡Multa! Tus lixiviados han alcanzado una zona de especial conservación.');
+  } else if(resultado.celdasProtegidasSucias === 0){
+    multaZECAvisada = false;
+  }
   if(resultado.saneamientoNuevo && resultado.saneamientoNuevo.length){
     for(const nombre of resultado.saneamientoNuevo){
       estado.anotar(`${nombre} genera aguas residuales. Vigila el cauce y piensa en una depuradora.`, 'alarma');

@@ -18,7 +18,7 @@ import { capacidad, demandaMedia, caudalCaptacion, costeMejora,
          llenadoVaso, capacidadVaso, costeAmpliarVertedero } from './simulacion.js';
 import { formatear } from './util.js';
 import { celdaEn, piezaDeRuina, diametro, nivelDiametro, costeRenovar,
-         nombreDeNucleo,
+         nombreDeNucleo, tipoYacimiento,
          costeCasillaTuberia, puedeColocar,
          lineasConectadas, cuelloDeBotella, escalaDeRed } from './mapa.js';
 import { pasoActual } from './tutorial.js';
@@ -344,18 +344,27 @@ export class UI {
     // sale al picar. Se atiende aquí igual porque el sitio es el mismo.
     if(celda && celda.arqueologia && celda.aflorado){
       const A = CONFIG.arqueologia;
+      const tipoY = tipoYacimiento(celda);
       panel.style.display = '';
+      // La imagen del tipo (assets/a_<id>.jpg) preside la ficha; si no existe
+      // se esconde sola y el texto cuenta lo mismo.
+      const img = `<img class="ficha-dib" src="assets/a_${tipoY.id}.jpg"
+                     onerror="this.hidden=true" alt="">`;
       cont.innerHTML = celda.excavado
-        ? `<p class="red-cuello" style="--tono:${A.color}"><b>Yacimiento excavado</b></p>
-           <p class="m-desc">Puesto en valor. Renta <b>${formatear(A.rentaPorHora)} €/h</b>
-             y seguirá haciéndolo. La casilla queda para siempre fuera de obra.</p>`
-        : `<p class="red-cuello" style="--tono:${A.color}"><b>Restos arqueológicos</b></p>
-           <p class="m-desc">Han salido al picar. No se pueden quitar ni se puede
-             construir encima: hay que rodearlos. Excavarlos cuesta, pero los pone
-             en valor y pasan a rentar todos los meses.</p>
+        ? `<p class="red-cuello" style="--tono:${A.color}"><b>${tipoY.nombre}</b> · en valor</p>
+           ${img}
+           <p class="m-desc">${tipoY.desc}</p>
+           <p class="m-desc">Renta <b>${formatear(tipoY.renta)} €/h</b> y seguirá
+             haciéndolo. La casilla queda para siempre fuera de obra.</p>`
+        : `<p class="red-cuello" style="--tono:${A.color}"><b>${tipoY.nombre}</b></p>
+           ${img}
+           <p class="m-desc">${tipoY.desc}</p>
+           <p class="m-desc">Ha salido al picar. No se puede quitar ni construir
+             encima: hay que rodearlo. Excavarlo cuesta, pero lo pone en valor y
+             pasa a rentar todos los meses.</p>
            <button class="mejora obra" data-accion="excavarYacimiento" style="--tono:${A.color}">
              <span class="m-cab"><span class="m-nom">Excavar y poner en valor</span></span>
-             <span class="m-desc">+${formatear(A.rentaPorHora)} €/h para siempre.</span>
+             <span class="m-desc">+${formatear(tipoY.renta)} €/h para siempre.</span>
              <span class="m-coste">${formatear(A.costeExcavar)} €</span>
            </button>`;
       return;
@@ -535,7 +544,7 @@ export class UI {
       || estado.construcciones.some(o => o.col === sel.col && o.fila === sel.fila));
     const vale = celda && !celda.oculta && !hayOtra;
 
-    const firma = vale ? `${sel.col},${sel.fila},${celda.tipo}` : 'nada';
+    const firma = vale ? `${sel.col},${sel.fila},${celda.tipo},${celda.protegida || ''}` : 'nada';
     if(this.cache.casillaFirma === firma) return;
     this.cache.casillaFirma = firma;
 
@@ -543,6 +552,21 @@ export class UI {
     panel.style.display = '';
 
     const def = CONFIG.terrenos[celda.tipo] || CONFIG.terrenos.prado;
+
+    // Una zona protegida no enseña costes de obra: enseña por qué no los hay.
+    if(celda.protegida){
+      const Z = CONFIG.proteccion;
+      document.getElementById('casilla').innerHTML = `
+        <p class="red-cuello" style="--tono:${Z.color}">
+          <b>Zona de especial conservación</b> ·
+          ${celda.protegida === 'fauna' ? 'hábitat de fauna' : 'flora protegida'}
+        </p>
+        <p class="m-desc">Entorno protegido por el Estado. No se puede construir
+          ni tender redes: hay que rodearla. Y si tus lixiviados la alcanzan,
+          multa de ${formatear(Z.multaPorHoraCelda)} €/h por casilla dañada
+          mientras dure el daño.</p>`;
+      return;
+    }
     const FAM = { llano: 'Terreno llano', arbolado: 'Arbolado',
                   relieve: 'Relieve', agua: 'Masa de agua' };
 

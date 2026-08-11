@@ -148,6 +148,7 @@ export class EscenaMapa extends Escena {
     }
 
     this.contornoExplorado(estado, c0, f0, c1, f1);
+    this.lindesProtegidas(estado, c0, f0, c1, f1);
     this.dibujarTuberias(estado);
     // Los hallazgos van DESPUES de las tuberias: pintados junto al terreno, una
     // conduccion que pasara por encima del pueblo lo tapaba, y el icono del
@@ -214,6 +215,38 @@ export class EscenaMapa extends Escena {
     if(esAgua) this.pintarAgua(celda, c, f, fx, fy, fl, base);
     else this.pintarTierra(celda, c, f, fx, fy, fl, base, v);
     if(!esAgua) this.pintarOrilla(c, f, fx, fy, fl);
+
+    // ZONA PROTEGIDA: un velo verde, y en cada casilla su señal — huella de
+    // fauna o flor, según qué se protege. La linde va fuera del clip.
+    if(celda.protegida){
+      const Z = CONFIG.proteccion;
+      ctx.fillStyle = 'rgba(45,212,143,0.14)';
+      ctx.fillRect(fx, fy, fl, fl);
+      ctx.strokeStyle = Z.color;
+      ctx.lineWidth = Math.max(1, fl * 0.028);
+      ctx.globalAlpha = 0.75;
+      if(celda.protegida === 'fauna'){
+        // huella: almohadilla y dedos
+        const px = fx + fl * 0.78, py = fy + fl * 0.22, r = fl * 0.05;
+        ctx.fillStyle = Z.color;
+        ctx.beginPath(); ctx.ellipse(px, py + r, r * 1.2, r, 0, 0, 7); ctx.fill();
+        for(const dx of [-1.2, 0, 1.2]){
+          ctx.beginPath();
+          ctx.arc(px + dx * r, py - r * 0.9, r * 0.5, 0, 7); ctx.fill();
+        }
+      } else {
+        // flor: cuatro pétalos y centro
+        const px = fx + fl * 0.78, py = fy + fl * 0.22, r = fl * 0.045;
+        ctx.fillStyle = Z.color;
+        for(const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+          ctx.beginPath();
+          ctx.arc(px + dx * r * 1.3, py + dy * r * 1.3, r, 0, 7); ctx.fill();
+        }
+        ctx.fillStyle = '#f4f8b8';
+        ctx.beginPath(); ctx.arc(px, py, r * 0.8, 0, 7); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
 
     // Luz arriba y sombra abajo DENTRO de la ficha: es lo que le da grosor y la
     // separa del fondo sin necesidad de contorno duro.
@@ -593,6 +626,38 @@ export class EscenaMapa extends Escena {
     }
     ctx.stroke();
     ctx.lineCap = 'butt';
+  }
+
+  /**
+   * La LINDE de las zonas protegidas: discontinua y verde, solo en los lados que
+   * dan a terreno normal — el conjunto se lee como un único recinto vallado,
+   * igual que hace el contorno dorado con lo explorado.
+   */
+  lindesProtegidas(estado, c0, f0, c1, f1){
+    const ctx = this.ctx, t = this.tam, E = CONFIG.estiloMapa;
+    const g = t * E.separacion;
+    ctx.strokeStyle = CONFIG.proteccion.color;
+    ctx.lineWidth = Math.max(1.5, t * 0.03);
+    ctx.setLineDash([t * 0.10, t * 0.07]);
+    ctx.beginPath();
+    for(let f = f0; f <= f1; f++){
+      for(let c = c0; c <= c1; c++){
+        const celda = celdaEn(estado.mapa, c, f);
+        if(!celda || !celda.protegida || celda.oculta) continue;
+        const x = Math.round(c * t - estado.camara.x) + g;
+        const y = Math.round(f * t - estado.camara.y) + g;
+        const l = t - g * 2;
+        const lados = [[0, -1, x, y, x + l, y], [0, 1, x, y + l, x + l, y + l],
+                       [-1, 0, x, y, x, y + l], [1, 0, x + l, y, x + l, y + l]];
+        for(const s of lados){
+          const vec = celdaEn(estado.mapa, c + s[0], f + s[1]);
+          if(vec && vec.protegida) continue;
+          ctx.moveTo(s[2], s[3]); ctx.lineTo(s[4], s[5]);
+        }
+      }
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
   }
 
   /** Pasada de hallazgos: pueblos, ruinas y yacimientos, por encima de las redes. */

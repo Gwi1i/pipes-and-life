@@ -151,6 +151,59 @@ ligera.** Aquí no hay transparencia que preservar, así que el PNG no aporta na
 
 ---
 
+# YACIMIENTOS Y ZONA PROTEGIDA — la tanda nueva
+
+Mismas reglas y misma coletilla de siempre. El optimizador ya coge los `a_*` y
+el `h_*` igual que el resto.
+
+## Los cinco yacimientos (`a_<tipo>.png`)
+
+Presiden la ficha cuando afloran al picar. Son EXCAVACIONES en marcha: la cata
+abierta, no el objeto en un museo.
+
+### `a_poblado.png`
+> Genera una imagen: una excavación arqueológica de un poblado antiguo, muros
+> bajos de piedra formando calles y habitaciones vistos en una cata abierta en
+> la tierra, con cuadrícula de cuerdas, herramientas de arqueólogo y fragmentos
+> de cerámica sobre una mesa de campaña, *(+ coletilla)*
+
+### `a_tesoro.png`
+> Genera una imagen: una excavación arqueológica pequeña donde asoma un depósito
+> de objetos antiguos, monedas y herramientas de bronce medio enterradas
+> brillando en la tierra, con pinceles y una balanza de campaña al lado,
+> *(+ coletilla)*
+
+### `a_necropolis.png`
+> Genera una imagen: una excavación arqueológica de una necrópolis antigua,
+> varias tumbas de lajas de piedra abiertas en cuadrícula con cuerdas y
+> banderitas de marcaje, arqueólogos trabajando con pincel arrodillados,
+> *(+ coletilla)*
+
+### `a_hominidos.png`
+> Genera una imagen: una excavación paleontológica de restos de homínidos, un
+> cráneo y huesos antiguos asomando con cuidado de la tierra en una cata con
+> cuadrícula, arqueólogos con pincel y una carpa de campaña detrás,
+> *(+ coletilla)*
+
+### `a_dinosaurios.png`
+> Genera una imagen: una excavación paleontológica con un esqueleto de
+> dinosaurio asomando de la roca, costillas y cráneo a medio descubrir, un
+> paleontólogo con martillo y cincel y una carpa de trabajo al fondo,
+> *(+ coletilla)*
+
+## La zona protegida (`h_proteccion.png`)
+
+La tarjeta sale la primera vez que una obra tropieza con una zona de especial
+conservación. Debe dar ganas de RODEARLA, no pena de tocarla:
+
+### `h_proteccion.png`
+> Genera una imagen: un humedal protegido rebosante de vida junto a un río,
+> garzas y patos entre juncos, flores silvestres en la orilla y un cartel de
+> madera de reserva natural con silueta de ave, con una tubería de obra que se
+> desvía rodeando la zona a lo lejos, *(+ coletilla)*
+
+---
+
 # ESTILO D — TESELAS (vista cenital sobre cuadrícula)
 
 El terreno es una **rejilla de celdas cuadradas vistas desde arriba**; cada

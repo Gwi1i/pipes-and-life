@@ -54,6 +54,10 @@ function tender(estado, red, c, f){
   while(x !== c){ x += Math.sign(c - x); camino.push({ col: x, fila: y }); }
   while(Math.abs(y - f) > 1){ y += Math.sign(f - y); camino.push({ col: x, fila: y }); }
   for(const p of camino){ const cel = celdaEn(estado.mapa, p.col, p.fila); if(cel) cel.oculta = false; }
+  // El bot respeta las zonas protegidas igual que el jugador: si el camino en L
+  // cruza una, ese núcleo no se puede alcanzar así y se probará otro.
+  if(camino.some(q => { const cel = celdaEn(estado.mapa, q.col, q.fila);
+                        return cel && cel.protegida; })) return false;
   const dn = escalaDeRed(red)[0].id;
   const coste = costeTrazado(estado.mapa, camino, dn, red);
   if(estado.dinero < coste) return false;

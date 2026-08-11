@@ -881,8 +881,40 @@ export const CONFIG = {
     cantidad: 40,            // cuántos esconde el mapa entero
     distanciaMinima: 3,      // ninguno pegado al pueblo de origen
     costeExcavar: 2600,
-    rentaPorHora: 26,        // ingreso mientras siga excavado y cuidado
-    color: '#d9a441'
+    color: '#d9a441',
+    /* Cada yacimiento ES algo concreto, no "restos" genéricos. El peso decide
+       cuántos salen de cada clase y la renta lo que dejan puestos en valor: los
+       raros (homínidos, dinosaurios) son los premios gordos de picar donde no
+       debías. La imagen de cada uno es `assets/a_<id>.jpg`; sin ella la ficha
+       sale igual con su texto. */
+    tipos: [
+      { id: 'poblado',     nombre: 'Poblado antiguo',        peso: 3, renta: 22,
+        desc: 'Muros de un asentamiento de hace siglos: calles, hogares y cerámica.' },
+      { id: 'tesoro',      nombre: 'Depósito de objetos',    peso: 2, renta: 30,
+        desc: 'Monedas, herramientas y piezas de bronce escondidas en su día y nunca recuperadas.' },
+      { id: 'necropolis',  nombre: 'Necrópolis',             peso: 2, renta: 26,
+        desc: 'Un cementerio antiguo. Las tumbas cuentan cómo vivía la gente mejor que ningún libro.' },
+      { id: 'hominidos',   nombre: 'Restos de homínidos',    peso: 1, renta: 45,
+        desc: 'Huesos y herramientas de los primeros humanos. Rarísimo: media provincia vendrá a verlo.' },
+      { id: 'dinosaurios', nombre: 'Fósiles de dinosaurio',  peso: 1, renta: 60,
+        desc: 'Huesos de hace millones de años. El premio gordo de cualquier obra: un museo en tu pueblo.' }
+    ]
+  },
+
+  /* ---------- ZONAS DE ESPECIAL CONSERVACIÓN ----------
+     Entornos protegidos por el Estado: hábitats de fauna o riberas y masas de
+     flora singular. NO se puede construir ni tender redes dentro —hay que
+     rodear, como con la arqueología— y contaminarlos (los lixiviados de un
+     vertedero llegan lejos) trae multa mientras dure el daño.
+
+     Son la otra restricción real de trazado: las conducciones de verdad dan
+     rodeos enormes para no tocar espacios protegidos. */
+  proteccion: {
+    zonas: 9,                // cuántas ZEC siembra el mapa
+    tamMin: 4, tamMax: 9,    // casillas por zona (manchas orgánicas)
+    distanciaMinima: 7,      // ninguna pegada al pueblo de origen
+    multaPorHoraCelda: 14,   // € por hora y casilla protegida contaminada
+    color: '#2dd48f'
   },
 
   /* ---------- MAPA DE TESELAS (estilo D, vista cenital) ----------
@@ -1021,6 +1053,17 @@ export const CONFIG = {
       porque: 'Así funciona de verdad: los pueblos pequeños no pueden pagarse un ' +
               'servicio de agua cada uno, así que se juntan para compartir ' +
               'personal, obras y tarifa. Eso es una mancomunidad.'
+    },
+
+    proteccion: {
+      titulo: 'Zona de especial conservación',
+      pasa: 'Te has topado con un entorno protegido: un hábitat que el Estado ' +
+            'custodia y que ninguna obra puede tocar.',
+      hacer: 'Rodéalo. No se puede construir ni tender redes dentro, y si tus ' +
+             'lixiviados lo alcanzan habrá multa mientras dure el daño.',
+      porque: 'Las redes de verdad se diseñan así: los trazados dan rodeos ' +
+              'enormes para no tocar espacios protegidos. Un pueblo necesita ' +
+              'agua, pero el territorio no es solo suyo.'
     },
 
     /* --- LOS LOGROS: la otra cara ---

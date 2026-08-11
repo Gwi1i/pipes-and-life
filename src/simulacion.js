@@ -21,7 +21,7 @@
 import { CONFIG } from './config.js';
 import { limitar } from './util.js';
 import { inventarioConectado, cuelloDeBotella, construccionesConectadas,
-         celdaEn, nombreDeNucleo } from './mapa.js';
+         celdaEn, nombreDeNucleo, tipoYacimiento } from './mapa.js';
 
 /* ---------------- HELPERS POR PUEBLO ---------------- */
 
@@ -188,6 +188,14 @@ export function yacimientosExcavados(estado){
   let n = 0;
   for(const celda of estado.mapa) if(celda.excavado) n++;
   return n;
+}
+
+/** La renta conjunta de los yacimientos puestos en valor, €/h. Cada tipo la suya. */
+export function rentaYacimientos(estado){
+  let euros = 0;
+  for(const celda of estado.mapa)
+    if(celda.excavado) euros += tipoYacimiento(celda).renta;
+  return euros;
 }
 
 /** Basura que genera el pueblo, en toneladas por hora de juego. */
@@ -728,9 +736,18 @@ export function avanzar(estado, dt){
   // mancomunidad, no de un pueblo.
   const lixiviados = lixiviar(estado, dtHoras);
 
+  // LA MULTA DEL ESTADO: cada casilla protegida con daño (lixiviados que le han
+  // llegado) cuesta dinero mientras el daño dure. No es un castigo de una vez:
+  // es un goteo que solo para cuando el agua se recupera.
+  let celdasZEC = 0;
+  for(const celda of estado.mapa)
+    if(celda.protegida && (celda.insalubre || 0) > 0.05) celdasZEC++;
+  const multaProtegida = celdasZEC * CONFIG.proteccion.multaPorHoraCelda * dtHoras;
+  estado.dinero -= multaProtegida;
+
   // Los yacimientos excavados rentan mientras sigan ahí: es el premio por haber
   // tropezado con uno y haberlo tratado bien en vez de maldecirlo.
-  estado.dinero += yacimientosExcavados(estado) * CONFIG.arqueologia.rentaPorHora * dtHoras;
+  estado.dinero += rentaYacimientos(estado) * dtHoras;
 
   // Cauce común: sube con el vertido crudo, baja solo poco a poco
   estado.contaminacion = Math.max(0, Math.min(K.contaminacionMax,
@@ -748,6 +765,8 @@ export function avanzar(estado, dt){
                        bombeoAuto: false, averiada: false, punta, estiaje,
                        lluvia, aliviando: false, tanqueFrac: 0, calidad: 1 }),
     contaminacion: estado.contaminacion,
+    multaProtegida,
+    celdasProtegidasSucias: celdasZEC,
     suciedad,
     multa,
     frenoCrec,

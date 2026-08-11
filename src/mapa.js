@@ -83,6 +83,7 @@ export function generarMapa(){
 
   suavizarArranque(celdas);
   sembrarPueblos(celdas, azar);
+  sembrarProteccion(celdas, azar);
   sembrarHallazgos(celdas, azar);
   sembrarArqueologia(celdas, azar);
   abrirZonaInicial(celdas);
@@ -108,6 +109,36 @@ function suavizarArranque(celdas){
 }
 
 /**
+ * Siembra las ZONAS DE ESPECIAL CONSERVACIÓN: manchas orgánicas de casillas
+ * protegidas, cada una de fauna o de flora. Crecen desde una semilla por
+ * vecinos al azar, que da formas irregulares en vez de rectángulos de parque.
+ */
+function sembrarProteccion(celdas, azar){
+  const M = CONFIG.mapaMundo, Z = CONFIG.proteccion;
+  let zonas = 0, intentos = 0;
+  while(zonas < Z.zonas && intentos++ < Z.zonas * 300){
+    const c0 = Math.floor(azar() * M.cols), f0 = Math.floor(azar() * M.filas);
+    const semilla = celdaEn(celdas, c0, f0);
+    if(!semilla || semilla.hallazgo || semilla.protegida) continue;
+    if(distanciaAlOrigen(c0, f0) < Z.distanciaMinima) continue;
+    const tipo = azar() < 0.5 ? 'fauna' : 'flora';
+    const objetivo = Z.tamMin + Math.floor(azar() * (Z.tamMax - Z.tamMin + 1));
+    const mancha = [{ c: c0, f: f0 }];
+    semilla.protegida = tipo;
+    while(mancha.length < objetivo){
+      const base = mancha[Math.floor(azar() * mancha.length)];
+      const [dc, df] = [[1,0],[-1,0],[0,1],[0,-1]][Math.floor(azar() * 4)];
+      const cel = celdaEn(celdas, base.c + dc, base.f + df);
+      if(!cel || cel.protegida || cel.hallazgo) continue;
+      if(distanciaAlOrigen(base.c + dc, base.f + df) < Z.distanciaMinima) continue;
+      cel.protegida = tipo;
+      mancha.push({ c: base.c + dc, f: base.f + df });
+    }
+    zonas++;
+  }
+}
+
+/**
  * Esconde yacimientos arqueológicos BAJO TIERRA. No llevan `hallazgo` porque no
  * son algo que se encuentre mirando: `celda.arqueologia` no se dibuja ni se
  * anuncia hasta que alguien pica ahí (`aflorado`).
@@ -122,7 +153,12 @@ function sembrarArqueologia(celdas, azar){
     if(!celda || celda.arqueologia || celda.hallazgo) continue;
     if(celda.tipo === 'agua' || celda.tipo === 'lago') continue;
     if(distanciaAlOrigen(c, f) < A.distanciaMinima) continue;
-    celda.arqueologia = true;   // dormido: nadie sabe que está ahí
+    // Cada yacimiento nace siendo algo concreto (con la semilla, para que la
+    // misma partida encuentre siempre lo mismo en el mismo sitio)
+    const T = A.tipos;
+    const pesoTotal = T.reduce((a, t) => a + t.peso, 0);
+    let bola = azar() * pesoTotal;
+    celda.arqueologia = T.find(t => (bola -= t.peso) <= 0)?.id || T[0].id;
     puestos++;
   }
 }
@@ -341,6 +377,10 @@ export function puedeColocar(celdas, construcciones, tipo, col, fila){
   const celda = celdaEn(celdas, col, fila);
   if(!celda) return { ok: false, motivo: 'Fuera del mapa.' };
   if(celda.oculta) return { ok: false, motivo: 'Primero hay que destapar esa casilla.' };
+  // La protección se dice ANTES que ninguna otra pega: si el motivo fuera "ese
+  // terreno no vale", el jugador pensaría que con otro terreno sí se podría.
+  if(celda.protegida)
+    return { ok: false, motivo: 'Zona de especial conservación: aquí no se construye. Hay que rodearla.' };
   if(construcciones.some(o => o.col === col && o.fila === fila))
     return { ok: false, motivo: 'Ya hay algo construido ahí.' };
   if(celda.hallazgo === 'pueblo')
@@ -406,6 +446,8 @@ export function puedeSeguirTrazado(celdas, trazado, col, fila){
   const celda = celdaEn(celdas, col, fila);
   if(!celda) return { ok: false, motivo: 'Fuera del mapa.' };
   if(celda.oculta) return { ok: false, motivo: 'Por ahí no has explorado todavía.' };
+  if(celda.protegida)
+    return { ok: false, motivo: 'Zona protegida: ninguna red puede atravesarla. Rodéala.' };
   if(arqueologiaBloquea(celda))
     return { ok: false, motivo: 'Yacimiento arqueológico: no se puede atravesar. Rodéalo.' };
   if(!trazado.length) return { ok: true, motivo: '' };
@@ -507,6 +549,12 @@ export function construccionesConectadas(estado, red = 'abastecimiento'){
   return estado.construcciones.filter(
     o => suyas.includes(o.tipo) && !averiaEn(estado, o.col, o.fila)
       && pegadaA(visitadas, o.col, o.fila));
+}
+
+/** La definición del tipo de yacimiento de una celda (poblado, fósiles...). */
+export function tipoYacimiento(celda){
+  const T = CONFIG.arqueologia.tipos;
+  return T.find(t => t.id === celda.arqueologia) || T[0];
 }
 
 /** La avería que hay en esa casilla, si la hay. */
