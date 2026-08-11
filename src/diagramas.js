@@ -71,15 +71,62 @@ function etiqueta(ctx, texto, x, y, color, H){
 
 const CACHE = {};
 
-/** Devuelve la imagen si ya está cargada; la pide la primera vez y sigue. */
+/* Orden de preferencia. El VÍDEO gana porque puede enseñar lo que una imagen no
+   puede —el depósito abriéndose en corte para ver el agua dentro— y porque un
+   bucle de diez segundos cuenta un proceso entero. Debajo, la ilustración fija.
+   Y si no hay ninguna de las dos, el esquema por código, que siempre está.
+
+   Los formatos también van por peso: un .jpg de esta ilustración pesa 78 KB y el
+   mismo .png 977 KB. Sin transparencia que preservar, el PNG no aporta nada. */
+const FUENTES = [
+  { ext: 'mp4', video: true },
+  { ext: 'jpg' },
+  { ext: 'png' }
+];
+
+/**
+ * Devuelve el vídeo o la imagen de esta pieza si ya está lista. La primera vez
+ * lanza la búsqueda por los formatos en orden y devuelve null mientras tanto:
+ * el esquema por código cubre el hueco y nadie ve un panel vacío.
+ */
 function ilustracion(tipo){
   if(CACHE[tipo] !== undefined) return CACHE[tipo] || null;
   CACHE[tipo] = null;                       // marcada como "pedida"
+  probar(tipo, 0);
+  return null;
+}
+
+function probar(tipo, i){
+  if(i >= FUENTES.length){ CACHE[tipo] = false; return; }
+  const f = FUENTES[i];
+  const url = `assets/f_${tipo}.${f.ext}`;
+
+  if(f.video){
+    const v = document.createElement('video');
+    v.muted = true; v.loop = true; v.playsInline = true; v.preload = 'auto';
+    // `canplay` y no `loadeddata`: hace falta que haya fotogramas que pintar,
+    // no solo que exista el archivo.
+    v.oncanplay = () => {
+      if(CACHE[tipo]) return;
+      CACHE[tipo] = v;
+      v.play().catch(() => {});   // si el navegador se niega, queda el póster
+    };
+    v.onerror = () => probar(tipo, i + 1);
+    v.src = url;
+    return;
+  }
+
   const img = new Image();
   img.onload = () => { CACHE[tipo] = img; };
-  img.onerror = () => { CACHE[tipo] = false; };   // no está, y no se vuelve a pedir
-  img.src = `assets/f_${tipo}.png`;
-  return null;
+  img.onerror = () => probar(tipo, i + 1);
+  img.src = url;
+}
+
+/** Ancho y alto reales de la fuente, sea vídeo o imagen. */
+function medida(fuente){
+  return fuente.videoWidth
+    ? { w: fuente.videoWidth, h: fuente.videoHeight }
+    : { w: fuente.width, h: fuente.height };
 }
 
 /**
@@ -440,16 +487,20 @@ export function dibujarDiagrama(ctx, tipo, W, H, t){
   ctx.fillStyle = FONDO;
   ctx.fillRect(0, 0, W, H);
 
-  const img = ilustracion(tipo);
+  const fuente = ilustracion(tipo);
   ctx.save();
-  if(img){
-    // La ilustración manda: se dibuja cubriendo el lienzo sin deformarla, y
-    // encima solo va lo que se mueve.
-    const escala = Math.max(W / img.width, H / img.height);
-    const an = img.width * escala, al = img.height * escala;
-    ctx.drawImage(img, (W - an) / 2, (H - al) / 2, an, al);
-    const mov = MOVIMIENTO[tipo];
-    if(mov) mov(ctx, W, H, t);
+  if(fuente){
+    // La ilustración manda: se dibuja cubriendo el lienzo sin deformarla.
+    const m = medida(fuente);
+    const escala = Math.max(W / m.w, H / m.h);
+    const an = m.w * escala, al = m.h * escala;
+    ctx.drawImage(fuente, (W - an) / 2, (H - al) / 2, an, al);
+    // Al vídeo NO se le añade movimiento por encima: ya se mueve él, y meterle
+    // gotas dibujadas sería contar dos veces lo mismo con dos ritmos distintos.
+    if(!fuente.videoWidth){
+      const mov = MOVIMIENTO[tipo];
+      if(mov) mov(ctx, W, H, t);
+    }
   } else {
     const fn = DIBUJOS[tipo];
     if(!fn){ ctx.restore(); return false; }
