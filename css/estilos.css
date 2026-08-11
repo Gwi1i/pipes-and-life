@@ -459,3 +459,11 @@ body{
 }
 .hito-btn:hover{background:linear-gradient(180deg,#24506f,#0e2434);}
 .hito-btn:focus-visible{outline:2px solid var(--agua); outline-offset:2px;}
+
+/* Un LOGRO es la misma tarjeta con otro tono. Con el mismo azul de aviso, "el
+   río vuelve a estar vivo" se leía como otra regañina antes de leer nada. */
+.hito.es-logro{border-color:var(--ok); box-shadow:0 24px 60px -20px #000, 0 0 0 1px var(--ok);}
+.hito.es-logro .hito-titulo{color:var(--ok);}
+.hito.es-logro .hito-btn{border-color:var(--ok); color:var(--ok);
+  background:linear-gradient(180deg,#1b3a28,#0e2418);}
+.hito.es-logro .hito-btn:hover{background:linear-gradient(180deg,#245036,#0e2418);}

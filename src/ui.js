@@ -287,8 +287,17 @@ export class UI {
     img.hidden = true;
     img.onload = () => { img.hidden = false; };
     img.onerror = () => { img.hidden = true; };
-    img.src = `assets/h_${id}.jpg`;
+    // Los logros llevan su propia imagen, amable: `l_` en vez de `h_`.
+    img.src = `assets/${h.logro ? 'l' : 'h'}_${id}.jpg`;
 
+    // La tarjeta cambia de tono: un problema entra en ámbar y un logro en verde.
+    // Con el mismo color, la de "el río vuelve a estar vivo" se leía como otra
+    // regañina antes de haber leído una sola palabra.
+    document.getElementById('hito').classList.toggle('es-logro', !!h.logro);
+    document.getElementById('hito-eti-pasa').textContent =
+      h.logro ? 'Lo has conseguido' : 'Qué ha pasado';
+    document.getElementById('hito-eti-hacer').textContent =
+      h.logro ? 'Qué viene ahora' : 'Qué tienes que hacer';
     document.getElementById('hito-titulo').textContent = h.titulo;
     document.getElementById('hito-pasa').textContent = h.pasa;
     document.getElementById('hito-hacer').textContent = h.hacer;

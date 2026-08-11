@@ -966,8 +966,59 @@ export const CONFIG = {
       porque: 'Así funciona de verdad: los pueblos pequeños no pueden pagarse un ' +
               'servicio de agua cada uno, así que se juntan para compartir ' +
               'personal, obras y tarifa. Eso es una mancomunidad.'
+    },
+
+    /* --- LOS LOGROS: la otra cara ---
+       Un hito enseña el problema; un logro enseña el pueblo DESPUÉS. Sin ellos
+       el juego solo te para para darte malas noticias, y lo que se aprende no es
+       que el saneamiento sea un fastidio: es que resolverlo se nota. La imagen
+       de estos es `assets/l_<id>.jpg` y son escenas amables a propósito. */
+    rioLimpio: {
+      logro: true,
+      titulo: 'El río vuelve a estar vivo',
+      pasa: 'Tu depuradora trata lo que el pueblo devuelve, y el cauce ha bajado ' +
+            'a niveles que aguanta solo.',
+      hacer: 'Mantenla: al crecer el pueblo llegará más carga, y una depuradora ' +
+             'que se queda corta vuelve a aliviar crudo.',
+      porque: 'Un río limpio no es solo paisaje. Es el mismo del que captas, así ' +
+              'que tratar bien lo que devuelves te abarata el agua que sacas. ' +
+              'Aguas abajo hay más pueblos haciendo lo mismo.'
+    },
+    sinAlivios: {
+      logro: true,
+      titulo: 'Ha llovido y no ha pasado nada',
+      pasa: 'La red de pluviales separa el aguacero y el tanque corta la punta. ' +
+            'La depuradora ha seguido trabajando con normalidad.',
+      hacer: 'Vigila el diámetro. Lo que separa la red es lo que le quepa por el ' +
+             'tubo, y la tormenta no avisa.',
+      porque: 'La mayoría de la contaminación de un año no llega poco a poco: ' +
+              'llega en cuatro o cinco tormentas. Aguantar esas es aguantar casi ' +
+              'todo.'
+    },
+    puebloLimpio: {
+      logro: true,
+      titulo: 'Las calles están limpias, y encima renta',
+      pasa: 'La basura sale toda del pueblo y la planta separa fracciones que se ' +
+            'venden. El servicio se paga solo.',
+      hacer: 'Sube el nivel de la planta: cada uno abre una fracción nueva, y las ' +
+             'que más valen llegan al final.',
+      porque: 'Un pueblo limpio crece. Y el material recuperado tiene comprador ' +
+              'de verdad, así que reciclar deja de ser un gasto y pasa a ser el ' +
+              'negocio del servicio.'
+    },
+    todosServidos: {
+      logro: true,
+      titulo: 'Toda la mancomunidad con agua',
+      pasa: 'Todos los núcleos que gestionas están bien abastecidos a la vez, sin ' +
+            'un solo corte.',
+      hacer: 'Sigue creciendo. Cuanto mejor sirves, más barato te sale abrir ' +
+             'territorio nuevo.',
+      porque: 'Esto es lo que hace una mancomunidad de verdad: que un pueblo de ' +
+              'doscientos habitantes tenga la misma agua que uno de cinco mil, ' +
+              'porque comparten la obra y el personal.'
     }
   },
+
 
   /* ---------- GUARDADO ----------
      v2: el formato multi-pueblo no es compatible con el de un solo pueblo. */

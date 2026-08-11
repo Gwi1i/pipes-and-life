@@ -6,7 +6,7 @@
 #
 #  Uso: doble clic en optimizar.bat, o desde PowerShell:  .\optimizar.ps1
 #
-#  Coge cada f_*.png o f_*.jpeg de esta carpeta, la reescala a 880 px de ancho,
+#  Coge cada f_*, h_* o l_* de esta carpeta (fichas, hitos y logros), la reescala a 880 px de ancho,
 #  la guarda como f_*.jpg ligera y mueve el original a originales\ SIN BORRARLO.
 #  (Aprendido a base de perder uno: no se toca un original en su sitio.)
 # ============================================================
@@ -28,7 +28,7 @@ $par.Param[0] = New-Object System.Drawing.Imaging.EncoderParameter(
 
 $hechas = 0
 Get-ChildItem $carpeta -File | Where-Object {
-    $_.Name -match '^f_.+\.(png|jpeg)$'
+    $_.Name -match '^(f|h|l)_.+\.(png|jpeg)$'
 } | ForEach-Object {
     $entrada = $_.FullName
     $nombre  = [System.IO.Path]::GetFileNameWithoutExtension($_.Name)
@@ -64,7 +64,10 @@ Get-ChildItem $carpeta -File | Where-Object {
 if($hechas -eq 0){
     Write-Output ""
     Write-Output "No he encontrado nada que optimizar."
-    Write-Output "Suelta aqui las imagenes con nombre f_<pieza>.png y vuelve a ejecutarlo."
+    Write-Output "Suelta aqui las imagenes y vuelve a ejecutarlo."
+    Write-Output "  f_<pieza>.png   ficha de una instalacion"
+    Write-Output "  h_<hito>.png    el problema que aparece"
+    Write-Output "  l_<logro>.png   el problema resuelto"
     Write-Output "Piezas: captacion, bomba, deposito, acuifero, depuradora, tanque, vertedero, reciclaje"
 } else {
     Write-Output ""

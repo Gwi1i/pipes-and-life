@@ -706,6 +706,48 @@ function contarHito(id){
   estado.hitoPendiente = id;
 }
 
+/**
+ * CUÁNDO SE HA CONSEGUIDO CADA LOGRO.
+ *
+ * Las condiciones viven aquí y no en `config.js` porque config no importa nada
+ * de nadie: es una hoja del árbol de dependencias y solo exporta datos. Mismo
+ * reparto que la guía, que tiene su tabla de comprobaciones en `tutorial.js`.
+ *
+ * Cada logro es el reverso exacto de su hito: el problema, resuelto.
+ */
+const LOGRO_CUMPLIDO = {
+  // El río ha bajado a niveles que aguanta solo, y hay planta que lo trata.
+  rioLimpio: (estado, res) =>
+    servicioActivo(estado.activo, 'saneamiento')
+    && (estado._conectadoSan || {}).depuradora
+    && estado.contaminacion < CONFIG.cauce.contaminacionMax * 0.10,
+
+  // Ha llovido de verdad y ni ha rebosado el colector ni ha aliviado la planta.
+  sinAlivios: (estado, res) =>
+    servicioActivo(estado.activo, 'pluviales')
+    && (res.lluvia || 0) > 0.6 && !res.rebosando && !res.aliviando,
+
+  // No queda basura en la calle Y algo se está reciclando.
+  puebloLimpio: (estado, res) =>
+    servicioActivo(estado.activo, 'residuos')
+    && (res.basuraCalle || 0) < 0.02 && (res.recicladaTh || 0) > 0,
+
+  // Todos los pueblos abiertos, bien servidos a la vez.
+  todosServidos: (estado) => {
+    const abiertos = estado.pueblos.filter(p => p.desbloqueado);
+    return abiertos.length > 1
+        && abiertos.every(p => p.servicio >= CONFIG.poblacion.servicioBueno);
+  }
+};
+
+/** Mira si se ha conseguido alguno y lo cuenta. Uno por paso, sin atropellarse. */
+function comprobarLogros(resultado){
+  for(const [id, test] of Object.entries(LOGRO_CUMPLIDO)){
+    if(estado.hitosVistos.includes(id)) continue;
+    if(test(estado, resultado)) { contarHito(id); return; }
+  }
+}
+
 /* ==================================================================
    BUCLE PRINCIPAL
    ================================================================== */
@@ -731,6 +773,9 @@ function bucle(ahora){
   if(resultado.serviciosNuevos && resultado.serviciosNuevos.length){
     for(const clave of resultado.serviciosNuevos) contarHito(clave);
   }
+  // Los logros se comprueban SIEMPRE, no solo al abrir un servicio: son el
+  // premio a haber resuelto el problema, y eso pasa cuando el jugador quiere.
+  comprobarLogros(resultado);
   if(resultado.saneamientoNuevo && resultado.saneamientoNuevo.length){
     for(const nombre of resultado.saneamientoNuevo){
       estado.anotar(`${nombre} genera aguas residuales. Vigila el cauce y piensa en una depuradora.`, 'alarma');
