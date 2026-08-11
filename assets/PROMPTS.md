@@ -151,6 +151,36 @@ ligera.** Aquí no hay transparencia que preservar, así que el PNG no aporta na
 
 ---
 
+# MÚSICA DE FONDO (`musica.ogg`, `musica.mp3` o `musica.wav`)
+
+El juego la busca con esos nombres, en ese orden, y **si no la encuentra no
+pasa nada** (el botón «Música» ni aparece). Suéltala aquí y recarga: suena en
+bucle sin cortes, con su propio botón y su volumen en `CONFIG.sonido`.
+
+Lo que hay que pedirle al generador:
+
+> Genera una pieza instrumental de música de videojuego retro estilo chiptune
+> de 8 bits, alegre y tranquila a la vez, con una melodía simple y pegadiza,
+> tempo medio, sin voces y sin percusión estridente, pensada para sonar de
+> fondo en bucle en un juego de gestión relajado sobre agua y pueblos.
+
+Y los tres trucos que evitan los tropiezos típicos:
+
+- **EL BUCLE ES LO PRIMERO.** Pídelo con estas palabras: *"que termine
+  exactamente igual que empieza, para poder repetirla en bucle sin que se note
+  el corte"*. Si aun así se nota el salto, recorta el final con cualquier
+  editor (Audacity es gratis) hasta que el empalme caiga a tiempo con el
+  compás: es un minuto de trabajo y transforma el resultado.
+- **DOS O TRES MINUTOS, no treinta segundos.** Un bucle corto se hace bola
+  enseguida; uno largo desaparece de la atención, que es su trabajo. Si el
+  generador se queda corto, pídele una estructura A-B-A: melodía, variación,
+  vuelta.
+- **QUE SEA HUMILDE.** Va por debajo de los efectos (el clic de la bomba, la
+  lluvia) y muy baja. Las piezas épicas u orquestales cansan en diez minutos de
+  juego incremental; la de los juegos que recuerdas con cariño era modesta.
+
+---
+
 # YACIMIENTOS Y ZONA PROTEGIDA — la tanda nueva
 
 Mismas reglas y misma coletilla de siempre. El optimizador ya coge los `a_*` y

@@ -513,6 +513,14 @@ Reiniciar. Los volúmenes van en `CONFIG.sonido`; las frecuencias y envolventes
 de cada efecto son decisiones musicales y viven con el código, como los trazos
 del dibujo.
 
+La MÚSICA es la excepción: un archivo del autor (`assets/musica.ogg|mp3|wav`,
+generado como las ilustraciones), en bucle por `AudioBufferSourceNode` —sin el
+hueco que mete `<audio loop>`— y con canal y botón propios, independientes de
+los efectos: hay quien juega con música y sin efectos, y al revés. Si el
+archivo no existe, el botón NI APARECE (un mando que no manda nada es peor que
+ningún mando) y el juego suena igual que antes de tener música. El prompt y los
+trucos del bucle están en `assets/PROMPTS.md`.
+
 **El tacto es un ciudadano de primera.** El zoom táctil es el PELLIZCO:
 `entrada.js` lleva los dedos en un mapa y con dos reparte el gesto en `pellizco`
 (factor) + `arrastrar`; `ampliarFactor()` es la única cuenta de zoom y la rueda

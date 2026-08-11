@@ -926,6 +926,22 @@ const rotularSonido = () => { btnSonido.textContent = sonido.activo() ? 'Sonido:
 btnSonido.onclick = () => { sonido.alternar(); rotularSonido(); };
 rotularSonido();
 
+// LA MÚSICA. El botón solo existe si hay archivo (assets/musica.*): un mando
+// que no manda nada es peor que ningún mando. Y no puede empezar a sonar hasta
+// el primer gesto — el navegador bloquea el audio antes—, así que el arranque
+// espera al primer toque o tecla, una sola vez.
+const btnMusica = document.getElementById('btn-musica');
+const rotularMusica = () => { btnMusica.textContent = sonido.musicaActiva() ? 'Música: sí' : 'Música: no'; };
+btnMusica.onclick = () => { sonido.alternarMusica(); rotularMusica(); };
+sonido.cargarMusica().then(hay => {
+  if(!hay) return;
+  btnMusica.hidden = false;
+  rotularMusica();
+  const arrancar = () => sonido.empezarMusica();
+  window.addEventListener('pointerdown', arrancar, { once: true });
+  window.addEventListener('keydown', arrancar, { once: true });
+});
+
 // Solapas del lateral: enseñar una hoja y esconder las demás. Es DOM puro y no
 // toca el estado, así que vive aquí y no en entrada.js.
 const solapas = document.getElementById('solapas');

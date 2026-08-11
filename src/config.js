@@ -361,8 +361,11 @@ export const CONFIG = {
      "parches" de cada efecto —frecuencias, envolventes— son decisiones
      musicales y viven con el código, como los trazos del dibujo. */
   sonido: {
-    volumen: 0.35,        // general; el interruptor de la cabecera lo apaga
-    volumenLluvia: 0.05   // el ambiente de lluvia, muy por debajo del resto
+    volumen: 0.35,        // efectos; su interruptor de la cabecera los apaga
+    volumenLluvia: 0.05,  // el ambiente de lluvia, muy por debajo del resto
+    /* La música de fondo (assets/musica.ogg|mp3|wav, generada por el autor).
+       De fondo DE VERDAD: si compite con los efectos, cansa en diez minutos. */
+    volumenMusica: 0.18
   },
 
   /* ---------- TIEMPO ---------- */

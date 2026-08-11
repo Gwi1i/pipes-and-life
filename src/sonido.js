@@ -15,17 +15,18 @@
 
 import { CONFIG } from './config.js';
 
-// La preferencia de silencio sobrevive a la partida (y al botón Reiniciar):
-// va en su propia clave, no en el guardado del juego.
+// Las preferencias sobreviven a la partida (y al botón Reiniciar): van en su
+// propia clave, no en el guardado del juego. Efectos y música por separado:
+// hay quien juega con música y sin efectos, y al revés.
 const CLAVE_SILENCIO = 'redHidraulica_sonido';
+const CLAVE_MUSICA = 'redHidraulica_musica';
 
 let ctx = null;          // AudioContext, creado al primer gesto
-let maestro = null;      // ganancia general (el mando de volumen)
+let maestro = null;      // ganancia de los EFECTOS (la música va por su lado)
 let lluviaGan = null;    // ganancia del ambiente de lluvia
 let encendido = localStorage.getItem(CLAVE_SILENCIO) !== '0';
 
 function despertar(){
-  if(!encendido) return null;
   if(!ctx){
     const AC = window.AudioContext || window.webkitAudioContext;
     if(!AC) return null;
@@ -40,7 +41,7 @@ function despertar(){
 
 /** Un tono con envolvente de caída: el ladrillo de casi todos los efectos. */
 function tono(f0, f1, dur, tipo = 'sine', vol = 0.5, retardo = 0){
-  if(!despertar()) return;
+  if(!encendido || !despertar()) return;
   const t = ctx.currentTime + retardo;
   const osc = ctx.createOscillator(), gan = ctx.createGain();
   osc.type = tipo;
@@ -54,7 +55,7 @@ function tono(f0, f1, dur, tipo = 'sine', vol = 0.5, retardo = 0){
 
 /** Un golpe de ruido filtrado: agua, tierra, metal — según el filtro. */
 function golpe(frec, dur, vol = 0.5, tipo = 'bandpass', retardo = 0){
-  if(!despertar()) return;
+  if(!encendido || !despertar()) return;
   const t = ctx.currentTime + retardo;
   const n = Math.round(ctx.sampleRate * dur);
   const buf = ctx.createBuffer(1, n, ctx.sampleRate);
@@ -191,14 +192,77 @@ export function ambiente(lluvia){
     lluvia * CONFIG.sonido.volumenLluvia / CONFIG.sonido.volumen, ctx.currentTime, 0.8);
 }
 
-/* ---------------- el interruptor ---------------- */
+/* ---------------- LA MÚSICA DE FONDO ----------------
+   La única pieza de audio que NO se sintetiza: es un archivo del autor
+   (assets/musica.*), como las ilustraciones. Se reproduce con un
+   AudioBufferSourceNode en bucle —sin el hueco que mete <audio loop>— y por su
+   propia ganancia, independiente de los efectos. Si el archivo no existe, no
+   pasa nada: el juego suena igual que antes de tener música. */
+
+let musicaOn = localStorage.getItem(CLAVE_MUSICA) !== '0';
+let musicaBuf = null;    // el archivo decodificado, si lo hay
+let musicaGan = null;    // su mando de volumen
+let musicaSrc = null;    // la fuente sonando ahora mismo
+
+/**
+ * Busca y decodifica el archivo de música. Se llama al arrancar (descargar y
+ * decodificar no necesitan gesto; SONAR sí). Devuelve si hay música, para que
+ * la UI pueda esconder el botón cuando no la haya.
+ */
+export async function cargarMusica(){
+  for(const nombre of ['musica.ogg', 'musica.mp3', 'musica.wav']){
+    try{
+      const resp = await fetch('assets/' + nombre);
+      if(!resp.ok) continue;
+      const datos = await resp.arrayBuffer();
+      if(!despertar()) return false;
+      musicaBuf = await ctx.decodeAudioData(datos);
+      return true;
+    }catch(_){ /* probar el siguiente formato */ }
+  }
+  return false;
+}
+
+/** Arranca la música si hay archivo y está activada. Llamar tras un gesto. */
+export function empezarMusica(){
+  if(!musicaOn || !musicaBuf || musicaSrc || !despertar()) return;
+  musicaGan = ctx.createGain();
+  musicaGan.gain.value = CONFIG.sonido.volumenMusica;
+  musicaSrc = ctx.createBufferSource();
+  musicaSrc.buffer = musicaBuf;
+  musicaSrc.loop = true;
+  musicaSrc.connect(musicaGan);
+  musicaGan.connect(ctx.destination);   // NO pasa por maestro: mando propio
+  musicaSrc.start();
+}
+
+export function musicaActiva(){ return musicaOn; }
+export function hayMusica(){ return !!musicaBuf; }
+
+export function alternarMusica(){
+  musicaOn = !musicaOn;
+  localStorage.setItem(CLAVE_MUSICA, musicaOn ? '1' : '0');
+  if(!musicaOn && musicaGan && ctx)
+    musicaGan.gain.setTargetAtTime(0, ctx.currentTime, 0.15);
+  if(musicaOn){
+    if(musicaSrc && musicaGan)
+      musicaGan.gain.setTargetAtTime(CONFIG.sonido.volumenMusica, ctx.currentTime, 0.15);
+    else empezarMusica();
+  }
+  return musicaOn;
+}
+
+/* ---------------- el interruptor de los efectos ---------------- */
 
 export function activo(){ return encendido; }
 
 export function alternar(){
   encendido = !encendido;
   localStorage.setItem(CLAVE_SILENCIO, encendido ? '1' : '0');
-  if(!encendido && ctx) ctx.suspend();
-  if(encendido && ctx) ctx.resume();
+  // Ya no se suspende el contexto entero: la música va por su propio canal y
+  // apagar los efectos no debe callarla. Los efectos ya comprueban `encendido`.
+  if(maestro && ctx)
+    maestro.gain.setTargetAtTime(encendido ? CONFIG.sonido.volumen : 0,
+                                 ctx.currentTime, 0.05);
   return encendido;
 }
