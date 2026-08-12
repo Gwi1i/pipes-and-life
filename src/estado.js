@@ -61,6 +61,8 @@ export class Estado {
     // Nivel de cada masa de acuífero (número de masa → 0..1). Lo que no está
     // aquí está lleno: solo se anota lo que has empezado a bombear.
     this.acuiferos = {};
+    // El bono del turno en la línea de reciclaje: { hasta, factor } o null
+    this.turnoReciclaje = null;
 
     // Los pueblos son DINÁMICOS: se arranca solo con el de origen y el resto
     // se incorporan al alcanzarlos por el mapa. No hay tope de lista.
@@ -119,6 +121,7 @@ export class Estado {
       dinero: this.dinero, horas: this.horas, m3Servidos: this.m3Servidos,
       contaminacion: this.contaminacion, puebloActivo: this.puebloActivo,
       pluvialesActivas: this.pluvialesActivas, acuiferos: this.acuiferos,
+      turnoReciclaje: this.turnoReciclaje,
       pueblos: this.pueblos, ultimoInstante: this.ultimoInstante,
       // El terreno se regenera de la semilla: solo se guarda lo que has tocado
       mapa: comprimir(this.mapa),
@@ -148,6 +151,7 @@ export class Estado {
       estado.contaminacion = d.contaminacion ?? 0;
       estado.pluvialesActivas = d.pluvialesActivas ?? false;
       estado.acuiferos = d.acuiferos ?? {};
+      estado.turnoReciclaje = d.turnoReciclaje ?? null;
       estado.puebloActivo = d.puebloActivo ?? 0;
       estado.ultimoInstante = d.ultimoInstante ?? Date.now();
 

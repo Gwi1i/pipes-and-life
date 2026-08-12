@@ -207,6 +207,26 @@
             </button>
           </div>
         </section>
+        <!-- EL TALLER: los minijuegos en modo práctica, sin premio ni riesgo.
+             Nació para que el autor pudiera probarlos sin esperar una avería,
+             y se queda para los jugadores: ensayar gratis antes de jugarse el
+             único intento de verdad es puro oficio. -->
+        <section class="bloque">
+          <h2>El taller de Manuel</h2>
+          <div id="taller" class="tienda">
+            <p class="m-desc">Para practicar sin premio ni castigo: aquí no se
+              gasta el intento de las averías ni cuenta el turno.</p>
+            <button class="mejora obra" data-accion="practicarTuberias" style="--tono:#38bdf8">
+              <span class="m-cab"><span class="m-nom">Reparación a mano</span></span>
+              <span class="m-desc">El tablero de tuberías contrarreloj, de ensayo.</span>
+            </button>
+            <button class="mejora obra" data-accion="practicarReciclaje" style="--tono:#facc15">
+              <span class="m-cab"><span class="m-nom">La línea de reciclaje</span></span>
+              <span class="m-desc">Separar residuos en la cinta, de ensayo.</span>
+            </button>
+          </div>
+        </section>
+
         <section class="bloque">
           <h2>Pueblos de tu zona</h2>
           <div id="lugares"></div>
@@ -311,6 +331,22 @@
       el agua alcance un hueco. Toca una casilla libre para <b>colocar</b> la
       pieza que viene; toca una pieza seca para <b>girarla</b>.</p>
     <canvas id="mini-lienzo"></canvas>
+  </div>
+</div>
+
+<!-- EL MINIJUEGO de la línea de reciclaje: separar residuos en la cinta con
+     los contenedores de verdad. Opcional siempre — se juega desde la planta
+     de reciclaje (turno con premio) o desde el taller (ensayo). -->
+<div class="hito-fondo" id="minijuego2" hidden>
+  <div class="mini-caja">
+    <div class="mini-cab">
+      <span class="mini-titulo">La línea de reciclaje</span>
+      <button id="mini2-cancelar">Dejarlo</button>
+    </div>
+    <p class="mini-desc">Toca el <b>contenedor</b> que toque para el residuo
+      que llega por la cinta. El <b>resto</b> no se toca: dejarlo seguir hasta
+      el vertedero es lo correcto. La cinta no espera.</p>
+    <canvas id="mini2-lienzo"></canvas>
   </div>
 </div>
 

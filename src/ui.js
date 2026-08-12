@@ -609,7 +609,10 @@ export class UI {
     // La avería y la conexión también entran: son lo que el panel debe contar
     const estadoObra = obra ? this.estadoDeObra(estado, obra) : '';
     const nLineas = obra ? lineasEnCasilla(estado, obra.col, obra.fila).length : 0;
-    const firma = obra ? `${obra.tipo},${obra.col},${obra.fila},${obra.nivel || 1},${Math.round(obra.lleno || 0)},${nivelPozo},${estadoObra},${nLineas}` : 'nada';
+    // El bono del turno se agota con las horas: la ficha de la planta lo cuenta
+    const turnoFirma = obra && obra.tipo === 'reciclaje'
+      ? Math.ceil(((estado.turnoReciclaje || {}).hasta || 0) - estado.horas) : '';
+    const firma = obra ? `${obra.tipo},${obra.col},${obra.fila},${obra.nivel || 1},${Math.round(obra.lleno || 0)},${nivelPozo},${estadoObra},${nLineas},${turnoFirma}` : 'nada';
     if(this.cache.obraFirma === firma) return;
     this.cache.obraFirma = firma;
 
@@ -647,11 +650,29 @@ export class UI {
       const A = CONFIG.ampliacion;
       const nivel = obra.nivel || 1;
       const ampliable = A.tipos.includes(obra.tipo);
+      // LA PLANTA DE RECICLAJE tiene su turno jugable: el minijuego con premio
+      let turno = '';
+      if(obra.tipo === 'reciclaje'){
+        const t = estado.turnoReciclaje;
+        const activo = t && estado.horas < t.hasta;
+        turno = activo
+          ? `<p class="m-desc">Turno echado: la venta va al
+               <b>+${Math.round((t.factor - 1) * 100)} %</b> todavía
+               ${Math.ceil(t.hasta - estado.horas)} horas más.</p>`
+          : `<button class="mejora obra" data-accion="turnoReciclaje" style="--tono:#facc15">
+               <span class="m-cab"><span class="m-nom">Echar un turno en la línea</span></span>
+               <span class="m-desc">Separa bien en la cinta y la venta de reciclado
+                 sube hasta un ${Math.round(CONFIG.minijuegos.reciclaje.bonusMax * 100)} %
+                 una temporada.</span>
+               <span class="m-coste">jugar</span>
+             </button>`;
+      }
       cont.innerHTML = `
         <p class="red-cuello" style="--tono:${def.color}"><b>${titulo}</b>
           ${ampliable ? `· nivel ${nivel}` : ''}</p>
         ${situacion}
         ${lineasAqui}
+        ${turno}
         <p class="m-desc">${this.queAporta(obra.tipo, nivel) || def.desc}</p>
         ${!ampliable ? '' : nivel >= A.nivelMax
           ? '<p class="m-desc">Ampliada al máximo: si hace falta más, toca construir otra.</p>'

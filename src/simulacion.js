@@ -269,10 +269,20 @@ export function fraccionesActivas(pueblo, estado){
  * segunda fuente de ingresos del juego: no se recicla por deber moral, se
  * recicla porque alguien te compra el material.
  */
+/**
+ * El bono del TURNO en la línea (minijuego): mientras dura, la venta de
+ * reciclado sube según la puntería que hiciste. Es ventaja de quien juega,
+ * nunca puerta: sin turno, la planta vende a su precio normal.
+ */
+export function factorTurnoReciclaje(estado){
+  const t = estado && estado.turnoReciclaje;
+  return (t && estado.horas < t.hasta) ? t.factor : 1;
+}
+
 export function precioMedioReciclaje(pueblo, estado){
   let euros = 0;
   for(const f of fraccionesActivas(pueblo, estado)) euros += f.parte * f.precio;
-  return euros * CONFIG.residuos.escalaEconomica;
+  return euros * CONFIG.residuos.escalaEconomica * factorTurnoReciclaje(estado);
 }
 
 /**

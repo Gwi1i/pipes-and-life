@@ -28,6 +28,7 @@ import * as sonido from './sonido.js';
 import { pedirUbicacion, buscarNombres, guardarNombres,
          quitar as quitarLugares } from './lugares.js';
 import { MinijuegoTuberias } from './minijuego_tuberias.js';
+import { MinijuegoReciclaje } from './minijuego_reciclaje.js';
 
 const lienzo  = document.getElementById('escena');
 const estado  = new Estado();
@@ -42,6 +43,7 @@ const ui      = new UI(entrada);
 // estaciones y los helpers de color viven ahi.
 let escena = new EscenaMapa(lienzo);
 const miniTuberias = new MinijuegoTuberias();
+const miniReciclaje = new MinijuegoReciclaje();
 // La ficha de casilla pinta su miniatura con el MISMO dibujo del mapa, asi que
 // necesita la escena. Se la damos aqui para que ui.js no tenga que importarla.
 ui.escena = escena;
@@ -589,6 +591,45 @@ function procesarAcciones(){
             sonido.seco();
             ui.caraGuia('mal');
           }
+        });
+        break;
+      }
+
+      /* --- EL TALLER: los minijuegos de ensayo, sin premio ni castigo --- */
+
+      case 'practicarTuberias':
+        miniTuberias.jugar((exito, razon) => {
+          if(razon === 'abandonado') return;
+          avisar(exito ? '¡Bordado! Así se remata un tramo.'
+                       : 'Se derramó... en el taller no pasa nada: otra.');
+        });
+        break;
+
+      case 'practicarReciclaje':
+        miniReciclaje.jugar((aciertos, total, razon) => {
+          if(razon === 'abandonado') return;
+          avisar(`Ensayo: ${aciertos} de ${total} bien separados.`);
+        });
+        break;
+
+      /* --- EL TURNO DE VERDAD en la planta: con premio a la venta --- */
+
+      case 'turnoReciclaje': {
+        const K = CONFIG.minijuegos.reciclaje;
+        if(estado.turnoReciclaje && estado.horas < estado.turnoReciclaje.hasta){
+          avisar('El turno ya está echado: espera a que venza el bono.');
+          break;
+        }
+        miniReciclaje.jugar((aciertos, total, razon) => {
+          if(razon === 'abandonado') return;
+          const punteria = total ? aciertos / total : 0;
+          const factor = 1 + K.bonusMax * punteria;
+          estado.turnoReciclaje = { hasta: estado.horas + K.horasBonus, factor };
+          estado.anotar(`Turno en la línea: ${aciertos} de ${total}. La venta de ` +
+                        `reciclado sube un ${Math.round((factor - 1) * 100)} % una temporada.`, 'ok');
+          avisar(`¡Turno hecho! Venta de reciclado +${Math.round((factor - 1) * 100)} %.`);
+          if(punteria > 0.7){ sonido.reparada(); ui.caraGuia('bien'); }
+          ui.invalidarCache();
         });
         break;
       }
@@ -1260,7 +1301,7 @@ if(solapas) solapas.addEventListener('click', e => {
 
 // Depuración: `juego` en la consola. `juego.dinero(n)` fija el saldo.
 window.juego = {
-  estado, entrada, escena, ui, CONFIG, miniTuberias,
+  estado, entrada, escena, ui, CONFIG, miniTuberias, miniReciclaje,
   dinero: n => { estado.dinero = n; },
   agua: n => { estado.activo.agua = n; }
 };

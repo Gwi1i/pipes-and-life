@@ -633,18 +633,29 @@ otras dos: `nombreEstacion()` es la fuente única del nombre.
 
 **MINIJUEGOS: opcionales o no son.** La regla de oro, escrita en
 `CONFIG.minijuegos`: salen de momentos que ya existen, dan ventaja a quien los
-juega y NUNCA son puerta de progreso. El primero es la REPARACIÓN A MANO
-(`minijuego_tuberias.js`): desde el panel de averías, un tablero de tuberías
-contrarreloj — colocar y girar piezas de la cola hasta unir entrada y salida
-antes de que el agua alcance un hueco. Premio: la avería queda gratis. UN
-intento por avería (`av.aManoJugada`, se gasta al ENTRAR — abandonar también
-cuenta, que ver el tablero ya es ventaja): con reintentos infinitos, la llave
-no tendría sentido. El módulo es autocontenido (su telón, su lienzo, su rAF,
-sus escuchas), NO toca el estado —devuelve `(exito, razon)` por callback y
-`main.js` decide qué significa— y el tablero se regenera hasta que EXISTA
-camino: un puzle sin solución no es difícil, es una estafa. Los otros dos
-minijuegos pensados (camión de recogida, línea de reciclaje) esperan a que
-este demuestre que el patrón engancha.
+juega y NUNCA son puerta de progreso. Módulos autocontenidos (su telón, su
+lienzo, su rAF, sus escuchas) que NO tocan el estado: devuelven el resultado
+por callback y `main.js` decide qué significa. EL TALLER (solapa Mancomunidad)
+los ofrece en modo ensayo, sin premio ni castigo — nació para que el autor
+probara sin esperar una avería y se queda para que el jugador ensaye gratis.
+
+1. REPARACIÓN A MANO (`minijuego_tuberias.js`): desde el panel de averías, un
+tablero de tuberías contrarreloj — colocar y girar piezas de la cola hasta
+unir entrada y salida antes de que el agua alcance un hueco. Premio: la avería
+queda gratis. UN intento por avería (`av.aManoJugada`, se gasta al ENTRAR —
+abandonar también cuenta): con reintentos infinitos, la llave no tendría
+sentido. El tablero se regenera hasta que EXISTA camino: un puzle sin solución
+no es difícil, es una estafa.
+
+2. LA LÍNEA DE RECICLAJE (`minijuego_reciclaje.js`): desde la ficha de la
+planta, "echar un turno" — separar residuos en la cinta tocando el contenedor
+que toca, LOS DE VERDAD (amarillo envases, azul papel, verde vidrio, marrón
+orgánica). La lección escondida: el RESTO no se toca — dejarlo seguir hasta el
+vertedero ES lo correcto, porque no todo se recicla. Premio: la venta de
+reciclado sube según puntería (`factorTurnoReciclaje`, multiplica
+`precioMedioReciclaje`) durante `horasBonus`; `estado.turnoReciclaje` se
+guarda, y no hay segundo turno hasta que venza el bono. El tercero pensado (el
+camión de recogida) espera: conducir con el dedo es lo más delicado de acertar.
 
 **Averías: tienen SITIO en el mapa.** Viven en `estado.averias`
 (`{col, fila, clics, desde}`) y son de la mancomunidad, no de un pueblo. Caen

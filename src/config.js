@@ -414,6 +414,21 @@ export const CONFIG = {
       segundosPorCelda: 1.15,  // lo que tarda el agua en cruzar cada pieza
       aceleracion: 0.96,       // cada celda cruzada, un poco más rápido
       probRecto: 0.55          // reparto de la cola de piezas (resto: codos)
+    },
+    /* La LÍNEA DE RECICLAJE: separar residuos en la cinta tocando el
+       contenedor que toca — los de verdad, con sus colores. El RESTO no se
+       toca: dejarlo seguir hasta el vertedero ES lo correcto, que también en
+       la planta real la lección es que no todo se recicla. */
+    reciclaje: {
+      objetos: 18,             // residuos por turno
+      velocidad: 55,           // píxeles por segundo de cinta, al empezar
+      aceleracion: 1.06,       // cada residuo resuelto, la cinta se anima
+      separacion: 150,         // píxeles entre residuos en la cinta
+      probResto: 0.25,         // cuánta morralla sin contenedor cae en la cinta
+      /* El premio del turno (desde la planta; el taller no premia): la venta
+         de reciclado sube según puntería, durante un tiempo de juego. */
+      bonusMax: 0.5,           // +50% de precio de venta con puntería perfecta
+      horasBonus: 48           // dos días de juego de turno bien hecho
     }
   },
 
