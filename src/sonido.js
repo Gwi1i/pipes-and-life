@@ -192,6 +192,12 @@ export function ambiente(lluvia){
     lluvia * CONFIG.sonido.volumenLluvia / CONFIG.sonido.volumen, ctx.currentTime, 0.8);
 }
 
+/** Manuel carraspea: dos notas suaves para anunciar un comentario. */
+export function comentario(){
+  tono(390, 390, 0.07, 'sine', 0.13);
+  tono(490, 490, 0.10, 'sine', 0.11, 0.08);
+}
+
 /* ---------------- LA MÚSICA DE FONDO ----------------
    La única pieza de audio que NO se sintetiza: es un archivo del autor
    (assets/musica.*), como las ilustraciones. Se reproduce con un

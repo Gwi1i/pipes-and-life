@@ -447,15 +447,46 @@ export class UI {
 
   /* ---------------- LA GUÍA DE LOS PRIMEROS PASOS ---------------- */
 
+  /**
+   * Enseña un comentario de Manuel en el bocadillo. El texto vive lo que diga
+   * CONFIG.comentarios y se va solo; la cara acompaña si el comentario trae
+   * ánimo. Nunca pisa la guía de primeros pasos: main.js ni lo intenta.
+   */
+  mostrarComentario(com){
+    this.comentario = { ...com, hasta: Date.now() + CONFIG.comentarios.duracionSegundos * 1000 };
+    this.cache.guiaFirma = null;      // que el bocadillo se redibuje ya
+    if(com.animo) this.caraGuia(com.animo);
+  }
+
   refrescarGuia(estado){
     const paso = pasoActual(estado);
-    const firma = paso ? paso.id : 'fin';
+    // El comentario caduca solo; mientras vive, el bocadillo es suyo
+    if(this.comentario && Date.now() > this.comentario.hasta) this.comentario = null;
+    const com = paso ? null : this.comentario;
+    const firma = paso ? 'paso:' + paso.id : com ? 'com:' + com.texto : 'fin';
     if(this.cache.guiaFirma === firma) return;
     this.cache.guiaFirma = firma;
 
     const panel = document.getElementById('panel-guia');
-    if(!paso){ panel.style.display = 'none'; return; }
+    if(!paso && !com){ panel.style.display = 'none'; return; }
     panel.style.display = '';
+
+    // Dos modos, un bocadillo: la guía enseña pasos; Manuel suelto, comenta
+    document.getElementById('guia-rotulo').textContent = paso ? 'Primeros pasos' : 'dice';
+    document.getElementById('guia-titulo').style.display = paso ? '' : 'none';
+    panel.querySelector('.guia-saltar').style.display = paso ? '' : 'none';
+    if(com){
+      panel.classList.remove('plegada');
+      const bocadillo = panel.querySelector('.guia-bocadillo');
+      if(bocadillo){
+        bocadillo.style.animation = 'none';
+        void bocadillo.offsetWidth;
+        bocadillo.style.animation = '';
+      }
+      document.getElementById('guia-cuenta').textContent = '';
+      document.getElementById('guia-texto').textContent = com.texto;
+      return;
+    }
     // Un paso NUEVO se despliega y da su botecito aunque estuviera plegada:
     // información nueva pide atención; el pliegue era del paso anterior.
     panel.classList.remove('plegada');

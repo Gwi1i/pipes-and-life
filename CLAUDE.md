@@ -521,6 +521,19 @@ selecciona si es tuyo, destapa si esta en niebla, bombea si es el pueblo. (La
 tira de ENGRASAR se fue con el desgaste; no queda ningún botón de acción fuera
 del mapa.)
 
+**El guía se llama MANUEL y comenta la partida.** `comentarios.js` es el motor
+(lectura pura, como `tutorial.js`): una lista de comentarios con su condición,
+en orden de prioridad — lo que duele antes que lo que luce. La regla que lo
+salva de ser un incordio: CONTEXTUAL O NADA — Manuel habla del depósito lleno
+de ESTE jugador, nunca ánimos genéricos. Guardas: silencio mínimo entre
+comentarios (`CONFIG.comentarios`), cada uno se dice UNA vez y no vuelve hasta
+RE-ARMARSE (su condición debe apagarse y volver), y jamás habla durante la
+guía, con un hito pendiente, en el minijuego o sobre la portada. El bocadillo
+flotante tiene DOS modos: guía de pasos y "Manuel dice" (sin título ni botón
+de saltar). La VOZ está pensada y pendiente: síntesis del navegador
+(`speechSynthesis`, hay voces es-ES locales), APAGADA por defecto y con botón
+propio — decisión del autor.
+
 **La guía envejece mal y nadie lo ve.** El tutorial llegó a pedir "pulsa
 BOMBEAR" y "engrasa la instalación" dos versiones después de quitarse ambos: el
 texto de los primeros pasos no lo relee nadie al refactorizar. Si quitas o

@@ -375,6 +375,16 @@ export const CONFIG = {
     }
   },
 
+  /* ---------- LOS COMENTARIOS DE MANUEL ----------
+     El guía comenta la partida de vez en cuando, y la regla que lo salva de
+     ser un incordio: CONTEXTUALES O NADA. Manuel solo habla de lo que está
+     pasando en TU instalación — el depósito lleno, el estiaje, la línea vieja
+     — nunca ánimos genéricos, que se aprenden a ignorar en dos minutos. */
+  comentarios: {
+    cadaSegundosMin: 150,   // silencio mínimo entre comentarios (segundos reales)
+    duracionSegundos: 14    // lo que el bocadillo se queda en pantalla
+  },
+
   /* ---------- MINIJUEGOS ----------
      La regla de oro de todos: OPCIONALES y nunca puerta de progreso. Salen de
      momentos que ya existen y dan ventaja a quien los juega; quien pase de

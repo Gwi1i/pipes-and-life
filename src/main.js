@@ -22,6 +22,7 @@ import { avanzar, bombear, costeMejora, requisitosAutobomba,
          incorporarPueblo, canonIncorporacion, costeAmpliarPieza } from './simulacion.js';
 import { formatear } from './util.js';
 import { comprobar as comprobarGuia, saltar as saltarGuia } from './tutorial.js';
+import { comentar } from './comentarios.js';
 import * as sonido from './sonido.js';
 import { pedirUbicacion, buscarNombres, guardarNombres,
          quitar as quitarLugares } from './lugares.js';
@@ -1092,7 +1093,7 @@ function comprobarLogros(resultado){
    ================================================================== */
 
 let ultimo = performance.now();
-let acumGuardado = 0, acumHUD = 0;
+let acumGuardado = 0, acumHUD = 0, acumManuel = 0;
 let resultado = { servicio: 0, prodLps: 0, contaminacion: 0, suciedad: 0 };
 
 function bucle(ahora){
@@ -1159,6 +1160,22 @@ function bucle(ahora){
   // El ambiente de lluvia sigue a la intensidad real: el otoño se OYE.
   sonido.ambiente(resultado.lluvia || 0);
 
+  // Manuel mira la partida cada pocos segundos, y solo habla si hay algo QUE
+  // decir y nada más importante en pantalla (tarjetas, minijuego, portada).
+  acumManuel += dt;
+  if(acumManuel > 3){
+    acumManuel = 0;
+    if(document.getElementById('portada').hidden
+       && document.getElementById('minijuego').hidden
+       && document.getElementById('vuelta-fondo').hidden){
+      const com = comentar(estado, resultado, ahora / 1000);
+      if(com){
+        ui.mostrarComentario(com);
+        sonido.comentario();
+      }
+    }
+  }
+
   escena.dibujar(estado, resultado, dt);
   requestAnimationFrame(bucle);
 }
@@ -1212,7 +1229,7 @@ if(solapas) solapas.addEventListener('click', e => {
 
 // Depuración: `juego` en la consola. `juego.dinero(n)` fija el saldo.
 window.juego = {
-  estado, entrada, escena, CONFIG, miniTuberias,
+  estado, entrada, escena, ui, CONFIG, miniTuberias,
   dinero: n => { estado.dinero = n; },
   agua: n => { estado.activo.agua = n; }
 };
