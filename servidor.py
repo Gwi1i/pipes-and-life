@@ -79,7 +79,7 @@ def main():
     servidor = http.server.HTTPServer(('0.0.0.0', puerto), Manejador)
 
     print('')
-    print('  RED HIDRAULICA')
+    print('  PIPES AND LIFE')
     print('  ' + url)
     ip = ip_local()
     if ip:

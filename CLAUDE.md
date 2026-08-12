@@ -10,6 +10,11 @@ Esto vale también para los archivos nuevos.
 
 ## Qué es el proyecto
 
+**El juego se llama PIPES AND LIFE** (decisión del autor: el logo va rotulado
+en el cartel de la portada y en el vídeo). "Red Hidráulica" queda como nombre
+interno del repositorio y de las claves de guardado — las claves de
+localStorage NUNCA se renombran por marca: borraría las partidas.
+
 Red Hidráulica es un juego de abastecimiento de agua. Hay **dos versiones** en
 ramas distintas:
 
