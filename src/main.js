@@ -55,6 +55,16 @@ if(!habiaPartida){
   const botonPortada = document.getElementById('portada-jugar');
   botonPortada.textContent = habiaPartida ? 'Continuar la partida' : 'Empezar';
   botonPortada.onclick = () => { document.getElementById('portada').hidden = true; };
+
+  // El cartel puede ser VÍDEO (h_portada.mp4), como en las fichas: se prueba
+  // y solo si de verdad puede reproducirse sustituye a la imagen fija. Sin
+  // archivo, el error se queda callado y la imagen sigue en su sitio.
+  const cartel = document.querySelector('#portada .portada-img');
+  const v = document.createElement('video');
+  v.className = 'portada-img';
+  v.muted = true; v.loop = true; v.playsInline = true; v.autoplay = true;
+  v.oncanplay = () => { if(cartel.parentNode){ cartel.replaceWith(v); v.play(); } };
+  v.src = 'assets/h_portada.mp4';
 }
 ui.reconstruirPestanas(estado);
 
