@@ -1158,6 +1158,10 @@ function bucle(ahora){
 
 document.getElementById('btn-reiniciar').onclick = () => {
   if(!confirm('¿Empezar de cero? Se perderá el progreso.')) return;
+  // OJO: el sello del adiós (visibilitychange → guardar) RESUCITABA la partida
+  // recién borrada al recargar. Se anula el guardado antes de borrar: esta
+  // página ya no tiene nada que decir.
+  estado.guardar = () => {};
   Estado.borrar();
   location.reload();
 };
