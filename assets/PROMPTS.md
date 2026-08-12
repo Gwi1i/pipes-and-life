@@ -167,6 +167,24 @@ red que lo une todo.
 
 ---
 
+# LA NAVE DE LA LÍNEA DE RECICLAJE (`mini_reciclaje.png`)
+
+El fondo del minijuego de la cinta: la nave de la planta, vista de frente,
+donde el juego dibuja encima la cinta, los residuos y los contenedores. Se ve
+OSCURECIDA con un velo para que lo jugable resalte, así que interesa una
+escena con volumen y profundidad más que con detalle fino. **Sin cinta ni
+contenedores en la imagen** — esos los pone el juego, y dos cintas a la vez
+se pelearían.
+
+### `mini_reciclaje.png`
+> Genera una imagen: el interior de una nave industrial de una planta de
+> reciclaje, vista frontal con las cerchas metálicas del techo, ventanales
+> altos con luz de día entrando, sacas y balas de material prensado apiladas
+> al fondo contra la pared, sin personas y sin maquinaria en primer plano,
+> dejando despejada la mitad inferior de la imagen, *(+ coletilla)*
+
+---
+
 # EL GUÍA (`guia.png` — o mejor, la hoja `guia_hoja.png`)
 
 La cara que acompaña al bocadillo de los primeros pasos, flotando sobre el
