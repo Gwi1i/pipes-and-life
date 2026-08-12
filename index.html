@@ -18,6 +18,38 @@
 </head>
 <body>
 
+<!-- EL CAZADOR DE ARRANQUE. Si un módulo revienta al cargar, el juego se
+     queda mudo: botones que no responden y ninguna pista. Esto convierte ese
+     silencio en un cartel legible que se puede fotografiar y mandar. Es un
+     script clásico a propósito: tiene que sobrevivir a la muerte de los
+     módulos, que es justo cuando hace falta. -->
+<script>
+(function(){
+  var avisados = 0;
+  function cartel(texto){
+    if(++avisados > 3) return;
+    var caja = document.getElementById('cazador');
+    if(!caja){
+      caja = document.createElement('div');
+      caja.id = 'cazador';
+      caja.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;' +
+        'background:#7f1d1d;color:#fee;padding:10px 14px;font:12px monospace;' +
+        'white-space:pre-wrap;border-bottom:2px solid #f87171;';
+      caja.textContent = 'EL JUEGO HA TROPEZADO AL ARRANCAR — haz una foto de esto:\n';
+      document.body.appendChild(caja);
+    }
+    caja.textContent += '\n' + texto;
+  }
+  window.addEventListener('error', function(e){
+    if(!e.message) return;   // los 404 de recursos no son tropiezos del código
+    cartel(e.message + '  (' + (e.filename || '').split('/').pop() + ':' + e.lineno + ')');
+  });
+  window.addEventListener('unhandledrejection', function(e){
+    cartel('promesa rota: ' + (e.reason && e.reason.message || e.reason));
+  });
+})();
+</script>
+
 <div class="app">
 
   <!-- ============ BARRA SUPERIOR ============ -->
@@ -280,7 +312,10 @@
     <p class="portada-desc">Capta el agua, guárdala en alto, llévala lejos y
       devuélvela limpia. Treinta y seis pueblos esperan; el oficio es de
       verdad.</p>
-    <button class="hito-btn" id="portada-jugar">Empezar</button>
+    <!-- El onclick en línea es el cinturón: quita el telón AUNQUE los módulos
+         hayan muerto. main.js lo sustituye por el suyo al arrancar bien. -->
+    <button class="hito-btn" id="portada-jugar"
+            onclick="document.getElementById('portada').hidden = true">Empezar</button>
   </div>
 </div>
 
