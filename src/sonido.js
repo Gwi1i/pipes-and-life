@@ -388,6 +388,12 @@ export function hablar(texto, id){
 
 export function vozActiva(){ return vozOn; }
 
+/** ¿Está sonando la voz ahora mismo? Lo pregunta la UI para animar a Manuel. */
+export function estaHablando(){
+  if(locucion && !locucion.paused && !locucion.ended) return true;
+  return 'speechSynthesis' in window && speechSynthesis.speaking;
+}
+
 export function alternarVoz(){
   vozOn = !vozOn;
   localStorage.setItem(CLAVE_VOZ, vozOn ? '1' : '0');

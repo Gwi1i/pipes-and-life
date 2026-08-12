@@ -1170,6 +1170,9 @@ function bucle(ahora){
   // El ambiente de lluvia sigue a la intensidad real: el otoño se OYE.
   sonido.ambiente(resultado.lluvia || 0);
 
+  // Manuel bota mientras suena su voz: la animación sigue al audio real
+  ui.marcarHablando(sonido.estaHablando());
+
   // Manuel mira la partida cada pocos segundos, y solo habla si hay algo QUE
   // decir y nada más importante en pantalla (tarjetas, minijuego, portada).
   acumManuel += dt;

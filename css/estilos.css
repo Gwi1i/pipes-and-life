@@ -336,6 +336,29 @@ button{touch-action:manipulation;}
   box-shadow:0 4px 14px rgba(0,0,0,0.45), 0 0 18px -8px var(--ok);
 }
 .guia-avatar img{width:100%; height:100%; object-fit:cover; display:block;}
+
+/* LA VIDA DE MANUEL, por código: sin fotogramas generados (los generadores no
+   mantienen la identidad entre frames) — tres animaciones y la cara quieta.
+   El orden importa: hablar y el respingo pisan a la respiración. */
+.guia-avatar{animation:guia-respira 3.4s ease-in-out infinite;}
+@keyframes guia-respira{
+  0%, 100%{transform:translateY(0);}
+  50%{transform:translateY(-2.5px);}
+}
+/* Mientras suena su voz, botecitos al ritmo: el "está hablando" universal */
+.guia-avatar.hablando{animation:guia-habla .36s ease-in-out infinite;}
+@keyframes guia-habla{
+  0%, 100%{transform:translateY(0) scale(1);}
+  50%{transform:translateY(-2px) scale(1.045);}
+}
+/* El respingo: algo nuevo que decir, o cambio de cara */
+.guia-avatar.respingo{animation:guia-respingo .5s ease-out;}
+@keyframes guia-respingo{
+  0%{transform:scale(1);}
+  30%{transform:scale(1.16) rotate(-5deg);}
+  60%{transform:scale(0.95) rotate(3deg);}
+  100%{transform:scale(1);}
+}
 /* Sin retrato aún, el interrogante sostiene el sitio */
 .guia-avatar-reserva{
   position:absolute; inset:0; display:flex; align-items:center; justify-content:center;

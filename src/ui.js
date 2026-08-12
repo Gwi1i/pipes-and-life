@@ -456,6 +456,7 @@ export class UI {
     this.comentario = { ...com, hasta: Date.now() + CONFIG.comentarios.duracionSegundos * 1000 };
     this.cache.guiaFirma = null;      // que el bocadillo se redibuje ya
     if(com.animo) this.caraGuia(com.animo);
+    else this.respingoGuia();         // sin cambio de cara, el bote avisa igual
   }
 
   refrescarGuia(estado){
@@ -734,7 +735,32 @@ export class UI {
    * preocupa con las averías. Solo si esa cara existe (guia_bien/guia_mal.jpg,
    * de la hoja de tres): sin archivos, el guía se queda sereno y no pasa nada.
    */
+  /** El respingo del avatar: algo nuevo que decir o un cambio de cara. */
+  respingoGuia(){
+    const avatar = document.querySelector('.guia-avatar');
+    if(!avatar) return;
+    avatar.classList.remove('respingo');
+    void avatar.offsetWidth;                     // reencender la animación
+    avatar.classList.add('respingo');
+    // La clase se va al terminar: si se quedara, taparía el bote de hablar
+    clearTimeout(this._respingoTemp);
+    this._respingoTemp = setTimeout(() => avatar.classList.remove('respingo'), 550);
+  }
+
+  /**
+   * Los botecitos de "está hablando": main.js pregunta al sonido y avisa aquí.
+   * Con caché del último valor, que tocar el DOM sesenta veces por segundo
+   * para dejarlo igual sería de mala educación.
+   */
+  marcarHablando(hablando){
+    if(this._hablando === hablando) return;
+    this._hablando = hablando;
+    const avatar = document.querySelector('.guia-avatar');
+    if(avatar) avatar.classList.toggle('hablando', hablando);
+  }
+
   caraGuia(animo){
+    this.respingoGuia();                         // el cambio de cara se nota
     const img = document.querySelector('.guia-avatar img');
     if(!img || img.hidden) return;               // sin retrato no hay teatro
     const src = `assets/guia_${animo}.jpg`;
