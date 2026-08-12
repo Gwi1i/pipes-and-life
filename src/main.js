@@ -25,6 +25,7 @@ import { comprobar as comprobarGuia, saltar as saltarGuia } from './tutorial.js'
 import * as sonido from './sonido.js';
 import { pedirUbicacion, buscarNombres, guardarNombres,
          quitar as quitarLugares } from './lugares.js';
+import { MinijuegoTuberias } from './minijuego_tuberias.js';
 
 const lienzo  = document.getElementById('escena');
 const estado  = new Estado();
@@ -38,6 +39,7 @@ const ui      = new UI(entrada);
 // `escena.js` se queda porque `EscenaMapa` hereda de el: destellos, clima,
 // estaciones y los helpers de color viven ahi.
 let escena = new EscenaMapa(lienzo);
+const miniTuberias = new MinijuegoTuberias();
 // La ficha de casilla pinta su miniatura con el MISMO dibujo del mapa, asi que
 // necesita la escena. Se la damos aqui para que ui.js no tenga que importarla.
 ui.escena = escena;
@@ -481,6 +483,35 @@ function procesarAcciones(){
         estado.pagar(P.coste);
         p.autobombaActivo = true;
         estado.anotar(`¡Auto-bombeo activado en ${p.nombre}!`, 'ok');
+        break;
+      }
+
+      /* --- EL MINIJUEGO: reparar a mano ---
+         Opcional y con UN intento por avería: si siempre se pudiera reintentar,
+         la llave (que cuesta dinero) no tendría sentido. El intento se gasta al
+         ENTRAR — abandonar también cuenta, que mirar el tablero ya es ventaja. */
+      case 'repararAMano': {
+        const av = estado.averias[parseInt(a.clave, 10)];
+        if(!av || av.aManoJugada) break;
+        av.aManoJugada = true;
+        ui.invalidarCache();
+        miniTuberias.jugar((exito, razon) => {
+          if(exito){
+            const i = estado.averias.indexOf(av);
+            if(i >= 0) estado.averias.splice(i, 1);
+            const obra = estado.construcciones.find(o => o.col === av.col && o.fila === av.fila);
+            const nombre = obra ? CONFIG.construibles[obra.tipo].nombre : 'La instalación';
+            estado.anotar(`${nombre}: reparación a mano impecable. Ni un euro en llaves.`, 'ok');
+            avisar('¡En servicio! Reparada a mano, gratis.');
+            sonido.reparada();
+            escena.destelloMantenimiento();
+            ui.invalidarCache();
+          } else if(razon === 'derrame'){
+            estado.anotar('El agua llegó antes que tú: esa avería ya solo se arregla con la llave.', 'alarma');
+            avisar('¡Derrame! A golpe de llave, como toda la vida.');
+            sonido.seco();
+          }
+        });
         break;
       }
 
@@ -1100,7 +1131,7 @@ if(solapas) solapas.addEventListener('click', e => {
 
 // Depuración: `juego` en la consola. `juego.dinero(n)` fija el saldo.
 window.juego = {
-  estado, entrada, escena, CONFIG,
+  estado, entrada, escena, CONFIG, miniTuberias,
   dinero: n => { estado.dinero = n; },
   agua: n => { estado.activo.agua = n; }
 };

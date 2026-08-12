@@ -583,6 +583,21 @@ su mínimo caiga en pleno VERANO; sin él, el panel decía "estiaje (verano)"
 mientras la escena ya pintaba otoño lloviendo. Si tocas una curva, comprueba las
 otras dos: `nombreEstacion()` es la fuente única del nombre.
 
+**MINIJUEGOS: opcionales o no son.** La regla de oro, escrita en
+`CONFIG.minijuegos`: salen de momentos que ya existen, dan ventaja a quien los
+juega y NUNCA son puerta de progreso. El primero es la REPARACIÓN A MANO
+(`minijuego_tuberias.js`): desde el panel de averías, un tablero de tuberías
+contrarreloj — colocar y girar piezas de la cola hasta unir entrada y salida
+antes de que el agua alcance un hueco. Premio: la avería queda gratis. UN
+intento por avería (`av.aManoJugada`, se gasta al ENTRAR — abandonar también
+cuenta, que ver el tablero ya es ventaja): con reintentos infinitos, la llave
+no tendría sentido. El módulo es autocontenido (su telón, su lienzo, su rAF,
+sus escuchas), NO toca el estado —devuelve `(exito, razon)` por callback y
+`main.js` decide qué significa— y el tablero se regenera hasta que EXISTA
+camino: un puzle sin solución no es difícil, es una estafa. Los otros dos
+minijuegos pensados (camión de recogida, línea de reciclaje) esperan a que
+este demuestre que el patrón engancha.
+
 **Averías: tienen SITIO en el mapa.** Viven en `estado.averias`
 (`{col, fila, clics, desde}`) y son de la mancomunidad, no de un pueblo. Caen
 sobre una PIEZA construida —sin instalación no hay averías, lo que mantiene

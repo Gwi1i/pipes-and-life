@@ -250,6 +250,22 @@
   </div>
 </div>
 
+<!-- EL MINIJUEGO de la reparación a mano: tablero de tuberías contrarreloj.
+     Opcional siempre — se entra desde el panel de averías, y quien pase de él
+     repara a golpe de llave como toda la vida. -->
+<div class="hito-fondo" id="minijuego" hidden>
+  <div class="mini-caja">
+    <div class="mini-cab">
+      <span class="mini-titulo">Reparación a mano</span>
+      <button id="mini-cancelar">Dejarlo</button>
+    </div>
+    <p class="mini-desc">Une la <b>entrada</b> con la <b>salida</b> antes de que
+      el agua alcance un hueco. Toca una casilla libre para <b>colocar</b> la
+      pieza que viene; toca una pieza seca para <b>girarla</b>.</p>
+    <canvas id="mini-lienzo"></canvas>
+  </div>
+</div>
+
 <!-- LA PORTADA. El juego arrancaba a pelo contra el HUD: para quien lo abre
      por primera vez —o para enseñárselo a alguien— la primera pantalla ES el
      producto. Es un telón, no un menú: el juego ya corre detrás. -->

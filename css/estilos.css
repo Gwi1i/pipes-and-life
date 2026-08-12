@@ -553,6 +553,28 @@ button{touch-action:manipulation;}
   background:linear-gradient(180deg,#1b3a28,#0e2418);}
 .hito.es-logro .hito-btn:hover{background:linear-gradient(180deg,#245036,#0e2418);}
 
+/* EL MINIJUEGO: la caja del tablero. Oscura y sin adornos — ahí dentro manda
+   el reloj, no la decoración. */
+.mini-caja{
+  width:min(560px, calc(100vw - 24px)); padding:14px 16px 16px;
+  background:var(--panel); border:1px solid var(--linea-viva); border-radius:8px;
+}
+.mini-cab{display:flex; justify-content:space-between; align-items:center;}
+.mini-titulo{
+  font-family:var(--mono); font-size:13px; font-weight:700;
+  letter-spacing:.14em; text-transform:uppercase; color:var(--agua);
+}
+#mini-cancelar{
+  background:none; border:1px solid var(--linea-viva); color:var(--tenue);
+  padding:5px 10px; border-radius:3px; cursor:pointer;
+  font-family:var(--mono); font-size:9px; letter-spacing:.12em;
+  text-transform:uppercase;
+}
+#mini-cancelar:hover{border-color:var(--critico); color:var(--critico);}
+.mini-desc{font-size:11.5px; line-height:1.5; color:var(--tenue); margin:7px 0 10px;}
+#mini-lienzo{display:block; width:100%; height:auto; touch-action:none;
+  border-radius:4px; cursor:pointer;}
+
 /* LA PORTADA: el telón de entrada. Más oscura que las tarjetas —debajo el
    juego ya corre y no debe competir— y con el título al estilo de la marca. */
 .portada{background:rgba(2,6,12,0.88);}

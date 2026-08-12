@@ -375,6 +375,21 @@ export const CONFIG = {
     }
   },
 
+  /* ---------- MINIJUEGOS ----------
+     La regla de oro de todos: OPCIONALES y nunca puerta de progreso. Salen de
+     momentos que ya existen y dan ventaja a quien los juega; quien pase de
+     ellos no pierde nada esencial. Uno solo de momento: el de tuberías. */
+  minijuegos: {
+    tuberias: {
+      columnas: 7, filas: 5,
+      rocas: 4,                // celdas bloqueadas: obligan a rodear
+      graciaSegundos: 5,       // margen antes de que el agua entre al tablero
+      segundosPorCelda: 1.15,  // lo que tarda el agua en cruzar cada pieza
+      aceleracion: 0.96,       // cada celda cruzada, un poco más rápido
+      probRecto: 0.55          // reparto de la cola de piezas (resto: codos)
+    }
+  },
+
   /* ---------- LUGARES: pueblos con nombres de la zona del jugador ----------
      Opcional SIEMPRE (ver src/lugares.js: la ubicación no se guarda y solo
      sale en una consulta anónima a OpenStreetMap). Es la única pieza del juego

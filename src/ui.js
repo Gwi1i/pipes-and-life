@@ -1097,7 +1097,7 @@ export class UI {
   refrescarAverias(estado){
     const panel = document.getElementById('panel-averias');
     const lista = estado.averias || [];
-    const firma = lista.map(a => `${a.col},${a.fila},${a.clics}`).join('|');
+    const firma = lista.map(a => `${a.col},${a.fila},${a.clics},${a.aManoJugada ? 1 : 0}`).join('|');
     if(this.cache.averiasFirma === firma) return;
     this.cache.averiasFirma = firma;
 
@@ -1116,7 +1116,15 @@ export class UI {
             Ve hasta ella y clica encima: le faltan <b>${av.clics}</b> golpes de
             llave, a ${formatear(coste)} € cada uno.</span>
           <span class="m-coste">ir ahí →</span>
-        </button>`;
+        </button>
+        ${av.aManoJugada ? '' : `
+        <button class="mejora obra" data-accion="repararAMano" data-clave="${i}"
+                style="--tono:${CONFIG.color.agua || '#38bdf8'}">
+          <span class="m-cab"><span class="m-nom">Repararla a mano</span></span>
+          <span class="m-desc">Monta el tramo antes de que llegue el agua y queda
+            arreglada GRATIS. Un solo intento: si se derrama, a golpe de llave.</span>
+          <span class="m-coste">jugar</span>
+        </button>`}`;
     }).join('');
   }
 
