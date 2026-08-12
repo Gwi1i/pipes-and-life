@@ -366,6 +366,15 @@ export const CONFIG = {
     /* La música de fondo (assets/musica.ogg|mp3|wav, generada por el autor).
        De fondo DE VERDAD: si compite con los efectos, cansa en diez minutos. */
     volumenMusica: 0.18,
+    /* La VOZ de Manuel: síntesis del navegador (sin archivos, y lee el texto
+       VIVO — si un paso cambia, la voz dice lo nuevo). APAGADA por defecto,
+       decisión del autor: un juego que te habla sin avisar sobresalta. El
+       tono grave es lo que la acerca a un veterano. */
+    voz: {
+      velocidad: 1.0,
+      tono: 0.8,
+      volumen: 1.0
+    },
     /* El recorte del bucle: la música generada trae fundido a silencio al
        final, y en bucle eso es morirse y arrancar de golpe. Se mide el volumen
        por ventanas y se repite solo el tramo que supera `umbral` × mediana. */
@@ -382,7 +391,11 @@ export const CONFIG = {
      — nunca ánimos genéricos, que se aprenden a ignorar en dos minutos. */
   comentarios: {
     cadaSegundosMin: 150,   // silencio mínimo entre comentarios (segundos reales)
-    duracionSegundos: 14    // lo que el bocadillo se queda en pantalla
+    duracionSegundos: 14,   // lo que el bocadillo se queda en pantalla
+    /* Los CHASCARRILLOS son el segundo escalón: batallitas y coña de
+       veterano. Mucho más raros que los avisos —son un caramelo, no un
+       canal de información— y solo cuando no hay nada serio que decir. */
+    chascarrilloCadaSegundosMin: 420
   },
 
   /* ---------- MINIJUEGOS ----------

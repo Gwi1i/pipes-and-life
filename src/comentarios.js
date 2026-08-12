@@ -99,11 +99,61 @@ const COMENTARIOS = [
                    && e.activo.servicio >= CONFIG.poblacion.servicioBueno,
     texto: 'El pueblo crece, ¿eh? Buen servicio sostenido: así se hace. La ' +
            'demanda subirá con él, no te me duermas.'
+  },
+
+  /* ---- CHASCARRILLOS: la coña del veterano ----
+     También con su contexto (la batallita de la tormenta sale CUANDO llueve
+     de verdad), pero sin lección obligada: son personaje, no manual. Van los
+     últimos —cualquier aviso les pasa delante— y con su propio silencio,
+     mucho más largo. */
+  {
+    id: 'chTormenta', animo: null, chascarrillo: true,
+    cuando: (e, res) => (res.lluvia || 0) > 0.8,
+    texto: 'Menuda tromba... Esto me recuerda al 96: tres días así y la ' +
+           'depuradora pidió la baja. Los tanques de tormenta se inventaron ' +
+           'por algo, te lo digo yo.'
+  },
+  {
+    id: 'chDeshielo', animo: null, chascarrillo: true,
+    cuando: (e, res) => (res.estiaje || 1) > 1.1,
+    texto: 'El río baja crecido con el deshielo. Disfrútalo mientras dure: ' +
+           'el verano nunca manda aviso.'
+  },
+  {
+    id: 'chLluvia', animo: null, chascarrillo: true,
+    cuando: (e, res) => (res.lluvia || 0) > 0.35 && (res.lluvia || 0) <= 0.8,
+    texto: '¿Oyes? Agua del cielo. La única que llega sin bombear... y aun ' +
+           'así nos las apañamos para que acabe donde no debe.'
+  },
+  {
+    id: 'chMadrugada', animo: null, chascarrillo: true,
+    cuando: (e) => { const h = Math.floor(e.horas % 24); return h >= 2 && h <= 5; },
+    texto: 'Turno de noche, ¿eh? Yo de guardia nocturna arreglé más ' +
+           'reventones que en diez años de mañanas. El agua no libra.'
+  },
+  {
+    id: 'chPozo', animo: null, chascarrillo: true,
+    cuando: (e) => e.construcciones.some(o => o.tipo === 'acuifero'),
+    texto: 'Mi abuelo buscaba agua con dos varillas de avellano. Tú con ' +
+           'estudio hidrogeológico: no sé si es mejor, pero falla menos.'
+  },
+  {
+    id: 'chRedGrande', animo: null, chascarrillo: true,
+    cuando: (e) => (e.tuberias || []).length >= 8,
+    texto: 'Menuda red vas tejiendo ya... En la cuadrilla a esto lo ' +
+           'llamábamos encaje de bolillos, pero con zanja.'
+  },
+  {
+    id: 'chPunta', animo: null, chascarrillo: true,
+    cuando: (e, res) => (res.punta || 1) > 1.6,
+    texto: 'Hora punta: medio pueblo duchándose a la vez. Para esto está el ' +
+           'depósito, que el río no entiende de prisas.'
   }
 ];
 
-let ultimaVez = null;      // reloj real del último comentario (segundos)
-const dicho = {};          // id -> ya dicho y aún sin re-armar
+let ultimaVez = null;        // reloj real del último comentario (segundos)
+let ultimaCoña = null;       // el chascarrillo lleva su propio silencio, más largo
+const dicho = {};            // id -> ya dicho y aún sin re-armar
 
 /**
  * ¿Tiene Manuel algo que decir AHORA? Devuelve { texto, animo } o null.
@@ -115,7 +165,7 @@ export function comentar(estado, resultado, ahoraSeg){
   if(estado.hitoPendiente) return null;
 
   // El primer silencio también cuenta: nada de saludar según cargas
-  if(ultimaVez === null) ultimaVez = ahoraSeg;
+  if(ultimaVez === null){ ultimaVez = ahoraSeg; ultimaCoña = ahoraSeg; }
 
   let elegido = null;
   for(const c of COMENTARIOS){
@@ -126,9 +176,14 @@ export function comentar(estado, resultado, ahoraSeg){
     if(!elegido) elegido = c;                        // el primero manda
   }
   if(!elegido) return null;
-  if(ahoraSeg - ultimaVez < CONFIG.comentarios.cadaSegundosMin) return null;
+  const K = CONFIG.comentarios;
+  if(ahoraSeg - ultimaVez < K.cadaSegundosMin) return null;
+  // La coña espera SU turno largo: es un caramelo, no un canal de información
+  if(elegido.chascarrillo && ahoraSeg - ultimaCoña < K.chascarrilloCadaSegundosMin)
+    return null;
 
   dicho[elegido.id] = true;
   ultimaVez = ahoraSeg;
+  if(elegido.chascarrillo) ultimaCoña = ahoraSeg;
   return { texto: elegido.texto, animo: elegido.animo };
 }

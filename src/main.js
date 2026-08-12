@@ -21,7 +21,8 @@ import { avanzar, bombear, costeMejora, requisitosAutobomba,
          capacidadVaso, faseActual, faltanParaFase,
          incorporarPueblo, canonIncorporacion, costeAmpliarPieza } from './simulacion.js';
 import { formatear } from './util.js';
-import { comprobar as comprobarGuia, saltar as saltarGuia } from './tutorial.js';
+import { comprobar as comprobarGuia, saltar as saltarGuia,
+         pasoActual } from './tutorial.js';
 import { comentar } from './comentarios.js';
 import * as sonido from './sonido.js';
 import { pedirUbicacion, buscarNombres, guardarNombres,
@@ -57,7 +58,13 @@ if(!habiaPartida){
 {
   const botonPortada = document.getElementById('portada-jugar');
   botonPortada.textContent = habiaPartida ? 'Continuar la partida' : 'Empezar';
-  botonPortada.onclick = () => { document.getElementById('portada').hidden = true; };
+  botonPortada.onclick = () => {
+    document.getElementById('portada').hidden = true;
+    // Con la voz ya activada de otra sesión, Manuel lee el paso que espera.
+    // El clic de la portada es además el gesto que el navegador exige.
+    const paso = pasoActual(estado);
+    if(paso) sonido.hablar(paso.titulo + '. ' + paso.texto);
+  };
 
   // El cartel puede ser VÍDEO (h_portada.mp4), como en las fichas: se prueba
   // y solo si de verdad puede reproducirse sustituye a la imagen fija. Sin
@@ -1110,6 +1117,9 @@ function bucle(ahora){
     estado.anotar(`Guía: ${pasoHecho.titulo} ✓`, 'ok');
     sonido.hallazgo();      // el paso conseguido se celebra, bajito
     ui.caraGuia('bien');    // ...y el guía lo celebra con la cara, si la tiene
+    // Y lee el paso NUEVO, si hay voz: el que acaba de aparecer en el bocadillo
+    const siguiente = pasoActual(estado);
+    if(siguiente) sonido.hablar(siguiente.titulo + '. ' + siguiente.texto);
   }
   anotarCrecimiento();
 
@@ -1172,6 +1182,7 @@ function bucle(ahora){
       if(com){
         ui.mostrarComentario(com);
         sonido.comentario();
+        sonido.hablar(com.texto);
       }
     }
   }
@@ -1208,6 +1219,24 @@ rotularSonido();
 const btnMusica = document.getElementById('btn-musica');
 const rotularMusica = () => { btnMusica.textContent = sonido.musicaActiva() ? 'Música: sí' : 'Música: no'; };
 btnMusica.onclick = () => { sonido.alternarMusica(); rotularMusica(); };
+
+// LA VOZ DE MANUEL. El botón solo existe si hay voz en español en la máquina
+// —un mando que no manda nada es peor que ningún mando— y arranca APAGADA:
+// quien la quiera la enciende una vez y la preferencia se queda.
+const btnVoz = document.getElementById('btn-voz');
+const rotularVoz = () => { btnVoz.textContent = sonido.vozActiva() ? 'Voz: sí' : 'Voz: no'; };
+btnVoz.onclick = () => {
+  const encendida = sonido.alternarVoz();
+  rotularVoz();
+  // Que se presente al encenderla: confirma que suena y de paso da la mano
+  if(encendida) sonido.hablar('Hola. Soy Manuel, del servicio de aguas. ' +
+    'Si algo se tuerce en tu red, te lo iré contando.');
+};
+sonido.cargarVoz().then(hay => {
+  if(!hay) return;
+  btnVoz.hidden = false;
+  rotularVoz();
+});
 sonido.cargarMusica().then(hay => {
   if(!hay) return;
   btnMusica.hidden = false;

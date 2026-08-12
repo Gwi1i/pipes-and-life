@@ -530,9 +530,17 @@ comentarios (`CONFIG.comentarios`), cada uno se dice UNA vez y no vuelve hasta
 RE-ARMARSE (su condición debe apagarse y volver), y jamás habla durante la
 guía, con un hito pendiente, en el minijuego o sobre la portada. El bocadillo
 flotante tiene DOS modos: guía de pasos y "Manuel dice" (sin título ni botón
-de saltar). La VOZ está pensada y pendiente: síntesis del navegador
-(`speechSynthesis`, hay voces es-ES locales), APAGADA por defecto y con botón
-propio — decisión del autor.
+de saltar). Los CHASCARRILLOS son el segundo escalón (batallitas de veterano,
+también con contexto: la del 96 sale cuando LLUEVE): cualquier aviso les pasa
+delante y llevan su propio silencio, mucho más largo.
+
+La VOZ de Manuel es síntesis del navegador (`hablar()` en `sonido.js`): sin
+archivos y leyendo el texto VIVO — grabar audios habría dejado grabaciones
+mintiendo al primer refactor, que aquí ya pasó dos veces con textos. APAGADA
+por defecto (decisión del autor) con botón propio que SOLO existe si hay voz
+en español (elige hombre si lo hay: Pablo en Windows); al encenderla, Manuel
+se presenta — confirma que suena y da la mano. Lee los pasos de la guía y los
+comentarios; los parámetros en `CONFIG.sonido.voz`.
 
 **La guía envejece mal y nadie lo ve.** El tutorial llegó a pedir "pulsa
 BOMBEAR" y "engrasa la instalación" dos versiones después de quitarse ambos: el

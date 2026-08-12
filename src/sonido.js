@@ -290,6 +290,64 @@ export function alternarMusica(){
   return musicaOn;
 }
 
+/* ---------------- LA VOZ DE MANUEL ----------------
+   Síntesis del navegador (speechSynthesis): sin archivos, sin internet si la
+   voz es local, y lee el texto VIVO — si mañana cambia un paso de la guía, la
+   voz dice lo nuevo. Grabar audios habría dejado grabaciones mintiendo al
+   primer refactor, que en este proyecto ya pasó dos veces con los textos.
+
+   APAGADA por defecto (decisión del autor: un juego que habla sin avisar
+   sobresalta) y con botón propio que SOLO existe si hay voz en español. */
+
+const CLAVE_VOZ = 'redHidraulica_voz';
+let vozOn = localStorage.getItem(CLAVE_VOZ) === '1';
+let vozElegida = null;
+
+/**
+ * Busca una voz en español. Devuelve (promesa de) si la hay: la UI esconde el
+ * botón cuando no — leer castellano con voz inglesa es peor que callar.
+ */
+export function cargarVoz(){
+  return new Promise(listo => {
+    if(!('speechSynthesis' in window)){ listo(false); return; }
+    const buscar = () => {
+      const voces = speechSynthesis.getVoices();
+      if(!voces.length) return false;
+      const es = voces.filter(v => /^es/i.test(v.lang));
+      // Un hombre para Manuel, si el sistema lo trae (Pablo, en Windows)
+      vozElegida = es.find(v => /pablo|jorge|diego|alvaro|male/i.test(v.name))
+                || es[0] || null;
+      listo(!!vozElegida);
+      return true;
+    };
+    if(buscar()) return;
+    speechSynthesis.onvoiceschanged = buscar;
+    setTimeout(() => listo(!!vozElegida), 2500);   // por si el navegador calla
+  });
+}
+
+/** Manuel dice esto en voz alta, si la voz está activa. Lo nuevo pisa lo viejo. */
+export function hablar(texto){
+  if(!vozOn || !vozElegida) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(texto);
+  u.voice = vozElegida;
+  u.lang = vozElegida.lang;
+  u.rate = CONFIG.sonido.voz.velocidad;
+  u.pitch = CONFIG.sonido.voz.tono;
+  u.volume = CONFIG.sonido.voz.volumen;
+  speechSynthesis.speak(u);
+}
+
+export function vozActiva(){ return vozOn; }
+
+export function alternarVoz(){
+  vozOn = !vozOn;
+  localStorage.setItem(CLAVE_VOZ, vozOn ? '1' : '0');
+  if(!vozOn && 'speechSynthesis' in window) speechSynthesis.cancel();
+  return vozOn;
+}
+
 /* ---------------- el interruptor de los efectos ---------------- */
 
 export function activo(){ return encendido; }
