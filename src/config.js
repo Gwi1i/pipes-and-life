@@ -1182,20 +1182,30 @@ export const CONFIG = {
   tutorial: [
     { id: 'explorar',  titulo: 'Destapa el terreno',
       texto: 'Ahí fuera hay TREINTA Y SEIS pueblos esperando agua, y esta ' +
-             'mancomunidad empieza en el tuyo. Clica una casilla en penumbra, ' +
-             'junto al pueblo: el número que ves es los clics que le faltan.' },
-    { id: 'captacion', titulo: 'Busca de dónde sacar agua',
-      texto: 'Encuentra el río y pon una CAPTACIÓN sobre una casilla de agua. ' +
-             'La eliges en «Construir en el mapa»; en verde es que ahí vale.' },
-    { id: 'bomba',     titulo: 'Levanta el bombeo',
-      texto: 'El agua no sube sola. Coloca un BOMBEO en tierra llana, pegado al agua.' },
-    { id: 'tuberia',   titulo: 'Une todo con tubería',
-      texto: 'Con «Tender tubería» marca el recorrido casilla a casilla, desde ' +
-             'tu pueblo hasta el bombeo. Clic en la última para rematar. Ojo: ' +
-             'lo que no queda conectado no sirve de nada.' },
-    { id: 'bombear',   titulo: 'A bombear',
+             'mancomunidad empieza en el tuyo. Clica las casillas en penumbra ' +
+             'alrededor del pueblo hasta ver el RÍO: el número que llevan es ' +
+             'los clics que les faltan.' },
+    { id: 'bombear',   titulo: 'Bombea clicando tu pueblo',
       texto: 'Clica TU PUEBLO (o dale a la barra espaciadora): cada clic sube ' +
-             'agua. Si dejas de clicar, el pueblo se queda seco.' },
+             'agua, y el agua servida se factura. Con eso se paga la obra que ' +
+             'viene ahora.' },
+    { id: 'captacion', titulo: 'Paso 1 de la obra: la captación',
+      texto: 'En la solapa MAPA, en «Construir en el mapa», elige CAPTACIÓN y ' +
+             'clica una casilla de agua del río para colocarla. En verde vale; ' +
+             'en rojo, el motivo te dice por qué no.' },
+    { id: 'bomba',     titulo: 'Paso 2: el bombeo, pegado al agua',
+      texto: 'El agua no sube sola. Elige BOMBEO y colócalo en tierra llana ' +
+             'que TOQUE el agua, cerca de tu captación.' },
+    { id: 'deposito',  titulo: 'Paso 3: el depósito, en un alto',
+      texto: 'Busca una COLINA (vale también una sierra) y coloca ahí el ' +
+             'DEPÓSITO. El agua se guarda EN ALTO para bajar por gravedad con ' +
+             'presión: por eso esta pieza pide relieve, no llano.' },
+    { id: 'tuberia',   titulo: 'Paso 4: únelo todo con tubería',
+      texto: 'Elige «Tender agua» y marca el recorrido casilla a casilla DESDE ' +
+             'tu pueblo HASTA la captación, pasando pegado al bombeo y al ' +
+             'depósito — tocar una casilla vecina basta para conectarlos. Clic ' +
+             'en la última casilla para rematar y pagar. Lo que no queda ' +
+             'conectado NO aporta nada.' },
     { id: 'servido',   titulo: '¡Tu pueblo bebe!',
       texto: 'Ya está abastecido, y solo se factura el agua SERVIDA: un pueblo ' +
              'bien atendido es el que paga las obras. A partir de aquí: explora ' +

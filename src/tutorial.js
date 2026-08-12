@@ -18,11 +18,12 @@ import { CONFIG } from './config.js';
  */
 const CUMPLIDO = {
   explorar:  estado => estado.descubiertas > 0,
+  bombear:   estado => estado.activo.agua > 0,
   captacion: estado => estado.construcciones.some(o => o.tipo === 'captacion'),
   bomba:     estado => estado.construcciones.some(o => o.tipo === 'bomba'),
+  deposito:  estado => estado.construcciones.some(o => o.tipo === 'deposito'),
   // Vale con que algo esté enganchado a la red: es lo que enseña el paso
   tuberia:   estado => Object.keys(estado._conectado || {}).length > 0,
-  bombear:   estado => estado.activo.agua > 0,
   servido:   estado => estado.activo.servicio > 0.5
 };
 
