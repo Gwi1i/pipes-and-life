@@ -185,5 +185,6 @@ export function comentar(estado, resultado, ahoraSeg){
   dicho[elegido.id] = true;
   ultimaVez = ahoraSeg;
   if(elegido.chascarrillo) ultimaCoña = ahoraSeg;
-  return { texto: elegido.texto, animo: elegido.animo };
+  // El id viaja con el texto: es la llave del archivo de voz
+  return { id: elegido.id, texto: elegido.texto, animo: elegido.animo };
 }

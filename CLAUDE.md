@@ -534,13 +534,18 @@ de saltar). Los CHASCARRILLOS son el segundo escalón (batallitas de veterano,
 también con contexto: la del 96 sale cuando LLUEVE): cualquier aviso les pasa
 delante y llevan su propio silencio, mucho más largo.
 
-La VOZ de Manuel es síntesis del navegador (`hablar()` en `sonido.js`): sin
-archivos y leyendo el texto VIVO — grabar audios habría dejado grabaciones
-mintiendo al primer refactor, que aquí ya pasó dos veces con textos. APAGADA
-por defecto (decisión del autor) con botón propio que SOLO existe si hay voz
-en español (elige hombre si lo hay: Pablo en Windows); al encenderla, Manuel
-se presenta — confirma que suena y da la mano. Lee los pasos de la guía y los
-comentarios; los parámetros en `CONFIG.sonido.voz`.
+La VOZ de Manuel son ARCHIVOS neuronales (assets/voz/, es-ES-AlvaroNeural) que
+genera `generar_voces.py` (`pip install edge-tts`, una vez; internet solo al
+generar): la síntesis del navegador sonaba a robot y quedó de RESPALDO. El
+sistema anti-audios-mentirosos: el nombre de cada archivo lleva la HUELLA del
+texto (`huellaVoz()` en sonido.js = djb2 UTF-8, la misma cuenta en Python) —
+si un texto cambia, el archivo viejo jamás se reproduce (cae al sintetizador)
+y re-ejecutar el script genera el nuevo y borra el huérfano. Los textos se
+LEEN de config.js y comentarios.js: una sola fuente. Tras cambiar cualquier
+texto de Manuel: `py generar_voces.py`. APAGADA por defecto (decisión del
+autor) con botón propio que solo existe si hay CÓMO hablar; al encenderla,
+Manuel se presenta (texto en `CONFIG.sonido.voz.presentacion` — vive en config
+para que el generador lo lea). Lee pasos de guía y comentarios.
 
 **La guía envejece mal y nadie lo ve.** El tutorial llegó a pedir "pulsa
 BOMBEAR" y "engrasa la instalación" dos versiones después de quitarse ambos: el

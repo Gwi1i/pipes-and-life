@@ -371,9 +371,13 @@ export const CONFIG = {
        decisión del autor: un juego que te habla sin avisar sobresalta. El
        tono grave es lo que la acerca a un veterano. */
     voz: {
-      velocidad: 1.0,
+      velocidad: 1.0,   // del sintetizador de respaldo; los archivos van hechos
       tono: 0.8,
-      volumen: 1.0
+      volumen: 1.0,
+      // El saludo al encender la voz. Vive aquí y no en main.js porque
+      // generar_voces.py lo lee de config: una sola fuente para texto y audio.
+      presentacion: 'Hola. Soy Manuel, del servicio de aguas. Si algo se ' +
+                    'tuerce en tu red, te lo iré contando.'
     },
     /* El recorte del bucle: la música generada trae fundido a silencio al
        final, y en bucle eso es morirse y arrancar de golpe. Se mide el volumen

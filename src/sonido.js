@@ -301,14 +301,36 @@ export function alternarMusica(){
 
 const CLAVE_VOZ = 'redHidraulica_voz';
 let vozOn = localStorage.getItem(CLAVE_VOZ) === '1';
-let vozElegida = null;
+let vozElegida = null;      // la del sintetizador de RESPALDO, si la hay
+let hayArchivos = false;    // ¿existen las voces neuronales generadas?
+let locucion = null;        // el <audio> que suena ahora mismo
 
 /**
- * Busca una voz en español. Devuelve (promesa de) si la hay: la UI esconde el
- * botón cuando no — leer castellano con voz inglesa es peor que callar.
+ * La huella de un texto: djb2 sobre UTF-8, 32 bits, en hexadecimal. La misma
+ * cuenta que hace generar_voces.py — el nombre del archivo ES la huella, y
+ * así un texto cambiado nunca reproduce el audio de ayer.
+ */
+export function huellaVoz(texto){
+  const datos = new TextEncoder().encode(texto);
+  let h = 5381;
+  for(const b of datos) h = ((h * 33) ^ b) >>> 0;
+  return h.toString(16).padStart(8, '0');
+}
+
+/**
+ * Prepara la voz: comprueba si están los archivos neuronales (sondeando el
+ * saludo, que siempre existe si se generaron) y busca de paso el sintetizador
+ * de respaldo. Devuelve si hay ALGUNA manera de hablar: sin ninguna, la UI
+ * esconde el botón.
  */
 export function cargarVoz(){
-  return new Promise(listo => {
+  const archivo = new Promise(listo => {
+    const p = CONFIG.sonido.voz.presentacion;
+    fetch(`assets/voz/presentacion-${huellaVoz(p)}.mp3`, { method: 'HEAD' })
+      .then(r => { hayArchivos = r.ok; listo(r.ok); })
+      .catch(() => listo(false));
+  });
+  const sintesis = new Promise(listo => {
     if(!('speechSynthesis' in window)){ listo(false); return; }
     const buscar = () => {
       const voces = speechSynthesis.getVoices();
@@ -324,12 +346,17 @@ export function cargarVoz(){
     speechSynthesis.onvoiceschanged = buscar;
     setTimeout(() => listo(!!vozElegida), 2500);   // por si el navegador calla
   });
+  return Promise.all([archivo, sintesis]).then(([a, s]) => a || s);
 }
 
-/** Manuel dice esto en voz alta, si la voz está activa. Lo nuevo pisa lo viejo. */
-export function hablar(texto){
-  if(!vozOn || !vozElegida) return;
-  speechSynthesis.cancel();
+function pararLocucion(){
+  if(locucion){ locucion.pause(); locucion = null; }
+  if('speechSynthesis' in window) speechSynthesis.cancel();
+}
+
+/** El sintetizador del navegador: el RESPALDO cuando no hay archivo. */
+function sintetizar(texto){
+  if(!vozElegida) return;
   const u = new SpeechSynthesisUtterance(texto);
   u.voice = vozElegida;
   u.lang = vozElegida.lang;
@@ -339,12 +366,32 @@ export function hablar(texto){
   speechSynthesis.speak(u);
 }
 
+/**
+ * Manuel dice esto en voz alta, si la voz está activa. Primero el archivo
+ * neuronal (assets/voz/<id>-<huella>.mp3, de generar_voces.py); si no está —
+ * o el texto cambió y la huella ya no casa— cae al sintetizador. Lo nuevo
+ * pisa lo viejo: Manuel no se atropella a sí mismo.
+ */
+export function hablar(texto, id){
+  if(!vozOn) return;
+  pararLocucion();
+  if(id && hayArchivos){
+    const a = new Audio(`assets/voz/${id}-${huellaVoz(texto)}.mp3`);
+    a.volume = CONFIG.sonido.voz.volumen;
+    a.onerror = () => { locucion = null; sintetizar(texto); };
+    locucion = a;
+    a.play().catch(() => { locucion = null; sintetizar(texto); });
+    return;
+  }
+  sintetizar(texto);
+}
+
 export function vozActiva(){ return vozOn; }
 
 export function alternarVoz(){
   vozOn = !vozOn;
   localStorage.setItem(CLAVE_VOZ, vozOn ? '1' : '0');
-  if(!vozOn && 'speechSynthesis' in window) speechSynthesis.cancel();
+  if(!vozOn) pararLocucion();
   return vozOn;
 }
 

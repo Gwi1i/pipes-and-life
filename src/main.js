@@ -63,7 +63,7 @@ if(!habiaPartida){
     // Con la voz ya activada de otra sesión, Manuel lee el paso que espera.
     // El clic de la portada es además el gesto que el navegador exige.
     const paso = pasoActual(estado);
-    if(paso) sonido.hablar(paso.titulo + '. ' + paso.texto);
+    if(paso) sonido.hablar(paso.titulo + '. ' + paso.texto, paso.id);
   };
 
   // El cartel puede ser VÍDEO (h_portada.mp4), como en las fichas: se prueba
@@ -1119,7 +1119,7 @@ function bucle(ahora){
     ui.caraGuia('bien');    // ...y el guía lo celebra con la cara, si la tiene
     // Y lee el paso NUEVO, si hay voz: el que acaba de aparecer en el bocadillo
     const siguiente = pasoActual(estado);
-    if(siguiente) sonido.hablar(siguiente.titulo + '. ' + siguiente.texto);
+    if(siguiente) sonido.hablar(siguiente.titulo + '. ' + siguiente.texto, siguiente.id);
   }
   anotarCrecimiento();
 
@@ -1182,7 +1182,7 @@ function bucle(ahora){
       if(com){
         ui.mostrarComentario(com);
         sonido.comentario();
-        sonido.hablar(com.texto);
+        sonido.hablar(com.texto, com.id);
       }
     }
   }
@@ -1229,8 +1229,7 @@ btnVoz.onclick = () => {
   const encendida = sonido.alternarVoz();
   rotularVoz();
   // Que se presente al encenderla: confirma que suena y de paso da la mano
-  if(encendida) sonido.hablar('Hola. Soy Manuel, del servicio de aguas. ' +
-    'Si algo se tuerce en tu red, te lo iré contando.');
+  if(encendida) sonido.hablar(CONFIG.sonido.voz.presentacion, 'presentacion');
 };
 sonido.cargarVoz().then(hay => {
   if(!hay) return;
