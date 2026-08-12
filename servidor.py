@@ -27,12 +27,26 @@ PUERTOS_A_PROBAR = 12
 
 class Manejador(http.server.SimpleHTTPRequestHandler):
 
+    # Keep-alive: sin esto el navegador abre una conexión nueva por archivo,
+    # y son más de quince de golpe al arrancar.
+    protocol_version = 'HTTP/1.1'
+
     def end_headers(self):
         # Sin esto, cambiar un .js y recargar no sirve de nada: el navegador
         # sigue sirviendo el módulo viejo de su caché.
         self.send_header('Cache-Control', 'no-store, must-revalidate')
         self.send_header('Pragma', 'no-cache')
         super().end_headers()
+
+
+class Servidor(http.server.ThreadingHTTPServer):
+    """En HILOS, y con cola ancha. El servidor de serie atiende UNA petición
+    cada vez con una cola de espera de CINCO: la portada dispara quince a la
+    vez (trece módulos, el cartel, el VÍDEO de 7 MB que atasca el turno...) y
+    las que no cabían se RECHAZABAN — módulos que no llegan, juego mudo y mapa
+    en negro, sin un solo error en el código. Fallo real, cazado por consola."""
+    request_queue_size = 64
+    daemon_threads = True
 
     def log_message(self, formato, *args):
         # Una línea por cada imagen y cada módulo llena la ventana de ruido y no
@@ -76,7 +90,7 @@ def main():
     # Escucha en todas las interfaces para poder jugar TAMBIEN desde el movil
     # (misma wifi). El precio: mientras este abierto, cualquier aparato de tu
     # red puede entrar. En una red domestica es un precio pequeno.
-    servidor = http.server.HTTPServer(('0.0.0.0', puerto), Manejador)
+    servidor = Servidor(('0.0.0.0', puerto), Manejador)
 
     print('')
     print('  PIPES AND LIFE')
