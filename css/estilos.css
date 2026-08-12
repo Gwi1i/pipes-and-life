@@ -321,21 +321,68 @@ button{touch-action:manipulation;}
 .dn i{font-style:normal; font-size:9px; color:var(--tenue); line-height:1.35;}
 .mejora.linea.hecha{opacity:.45;}
 
-/* ---------- GUÍA DE LOS PRIMEROS PASOS ---------- */
-.bloque.guia{border-color:var(--ok); box-shadow:0 0 22px -12px var(--ok);}
-.bloque.guia h2{color:var(--ok); border-color:var(--ok);
-  display:flex; justify-content:space-between; align-items:baseline;}
-#guia-cuenta{font-size:9px; color:var(--tenue); letter-spacing:.1em;}
-.guia-cuerpo{display:grid; gap:6px;}
+/* ---------- LA GUÍA FLOTANTE ----------
+   Un bocadillo sobre el mapa con la cara del guía al lado: en la barra
+   lateral no la veía nadie, y una guía que no se ve no guía. */
+.guia-flotante{
+  position:absolute; left:12px; bottom:36px; z-index:6;
+  display:flex; align-items:flex-end; gap:9px;
+  max-width:min(360px, calc(100% - 24px));
+}
+.guia-avatar{
+  flex:none; width:58px; height:58px; border-radius:50%; cursor:pointer;
+  border:2px solid var(--ok); background:var(--panel); padding:0;
+  overflow:hidden; position:relative;
+  box-shadow:0 4px 14px rgba(0,0,0,0.45), 0 0 18px -8px var(--ok);
+}
+.guia-avatar img{width:100%; height:100%; object-fit:cover; display:block;}
+/* Sin retrato aún, el interrogante sostiene el sitio */
+.guia-avatar-reserva{
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  font-family:var(--mono); font-size:19px; font-weight:700; color:var(--ok);
+}
+.guia-avatar img:not([hidden]) + .guia-avatar-reserva{display:none;}
+
+.guia-bocadillo{
+  position:relative; background:var(--panel);
+  border:1px solid var(--ok); border-radius:10px; border-bottom-left-radius:2px;
+  padding:9px 12px 10px; display:grid; gap:5px;
+  box-shadow:0 8px 26px rgba(0,0,0,0.5), 0 0 26px -14px var(--ok);
+  animation:guia-pop .3s ease-out;
+}
+/* El rabito del bocadillo, apuntando al guía */
+.guia-bocadillo::after{
+  content:''; position:absolute; left:-7px; bottom:12px;
+  width:12px; height:12px; background:var(--panel);
+  border-left:1px solid var(--ok); border-bottom:1px solid var(--ok);
+  transform:rotate(45deg);
+}
+@keyframes guia-pop{
+  0%{transform:scale(0.85) translateY(8px); opacity:0;}
+  100%{transform:scale(1) translateY(0); opacity:1;}
+}
+.guia-cab{
+  display:flex; justify-content:space-between; align-items:center; gap:10px;
+  font-family:var(--mono); font-size:8.5px; letter-spacing:.15em;
+  text-transform:uppercase; color:var(--tenue);
+}
+.guia-plegar{
+  background:none; border:none; color:var(--tenue); cursor:pointer;
+  font-size:14px; line-height:1; padding:0 2px;
+}
+.guia-plegar:hover{color:var(--texto);}
+#guia-cuenta{font-size:8.5px; color:var(--ok); letter-spacing:.1em;}
 .guia-titulo{font-family:var(--mono); font-size:12.5px; font-weight:700; color:var(--ok);}
 .guia-texto{font-size:11.5px; color:var(--texto); line-height:1.5;}
 .guia-saltar{
   justify-self:start; margin-top:2px; cursor:pointer;
   background:none; border:1px solid var(--linea-viva); border-radius:3px;
-  color:var(--tenue); font-family:var(--mono); font-size:9px;
-  letter-spacing:.1em; text-transform:uppercase; padding:5px 9px; transition:.15s;
+  color:var(--tenue); font-family:var(--mono); font-size:8.5px;
+  letter-spacing:.1em; text-transform:uppercase; padding:4px 8px; transition:.15s;
 }
 .guia-saltar:hover{border-color:var(--tenue); color:var(--texto);}
+/* Plegada: queda solo la cara, y el juego entero a la vista */
+.guia-flotante.plegada .guia-bocadillo{display:none;}
 
 /* Herramientas de construcción sobre el mapa */
 .mejora.obra{border-left-color:var(--tono);}

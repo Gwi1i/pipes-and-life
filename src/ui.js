@@ -456,6 +456,15 @@ export class UI {
     const panel = document.getElementById('panel-guia');
     if(!paso){ panel.style.display = 'none'; return; }
     panel.style.display = '';
+    // Un paso NUEVO se despliega y da su botecito aunque estuviera plegada:
+    // información nueva pide atención; el pliegue era del paso anterior.
+    panel.classList.remove('plegada');
+    const bocadillo = panel.querySelector('.guia-bocadillo');
+    if(bocadillo){
+      bocadillo.style.animation = 'none';
+      void bocadillo.offsetWidth;          // reencender la animación
+      bocadillo.style.animation = '';
+    }
     document.getElementById('guia-cuenta').textContent =
       `${estado.tutorial.paso + 1}/${CONFIG.tutorial.length}`;
     document.getElementById('guia-titulo').textContent = paso.titulo;

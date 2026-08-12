@@ -29,7 +29,7 @@ $par.Param[0] = New-Object System.Drawing.Imaging.EncoderParameter(
 
 $hechas = 0
 Get-ChildItem $carpeta -File | Where-Object {
-    $_.Name -match '^(f|h|l|a)_.+\.(png|jpeg)$'
+    $_.Name -match '^(f|h|l|a)_.+\.(png|jpeg)$' -or $_.Name -match '^guia\.(png|jpeg)$'
 } | ForEach-Object {
     $entrada = $_.FullName
     $nombre  = [System.IO.Path]::GetFileNameWithoutExtension($_.Name)

@@ -89,6 +89,26 @@
         <div class="barra-agua-caja">
           <div class="barra-agua-fondo"><div class="barra-agua-relleno" id="barra-agua"></div></div>
         </div>
+
+        <!-- LA GUÍA FLOTANTE. Vivía en la barra lateral y no la veía nadie:
+             ahora es un bocadillo sobre el mapa, con la cara del guía al lado
+             (assets/guia.jpg, generada por el autor; sin ella, el avatar de
+             reserva). Se pliega a un botón para no estorbar a quien ya sabe. -->
+        <div class="guia-flotante" id="panel-guia" style="display:none">
+          <button class="guia-avatar" data-accion="plegarGuia" title="Plegar o desplegar la guía">
+            <img src="assets/guia.jpg" onerror="this.hidden=true" alt="">
+            <span class="guia-avatar-reserva">¿?</span>
+          </button>
+          <div class="guia-bocadillo">
+            <div class="guia-cab">
+              <span>Primeros pasos <span id="guia-cuenta"></span></span>
+              <button class="guia-plegar" data-accion="plegarGuia" title="Plegar">–</button>
+            </div>
+            <p class="guia-titulo" id="guia-titulo">—</p>
+            <p class="guia-texto" id="guia-texto">—</p>
+            <button class="guia-saltar" data-accion="saltarGuia">Sé lo que hago, saltar la guía</button>
+          </div>
+        </div>
       </div>
     </main>
 
@@ -97,15 +117,6 @@
       <section class="bloque" id="panel-averias" style="display:none">
         <h2>Averías</h2>
         <div id="averias-lista" class="tienda"></div>
-      </section>
-
-      <section class="bloque guia" id="panel-guia" style="display:none">
-        <h2>Primeros pasos <span id="guia-cuenta"></span></h2>
-        <div class="guia-cuerpo">
-          <p class="guia-titulo" id="guia-titulo">—</p>
-          <p class="guia-texto" id="guia-texto">—</p>
-          <button class="guia-saltar" data-accion="saltarGuia">Sé lo que hago, saltar</button>
-        </div>
       </section>
 
       <section class="bloque" id="panel-obra" style="display:none">

@@ -306,6 +306,10 @@ function procesarAcciones(){
         ui.invalidarCache();
         break;
 
+      case 'plegarGuia':
+        document.getElementById('panel-guia').classList.toggle('plegada');
+        break;
+
       case 'saltarGuia':
         saltarGuia(estado);
         estado.anotar('Guía saltada. Suerte ahí fuera.', 'info');
@@ -1098,7 +1102,10 @@ function bucle(ahora){
 
   // La guía avanza sola cuando el jugador consigue de verdad cada paso
   const pasoHecho = comprobarGuia(estado);
-  if(pasoHecho) estado.anotar(`Guía: ${pasoHecho.titulo} ✓`, 'ok');
+  if(pasoHecho){
+    estado.anotar(`Guía: ${pasoHecho.titulo} ✓`, 'ok');
+    sonido.hallazgo();   // el paso conseguido se celebra, bajito
+  }
   anotarCrecimiento();
 
   if(resultado.serviciosNuevos && resultado.serviciosNuevos.length){

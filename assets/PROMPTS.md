@@ -167,6 +167,25 @@ red que lo une todo.
 
 ---
 
+# EL GUÍA (`guia.png`)
+
+La cara que acompaña al bocadillo de los primeros pasos, flotando sobre el
+mapa. Se ve RECORTADA EN CÍRCULO y pequeña (58 píxeles), así que manda el
+rostro: primer plano, expresivo, y nada de detalle fino que se pierda.
+
+### `guia.png`
+> Genera una imagen: retrato en primer plano de un operario veterano de aguas,
+> sonriente y de cara amable, con casco de obra y chaleco reflectante, mirando
+> al frente, fondo liso de un solo color, encuadre de hombros hacia arriba
+> centrado, *(+ coletilla)*
+
+El personaje es tuyo: si prefieres una ingeniera joven, un fontanero con
+bigote de los de toda la vida o quien sea, cámbialo — solo respeta el primer
+plano y el fondo liso, que es lo que hace que funcione en círculo. El
+`optimizar.bat` la deja en `guia.jpg`, que es lo que carga el juego.
+
+---
+
 # EL ICONO (`icono.png`)
 
 El del navegador, la pestaña y la pantalla de inicio del móvil. **Se queda en
