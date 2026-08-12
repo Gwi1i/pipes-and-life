@@ -372,6 +372,20 @@ qué se mide. Al calibrar una escala nueva, mueve `caudalMax` y `habitantesMax`
 JUNTOS: con caudales sueltos una pista de tierra daba para cinco mil habitantes y
 la carretera no era un cuello de botella nunca.
 
+**Cada pieza del mapa es ALGUIEN.** Lleva su nombre propio ("Depósito 2",
+numerado al construir por orden entre hermanas — nada se derriba, así que el
+número es estable), su `nivel` y su ficha al seleccionarla: qué aporta con
+números, su situación (AVERIADA / SIN CONECTAR, porque en esos estados no
+aporta nada y callárselo parece un timo) y su botón AMPLIAR
+(`CONFIG.ampliacion`, coste geométrico). La clave del encaje:
+`inventarioConectado()` suma NIVELES, no unidades — una pieza a nivel 3 cuenta
+como tres — y así todas las fórmulas de aporte recogen la ampliación sin
+tocarlas. El reparto de papeles, que confundía de verdad: la TIENDA ("Mejoras
+del pueblo") sube la instalación municipal del pueblo activo; cada pieza del
+MAPA se amplía seleccionándola. El vertedero queda FUERA de la ampliación
+genérica: su `nivel` es el vaso y tiene su propio botón. Las partidas viejas
+bautizan sus obras al cargar.
+
 **El vertedero se llena, y gotea.** Cada uno lleva su `nivel` y sus toneladas
 (`lleno`) EN LA PROPIA CONSTRUCCIÓN, no en el pueblo: son de la mancomunidad y
 hay varios. Lleno deja de tragar y la basura se queda en la calle; se amplía

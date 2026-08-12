@@ -915,11 +915,34 @@ export function cuelloDeBotella(estado, red = 'abastecimiento'){
   return { dn: def.id, def, lineas, estrechas };
 }
 
-/** Cuenta por tipo lo que hay conectado: { captacion: 2, deposito: 1, ... } */
+/**
+ * Cuenta por tipo lo que hay conectado: { captacion: 2, deposito: 1, ... }
+ * OJO: suma NIVELES, no unidades — una pieza ampliada a nivel 3 cuenta como
+ * tres. Así todas las fórmulas de aporte (capacidad, caudal, tratamiento)
+ * recogen la ampliación sin tocarlas una a una.
+ */
 export function inventarioConectado(estado, red = 'abastecimiento'){
   const cuenta = {};
-  for(const o of construccionesConectadas(estado, red)) cuenta[o.tipo] = (cuenta[o.tipo] || 0) + 1;
+  for(const o of construccionesConectadas(estado, red))
+    cuenta[o.tipo] = (cuenta[o.tipo] || 0) + (o.nivel || 1);
   return cuenta;
+}
+
+/** El nombre propio de una obra ("Depósito 2"), o el genérico si no lo tiene. */
+export function nombreDeObra(obra){
+  return obra.nombre || CONFIG.construibles[obra.tipo].nombre;
+}
+
+/**
+ * Bautiza una obra nueva: el nombre del tipo y su número de orden entre las
+ * hermanas ("Bombeo 3"). La primera de cada tipo va sin número — mientras solo
+ * hay una, el apellido sobra. Nunca se derriba nada, así que el número es
+ * estable de por vida.
+ */
+export function bautizarObra(construcciones, tipo){
+  const hermanas = construcciones.filter(o => o.tipo === tipo).length;
+  const base = CONFIG.construibles[tipo].nombre;
+  return hermanas === 0 ? base : `${base} ${hermanas + 1}`;
 }
 
 /* ---------- persistencia compacta ----------

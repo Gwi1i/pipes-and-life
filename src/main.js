@@ -15,11 +15,11 @@ import { celdaEn, clicarCasilla, clicsParaDestapar, puedeColocar,
          piezaDeRuina, diametro, nivelDiametro, costeRenovar,
          averiaEn, aflorarArqueologia, tipoYacimiento,
          puedeEstudiar, estudiarZona, puedeSondear, sondear,
-         costeSondeo, claseAcuifero, edadAños } from './mapa.js';
+         costeSondeo, claseAcuifero, edadAños, bautizarObra } from './mapa.js';
 import { avanzar, bombear, costeMejora, requisitosAutobomba,
          poderExpansion, servicioActivo, costeAmpliarVertedero,
          capacidadVaso, faseActual, faltanParaFase,
-         incorporarPueblo, canonIncorporacion } from './simulacion.js';
+         incorporarPueblo, canonIncorporacion, costeAmpliarPieza } from './simulacion.js';
 import { formatear } from './util.js';
 import { comprobar as comprobarGuia, saltar as saltarGuia } from './tutorial.js';
 import * as sonido from './sonido.js';
@@ -210,6 +210,27 @@ function procesarAcciones(){
         tub.nacida = estado.horas;
         estado.anotar(`Línea renovada de ${antes} a ${diametro(destino, red).nombre} por ${formatear(coste)} €.`, 'ok');
         avisar(`Línea renovada a ${diametro(destino, red).nombre}.`);
+        ui.invalidarCache();
+        break;
+      }
+
+      case 'ampliarPieza': {
+        const sel = estado.seleccion;
+        const obra = sel && estado.construcciones.find(o => o.col === sel.col && o.fila === sel.fila);
+        if(!obra) break;
+        const A = CONFIG.ampliacion;
+        if(!A.tipos.includes(obra.tipo) || (obra.nivel || 1) >= A.nivelMax) break;
+        const coste = costeAmpliarPieza(obra);
+        if(!estado.puedePagar(coste)){
+          avisar(`Ampliar cuesta ${formatear(coste)} € y no hay fondos.`);
+          break;
+        }
+        estado.pagar(coste);
+        obra.nivel = (obra.nivel || 1) + 1;
+        sonido.compra();
+        estado.anotar(`${obra.nombre || obra.tipo} ampliado a nivel ${obra.nivel}: ` +
+                      `aporta como ${obra.nivel} piezas.`, 'ok');
+        avisar(`¡Ampliación terminada! Nivel ${obra.nivel}.`);
         ui.invalidarCache();
         break;
       }
@@ -610,7 +631,8 @@ function colocarElemento(col, fila){
     estado.anotar(`${def.nombre} del almacén, colocado.`, 'ok');
     estado.modo = { tipo: null, elemento: null, trazado: [], deInventario: false };
   }
-  estado.construcciones.push({ tipo: clave, col, fila });
+  estado.construcciones.push({ tipo: clave, col, fila, nivel: 1,
+                               nombre: bautizarObra(estado.construcciones, clave) });
   sonido.colocar();
   // Se queda la herramienta puesta: normalmente se colocan varias seguidas
   ui.refrescarConstruccion(estado);
@@ -650,7 +672,8 @@ function accionRuina(desmontar){
       return;
     }
     estado.pagar(coste);
-    estado.construcciones.push({ tipo, col: sel.col, fila: sel.fila });
+    estado.construcciones.push({ tipo, col: sel.col, fila: sel.fila, nivel: 1,
+                                 nombre: bautizarObra(estado.construcciones, tipo) });
     estado.anotar(`${def.nombre} recuperado y puesto en marcha por ${formatear(coste)} €.`, 'ok');
   } else {
     estado.pagar(coste);

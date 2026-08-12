@@ -541,6 +541,17 @@ export function caudalCaptacion(pueblo, estado, estiaje = 1){
   return desgloseProduccion(pueblo, estado, estiaje).neto;
 }
 
+/**
+ * Lo que cuesta AMPLIAR una pieza del mapa al siguiente nivel: el precio de la
+ * pieza por el factor elevado al nivel actual. Ampliar es más barato que
+ * construir otra al principio y más caro después — la segunda unidad compite.
+ */
+export function costeAmpliarPieza(obra){
+  const A = CONFIG.ampliacion;
+  return Math.round(CONFIG.construibles[obra.tipo].coste
+                    * Math.pow(A.factorCoste, obra.nivel || 1));
+}
+
 /** ¿Está la tubería estrangulando la captación? Para poder avisar en la UI. */
 export function redEstrangula(pueblo, estado){
   return desgloseProduccion(pueblo, estado, 1).perdidaTope > 1e-9;

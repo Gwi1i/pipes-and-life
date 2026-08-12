@@ -781,6 +781,22 @@ export const CONFIG = {
     }
   },
 
+  /* ---------- AMPLIACIÓN DE PIEZAS DEL MAPA ----------
+     Cada pieza construida es ALGUIEN: lleva su nombre ("Depósito 2"), su nivel
+     y su ficha al seleccionarla, y se amplía ahí mismo. Sin esto, con dos
+     depósitos en el mapa no había manera de saber cuál era cuál — la pregunta
+     exacta que hizo el autor y que destapó el hueco.
+
+     El reparto de papeles queda así: la TIENDA sube la instalación propia del
+     pueblo activo (su red municipal de siempre); cada pieza del MAPA se
+     selecciona y se amplía individualmente. Ampliar multiplica su aporte:
+     una pieza de nivel 3 cuenta como tres. */
+  ampliacion: {
+    tipos: ['captacion', 'bomba', 'deposito', 'depuradora', 'tanque'],
+    nivelMax: 4,
+    factorCoste: 1.7       // ampliar a nivel n cuesta coste × factor^(n-1)
+  },
+
   /* ---------- LO QUE APORTA CADA PIEZA CONECTADA ----------
      La tienda de mejoras sube el NIVEL (lo bien que rinde cada una); el mapa
      decide CUÁNTAS tienes y si están enganchadas. Una pieza sin tubería al

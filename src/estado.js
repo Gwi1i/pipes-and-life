@@ -170,6 +170,17 @@ export class Estado {
       aplicarGuardado(estado.mapa, d.mapa);
       estado.inventario = d.inventario || [];
       estado.construcciones = d.construcciones || [];
+      // Las obras de antes de tener nombre y nivel los reciben al cargar, en
+      // su orden de construcción: "Depósito", "Depósito 2"...
+      const vistos = {};
+      for(const o of estado.construcciones){
+        if(o.nivel === undefined) o.nivel = 1;
+        vistos[o.tipo] = (vistos[o.tipo] || 0) + 1;
+        if(!o.nombre){
+          const base = (CONFIG.construibles[o.tipo] || {}).nombre || o.tipo;
+          o.nombre = vistos[o.tipo] === 1 ? base : `${base} ${vistos[o.tipo]}`;
+        }
+      }
       estado.tuberias = d.tuberias || [];
       // Las tuberías de antes de los diámetros se quedan en el más estrecho: es
       // exactamente la red vieja de fibrocemento que uno se encuentra heredada.

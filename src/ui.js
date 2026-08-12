@@ -17,14 +17,15 @@ import { capacidad, demandaMedia, caudalCaptacion, costeMejora,
          faseActual, faltanParaFase, canonIncorporacion,
          llenadoVaso, capacidadVaso, costeAmpliarVertedero,
          nivelMasa, pozosPorMasa, caudalPozo, caudalSostenible,
-         desgloseProduccion, tasaFugasRed } from './simulacion.js';
+         desgloseProduccion, tasaFugasRed, costeAmpliarPieza } from './simulacion.js';
 import { formatear } from './util.js';
 import { celdaEn, piezaDeRuina, diametro, nivelDiametro, costeRenovar,
          nombreDeNucleo, tipoYacimiento,
          costeCasillaTuberia, puedeColocar,
          lineasConectadas, cuelloDeBotella, escalaDeRed,
          claseAcuifero, puedeSondear, costeSondeo,
-         masasDelMapa, edadAños, fugasDe } from './mapa.js';
+         masasDelMapa, edadAños, fugasDe,
+         nombreDeObra, averiaEn, casillaEnRed } from './mapa.js';
 import { lista as listaLugares } from './lugares.js';
 import { pasoActual } from './tutorial.js';
 import { dibujarDiagrama, hayDiagrama } from './diagramas.js';
@@ -563,7 +564,9 @@ export class UI {
     const nivelPozo = obra && obra.tipo === 'acuifero'
       ? Math.round(nivelMasa(estado, celdaObra?.masa) * 20)
         + ':' + (pozosPorMasa(estado).get(celdaObra?.masa) || 0) : '';
-    const firma = obra ? `${obra.tipo},${obra.col},${obra.fila},${obra.nivel || 1},${Math.round(obra.lleno || 0)},${nivelPozo}` : 'nada';
+    // La avería y la conexión también entran: son lo que el panel debe contar
+    const estadoObra = obra ? this.estadoDeObra(estado, obra) : '';
+    const firma = obra ? `${obra.tipo},${obra.col},${obra.fila},${obra.nivel || 1},${Math.round(obra.lleno || 0)},${nivelPozo},${estadoObra}` : 'nada';
     if(this.cache.obraFirma === firma) return;
     this.cache.obraFirma = firma;
 
@@ -571,21 +574,43 @@ export class UI {
     panel.style.display = '';
     const def = CONFIG.construibles[obra.tipo];
     const cont = document.getElementById('obra');
+    const titulo = nombreDeObra(obra);
+
+    // Averiada o suelta, la pieza no aporta NADA — y si el panel no lo dice,
+    // el jugador cree que la ampliación que acaba de pagar no funciona.
+    const situacion = estadoObra === 'averiada'
+      ? '<p class="red-aviso">AVERIADA: no cuenta en la red hasta que la repares clicándola en el mapa.</p>'
+      : estadoObra === 'suelta'
+        ? '<p class="red-aviso">SIN CONECTAR: no aporta nada hasta que le llegue su red.</p>'
+        : '';
 
     // EL POZO: aquí es donde hace falta ver el acuífero, no en la ficha de
     // terreno — en cuanto construyes encima, aquella deja de salir.
     if(obra.tipo === 'acuifero'){
       cont.innerHTML = `
-        <p class="red-cuello" style="--tono:${def.color}"><b>${def.nombre}</b></p>
+        <p class="red-cuello" style="--tono:${def.color}"><b>${titulo}</b></p>
+        ${situacion}
         ${this.bloqueSubsuelo(estado, celdaObra, { col: obra.col, fila: obra.fila })}
         ${this.fichaHTML(def, obra.tipo)}`;
       return;
     }
 
     if(obra.tipo !== 'vertedero'){
+      const A = CONFIG.ampliacion;
+      const nivel = obra.nivel || 1;
+      const ampliable = A.tipos.includes(obra.tipo);
       cont.innerHTML = `
-        <p class="red-cuello" style="--tono:${def.color}"><b>${def.nombre}</b></p>
-        <p class="m-desc">${def.desc}</p>
+        <p class="red-cuello" style="--tono:${def.color}"><b>${titulo}</b>
+          ${ampliable ? `· nivel ${nivel}` : ''}</p>
+        ${situacion}
+        <p class="m-desc">${this.queAporta(obra.tipo, nivel) || def.desc}</p>
+        ${!ampliable ? '' : nivel >= A.nivelMax
+          ? '<p class="m-desc">Ampliada al máximo: si hace falta más, toca construir otra.</p>'
+          : `<button class="mejora obra" data-accion="ampliarPieza" style="--tono:${def.color}">
+               <span class="m-cab"><span class="m-nom">Ampliar a nivel ${nivel + 1}</span></span>
+               <span class="m-desc">Pasará a aportar como ${nivel + 1} piezas iguales.</span>
+               <span class="m-coste">${formatear(costeAmpliarPieza(obra))} €</span>
+             </button>`}
         ${this.fichaHTML(def, obra.tipo)}`;
       return;
     }
@@ -597,8 +622,9 @@ export class UI {
     const coste = costeAmpliarVertedero(obra);
     cont.innerHTML = `
       <p class="red-cuello" style="--tono:${def.color}">
-        <b>${def.nombre}</b> · nivel ${nivel}
+        <b>${titulo}</b> · vaso nivel ${nivel}
       </p>
+      ${situacion}
       <div class="vaso"><i style="width:${pct}%"></i></div>
       <p class="m-desc">${formatear(obra.lleno || 0)} de ${formatear(capacidadVaso(obra))} t
         (${pct} %).${pct >= 100
@@ -614,6 +640,44 @@ export class UI {
              <span class="m-desc">+${formatear(V.capacidadPorNivel)} t de capacidad.</span>
              <span class="m-coste">${formatear(coste)} €</span>
            </button>`}`;
+  }
+
+  /**
+   * La situación de una obra: 'averiada', 'suelta' (sin red que le llegue) o
+   * '' (en servicio). Es lo primero que el panel debe decir, porque una pieza
+   * en cualquiera de los dos primeros estados no aporta nada.
+   */
+  estadoDeObra(estado, obra){
+    if(averiaEn(estado, obra.col, obra.fila)) return 'averiada';
+    const red = Object.keys(CONFIG.redes)
+      .find(k => CONFIG.redes[k].piezas.includes(obra.tipo));
+    if(red && !casillaEnRed(estado, obra.col, obra.fila, red)) return 'suelta';
+    return '';
+  }
+
+  /**
+   * Qué aporta una pieza del mapa a su nivel actual, en cristiano y con sus
+   * números. Es la respuesta a "¿cuál de mis dos depósitos es este?": el que
+   * dice lo que dice esta ficha.
+   */
+  queAporta(tipo, nivel){
+    const P = CONFIG.aportePorPieza;
+    switch(tipo){
+      case 'captacion':
+        return `Aporta <b>${(nivel * P.captacion).toFixed(2)} L/s</b> de producción
+                continua al pueblo, sin clicar.`;
+      case 'bomba':
+        return `Suma <b>${formatear(nivel * P.bomba)} L</b> a cada clic de bombeo.`;
+      case 'deposito':
+        return `Añade <b>${formatear(nivel * P.deposito)} L</b> de capacidad de reserva.`;
+      case 'depuradora':
+        return `Trata <b>${formatear(nivel * P.depuradora)} L/h</b> de aguas residuales
+                y mejora la limpieza un <b>${Math.round(nivel * P.depuradoraCalidad * 100)} %</b>.`;
+      case 'tanque':
+        return `Retiene <b>${formatear(nivel * P.tanque)} L</b> de punta de tormenta
+                para tratarlos cuando la depuradora respire.`;
+      default: return '';
+    }
   }
 
   /**

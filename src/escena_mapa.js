@@ -767,9 +767,10 @@ export class EscenaMapa extends Escena {
       ctx.globalAlpha = 1;
     }
 
-    // Los pueblos y los yacimientos sí siguen ahí: son referencias del terreno.
-    // Se apagan para que se lea de un vistazo que ya están atendidos.
-    if(celda.resuelto) ctx.globalAlpha = 0.45;
+    // OJO: un pueblo INCORPORADO se pinta ENTERO. Hubo un 0.45 de alfa aquí
+    // ("atendido = apagado", herencia de las ruinas) y el pueblo de origen
+    // —el botón de bombear del juego— salía como deshabilitado. Lo que
+    // distingue al que falta por incorporar es su halo latiendo, y basta.
 
     // sombra desplazada abajo-derecha, como manda la luz
     this.sombraPieza(cx, y + t * 0.72, t * 0.24, t * 0.08, 0.28);

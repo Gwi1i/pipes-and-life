@@ -1,3 +1,6 @@
 # Los originales de las ilustraciones: pesan decenas de megas y el juego usa las
 # copias ligeras que deja optimizar.bat. Guárdalos, pero fuera del repositorio.
 assets/originales/
+
+# Accesos directos de Windows: se generan con crear_acceso_directo.bat
+*.lnk
