@@ -1113,8 +1113,10 @@ export class UI {
                 style="--tono:${CONFIG.color.critico}">
           <span class="m-cab"><span class="m-nom">${def ? def.nombre : 'Instalación'} · fuera de servicio</span></span>
           <span class="m-desc">Está fuera de servicio y no cuenta en la red.
-            Ve hasta ella y clica encima: le faltan <b>${av.clics}</b> golpes de
-            llave, a ${formatear(coste)} € cada uno.</span>
+            Ve hasta ella y clica encima: ${av.clics === 1
+              ? 'le falta <b>1</b> golpe de llave'
+              : `le faltan <b>${av.clics}</b> golpes de llave`},
+            a ${formatear(coste)} € cada uno.</span>
           <span class="m-coste">ir ahí →</span>
         </button>
         ${av.aManoJugada ? '' : `
