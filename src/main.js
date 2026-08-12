@@ -235,6 +235,49 @@ function procesarAcciones(){
         break;
       }
 
+      /* --- DERRIBAR Y LEVANTAR: equivocarse tiene salida, pero no gratis --- */
+
+      case 'derribarObra': {
+        const sel = estado.seleccion;
+        const idx = sel ? estado.construcciones.findIndex(
+          o => o.col === sel.col && o.fila === sel.fila) : -1;
+        if(idx < 0) break;
+        const obra = estado.construcciones[idx];
+        const def = CONFIG.construibles[obra.tipo];
+        const recupera = Math.round(def.coste * (obra.nivel || 1)
+                                    * CONFIG.derribo.fraccionRecuperada);
+        if(!confirm(`¿Derribar ${obra.nombre || def.nombre}? Del derribo se recuperan ${formatear(recupera)} €.`)) break;
+        estado.construcciones.splice(idx, 1);
+        // Lo que estaba roto en esa casilla se va con el escombro
+        estado.averias = estado.averias.filter(av => av.col !== sel.col || av.fila !== sel.fila);
+        estado.dinero += recupera;
+        estado.anotar(`${obra.nombre || def.nombre} derribado: ${formatear(recupera)} € recuperados.`, 'info');
+        avisar('Derribado. La casilla queda libre.');
+        sonido.picar();
+        estado.seleccion = null;
+        ui.invalidarCache();
+        break;
+      }
+
+      case 'quitarLinea': {
+        const tub = estado.tuberias[parseInt(a.clave, 10)];
+        if(!tub) break;
+        const red = tub.red || 'abastecimiento';
+        const recupera = Math.round(costeTrazado(estado.mapa, tub.camino, tub.dn, red)
+                                    * CONFIG.tuberia.valorRecuperado);
+        const R = CONFIG.redes[red];
+        if(!confirm(`¿Levantar esta línea de ${R.nombre.toLowerCase()} (${tub.camino.length} casillas)? ` +
+                    `Se recuperan ${formatear(recupera)} € de material. ` +
+                    `Ojo: lo que colgaba de ella quedará sin conectar.`)) break;
+        estado.tuberias.splice(estado.tuberias.indexOf(tub), 1);
+        estado.dinero += recupera;
+        estado.anotar(`Línea de ${R.nombre.toLowerCase()} levantada: ${formatear(recupera)} € de material recuperado.`, 'info');
+        avisar('Línea levantada.');
+        sonido.picar();
+        ui.invalidarCache();
+        break;
+      }
+
       case 'ampliarVertedero': {
         const sel = estado.seleccion;
         const obra = sel && estado.construcciones.find(

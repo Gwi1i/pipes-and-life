@@ -372,9 +372,9 @@ qué se mide. Al calibrar una escala nueva, mueve `caudalMax` y `habitantesMax`
 JUNTOS: con caudales sueltos una pista de tierra daba para cinco mil habitantes y
 la carretera no era un cuello de botella nunca.
 
-**Cada pieza del mapa es ALGUIEN.** Lleva su nombre propio ("Depósito 2",
-numerado al construir por orden entre hermanas — nada se derriba, así que el
-número es estable), su `nivel` y su ficha al seleccionarla: qué aporta con
+**Cada pieza del mapa es ALGUIEN.** Lleva su nombre propio ("Depósito 2" —
+`bautizarObra()` numera con el MAYOR usado, no contando vivas: con el derribo,
+contar repetía nombres), su `nivel` y su ficha al seleccionarla: qué aporta con
 números, su situación (AVERIADA / SIN CONECTAR, porque en esos estados no
 aporta nada y callárselo parece un timo) y su botón AMPLIAR
 (`CONFIG.ampliacion`, coste geométrico). La clave del encaje:
@@ -385,6 +385,14 @@ del pueblo") sube la instalación municipal del pueblo activo; cada pieza del
 MAPA se amplía seleccionándola. El vertedero queda FUERA de la ampliación
 genérica: su `nivel` es el vaso y tiene su propio botón. Las partidas viejas
 bautizan sus obras al cargar.
+
+**Equivocarse tiene salida, pero no gratis.** Toda obra lleva DERRIBAR al final
+de su ficha (recupera `CONFIG.derribo.fraccionRecuperada` de lo invertido,
+pieza y ampliaciones; la avería de la casilla se va con el escombro) y toda
+línea se puede LEVANTAR (al `tuberia.valorRecuperado`), desde el panel de la
+casilla o de la obra. La CASILLA COMPARTIDA no pregunta: si hay obra y tubería
+en el mismo sitio, el panel enseña las dos con el bloque "Por aquí pasa..." —
+mejor que un diálogo. Los dos pasan por `confirm()`, como Reiniciar.
 
 **El vertedero se llena, y gotea.** Cada uno lleva su `nivel` y sus toneladas
 (`lleno`) EN LA PROPIA CONSTRUCCIÓN, no en el pueblo: son de la mancomunidad y

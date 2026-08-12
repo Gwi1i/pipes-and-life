@@ -200,6 +200,20 @@ button{touch-action:manipulation;}
 .diag-total{border-top:1px solid var(--linea-viva); padding-top:4px; margin-top:2px;}
 .diag-total b{color:var(--ok);}
 
+/* "Por aquí pasa una línea": la casilla compartida enseña las dos cosas */
+.linea-aqui{
+  display:flex; align-items:center; justify-content:space-between; gap:8px;
+  border-left:2px solid var(--tono, #38bdf8); padding:5px 0 5px 8px;
+  margin:2px 0 7px; font-size:10.5px; color:var(--tenue);
+}
+.linea-aqui b{color:var(--texto);}
+.linea-aqui-btn{
+  flex:none; background:none; border:1px solid var(--linea-viva);
+  color:var(--tenue); padding:4px 8px; border-radius:3px; cursor:pointer;
+  font-family:var(--mono); font-size:8.5px; letter-spacing:.06em;
+}
+.linea-aqui-btn:hover{border-color:var(--tono, #38bdf8); color:var(--texto);}
+
 /* El nivel del acuífero: lo único que se ve de un depósito que está bajo tierra */
 .nivel-acuifero{display:flex; align-items:center; gap:7px; margin:6px 0 7px;}
 .nivel-barra{

@@ -25,7 +25,8 @@ import { celdaEn, piezaDeRuina, diametro, nivelDiametro, costeRenovar,
          lineasConectadas, cuelloDeBotella, escalaDeRed,
          claseAcuifero, puedeSondear, costeSondeo,
          masasDelMapa, edadAños, fugasDe,
-         nombreDeObra, averiaEn, casillaEnRed } from './mapa.js';
+         nombreDeObra, averiaEn, casillaEnRed,
+         lineasEnCasilla, redDe, costeTrazado } from './mapa.js';
 import { lista as listaLugares } from './lugares.js';
 import { pasoActual } from './tutorial.js';
 import { dibujarDiagrama, hayDiagrama } from './diagramas.js';
@@ -566,7 +567,8 @@ export class UI {
         + ':' + (pozosPorMasa(estado).get(celdaObra?.masa) || 0) : '';
     // La avería y la conexión también entran: son lo que el panel debe contar
     const estadoObra = obra ? this.estadoDeObra(estado, obra) : '';
-    const firma = obra ? `${obra.tipo},${obra.col},${obra.fila},${obra.nivel || 1},${Math.round(obra.lleno || 0)},${nivelPozo},${estadoObra}` : 'nada';
+    const nLineas = obra ? lineasEnCasilla(estado, obra.col, obra.fila).length : 0;
+    const firma = obra ? `${obra.tipo},${obra.col},${obra.fila},${obra.nivel || 1},${Math.round(obra.lleno || 0)},${nivelPozo},${estadoObra},${nLineas}` : 'nada';
     if(this.cache.obraFirma === firma) return;
     this.cache.obraFirma = firma;
 
@@ -586,12 +588,17 @@ export class UI {
 
     // EL POZO: aquí es donde hace falta ver el acuífero, no en la ficha de
     // terreno — en cuanto construyes encima, aquella deja de salir.
+    const lineasAqui = this.bloqueLineas(estado, { col: obra.col, fila: obra.fila });
+    const derribo = this.botonDerribar(obra);
+
     if(obra.tipo === 'acuifero'){
       cont.innerHTML = `
         <p class="red-cuello" style="--tono:${def.color}"><b>${titulo}</b></p>
         ${situacion}
+        ${lineasAqui}
         ${this.bloqueSubsuelo(estado, celdaObra, { col: obra.col, fila: obra.fila })}
-        ${this.fichaHTML(def, obra.tipo)}`;
+        ${this.fichaHTML(def, obra.tipo)}
+        ${derribo}`;
       return;
     }
 
@@ -603,6 +610,7 @@ export class UI {
         <p class="red-cuello" style="--tono:${def.color}"><b>${titulo}</b>
           ${ampliable ? `· nivel ${nivel}` : ''}</p>
         ${situacion}
+        ${lineasAqui}
         <p class="m-desc">${this.queAporta(obra.tipo, nivel) || def.desc}</p>
         ${!ampliable ? '' : nivel >= A.nivelMax
           ? '<p class="m-desc">Ampliada al máximo: si hace falta más, toca construir otra.</p>'
@@ -611,7 +619,8 @@ export class UI {
                <span class="m-desc">Pasará a aportar como ${nivel + 1} piezas iguales.</span>
                <span class="m-coste">${formatear(costeAmpliarPieza(obra))} €</span>
              </button>`}
-        ${this.fichaHTML(def, obra.tipo)}`;
+        ${this.fichaHTML(def, obra.tipo)}
+        ${derribo}`;
       return;
     }
 
@@ -639,7 +648,45 @@ export class UI {
              <span class="m-cab"><span class="m-nom">Ampliar el vaso</span></span>
              <span class="m-desc">+${formatear(V.capacidadPorNivel)} t de capacidad.</span>
              <span class="m-coste">${formatear(coste)} €</span>
-           </button>`}`;
+           </button>`}
+      ${lineasAqui}
+      ${derribo}`;
+  }
+
+  /**
+   * Las líneas que pasan por la casilla seleccionada, cada una con su botón de
+   * LEVANTARLA. Es la respuesta a la casilla compartida: si hay una obra Y una
+   * tubería en el mismo sitio, el panel enseña las dos, cada una con lo suyo —
+   * mejor que preguntar.
+   */
+  bloqueLineas(estado, sel){
+    const lineas = lineasEnCasilla(estado, sel.col, sel.fila);
+    if(!lineas.length) return '';
+    return lineas.map(({ tuberia, indice }) => {
+      const clave = redDe(tuberia);
+      const red = CONFIG.redes[clave];
+      const d = diametro(tuberia.dn, clave);
+      const recupera = Math.round(costeTrazado(estado.mapa, tuberia.camino, tuberia.dn, clave)
+                                  * CONFIG.tuberia.valorRecuperado);
+      return `<div class="linea-aqui" style="--tono:${red.color}">
+        <span class="linea-aqui-txt">Por aquí pasa <b>${red.nombre.toLowerCase()}</b>:
+          ${d.nombre} de ${tuberia.camino.length} casillas.</span>
+        <button class="linea-aqui-btn" data-accion="quitarLinea" data-clave="${indice}">
+          Levantarla (+${formatear(recupera)} €)</button>
+      </div>`;
+    }).join('');
+  }
+
+  /** El botón de derribo: al final y en su color — destructivo pero con salida. */
+  botonDerribar(obra){
+    const def = CONFIG.construibles[obra.tipo];
+    const recupera = Math.round(def.coste * (obra.nivel || 1)
+                                * CONFIG.derribo.fraccionRecuperada);
+    return `<button class="mejora obra derribo" data-accion="derribarObra" style="--tono:#f05a4a">
+      <span class="m-cab"><span class="m-nom">Derribar</span></span>
+      <span class="m-desc">La casilla queda libre y del derribo se recuperan
+        ${formatear(recupera)} €.</span>
+    </button>`;
   }
 
   /**
@@ -765,7 +812,8 @@ export class UI {
     const vale = celda && !celda.oculta && !hayOtra;
 
     const firma = vale ? `${sel.col},${sel.fila},${celda.tipo},${celda.protegida || ''},`
-                       + `${celda.estudiada ? 1 : 0}${celda.sondeo || ''}` : 'nada';
+                       + `${celda.estudiada ? 1 : 0}${celda.sondeo || ''},`
+                       + lineasEnCasilla(estado, sel.col, sel.fila).length : 'nada';
     if(this.cache.casillaFirma === firma) return;
     this.cache.casillaFirma = firma;
 
@@ -818,6 +866,7 @@ export class UI {
         <div class="casilla-fila"><span>Destapar</span><b>×${def.costeExtra}</b></div>
         ${redes}
       </div>
+      ${this.bloqueLineas(estado, sel)}
       ${this.bloqueSubsuelo(estado, celda, sel)}
       <p class="casilla-cabe">${cabe.length
         ? 'Aquí cabe: <b>' + cabe.join('</b>, <b>') + '</b>.'

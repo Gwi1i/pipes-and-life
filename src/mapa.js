@@ -934,15 +934,31 @@ export function nombreDeObra(obra){
 }
 
 /**
- * Bautiza una obra nueva: el nombre del tipo y su número de orden entre las
- * hermanas ("Bombeo 3"). La primera de cada tipo va sin número — mientras solo
- * hay una, el apellido sobra. Nunca se derriba nada, así que el número es
- * estable de por vida.
+ * Bautiza una obra nueva: el nombre del tipo y su número ("Bombeo 3"). La
+ * primera de cada tipo va sin número — mientras solo hay una, el apellido
+ * sobra. El número sale del MAYOR ya usado, no de contar las vivas: con el
+ * derribo, contar habría repetido nombres (derribas "Depósito", construyes, y
+ * el nuevo salía "Depósito 2" habiendo ya un "Depósito 2").
  */
 export function bautizarObra(construcciones, tipo){
-  const hermanas = construcciones.filter(o => o.tipo === tipo).length;
   const base = CONFIG.construibles[tipo].nombre;
-  return hermanas === 0 ? base : `${base} ${hermanas + 1}`;
+  let mayor = 0;
+  for(const o of construcciones){
+    if(o.tipo !== tipo) continue;
+    const num = (o.nombre || '').match(/(\d+)$/);
+    mayor = Math.max(mayor, num ? +num[1] : 1);
+  }
+  return mayor === 0 ? base : `${base} ${mayor + 1}`;
+}
+
+/** Las líneas que PASAN por una casilla, con su índice real en estado.tuberias. */
+export function lineasEnCasilla(estado, col, fila){
+  const salida = [];
+  estado.tuberias.forEach((tuberia, indice) => {
+    if(tuberia.camino.some(p => p.col === col && p.fila === fila))
+      salida.push({ tuberia, indice });
+  });
+  return salida;
 }
 
 /* ---------- persistencia compacta ----------

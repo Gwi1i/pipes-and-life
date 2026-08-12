@@ -797,6 +797,15 @@ export const CONFIG = {
     factorCoste: 1.7       // ampliar a nivel n cuesta coste × factor^(n-1)
   },
 
+  /* ---------- DERRIBO ----------
+     Equivocarse de sitio tiene que tener salida: se derriba y se recupera una
+     parte de lo invertido. Solo una parte — deshacer no puede ser gratis, o
+     colocar deja de ser una decisión. Las tuberías se LEVANTAN con la misma
+     lógica, al `tuberia.valorRecuperado` de siempre. */
+  derribo: {
+    fraccionRecuperada: 0.3   // de lo invertido (pieza + ampliaciones)
+  },
+
   /* ---------- LO QUE APORTA CADA PIEZA CONECTADA ----------
      La tienda de mejoras sube el NIVEL (lo bien que rinde cada una); el mapa
      decide CUÁNTAS tienes y si están enganchadas. Una pieza sin tubería al
