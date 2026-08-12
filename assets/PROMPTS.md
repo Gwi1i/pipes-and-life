@@ -167,22 +167,40 @@ red que lo une todo.
 
 ---
 
-# EL GUÍA (`guia.png`)
+# EL GUÍA (`guia.png` — o mejor, la hoja `guia_hoja.png`)
 
 La cara que acompaña al bocadillo de los primeros pasos, flotando sobre el
 mapa. Se ve RECORTADA EN CÍRCULO y pequeña (58 píxeles), así que manda el
 rostro: primer plano, expresivo, y nada de detalle fino que se pierda.
+
+## La HOJA de tres caras (`guia_hoja.png`) — la buena
+
+El guía tiene tres estados de ánimo en el juego: explicando, celebrando un
+paso conseguido, y preocupado cuando algo se rompe. **Las tres caras van en
+UNA SOLA imagen, en fila** — pedirlas en tiradas separadas saca tres señores
+parecidos pero distintos; de la misma tirada, la identidad se conserva.
+
+### `guia_hoja.png`
+> Genera una imagen: el mismo personaje tres veces en fila, un operario
+> veterano de aguas con casco de obra y chaleco reflectante, retrato en primer
+> plano de hombros hacia arriba, los tres retratos del mismo tamaño y a la
+> misma altura sobre fondo liso de un solo color: a la izquierda con cara
+> amable y serena, en el centro celebrando sonriente con el puño en alto, a la
+> derecha preocupado rascándose el casco, *(+ coletilla)*
+
+Suéltala en esta carpeta y el `optimizar.bat` la PARTE solo en las tres caras
+(`guia.jpg`, `guia_bien.jpg`, `guia_mal.jpg`): el guía explicará con la
+primera, celebrará cada paso con la segunda y pondrá cara de apuro con las
+averías. El personaje es tuyo — una ingeniera joven, un fontanero con bigote —
+solo respeta el primer plano, la fila de tres y el fondo liso.
+
+## Una sola cara (`guia.png`) — para salir del paso
 
 ### `guia.png`
 > Genera una imagen: retrato en primer plano de un operario veterano de aguas,
 > sonriente y de cara amable, con casco de obra y chaleco reflectante, mirando
 > al frente, fondo liso de un solo color, encuadre de hombros hacia arriba
 > centrado, *(+ coletilla)*
-
-El personaje es tuyo: si prefieres una ingeniera joven, un fontanero con
-bigote de los de toda la vida o quien sea, cámbialo — solo respeta el primer
-plano y el fondo liso, que es lo que hace que funcione en círculo. El
-`optimizar.bat` la deja en `guia.jpg`, que es lo que carga el juego.
 
 ---
 

@@ -62,6 +62,38 @@ Get-ChildItem $carpeta -File | Where-Object {
     }
 }
 
+# ---- LA HOJA DEL GUIA: tres caras en fila que se parten solas ----
+# Las tres expresiones se generan en UNA tirada (asi el personaje es el mismo)
+# y aqui se recortan: cada tercio, cuadrado y centrado, a su archivo.
+$hoja = Join-Path $carpeta 'guia_hoja.png'
+if(Test-Path $hoja){
+    try {
+        $img = [System.Drawing.Image]::FromFile($hoja)
+        $anchoCara = [Math]::Floor($img.Width / 3)
+        $lado = [Math]::Min($anchoCara, $img.Height)
+        $nombres = @('guia', 'guia_bien', 'guia_mal')
+        for($i = 0; $i -lt 3; $i++){
+            $bmp = New-Object System.Drawing.Bitmap(256, 256)
+            $g = [System.Drawing.Graphics]::FromImage($bmp)
+            $g.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+            $origenX = $i * $anchoCara + [Math]::Floor(($anchoCara - $lado) / 2)
+            $origenY = [Math]::Floor(($img.Height - $lado) / 2)
+            $recorte = New-Object System.Drawing.Rectangle($origenX, $origenY, $lado, $lado)
+            $destino = New-Object System.Drawing.Rectangle(0, 0, 256, 256)
+            $g.DrawImage($img, $destino, $recorte, [System.Drawing.GraphicsUnit]::Pixel)
+            $g.Dispose()
+            $bmp.Save((Join-Path $carpeta ($nombres[$i] + '.jpg')), $codec, $par)
+            $bmp.Dispose()
+        }
+        $img.Dispose()
+        Move-Item -Force $hoja (Join-Path $originales 'guia_hoja.png')
+        Write-Output "guia_hoja.png  ->  guia.jpg + guia_bien.jpg + guia_mal.jpg (256x256)"
+        $hechas++
+    } catch {
+        Write-Output "FALLO con guia_hoja.png: $($_.Exception.Message)"
+    }
+}
+
 if($hechas -eq 0){
     Write-Output ""
     Write-Output "No he encontrado nada que optimizar."

@@ -572,12 +572,14 @@ function procesarAcciones(){
             estado.anotar(`${nombre}: reparación a mano impecable. Ni un euro en llaves.`, 'ok');
             avisar('¡En servicio! Reparada a mano, gratis.');
             sonido.reparada();
+            ui.caraGuia('bien');
             escena.destelloMantenimiento();
             ui.invalidarCache();
           } else if(razon === 'derrame'){
             estado.anotar('El agua llegó antes que tú: esa avería ya solo se arregla con la llave.', 'alarma');
             avisar('¡Derrame! A golpe de llave, como toda la vida.');
             sonido.seco();
+            ui.caraGuia('mal');
           }
         });
         break;
@@ -847,6 +849,7 @@ function tickAverias(dtHoras){
   estado.anotar(`Avería: ${def.nombre} fuera de servicio hasta que lo repares.`, 'critico');
   avisar(`¡Avería en ${def.nombre}! Ve al mapa y clica encima.`);
   sonido.averia();
+  ui.caraGuia('mal');
 }
 
 /** Golpes de llave que pide una avería. El personal contratado deja menos faena. */
@@ -1104,7 +1107,8 @@ function bucle(ahora){
   const pasoHecho = comprobarGuia(estado);
   if(pasoHecho){
     estado.anotar(`Guía: ${pasoHecho.titulo} ✓`, 'ok');
-    sonido.hallazgo();   // el paso conseguido se celebra, bajito
+    sonido.hallazgo();      // el paso conseguido se celebra, bajito
+    ui.caraGuia('bien');    // ...y el guía lo celebra con la cara, si la tiene
   }
   anotarCrecimiento();
 

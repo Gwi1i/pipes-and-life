@@ -699,6 +699,29 @@ export class UI {
   }
 
   /**
+   * La CARA del guía cambia un momento con lo que pasa: celebra los pasos y se
+   * preocupa con las averías. Solo si esa cara existe (guia_bien/guia_mal.jpg,
+   * de la hoja de tres): sin archivos, el guía se queda sereno y no pasa nada.
+   */
+  caraGuia(animo){
+    const img = document.querySelector('.guia-avatar img');
+    if(!img || img.hidden) return;               // sin retrato no hay teatro
+    const src = `assets/guia_${animo}.jpg`;
+    this._carasOk = this._carasOk || {};
+    const poner = () => {
+      img.src = src;
+      clearTimeout(this._caraTemp);
+      this._caraTemp = setTimeout(() => { img.src = 'assets/guia.jpg'; }, 3500);
+    };
+    if(this._carasOk[src]){ poner(); return; }
+    if(this._carasOk[src] === false) return;
+    const prueba = new Image();
+    prueba.onload = () => { this._carasOk[src] = true; poner(); };
+    prueba.onerror = () => { this._carasOk[src] = false; };
+    prueba.src = src;
+  }
+
+  /**
    * La situación de una obra: 'averiada', 'suelta' (sin red que le llegue) o
    * '' (en servicio). Es lo primero que el panel debe decir, porque una pieza
    * en cualquiera de los dos primeros estados no aporta nada.
