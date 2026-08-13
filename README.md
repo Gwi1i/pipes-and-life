@@ -1,140 +1,66 @@
-# Red Hidráulica — versión clicker
+# Pipes and Life
 
-Juego incremental de abastecimiento de agua. Eres una **mancomunidad**: bombea a
-golpe de clic, construye depósitos para acumular reserva, mantén servidos a tus
-pueblos, depura las aguas antes de devolverlas al cauce y ve creciendo hasta
-gestionar varios núcleos.
+**Abastece a tu mancomunidad, pueblo a pueblo.**
 
-> Esta es la rama `clicker`. La versión original —de estrategia sobre terreno
-> generado por procedimiento, con red de tuberías y solver hidráulico— vive en
-> la rama `master`.
+### ▶ [Jugar ahora](https://gwi1i.github.io/pipes-and-life/) — gratis, en el navegador, también en el móvil
 
----
+![Pipes and Life](assets/h_portada.jpg)
 
-## Cómo empezar a jugar
+Capta el agua, guárdala en alto, llévala lejos y devuélvela limpia. **Treinta
+y seis pueblos** esperan repartidos por un territorio que se destapa clicando;
+el oficio es de verdad — el juego está hecho por un profesional del
+abastecimiento, y todo lo que enseña (por qué un sondeo puede salir seco, por
+qué manda el tramo más estrecho de la tubería, por qué la maceta no va al
+contenedor verde) es como en la realidad.
 
-1. **Bombea.** Cada clic en la escena (o la barra espaciadora) saca agua del
-   río. Sin depósito, el agua va directa al pueblo: si dejas de clicar, se
-   queda seco enseguida.
-2. **Construye el depósito.** Con lo que ganes sirviendo agua, cómpralo en el
-   panel de *Mejoras*. A partir de ahí el agua se **acumula** y el pueblo bebe
-   de la reserva mientras descansas.
-3. **Cobra.** Solo se paga el agua que llega. Cuanto mejor el servicio, más
-   caja.
+## Qué hay dentro
 
----
+- **Un mapa de exploración** con nueve terrenos, ríos, acuíferos escondidos,
+  yacimientos arqueológicos y zonas protegidas que obligan a dar rodeos.
+- **Cuatro redes** que se trazan a mano, casilla a casilla: abastecimiento,
+  saneamiento, pluviales y la carretera de los residuos. Manda siempre el
+  tramo más estrecho, y las tuberías envejecen.
+- **El agua subterránea en tres pasos**: estudio hidrogeológico, sondeo (que
+  puede salir seco) y pozo. Y el acuífero se agota si lo sobreexplotas.
+- **Minijuegos opcionales**: la reparación a mano (gira las piezas antes de
+  que llegue el agua) y la línea de reciclaje (cada residuo a su contenedor —
+  y no todo se recicla).
+- **Manuel**, el guía veterano: te acompaña en los primeros pasos, comenta tu
+  partida y, si le das voz, te la cuenta.
+- **Un año vivo**: estaciones, estiaje en verano, tormentas que revientan el
+  colector, averías con sitio en el mapa.
 
-## Cómo ejecutarlo
+| El mapa | Reparación a mano | La línea de reciclaje |
+|---|---|---|
+| ![El mapa](docs/capturas/mapa.jpg) | ![Reparación a mano](docs/capturas/tuberias.jpg) | ![La línea de reciclaje](docs/capturas/reciclaje.jpg) |
 
-**No basta con abrir `index.html` haciendo doble clic.** El proyecto usa módulos
-ES (`import` / `export`), y los navegadores los bloquean sobre el protocolo
-`file://` por seguridad. Necesitas un servidor local.
+## Ejecutarlo en local
 
-```bash
-py -m http.server 8000
-```
+**Doble clic en `jugar.bat`** (Windows): busca Python, levanta el servidor y
+abre el navegador. Por consola: `py servidor.py`.
 
-Y abre `http://localhost:8000` en el navegador. Sin proceso de build: se edita
-un archivo, se recarga y ya está. (Si venías de otra versión, fuerza una recarga
-sin caché con `Ctrl`+`F5`: el navegador cachea los módulos ES.)
+> No funciona abriendo `index.html` con doble clic: el proyecto usa módulos ES
+> y los navegadores los bloquean sobre `file://`. El servidor del proyecto
+> además sirve sin caché, así que editar y recargar basta — sin `Ctrl`+`F5`.
 
----
+## Cómo está hecho
 
-## Arquitectura
+- **JavaScript a pelo**: módulos ES, DOM y Canvas 2D. Sin dependencias, sin
+  framework, sin paso de build. Se edita un archivo, se recarga y ya está.
+- Las ilustraciones, el vídeo de portada y la música los genera el autor con
+  IA (los prompts están en [`assets/PROMPTS.md`](assets/PROMPTS.md)); el
+  dibujo del mapa, los efectos de sonido y las animaciones van por código.
+- Todos los números ajustables del juego viven en
+  [`src/config.js`](src/config.js), cada uno con su comentario.
 
-```
-red-hidraulica/
-├── index.html          Estructura de la página: escena y paneles
-├── css/estilos.css     Aspecto
-└── src/
-    ├── config.js       TODOS los parámetros ajustables
-    ├── util.js         Funciones puras: formato, interpolación, color
-    ├── estado.js       Dinero, agua, tiempo y persistencia
-    ├── simulacion.js   El motor: balance de agua, consumo y facturación
-    ├── escena.js       El diorama animado (canvas, solo lee estado)
-    ├── entrada.js      Ratón, tacto y teclado → acciones
-    ├── ui.js           DOM fuera de la escena: HUD, tienda, paneles
-    └── main.js         Ensamblado y bucle principal
-```
+## Las dos versiones
 
-### La regla que sostiene todo
-
-Cada módulo tiene **una** responsabilidad y no invade las demás:
-
-- `escena.js` **lee** el estado, nunca lo modifica
-- `simulacion.js` no sabe dibujar ni de interfaz
-- `entrada.js` no toca el estado: emite acciones que `main.js` ejecuta
-- `config.js` no importa nada de nadie
-
-**Bucle principal** (`main.js`): `entrada → acciones → simulación → economía →
-escena + ui`
+| Rama | Qué es |
+|---|---|
+| **`clicker`** | La versión jugable de la web: incremental, con mapa de exploración y mancomunidad dinámica. |
+| **`master`** | La versión de **estrategia**: terreno generado por procedimiento, red de tuberías con solver hidráulico, presiones y economía. |
 
 ---
 
-## El balance de agua
-
-El corazón del juego, en `simulacion.js`, es deliberadamente simple:
-
-- **Entra** agua con cada clic de bomba (`bombear`), hasta el tope de capacidad.
-- **La capacidad** es un chorrito sin depósito y una reserva grande con él: es
-  el único número que separa "atado al clic" de "puedo soltar el ratón".
-- **Sale** agua según la demanda de la población en cada paso.
-- Se **factura** solo lo que se sirve.
-
-No es un modelo hidráulico: no hay presiones ni pérdidas de carga. Eso era la
-versión de estrategia. Aquí el interés está en el ritmo clicker y en el reparto
-del dinero entre mejoras.
-
----
-
-## Estado actual (Hitos 1-5)
-
-**Funciona:**
-
-- Clic de bombeo, consumo continuo, facturación.
-- **Vías de mejora** que compiten por el dinero: potencia de bomba, depósito,
-  captación (producción pasiva), depuradora y personal de mantenimiento.
-- **Multi-pueblo (mancomunidad)**: al crecer el primer pueblo se desbloquea un
-  segundo. Cada pueblo es un sistema propio (bomba, depósito, captación,
-  depuradora, mantenimiento, auto-bombeo), y se alterna con pestañas. La **caja**,
-  el **reloj/estación** y el **cauce** son comunes a la mancomunidad.
-- **Saneamiento y cauce**: al crecer, un pueblo genera aguas residuales. Sin
-  depurar ensucian el cauce común → **multa** y **freno al crecimiento** de todos.
-  Se limpia a mano (botón LIMPIAR CAUCE) o, mejor, con la depuradora de cada pueblo.
-- **Lluvia, pluviales y tormentas** (con el tercer pueblo): la lluvia moja la
-  ciudad y su escorrentía entra al colector, que revienta a la depuradora en
-  otoño. La **red de pluviales** la separa (y aprovecha parte para tu depósito)
-  y el **tanque de tormentas** retiene la punta para tratarla con calma. Los dos
-  suben la **calidad** del pueblo, que multiplica su crecimiento.
-- **Auto-bombeo como función especial**: no es una mejora más, sino un aliciente
-  que se gana cumpliendo requisitos (niveles + población) y pagando caro. El
-  código deja un gancho documentado (`CONFIG.premium.autobomba.desbloqueoExterno`)
-  para, en el futuro, permitir desbloquearlo por otra vía (anuncio o pago). Ese
-  pago/anuncio real NO está implementado.
-- **La población crece o mengua** según el servicio: bien abastecida y sin cortes,
-  crece y pide más agua; mal servida, se despuebla.
-- **El año vivo**: el consumo sube y baja con la hora del día (punta de mañana y
-  tarde) y la captación con la estación (en verano, estiaje). El cielo de la
-  escena hace su ciclo día/noche.
-- **Averías**: la instalación se rompe y para la producción automática (el clic
-  manual sigue). Se repara a mano pagando, o sola si tienes personal de
-  mantenimiento.
-- **Progreso offline**: al volver, se acredita (con tope) lo producido mientras
-  no estabas.
-- **Escena "dibujos animados"**: muestra el CICLO DEL AGUA completo del pueblo
-  activo (río → captación → bombeo → depósito → pueblo → saneamiento →
-  depuradora → de vuelta al cauce). Con estilo cartoon (contornos, sombreado
-  plano, rebote al clicar), **clima por estación** (sol, lluvia, nieve, flores),
-  **árboles** con follaje estacional, colinas y nubes con parallax, ciclo
-  día/noche, y el cauce que se enturbia con la contaminación. El vertido se ve
-  sucio si no hay depuradora y limpio si la hay.
-
-**Siguientes ideas:** más pueblos, más funciones especiales, eventos.
-
----
-
-## Regla de oro: los números van en config.js
-
-**TODOS los números ajustables van en `config.js`.** Un coste, un umbral, una
-tasa, un color: se crea ahí con su nombre y su comentario, y se importa. Se puede
-reequilibrar el juego entero sin abrir un archivo de lógica.
+Hecho con cariño por alguien que lleva el agua de verdad. Si encuentras un
+fallo o tienes una idea, [abre un issue](https://github.com/Gwi1i/pipes-and-life/issues).
