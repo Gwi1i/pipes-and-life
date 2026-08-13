@@ -659,6 +659,23 @@ servicio sostenido (un corte la resetea), mengua si va mal servida, y se queda
 igual en la zona templada. Al crecer sube la demanda, lo que realimenta la
 necesidad de más mejoras.
 
+**Y el pueblo SE VE crecer.** El caserío tenía tres casas fijas: daba igual 200
+habitantes que 6.000, así que el premio del bucle central (servir bien → crecer)
+era un número subiendo en el HUD. Ahora hay cuatro escalones
+(`CONFIG.caserio.escalones`: aldea, pueblo, villa, ciudad) y a partir de villa
+sale la IGLESIA con su campanario, que es la silueta que se reconoce de lejos.
+Los umbrales no son redondos por capricho: son los topes de la escala de
+tuberías (400/1600/6000), así el pueblo cambia de aspecto justo cuando la
+conducción se le queda pequeña. `nivelCaserio()` vive en `simulacion.js` y la
+usan la escena (cuántas casas pinta) y `main.js` (el aviso): duplicar esa cuenta
+daría un pueblo dibujado como villa mientras el aviso dice otra cosa. Los
+núcleos SIN incorporar también enseñan su tamaño (`celda.habIni`), así se ve
+desde lejos si lo que hay allí es una aldea o una ciudad. El cambio de escalón
+se anuncia como un GUIÑO —destello, sonido y una línea—, no como tarjeta a
+pantalla completa: los hitos paran el juego porque son cuatro en la partida, y
+esto pasa muchas veces. Ojo con el género al escribir los textos: los escalones
+llevan `art` porque es "un pueblo" pero "una aldea".
+
 **Ciclo del mundo.** `coefHora()` modula el consumo por la hora del día
 (`curvaDiaria`) y `factorEstiaje()` modula la captación por la estación
 (`estiaje`, sobre `tiempo.horasPorAño`). Se aplican dentro de `avanzar()`.

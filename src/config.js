@@ -1027,6 +1027,41 @@ export const CONFIG = {
     costeDesmontar: 0.55,
   },
 
+  /* ---------- CÓMO CRECE EL CASERÍO ----------
+     El crecimiento de población es EL motor del juego (creces → sube la
+     demanda → necesitas más instalación → creces), y su premio era un número
+     subiendo en el HUD: tres casas dibujadas igual con 200 habitantes que con
+     6.000. Ahora el pueblo se ve crecer.
+
+     Los umbrales NO son redondos por capricho: son los topes de la escala de
+     tuberías (`tuberia.diametros[].habitantesMax`: 400, 1600, 6000). Así el
+     pueblo cambia de aspecto justo cuando la conducción se le queda pequeña —
+     el aviso visual y el problema real llegan a la vez.
+
+     `casas` son posiciones [dx, dy, escala] en fracciones de casilla; dy hacia
+     arriba es "más al fondo", y se pintan de atrás a delante para que se
+     solapen bien. */
+  caserio: {
+    escalones: [
+      // El artículo va con el nombre porque el género cambia ("un pueblo" pero
+      // "una aldea"): sin él salía un "ya es una pueblo" de libro.
+      { nombre: 'aldea',  art: 'una', hasta: 400,      iglesia: false, casas: [
+        [-0.16,  0.02, 0.62], [ 0.15,  0.04, 0.70], [ 0.00, -0.09, 0.85] ] },
+      { nombre: 'pueblo', art: 'un',  hasta: 1600,     iglesia: false, casas: [
+        [-0.16,  0.02, 0.62], [ 0.15,  0.04, 0.70], [ 0.00, -0.09, 0.85],
+        [-0.28, -0.05, 0.55], [ 0.28, -0.03, 0.58], [ 0.01,  0.11, 0.66] ] },
+      { nombre: 'villa',  art: 'una', hasta: 6000,     iglesia: true,  casas: [
+        [-0.16,  0.03, 0.62], [ 0.16,  0.05, 0.70], [-0.30, -0.04, 0.55],
+        [ 0.29, -0.02, 0.58], [ 0.01,  0.12, 0.66], [-0.12, -0.15, 0.52],
+        [ 0.17, -0.14, 0.54], [-0.32,  0.09, 0.48], [ 0.31,  0.10, 0.50] ] },
+      { nombre: 'ciudad', art: 'una', hasta: Infinity, iglesia: true,  casas: [
+        [-0.15,  0.04, 0.66], [ 0.16,  0.06, 0.72], [-0.31, -0.03, 0.58],
+        [ 0.30, -0.01, 0.60], [ 0.00,  0.13, 0.70], [-0.13, -0.16, 0.56],
+        [ 0.18, -0.15, 0.58], [-0.33,  0.10, 0.52], [ 0.32,  0.11, 0.54],
+        [-0.24, -0.19, 0.46], [ 0.27, -0.19, 0.48], [ 0.09,  0.20, 0.50] ] }
+    ]
+  },
+
   /* ---------- YACIMIENTOS ARQUEOLÓGICOS ----------
      Están BAJO TIERRA: no se ven en el mapa. Aparecen al EXCAVAR, o sea cuando
      intentas tender una tubería o una carretera por esa casilla o levantar algo

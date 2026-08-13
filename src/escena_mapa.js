@@ -15,7 +15,7 @@ import { celdaEn, clicsParaDestapar, esAlcanzable, puedeColocar,
          puedeSeguirTrazado, costeTrazado, costeCasillaTuberia,
          diametro, nivelDiametro, redDe } from './mapa.js';
 import { poderExpansion, llenadoVaso, factorEstiaje,
-         capacidad } from './simulacion.js';
+         capacidad, escalonCaserio } from './simulacion.js';
 import { formatear } from './util.js';
 import { limitar } from './util.js';
 import { Escena, mezclarColor, oscurecer, aclarar } from './escena.js';
@@ -735,7 +735,11 @@ export class EscenaMapa extends Escena {
         const x = Math.round(c * t - estado.camara.x);
         const y = Math.round(f * t - estado.camara.y);
         if(celda.arqueologia && celda.aflorado) this.dibujarYacimiento(celda, x, y, t);
-        if(celda.hallazgo) this.dibujarHallazgo(celda, x, y, t);
+        if(celda.hallazgo)
+          // Los habitantes se resuelven aquí, que es donde se sabe la casilla:
+          // los del pueblo si está incorporado, los sembrados si aún no. Así un
+          // núcleo lejano ya enseña de lejos si es una aldea o una ciudad.
+          this.dibujarHallazgo(celda, x, y, t, this.habitantesDe(celda, estado, c, f));
       }
     }
   }
@@ -749,7 +753,15 @@ export class EscenaMapa extends Escena {
    * El PUEBLO es el que más importa: es el objetivo del juego y lo que más se
    * mira. Se dibuja como un caserío de tres casas con sus tejados a dos aguas.
    */
-  dibujarHallazgo(celda, x, y, t){
+  /** Cuánta gente vive en esa casilla: la de verdad si el pueblo ya es tuyo,
+   *  la sembrada por la semilla si todavía está por incorporar. */
+  habitantesDe(celda, estado, c, f){
+    if(celda.hallazgo !== 'pueblo') return 0;
+    const p = estado.pueblos.find(p => p.col === c && p.fila === f);
+    return p ? p.habitantes : (celda.habIni || 0);
+  }
+
+  dibujarHallazgo(celda, x, y, t, habitantes){
     const ctx = this.ctx;
     const col = CONFIG.hallazgos.color[celda.hallazgo] || '#ffffff';
     const cx = x + t / 2, cy = y + t / 2;
@@ -775,7 +787,8 @@ export class EscenaMapa extends Escena {
     // sombra desplazada abajo-derecha, como manda la luz
     this.sombraPieza(cx, y + t * 0.72, t * 0.24, t * 0.08, 0.28);
 
-    if(celda.hallazgo === 'pueblo') this.caserio(cx, y + t * 0.70, t, col);
+    if(celda.hallazgo === 'pueblo')
+      this.caserio(cx, y + t * 0.70, t, col, habitantes);
     else if(celda.hallazgo === 'ruina') this.ruina(cx, y + t * 0.70, t, col);
     else return;
 
@@ -846,23 +859,51 @@ export class EscenaMapa extends Escena {
     }
   }
 
-  /** Un caserío: tres casas con su tejado, en isométrica. */
-  caserio(cx, suelo, t, color){
-    const casas = [
-      [-0.16,  0.02, 0.62],   // izquierda, algo atrás
-      [ 0.15,  0.04, 0.70],   // derecha
-      [ 0.00, -0.09, 0.85]    // la grande, detrás y arriba
-    ];
+  /**
+   * Un caserío, del tamaño que le toque por población: de tres casas sueltas
+   * (aldea) a una ciudad con iglesia. Los escalones y sus casas están en
+   * `CONFIG.caserio`; aquí solo se pintan.
+   */
+  caserio(cx, suelo, t, color, habitantes){
+    const esc = escalonCaserio(habitantes);
     // Muros claros y tejas rojas: el pueblo es el objetivo del juego y tiene que
     // cantar sobre el verde, no fundirse con él.
     const muro = mezclarColor(color, '#fff8e6', 0.62);
     const tejado = '#b4442a';
+    // La iglesia va DETRÁS del caserío: es lo que se ve desde lejos, pero las
+    // casas de delante tienen que taparle los pies o no se apoya en el suelo.
+    if(esc.iglesia) this.iglesia(cx, suelo - t * 0.13, t, muro, tejado);
+    // Y las casas, de atrás hacia delante (dy creciente): así se solapan bien
+    // y el montón se lee como un caserío y no como un collage.
+    const casas = esc.casas.slice().sort((a, b) => a[1] - b[1]);
     for(const casa of casas){
       const px = cx + t * casa[0], py = suelo + t * casa[1];
       const an = t * 0.15 * casa[2], al = t * 0.20 * casa[2];
       this.isoCaja(px, py, an, an * 0.5, al, muro);
       this.isoTejado(px, py - al, an, an * 0.5, t * 0.09 * casa[2], tejado);
     }
+  }
+
+  /**
+   * La iglesia: lo que convierte un montón de casas en un pueblo de verdad.
+   * Nave baja y campanario alto — es la silueta que se reconoce desde lejos.
+   */
+  iglesia(cx, suelo, t, muro, tejado){
+    const ctx = this.ctx;
+    const piedra = oscurecer(muro, 0.10);
+    // la nave
+    this.isoCaja(cx - t * 0.04, suelo, t * 0.10, t * 0.05, t * 0.15, piedra);
+    this.isoTejado(cx - t * 0.04, suelo - t * 0.15, t * 0.10, t * 0.05,
+                   t * 0.06, tejado);
+    // el campanario, más alto y a un lado
+    const bx = cx + t * 0.10, by = suelo + t * 0.01;
+    this.isoCaja(bx, by, t * 0.045, t * 0.022, t * 0.26, piedra);
+    // el hueco de la campana
+    ctx.fillStyle = 'rgba(20,29,38,0.5)';
+    ctx.fillRect(bx - t * 0.015, by - t * 0.23, t * 0.03, t * 0.045);
+    // el chapitel
+    this.isoTejado(bx, by - t * 0.26, t * 0.05, t * 0.025, t * 0.09,
+                   oscurecer(tejado, 0.18));
   }
 
   /** Instalación abandonada: muros derruidos y cascotes. */

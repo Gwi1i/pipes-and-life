@@ -19,7 +19,8 @@ import { celdaEn, clicarCasilla, clicsParaDestapar, puedeColocar,
 import { avanzar, bombear, costeMejora, requisitosAutobomba,
          poderExpansion, servicioActivo, costeAmpliarVertedero,
          capacidadVaso, faseActual, faltanParaFase,
-         incorporarPueblo, canonIncorporacion, costeAmpliarPieza } from './simulacion.js';
+         incorporarPueblo, canonIncorporacion, costeAmpliarPieza,
+         nivelCaserio } from './simulacion.js';
 import { formatear } from './util.js';
 import { comprobar as comprobarGuia, saltar as saltarGuia,
          pasoActual } from './tutorial.js';
@@ -958,11 +959,39 @@ function anotarCrecimiento(){
     if(!p.desbloqueado) continue;
     const ahora = Math.floor(p.habitantes);
     const antes = habPrev[i];
-    if(Math.floor(ahora / 100) !== Math.floor(antes / 100)){
+    const nivelAhora = nivelCaserio(ahora), nivelAntes = nivelCaserio(antes);
+    // La línea de cada centena se calla si en este mismo paso hay cambio de
+    // escalón: el aviso de escalón ya dice el número, y dos líneas seguidas
+    // contando lo mismo ensucian el registro.
+    if(Math.floor(ahora / 100) !== Math.floor(antes / 100) && nivelAhora === nivelAntes){
       estado.anotar(ahora > antes
         ? `${p.nombre} crece: ${ahora.toLocaleString('es-ES')} habitantes.`
         : `${p.nombre} pierde población: ${ahora.toLocaleString('es-ES')} habitantes.`,
         ahora > antes ? 'ok' : 'alarma');
+    }
+    /* CAMBIO DE ESCALÓN: de aldea a pueblo, de pueblo a villa... Es el premio
+       del bucle central (servir bien → crecer) y hasta ahora era invisible: el
+       caserío se dibujaba igual con 200 habitantes que con 6.000.
+       Se anuncia como un GUIÑO y no como una tarjeta a pantalla completa: los
+       hitos paran el juego porque son cuatro en toda la partida, y esto pasa
+       muchas veces. Destello sobre la casilla, sonido y una línea. */
+    if(nivelAhora !== nivelAntes){
+      const esc = CONFIG.caserio.escalones[nivelAhora];
+      const crece = nivelAhora > nivelAntes;
+      estado.anotar(crece
+        ? `${p.nombre} ya es ${esc.art} ${esc.nombre}: ${ahora.toLocaleString('es-ES')} habitantes.`
+        : `${p.nombre} vuelve a ser ${esc.art} ${esc.nombre}: la población se va.`,
+        crece ? 'ok' : 'alarma');
+      avisar(crece ? `¡${p.nombre} ya es ${esc.art} ${esc.nombre.toUpperCase()}!`
+                   : `${p.nombre} encoge: vuelve a ser ${esc.art} ${esc.nombre}.`);
+      if(crece){
+        sonido.pueblo();
+        // El destello va en coordenadas de PANTALLA, así que hay que traducir
+        // la casilla del pueblo con la cámara de este momento.
+        const t = escena.tam;
+        escena.destello(p.col * t - estado.camara.x + t / 2,
+                        p.fila * t - estado.camara.y + t / 2);
+      } else sonido.seco();
     }
     habPrev[i] = ahora;
   }

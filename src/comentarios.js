@@ -21,7 +21,7 @@
 
 import { CONFIG } from './config.js';
 import { capacidad, tasaFugasRed, redDelPueblo, redEstrangula,
-         nivelMasa, pozosPorMasa } from './simulacion.js';
+         nivelMasa, pozosPorMasa, nivelCaserio } from './simulacion.js';
 
 /* Cada comentario: cuándo procede y qué dice Manuel. El orden ES la
    prioridad: lo que duele va antes que lo que luce. */
@@ -99,6 +99,15 @@ const COMENTARIOS = [
                    && e.activo.servicio >= CONFIG.poblacion.servicioBueno,
     texto: 'El pueblo crece, ¿eh? Buen servicio sostenido: así se hace. La ' +
            'demanda subirá con él, no te me duermas.'
+  },
+  {
+    /* Cuando el caserío ya es villa o ciudad: el momento de mirar el calibre.
+       Los escalones de dibujo coinciden con los topes de las tuberías a
+       propósito, así que si se ve grande, la conducción anda justa. */
+    id: 'yaEsVilla', animo: 'bien',
+    cuando: (e) => nivelCaserio(e.activo.habitantes) >= 2,
+    texto: 'Mira cómo está el pueblo: eso ya no es una aldea de cuatro casas. ' +
+           'Con ese tamaño, échale un ojo al calibre de la conducción.'
   },
 
   /* ---- CHASCARRILLOS: la coña del veterano ----

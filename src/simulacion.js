@@ -30,6 +30,25 @@ export function demandaMedia(habitantes){
   return habitantes * CONFIG.poblacion.litrosHabitanteDia / 86400;
 }
 
+/**
+ * En qué ESCALÓN de caserío está un pueblo por su población: 0 aldea, 1
+ * pueblo, 2 villa, 3 ciudad (`CONFIG.caserio.escalones`).
+ *
+ * Vive aquí, en un solo sitio, porque lo usan dos módulos que no se hablan: la
+ * escena para saber cuántas casas pintar y `main.js` para anunciar el cambio.
+ * Duplicar la cuenta acabaría con un pueblo dibujado como villa mientras el
+ * aviso dice otra cosa — el fallo clásico de este proyecto con `demandaMedia`.
+ */
+export function nivelCaserio(habitantes){
+  const esc = CONFIG.caserio.escalones;
+  for(let i = 0; i < esc.length; i++) if(habitantes < esc[i].hasta) return i;
+  return esc.length - 1;
+}
+
+export function escalonCaserio(habitantes){
+  return CONFIG.caserio.escalones[nivelCaserio(habitantes)];
+}
+
 export function coefHora(horas){
   const h = Math.floor(((horas % 24) + 24) % 24);
   return CONFIG.curvaDiaria[h];
