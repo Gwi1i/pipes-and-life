@@ -416,7 +416,14 @@ export const CONFIG = {
       graciaSegundos: 8,       // margen antes de que el agua entre al tablero
       segundosPorCelda: 1.35,  // lo que tarda el agua en cruzar cada pieza
       aceleracion: 0.97,       // cada celda cruzada, un poco más rápido
-      probRecto: 0.55          // reparto del RELLENO fuera del camino (resto: codos)
+      probRecto: 0.55,         // reparto del RELLENO fuera del camino (resto: codos)
+      /* Tes y crucetas (petición del autor: sin ellas el tablero era un
+         desfile de rectos y codos). La regla del agua es UNA y visible:
+         sigue RECTO si puede, y si no gira. La cruceta se cruza de largo en
+         cualquier posición (pieza regalo); la te vale por tres bocas pero
+         puede mandar el agua por donde no pensabas. Se cuelan tanto en el
+         camino solución como en el relleno. */
+      formasExtra: { te: 0.16, cruceta: 0.07 }
     },
     /* La LÍNEA DE RECICLAJE: separar residuos en la cinta tocando el
        contenedor que toca — los de verdad, con sus colores. El RESTO no se

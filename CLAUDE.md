@@ -650,10 +650,17 @@ autoevitante de boca a boca, con el este en ventaja), pone en él las piezas
 correctas (`rotBuena`, guardada solo para poder verificar por consola),
 rellena el resto y baraja los giros comprobando con `yaResuelto()` que el azar
 no lo dejó resuelto de fábrica: un puzle sin solución no es difícil, es una
-estafa — y uno resuelto de serie, tampoco es un puzle. Premio: la avería
-queda gratis. UN intento por avería (`av.aManoJugada`, se gasta al ENTRAR —
-abandonar también cuenta): con reintentos infinitos, la llave no tendría
-sentido.
+estafa — y uno resuelto de serie, tampoco es un puzle. Hay CUATRO formas
+(recto, codo, te, cruceta — `formasExtra` reparte las dos últimas, también
+dentro del camino) y UNA sola regla de flujo, `salidaDe()`: el agua sigue
+RECTO si puede y si no gira — la cruceta se cruza de largo en cualquier
+posición y la te puede mandar el agua por donde no pensabas. `giroQueUne()`
+comprueba el FLUJO, no solo la conexión: en una te no basta con que las dos
+bocas estén abiertas, y por eso puede devolver null. La pieza mojada guarda
+`entradaAgua` para dibujarse llena por su recorrido real (las ramas de sobra
+quedan secas). Premio: la avería queda gratis. UN intento por avería
+(`av.aManoJugada`, se gasta al ENTRAR — abandonar también cuenta): con
+reintentos infinitos, la llave no tendría sentido.
 
 2. LA LÍNEA DE RECICLAJE (`minijuego_reciclaje.js`): desde la ficha de la
 planta, "echar un turno" — agarrar cada residuo de la cinta y soltarlo en su

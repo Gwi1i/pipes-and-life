@@ -28,7 +28,10 @@ import * as sonido from './sonido.js';
 // Lados de una celda, en orden horario. El opuesto es (lado + 2) % 4.
 const N = 0, E = 1, S = 2, O = 3;
 // Qué lados conecta cada forma SIN girar; el giro suma al índice.
-const FORMAS = { recto: [E, O], codo: [N, E] };
+// La te y la cruceta abren MÁS de dos bocas: por dónde sale el agua lo
+// decide salidaDe() con una sola regla — recto si puede, si no gira.
+const FORMAS = { recto: [E, O], codo: [N, E],
+                 te: [N, E, S], cruceta: [N, E, S, O] };
 
 export class MinijuegoTuberias {
 
@@ -64,14 +67,25 @@ export class MinijuegoTuberias {
     const camino = this.carvarCamino(K);
     const enCamino = new Set(camino.map(([c, f]) => c + ',' + f));
 
-    // 2. Cada casilla del camino recibe SU pieza con SU giro bueno
+    // 2. Cada casilla del camino recibe SU pieza con SU giro bueno. De vez
+    // en cuando la pieza se ASCIENDE a te o cruceta (CONFIG.formasExtra):
+    // mismas bocas de paso más las de sobra, para que el tablero no sea un
+    // desfile de rectos y codos. giroQueUne comprueba el FLUJO, así que un
+    // ascenso solo entra si el agua sigue saliendo por donde toca.
+    const X = K.formasExtra || {};
     for(let i = 0; i < camino.length; i++){
       const [c, f] = camino[i];
       const ladoIn = i === 0 ? O
         : this.ladoHacia(camino[i], camino[i - 1]);
       const ladoOut = i === camino.length - 1 ? E
         : this.ladoHacia(camino[i], camino[i + 1]);
-      const forma = ((ladoIn + 2) % 4 === ladoOut) ? 'recto' : 'codo';
+      let forma = ((ladoIn + 2) % 4 === ladoOut) ? 'recto' : 'codo';
+      if(Math.random() < (X.cruceta || 0)
+         && this.giroQueUne('cruceta', ladoIn, ladoOut) !== null)
+        forma = 'cruceta';
+      else if(Math.random() < (X.te || 0)
+              && this.giroQueUne('te', ladoIn, ladoOut) !== null)
+        forma = 'te';
       // rotBuena no la usa el juego: queda para poder comprobar por consola
       // que la solución existe (girar todo el camino a su rotBuena y simular)
       const rotBuena = this.giroQueUne(forma, ladoIn, ladoOut);
@@ -123,9 +137,12 @@ export class MinijuegoTuberias {
   }
 
   pieza(){
-    const K = CONFIG.minijuegos.tuberias;
-    return { forma: Math.random() < K.probRecto ? 'recto' : 'codo',
-             rot: Math.floor(Math.random() * 4), mojada: 0 };
+    const K = CONFIG.minijuegos.tuberias, X = K.formasExtra || {};
+    let forma;
+    if(Math.random() < (X.cruceta || 0)) forma = 'cruceta';
+    else if(Math.random() < (X.te || 0)) forma = 'te';
+    else forma = Math.random() < K.probRecto ? 'recto' : 'codo';
+    return { forma, rot: Math.floor(Math.random() * 4), mojada: 0 };
   }
 
   /**
@@ -164,14 +181,17 @@ export class MinijuegoTuberias {
     return c2 > c ? E : c2 < c ? O : f2 > f ? S : N;
   }
 
-  /** El giro que hace que `forma` conecte esos dos lados. Existe siempre:
-   *  recto une lados opuestos y codo lados perpendiculares, por construcción. */
+  /** El giro que hace que el agua que entra por `ladoA` SALGA por `ladoB`.
+   *  No basta con que la forma conecte los dos lados: en una te el agua
+   *  prefiere el recto, así que hay que comprobar el flujo de verdad.
+   *  Devuelve null si ningún giro lo consigue. */
   giroQueUne(forma, ladoA, ladoB){
     for(let rot = 0; rot < 4; rot++){
-      const con = FORMAS[forma].map(l => (l + rot) % 4);
-      if(con.includes(ladoA) && con.includes(ladoB)) return rot;
+      const p = { forma, rot };
+      if(this.conexiones(p).includes(ladoA)
+         && this.salidaDe(p, ladoA) === ladoB) return rot;
     }
-    return 0;
+    return null;
   }
 
   /** ¿El agua llegaría YA de boca a boca sin tocar nada? Simulación en seco:
@@ -185,7 +205,7 @@ export class MinijuegoTuberias {
       const clave = c + ',' + f + ',' + lado;
       if(pisado.has(clave)) return false;          // bucle: no llega a ningún lado
       pisado.add(clave);
-      const salida = this.conexiones(p).find(l => l !== lado);
+      const salida = this.salidaDe(p, lado);
       const [dc, df] = [[0,-1],[1,0],[0,1],[-1,0]][salida];
       const nc = c + dc, nf = f + df;
       if(nc >= K.columnas) return f === this.salidaFila && salida === E;
@@ -195,6 +215,18 @@ export class MinijuegoTuberias {
   }
 
   conexiones(p){ return FORMAS[p.forma].map(l => (l + p.rot) % 4); }
+
+  /**
+   * Por dónde sale el agua que entra por `entrada`: RECTO si puede, y si no
+   * gira (primero a un lado, luego al otro, en orden fijo). Una sola regla
+   * visible para que el jugador pueda predecir la te y la cruceta: la
+   * cruceta siempre se cruza de largo, la te solo desvía cuando no hay recto.
+   */
+  salidaDe(p, entrada){
+    const con = this.conexiones(p);
+    return [(entrada + 2) % 4, (entrada + 1) % 4, (entrada + 3) % 4]
+      .find(l => con.includes(l));
+  }
 
   /* ---------------- jugar ---------------- */
 
@@ -244,7 +276,8 @@ export class MinijuegoTuberias {
     const K = CONFIG.minijuegos.tuberias;
     const p = this.celdas[a.fila][a.col];
     p.mojada = 1;
-    const salida = this.conexiones(p).find(l => l !== a.lado);
+    p.entradaAgua = a.lado;      // para dibujarla llena por su recorrido real
+    const salida = this.salidaDe(p, a.lado);
     const destino = [[0,-1],[1,0],[0,1],[-1,0]][salida];  // N,E,S,O
     const nc = a.col + destino[0], nf = a.fila + destino[1];
     // ¿Sale del tablero? Solo la boca de salida es victoria
@@ -355,7 +388,7 @@ export class MinijuegoTuberias {
         const celda = this.celdas[f][c];
         if(celda && celda.mojada)
           this.dibujarAgua(ctx, celda, this.margenX + c * t, this.margenY + f * t, t,
-                           this.conexiones(celda)[0], 1);
+                           celda.entradaAgua ?? this.conexiones(celda)[0], 1);
       }
 
     // Bocas de entrada y salida
@@ -375,12 +408,10 @@ export class MinijuegoTuberias {
     }
   }
 
-  /** El camino que dibuja una pieza: del lado de entrada al centro y al otro. */
-  puntosDe(p, x, y, t){
-    const medio = l => [[x + t / 2, y], [x + t, y + t / 2],
-                        [x + t / 2, y + t], [x, y + t / 2]][l];
-    const [a, b] = this.conexiones(p);
-    return [medio(a), [x + t / 2, y + t / 2], medio(b)];
+  /** El punto medio de cada lado de la celda: por ahí asoman las bocas. */
+  medioDe(x, y, t, lado){
+    return [[x + t / 2, y], [x + t, y + t / 2],
+            [x + t / 2, y + t], [x, y + t / 2]][lado];
   }
 
   /**
@@ -389,15 +420,21 @@ export class MinijuegoTuberias {
    * sombra abajo (cel-shading, nada de degradados), proporciones rechonchas y
    * tornillos exagerados. Las BRIDAS de cada boca no son adorno: son lo que
    * hace legible de un vistazo por dónde conecta la pieza.
+   * Se dibuja POR RAMAS (del centro a cada boca): así la misma mano pinta el
+   * recto, el codo, la te y la cruceta.
    */
   dibujarPieza(ctx, p, x, y, t, alfa){
-    const pts = this.puntosDe(p, x, y, t);
+    const cx = x + t / 2, cy = y + t / 2;
+    const lados = this.conexiones(p);
     const traza = (dx, dy, grosor, color) => {
       ctx.save(); ctx.translate(dx, dy);
       ctx.strokeStyle = color; ctx.lineWidth = grosor;
       ctx.lineCap = 'round'; ctx.lineJoin = 'round';
       ctx.beginPath();
-      ctx.moveTo(...pts[0]); ctx.lineTo(...pts[1]); ctx.lineTo(...pts[2]);
+      for(const l of lados){
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(...this.medioDe(x, y, t, l));
+      }
       ctx.stroke(); ctx.restore();
     };
     ctx.globalAlpha = alfa;
@@ -409,7 +446,6 @@ export class MinijuegoTuberias {
     for(const lado of this.conexiones(p))
       this.dibujarBrida(ctx, x, y, t, lado);
     // La abrazadera del centro: un tambor con su tornillo gordo
-    const cx = x + t / 2, cy = y + t / 2;
     ctx.fillStyle = '#141d26';
     ctx.beginPath(); ctx.arc(cx, cy, t * 0.20, 0, 7); ctx.fill();
     ctx.fillStyle = '#7d94a6';
@@ -457,12 +493,12 @@ export class MinijuegoTuberias {
   }
 
   dibujarAgua(ctx, p, x, y, t, desdeLado, frac){
-    let pts = this.puntosDe(p, x, y, t);
-    // El agua entra por `desdeLado`: si el camino está al revés, se invierte
-    const medio = l => [[x + t / 2, y], [x + t, y + t / 2],
-                        [x + t / 2, y + t], [x, y + t / 2]][l];
-    const boca = medio(desdeLado);
-    if(pts[0][0] !== boca[0] || pts[0][1] !== boca[1]) pts = pts.slice().reverse();
+    // El recorrido REAL del agua: entra por `desdeLado`, pasa por el centro y
+    // sale por donde diga salidaDe — en la te y la cruceta las ramas de
+    // sobra se quedan secas, que es justo lo que pasa de verdad.
+    const pts = [this.medioDe(x, y, t, desdeLado),
+                 [x + t / 2, y + t / 2],
+                 this.medioDe(x, y, t, this.salidaDe(p, desdeLado))];
     const camino = () => {
       ctx.beginPath();
       ctx.moveTo(...pts[0]);

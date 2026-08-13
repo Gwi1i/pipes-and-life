@@ -215,6 +215,12 @@ un 5% hacia dentro de cada casilla por si acaso. Las casillas se cortan a
 sextos y cuartos exactos: si algún objeto sale montado sobre la raya de su
 casilla, regenera, que recortado a la mitad no hay quien lo reconozca.
 
+**Si el generador se empeña en pintar paisaje detrás** (pasó con esta hoja y
+con la de contenedores), no hace falta pelearse con él:
+`py assets/recortar_hojas.py` la parte igual — inunda el fondo por color y
+conectividad y descarta el decorado por islas. Necesita Pillow
+(`py -m pip install pillow`, una vez).
+
 ---
 
 # LA NAVE DE LA LÍNEA DE RECICLAJE (`mini_reciclaje.png`)
@@ -256,6 +262,10 @@ verde (vidrio)**. Hoja apaisada 4:1 para que cada casilla salga cuadrada.
 > amarillo de envases, uno marrón de materia orgánica, uno azul de papel y
 > cartón, y uno verde de vidrio, todos con tapa abombada y ruedas,
 > *(+ coletilla)*
+
+La hoja del autor (`contenedores_hoja2.png`, agosto 2026) vino con paisaje de
+fondo y se partió con `recortar_hojas.py` (ver arriba): los cuatro salieron
+limpios, con sus ruedas, y ya viven en `cont_*.png`.
 
 ---
 
