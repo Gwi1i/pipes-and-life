@@ -17,7 +17,8 @@ import { capacidad, demandaMedia, caudalCaptacion, costeMejora,
          faseActual, faltanParaFase, canonIncorporacion,
          llenadoVaso, capacidadVaso, costeAmpliarVertedero,
          nivelMasa, pozosPorMasa, caudalPozo, caudalSostenible,
-         desgloseProduccion, tasaFugasRed, costeAmpliarPieza } from './simulacion.js';
+         desgloseProduccion, tasaFugasRed, costeAmpliarPieza,
+         escalonCaserio } from './simulacion.js';
 import { formatear } from './util.js';
 import { celdaEn, piezaDeRuina, diametro, nivelDiametro, costeRenovar,
          nombreDeNucleo, tipoYacimiento,
@@ -513,7 +514,14 @@ export class UI {
     const panel = document.getElementById('panel-hallazgo');
     const sel = estado.seleccion;
     const celda = sel ? celdaEn(estado.mapa, sel.col, sel.fila) : null;
-    const firma = sel ? `${sel.col},${sel.fila},${celda?.resuelto},${celda?.excavado}` : 'nada';
+    // Del pueblo cambian solos el tamaño y el servicio: sin ellos en la firma,
+    // la ficha se quedaba enseñando los datos del momento en que la abriste.
+    const pSel = sel && estado.pueblos.find(x => x.col === sel.col && x.fila === sel.fila);
+    const vivo = pSel
+      ? `,${Math.round(pSel.habitantes)},${Math.round((pSel.servicio || 0) * 100)}`
+      : '';
+    const firma = sel
+      ? `${sel.col},${sel.fila},${celda?.resuelto},${celda?.excavado}${vivo}` : 'nada';
     if(this.cache.hallazgoFirma === firma) return;
     this.cache.hallazgoFirma = firma;
 
@@ -550,6 +558,15 @@ export class UI {
       return;
     }
 
+    // El PUEBLO tiene ficha SIEMPRE, esté incorporado o no. Antes, en cuanto
+    // entraba en la mancomunidad el panel se escondía: clicar tu propio pueblo
+    // —lo más importante del mapa— no enseñaba absolutamente nada.
+    if(celda && celda.hallazgo === 'pueblo'){
+      panel.style.display = '';
+      cont.innerHTML = this.fichaPueblo(estado, celda, sel);
+      return;
+    }
+
     if(!celda || !celda.hallazgo || celda.resuelto){ panel.style.display = 'none'; return; }
     panel.style.display = '';
 
@@ -570,11 +587,47 @@ export class UI {
           <span class="m-desc">Va al almacén para levantarla donde te convenga.</span>
           <span class="m-coste">${formatear(desmontar)} €</span>
         </button>`;
-    } else {
+    }
+  }
+
+  /**
+   * LA FICHA DEL PUEBLO. La preside su ILUSTRACIÓN (assets/f_<escalón>.jpg:
+   * aldea, pueblo, villa o ciudad), que cambia sola al crecer — abrir la ficha
+   * y encontrarse otra estampa es medio premio.
+   *
+   * Aquí la imagen SÍ encaja y en el mapa no: es una lámina de tamaño fijo, sin
+   * zoom, sin estados encima y sin isométrica alrededor con la que casar. Si no
+   * existe el archivo se esconde sola y el texto cuenta lo mismo, como en las
+   * fichas de las instalaciones.
+   */
+  fichaPueblo(estado, celda, sel){
+    const H = CONFIG.hallazgos;
+    const p = estado.pueblos.find(x => x.col === sel.col && x.fila === sel.fila);
+    const habitantes = p ? p.habitantes : (celda.habIni || 0);
+    const esc = escalonCaserio(habitantes);
+    const nombre = p ? p.nombre : nombreDeNucleo(celda.nombreIdx || 0);
+
+    const img = `<img class="ficha-dib" src="assets/f_${esc.nombre}.jpg"
+                   onerror="this.hidden=true" alt="">`;
+    const cab = `<p class="red-cuello" style="--tono:${H.color.pueblo}">
+        <b>${nombre}</b> · ${esc.nombre}</p>${img}`;
+
+    // Lo que significa ese tamaño en el oficio. Mismo bloque que las fichas de
+    // las instalaciones: si el jugador ya sabe leer uno, sabe leer este.
+    const leccion = `<div class="ficha" style="--tono:${H.color.pueblo}">
+        <p class="ficha-tit ficha-dato-tit">Un núcleo de este tamaño</p>
+        <p class="ficha-txt ficha-dato">${esc.ficha}</p>
+      </div>`;
+
+    if(!p){
+      // Aún por incorporar: lo que se sabe de lejos y qué hace falta para traerlo
       const bloqueado = (celda.anillo || 1) > faseActual(estado);
-      cont.innerHTML = `
-        <p class="m-desc"><b>${nombreDeNucleo(celda.nombreIdx || 0)}</b> ·
-          ${celda.habIni || '?'} habitantes · anillo ${celda.anillo || 1}</p>
+      return cab + `
+        <div class="casilla-fila"><span>Habitantes</span>
+          <b>${formatear(Math.round(habitantes))}</b></div>
+        <div class="casilla-fila"><span>Distancia</span>
+          <b>anillo ${celda.anillo || 1}</b></div>
+        ${leccion}
         ${bloqueado
           ? `<p class="red-aviso">Demasiado lejos para la mancomunidad de hoy:
                incorpora ${faltanParaFase(estado)} núcleos más cercanos y se abrirá
@@ -586,6 +639,23 @@ export class UI {
                <span class="m-coste">canon: ${formatear(canonIncorporacion(estado))} €</span>
              </button>`}`;
     }
+
+    // Ya es tuyo: quién es y cómo lo estás atendiendo
+    const dem = demandaMedia(p.habitantes);
+    const serv = Math.round((p.servicio || 0) * 100);
+    const clase = serv >= 95 ? 'ok' : serv >= 70 ? 'alarma' : 'critico';
+    const activo = estado.pueblos.indexOf(p) === estado.puebloActivo;
+    return cab + `
+      <div class="casilla-fila"><span>Habitantes</span>
+        <b>${formatear(Math.round(p.habitantes))}</b></div>
+      <div class="casilla-fila"><span>Pide de media</span>
+        <b>${dem.toFixed(2)} L/s</b></div>
+      <div class="casilla-fila"><span>Servicio</span>
+        <b class="v ${clase}">${serv} %</b></div>
+      ${leccion}
+      <p class="m-desc">${activo
+        ? 'Es el pueblo que estás mirando. Cada clic encima es una bombada.'
+        : 'Clícalo en el mapa para ponerlo al frente y bombear aquí.'}</p>`;
   }
 
   /**

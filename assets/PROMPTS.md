@@ -30,6 +30,10 @@ una en una y el juego nunca se queda con un hueco.
 | `f_tanque.png`     | Tanque de tormentas |
 | `f_vertedero.png`  | Vertedero controlado |
 | `f_reciclaje.png`  | Planta de reciclaje |
+| `f_aldea.png`      | El pueblo, hasta 400 habitantes |
+| `f_pueblo.png`     | El pueblo, hasta 1.600 |
+| `f_villa.png`      | El pueblo, hasta 6.000 |
+| `f_ciudad.png`     | El pueblo, más de 6.000 |
 
 ## Lo que aprendimos con las teselas, y sigue valiendo
 
@@ -138,6 +142,54 @@ ligera.** Aquí no hay transparencia que preservar, así que el PNG no aporta na
 > una cinta transportadora larga con envases y cartones mezclados avanzando,
 > operarios con chaleco naranja separando a los lados, y al fondo balas
 > compactadas de plástico y cartón apiladas por colores
+
+## Los cuatro tamaños de pueblo
+
+Presiden la **ficha del pueblo**, la que sale al clicarlo en el mapa, y
+**cambian solas al crecer**: el mismo núcleo pasa de aldea a pueblo, a villa y
+a ciudad según su población. En el mapa el caserío se sigue dibujando por
+código (tiene que casar en isométrica con el depósito y el bombeo, y aguantar
+el zoom y la niebla); estas son la lámina del panel, que es donde una
+ilustración sí luce.
+
+**La regla que las hace funcionar: tienen que parecer EL MISMO SITIO en cuatro
+momentos, no cuatro pueblos distintos.** Si no, crecer parece un cambio de
+casa. Tres trucos para conseguirlo:
+
+- **Genera primero `f_aldea`** y, para las otras tres, adjúntala diciendo
+  *"el mismo pueblo años después, ya más grande, con el mismo paisaje, el
+  mismo río y la misma luz"*.
+- **Repite los mismos anclajes** en los cuatro prompts: el río a la izquierda,
+  las colinas al fondo, el depósito de agua en la loma. Están ya escritos
+  abajo — no los cambies.
+- **De villa en adelante, la iglesia con campanario**, que es la que da el
+  salto de caserío a pueblo de verdad (el dibujo del mapa hace lo mismo).
+
+### `f_aldea.png`
+> Genera una imagen: una aldea pequeña de apenas ocho casas de piedra con
+> tejados de teja roja agrupadas junto a un río que cruza por la izquierda,
+> colinas verdes al fondo con un pequeño depósito de agua elevado sobre una
+> loma, huertos y un camino de tierra entre las casas, sin iglesia
+
+### `f_pueblo.png`
+> Genera una imagen: el mismo pueblo años después, ahora de unas veinticinco
+> casas de piedra con tejados de teja roja, con el mismo río cruzando por la
+> izquierda y las mismas colinas verdes al fondo con su depósito de agua
+> elevado sobre la loma, calles empedradas, algún huerto en las afueras
+
+### `f_villa.png`
+> Genera una imagen: el mismo pueblo convertido en una villa de unas sesenta
+> casas apiñadas con tejados de teja roja y una iglesia de piedra con
+> campanario alto en el centro, con el mismo río cruzando por la izquierda y
+> las mismas colinas verdes al fondo con su depósito de agua elevado, una
+> plaza y calles estrechas
+
+### `f_ciudad.png`
+> Genera una imagen: el mismo lugar convertido en una ciudad pequeña de
+> edificios de tres y cuatro plantas con tejados de teja roja apretados
+> alrededor de la iglesia de campanario alto, con el mismo río cruzando por la
+> izquierda cruzado ahora por un puente y las mismas colinas verdes al fondo
+> con dos depósitos de agua elevados, avenidas y una plaza mayor
 
 ## Si alguna sale rara
 

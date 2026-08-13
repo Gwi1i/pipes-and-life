@@ -676,6 +676,20 @@ pantalla completa: los hitos paran el juego porque son cuatro en la partida, y
 esto pasa muchas veces. Ojo con el género al escribir los textos: los escalones
 llevan `art` porque es "un pueblo" pero "una aldea".
 
+**El pueblo tiene FICHA, y es donde va la ilustración.** `fichaPueblo()` sale al
+clicar cualquier núcleo, tuyo o por incorporar: nombre, escalón, habitantes, lo
+que pide y el servicio, más la lección divulgativa del tamaño (`escalones[].ficha`
+— por qué una aldea es el núcleo más ingrato de abastecer, por qué en una ciudad
+un corte es una noticia). Antes, en cuanto incorporabas un pueblo el panel se
+escondía: clicar tu propio pueblo no enseñaba NADA. La ILUSTRACIÓN
+(`assets/f_<escalón>.jpg`) va aquí y NO en el mapa, y la razón es la de siempre
+en este proyecto: en el mapa hay que casar con la isométrica del depósito y el
+bombeo, aguantar el zoom y llevar encima niebla, halo, selección y avería —una
+lámina ahí se ve pegada con celo—; en el panel es tamaño fijo, sin estados y sin
+vecinos. Cambia sola al crecer, que es medio premio. Ojo con la firma de caché:
+lleva habitantes y servicio porque cambian solos, y sin ellos la ficha se queda
+enseñando los datos del momento en que la abriste.
+
 **Ciclo del mundo.** `coefHora()` modula el consumo por la hora del día
 (`curvaDiaria`) y `factorEstiaje()` modula la captación por la estación
 (`estiaje`, sobre `tiempo.horasPorAño`). Se aplican dentro de `avanzar()`.

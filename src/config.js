@@ -1045,16 +1045,37 @@ export const CONFIG = {
     escalones: [
       // El artículo va con el nombre porque el género cambia ("un pueblo" pero
       // "una aldea"): sin él salía un "ya es una pueblo" de libro.
-      { nombre: 'aldea',  art: 'una', hasta: 400,      iglesia: false, casas: [
+      { nombre: 'aldea',  art: 'una', hasta: 400,      iglesia: false,
+        ficha: 'Menos de 400 habitantes. En abastecimiento son los núcleos más ' +
+               'ingratos: la obra cuesta casi lo mismo que en uno grande, pero ' +
+               'hay muy pocos recibos para pagarla. Por eso existen las ' +
+               'mancomunidades — juntándose, los pequeños pueden permitirse lo ' +
+               'que solos no.',
+        casas: [
         [-0.16,  0.02, 0.62], [ 0.15,  0.04, 0.70], [ 0.00, -0.09, 0.85] ] },
-      { nombre: 'pueblo', art: 'un',  hasta: 1600,     iglesia: false, casas: [
+      { nombre: 'pueblo', art: 'un',  hasta: 1600,     iglesia: false,
+        ficha: 'Hasta 1.600 habitantes. Aquí ya aparece la punta de consumo: ' +
+               'a las ocho de la mañana todo el mundo abre el grifo a la vez, y ' +
+               'la red tiene que aguantar ese pico, no la media del día. El ' +
+               'depósito existe justo para eso.',
+        casas: [
         [-0.16,  0.02, 0.62], [ 0.15,  0.04, 0.70], [ 0.00, -0.09, 0.85],
         [-0.28, -0.05, 0.55], [ 0.28, -0.03, 0.58], [ 0.01,  0.11, 0.66] ] },
-      { nombre: 'villa',  art: 'una', hasta: 6000,     iglesia: true,  casas: [
+      { nombre: 'villa',  art: 'una', hasta: 6000,     iglesia: true,
+        ficha: 'Hasta 6.000 habitantes. A este tamaño el saneamiento pesa tanto ' +
+               'como el abastecimiento: hay que llevar el agua Y llevársela. Y ' +
+               'una fuga deja de ser una gotera para convertirse en un ' +
+               'porcentaje del presupuesto.',
+        casas: [
         [-0.16,  0.03, 0.62], [ 0.16,  0.05, 0.70], [-0.30, -0.04, 0.55],
         [ 0.29, -0.02, 0.58], [ 0.01,  0.12, 0.66], [-0.12, -0.15, 0.52],
         [ 0.17, -0.14, 0.54], [-0.32,  0.09, 0.48], [ 0.31,  0.10, 0.50] ] },
-      { nombre: 'ciudad', art: 'una', hasta: Infinity, iglesia: true,  casas: [
+      { nombre: 'ciudad', art: 'una', hasta: Infinity, iglesia: true,
+        ficha: 'Más de 6.000 habitantes. Ya no se abastece con una conducción: ' +
+               'hacen falta varias, mallas que se respalden entre sí y ' +
+               'depósitos repartidos. Un corte aquí no es una molestia, es una ' +
+               'noticia.',
+        casas: [
         [-0.15,  0.04, 0.66], [ 0.16,  0.06, 0.72], [-0.31, -0.03, 0.58],
         [ 0.30, -0.01, 0.60], [ 0.00,  0.13, 0.70], [-0.13, -0.16, 0.56],
         [ 0.18, -0.15, 0.58], [-0.33,  0.10, 0.52], [ 0.32,  0.11, 0.54],
