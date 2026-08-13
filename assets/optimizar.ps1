@@ -178,6 +178,61 @@ if(Test-Path $hoja){
     }
 }
 
+# ---- LA HOJA DE RESIDUOS: doce sprites en rejilla 4x3 que se parten solos ----
+# Los residuos del minijuego con el estilo de las ilustraciones: se generan en
+# UNA tirada (rejilla de 4 columnas x 3 filas, fondo liso) y aqui se recorta
+# cada casilla y se le QUITA el fondo, que un sprite se agarra con el dedo y
+# necesita transparencia de verdad. El orden de la rejilla es sagrado:
+#   fila 1: caja, periodico, botellaVidrio, tarro
+#   fila 2: botellaPlastico, lata, brik, manzana
+#   fila 3: raspa, platano, bolsa, zapato
+$hojaRes = Join-Path $carpeta 'residuos_hoja.png'
+if(Test-Path $hojaRes){
+    try {
+        $ordenRes = @('caja','periodico','botellaVidrio','tarro',
+                      'botellaPlastico','lata','brik','manzana',
+                      'raspa','platano','bolsa','zapato')
+        $img = New-Object System.Drawing.Bitmap($hojaRes)
+        $cw = [Math]::Floor($img.Width / 4)
+        $ch = [Math]::Floor($img.Height / 3)
+        # el color del fondo, de la esquina de la hoja
+        $fondoPx = $img.GetPixel(3, 3)
+        $UMBRAL = 60
+        for($i = 0; $i -lt 12; $i++){
+            $cx = ($i % 4) * $cw; $cy = [Math]::Floor($i / 4) * $ch
+            $lado = 128
+            $bmp = New-Object System.Drawing.Bitmap($lado, $lado, [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
+            $g = [System.Drawing.Graphics]::FromImage($bmp)
+            $g.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+            $rec = New-Object System.Drawing.Rectangle($cx, $cy, $cw, $ch)
+            $des = New-Object System.Drawing.Rectangle(0, 0, $lado, $lado)
+            $g.DrawImage($img, $des, $rec, [System.Drawing.GraphicsUnit]::Pixel)
+            $g.Dispose()
+            # el croma: lo que se parece al fondo, transparente; el borde, a medias
+            for($x = 0; $x -lt $lado; $x++){
+                for($y = 0; $y -lt $lado; $y++){
+                    $p = $bmp.GetPixel($x, $y)
+                    $d = [Math]::Sqrt([Math]::Pow($p.R-$fondoPx.R,2) + [Math]::Pow($p.G-$fondoPx.G,2) + [Math]::Pow($p.B-$fondoPx.B,2))
+                    if($d -lt $UMBRAL){
+                        $bmp.SetPixel($x, $y, [System.Drawing.Color]::FromArgb(0,0,0,0))
+                    } elseif($d -lt $UMBRAL * 1.7){
+                        $a = [int](255 * (($d - $UMBRAL) / ($UMBRAL * 0.7)))
+                        $bmp.SetPixel($x, $y, [System.Drawing.Color]::FromArgb($a, $p.R, $p.G, $p.B))
+                    }
+                }
+            }
+            $bmp.Save((Join-Path $carpeta ('res_' + $ordenRes[$i] + '.png')), [System.Drawing.Imaging.ImageFormat]::Png)
+            $bmp.Dispose()
+        }
+        $img.Dispose()
+        Move-Item -Force $hojaRes (Join-Path $originales 'residuos_hoja.png')
+        Write-Output "residuos_hoja.png  ->  12 sprites res_*.png con fondo transparente"
+        $hechas++
+    } catch {
+        Write-Output "FALLO con residuos_hoja.png: $($_.Exception.Message)"
+    }
+}
+
 if($hechas -eq 0){
     Write-Output ""
     Write-Output "No he encontrado nada que optimizar."

@@ -167,6 +167,37 @@ red que lo une todo.
 
 ---
 
+# LOS RESIDUOS DE LA LÍNEA (`residuos_hoja.png`)
+
+Los doce objetos que pasan por la cinta, con el estilo de las ilustraciones.
+Van en UNA hoja con rejilla de **4 columnas × 3 filas** sobre fondo liso, y el
+`optimizar.bat` recorta cada casilla y le quita el fondo (por eso el fondo
+liso es obligatorio). **El orden de la rejilla es sagrado** — el juego asigna
+cada casilla a su contenedor por posición:
+
+|  |  |  |  |
+|---|---|---|---|
+| caja de cartón | periódico doblado | botella de vidrio verde | tarro de cristal con tapa |
+| botella de plástico | lata de refresco | brik de zumo | corazón de manzana |
+| raspa de pescado | piel de plátano | bolsa de basura gris atada | zapato viejo |
+
+### `residuos_hoja.png`
+> Genera una imagen: rejilla de cuatro columnas por tres filas con doce
+> objetos de basura doméstica del mismo tamaño, cada uno centrado en su
+> casilla sobre fondo liso de un solo color claro, en este orden: una caja de
+> cartón cerrada, un periódico doblado, una botella de vidrio verde, un tarro
+> de cristal con tapa, una botella de plástico transparente con tapón, una
+> lata de refresco roja, un brik de zumo con pajita, un corazón de manzana
+> mordida, una raspa de pescado, una piel de plátano abierta, una bolsa de
+> basura gris atada y un zapato viejo marrón, *(+ coletilla)*
+
+Consejos: fondo de un color que no salga en los objetos (un lila o rosa claro
+va bien) y **sin líneas de rejilla dibujadas** — las casillas se cortan a
+tercios y cuartos exactos. Si algún objeto sale montado sobre la raya de su
+casilla, regenera: recortado a la mitad no hay quien lo reconozca.
+
+---
+
 # LA NAVE DE LA LÍNEA DE RECICLAJE (`mini_reciclaje.png`)
 
 El fondo del minijuego de la cinta: la nave de la planta, vista de frente,

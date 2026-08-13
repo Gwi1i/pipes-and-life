@@ -34,8 +34,21 @@ const RESIDUOS = [
   { frac: 'organica', dibujo: 'manzana' },
   { frac: 'organica', dibujo: 'raspa' },
   { frac: 'organica', dibujo: 'platano' },
-  { frac: null,       dibujo: 'bolsa' }        // el resto: no se toca
+  { frac: null,       dibujo: 'bolsa' },       // el resto: no se toca
+  { frac: null,       dibujo: 'zapato' }       // ...y el zapato viejo, tampoco
 ];
+
+/* Los sprites generados por el autor (assets/res_<dibujo>.png, de la hoja de
+   residuos): si existen, mandan; si no, el dibujo por código de cada uno.
+   El mismo reparto de siempre — la ilustración pone el estilo, el código pone
+   la garantía de que siempre hay algo que agarrar. */
+const SPRITES = {};
+for(const def of RESIDUOS){
+  if(SPRITES[def.dibujo]) continue;
+  const img = new Image();
+  img.src = `assets/res_${def.dibujo}.png`;
+  SPRITES[def.dibujo] = img;   // si 404, naturalWidth queda a 0 y no se usa
+}
 
 const BINES = [
   { id: 'envases',  nombre: 'ENVASES',  color: '#facc15' },
@@ -339,7 +352,14 @@ export class MinijuegoReciclaje {
     // sombra común al suelo de la cinta
     ctx.fillStyle = 'rgba(0,0,0,0.35)';
     ctx.beginPath(); ctx.ellipse(3, 26, 20, 6, 0, 0, 7); ctx.fill();
-    this['res_' + def.dibujo](ctx);
+    const sprite = SPRITES[def.dibujo];
+    if(sprite && sprite.naturalWidth > 0){
+      // el sprite del autor, encajado en la caja del residuo (~60px de alto)
+      const alto = 62, ancho = alto * (sprite.naturalWidth / sprite.naturalHeight);
+      ctx.drawImage(sprite, -ancho / 2, -34, ancho, alto);
+    } else {
+      this['res_' + def.dibujo](ctx);
+    }
     ctx.restore();
   }
 
@@ -468,6 +488,21 @@ export class MinijuegoReciclaje {
     });
     ctx.fillStyle = '#8a6d1e';
     ctx.fillRect(-3, -14, 6, 9);
+  }
+
+  res_zapato(ctx){   // un zapato viejo: al resto también
+    this.forma(ctx, '#7a5c40', c => {
+      c.moveTo(-20, -8); c.lineTo(-6, -8);
+      c.quadraticCurveTo(2, -8, 8, 2); c.quadraticCurveTo(14, 10, 22, 12);
+      c.lineTo(22, 20); c.lineTo(-20, 20); c.closePath();
+    });
+    ctx.fillStyle = '#4d3a27';
+    ctx.fillRect(-20, 14, 42, 6);
+    ctx.strokeStyle = '#e8edf2'; ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(-14, -4); ctx.lineTo(-6, 0);
+    ctx.moveTo(-14, 2); ctx.lineTo(-6, 6);
+    ctx.stroke();
   }
 
   res_bolsa(ctx){   // la bolsa de resto, atada: NO se toca

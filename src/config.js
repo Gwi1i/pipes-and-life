@@ -410,9 +410,12 @@ export const CONFIG = {
     tuberias: {
       columnas: 7, filas: 5,
       rocas: 4,                // celdas bloqueadas: obligan a rodear
-      graciaSegundos: 5,       // margen antes de que el agua entre al tablero
-      segundosPorCelda: 1.15,  // lo que tarda el agua en cruzar cada pieza
-      aceleracion: 0.96,       // cada celda cruzada, un poco más rápido
+      /* Ajustado al alza tras jugarlo el autor: con 5 s de gracia no daba
+         tiempo a colocar ni una pieza pensada, y el minijuego iba de decidir
+         rápido, no de manotear. Ocho segundos dan para dos o tres piezas. */
+      graciaSegundos: 8,       // margen antes de que el agua entre al tablero
+      segundosPorCelda: 1.35,  // lo que tarda el agua en cruzar cada pieza
+      aceleracion: 0.97,       // cada celda cruzada, un poco más rápido
       probRecto: 0.55          // reparto de la cola de piezas (resto: codos)
     },
     /* La LÍNEA DE RECICLAJE: separar residuos en la cinta tocando el
