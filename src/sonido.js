@@ -206,10 +206,11 @@ export function comentario(){
    pasa nada: el juego suena igual que antes de tener música. */
 
 let musicaOn = localStorage.getItem(CLAVE_MUSICA) !== '0';
-let musicaBuf = null;    // el archivo decodificado, si lo hay
+let listaMusica = [];    // las canciones encontradas (urls), en su orden
+let bufferMusica = {};   // url -> AudioBuffer, decodificado la primera vez
+let pistaActual = -1;    // cuál suena, para seguir con la siguiente
 let musicaGan = null;    // su mando de volumen
 let musicaSrc = null;    // la fuente sonando ahora mismo
-let bucleIni = 0, bucleFin = 0;   // el tramo del archivo que se repite
 
 /**
  * Dónde EMPIEZA y ACABA la música de verdad dentro del archivo. La música
@@ -238,55 +239,82 @@ function extremosFuertes(buf){
 }
 
 /**
- * Busca y decodifica el archivo de música. Se llama al arrancar (descargar y
- * decodificar no necesitan gesto; SONAR sí). Devuelve si hay música, para que
- * la UI pueda esconder el botón cuando no la haya.
+ * Busca las canciones del autor: `musica`, `musica2`, `musica3`... hasta el
+ * primer hueco, cada una en ogg/mp3/wav. Con varias, el juego las ROTA — la
+ * lista entera es el bucle, así una tarde de partida no repite la misma
+ * melodía en bucle hasta gastarla. Devuelve si hay alguna.
  */
 export async function cargarMusica(){
-  for(const nombre of ['musica.ogg', 'musica.mp3', 'musica.wav']){
-    try{
-      const resp = await fetch('assets/' + nombre);
-      if(!resp.ok) continue;
-      const datos = await resp.arrayBuffer();
-      if(!despertar()) return false;
-      musicaBuf = await ctx.decodeAudioData(datos);
-      [bucleIni, bucleFin] = extremosFuertes(musicaBuf);
-      return true;
-    }catch(_){ /* probar el siguiente formato */ }
+  listaMusica = [];
+  for(let n = 1; n <= 12; n++){
+    const base = n === 1 ? 'musica' : 'musica' + n;
+    let encontrada = null;
+    for(const ext of ['ogg', 'mp3', 'wav']){
+      try{
+        const resp = await fetch(`assets/${base}.${ext}`, { method: 'HEAD' });
+        if(resp.ok){ encontrada = `assets/${base}.${ext}`; break; }
+      }catch(_){ /* siguiente formato */ }
+    }
+    if(!encontrada) break;   // al primer hueco se acabó la lista
+    listaMusica.push(encontrada);
   }
-  return false;
+  return listaMusica.length > 0;
 }
 
-/** Arranca la música si hay archivo y está activada. Llamar tras un gesto. */
+/** Decodifica una pista la primera vez; después, de la caché. */
+async function bufferDe(url){
+  if(bufferMusica[url]) return bufferMusica[url];
+  const datos = await (await fetch(url)).arrayBuffer();
+  bufferMusica[url] = await ctx.decodeAudioData(datos);
+  return bufferMusica[url];
+}
+
+/** Suena la pista `i` y, al acabar, encadena la siguiente de la lista. */
+async function sonarPista(i){
+  if(!musicaOn || !despertar()) return;
+  let buf;
+  try{ buf = await bufferDe(listaMusica[i]); }catch(_){ return; }
+  if(!musicaOn || musicaSrc) return;   // algo cambió mientras decodificaba
+  if(!musicaGan){
+    musicaGan = ctx.createGain();
+    musicaGan.connect(ctx.destination);   // NO pasa por maestro: mando propio
+  }
+  musicaGan.gain.setTargetAtTime(CONFIG.sonido.volumenMusica, ctx.currentTime, 0.1);
+  // Cada pista suena solo su tramo FUERTE (las colas de silencio de la música
+  // generada, fuera) y al terminar pasa el testigo a la siguiente
+  const [ini, fin] = extremosFuertes(buf);
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  src.onended = () => {
+    if(musicaSrc !== src) return;   // la paró alguien (el botón): sin cadena
+    musicaSrc = null;
+    sonarPista((i + 1) % listaMusica.length);
+  };
+  src.connect(musicaGan);
+  src.start(0, ini, Math.max(1, fin - ini));
+  musicaSrc = src;
+  pistaActual = i;
+}
+
+/** Arranca la música si hay lista y está activada. Llamar tras un gesto. */
 export function empezarMusica(){
-  if(!musicaOn || !musicaBuf || musicaSrc || !despertar()) return;
-  musicaGan = ctx.createGain();
-  musicaGan.gain.value = CONFIG.sonido.volumenMusica;
-  musicaSrc = ctx.createBufferSource();
-  musicaSrc.buffer = musicaBuf;
-  musicaSrc.loop = true;
-  // El bucle salta los fundidos: empieza desde 0 (la entrada se oye una vez)
-  // pero repite solo el tramo con música de verdad.
-  musicaSrc.loopStart = bucleIni;
-  musicaSrc.loopEnd = bucleFin;
-  musicaSrc.connect(musicaGan);
-  musicaGan.connect(ctx.destination);   // NO pasa por maestro: mando propio
-  musicaSrc.start();
+  if(!musicaOn || !listaMusica.length || musicaSrc) return;
+  sonarPista(pistaActual >= 0 ? pistaActual : 0);
 }
 
 export function musicaActiva(){ return musicaOn; }
-export function hayMusica(){ return !!musicaBuf; }
+export function hayMusica(){ return listaMusica.length > 0; }
 
 export function alternarMusica(){
   musicaOn = !musicaOn;
   localStorage.setItem(CLAVE_MUSICA, musicaOn ? '1' : '0');
-  if(!musicaOn && musicaGan && ctx)
-    musicaGan.gain.setTargetAtTime(0, ctx.currentTime, 0.15);
-  if(musicaOn){
-    if(musicaSrc && musicaGan)
-      musicaGan.gain.setTargetAtTime(CONFIG.sonido.volumenMusica, ctx.currentTime, 0.15);
-    else empezarMusica();
+  if(!musicaOn && musicaSrc){
+    const src = musicaSrc;
+    musicaSrc = null;               // antes de pararla: que onended no encadene
+    if(musicaGan) musicaGan.gain.setTargetAtTime(0, ctx.currentTime, 0.15);
+    setTimeout(() => { try{ src.stop(); }catch(_){ } }, 400);
   }
+  if(musicaOn) empezarMusica();
   return musicaOn;
 }
 

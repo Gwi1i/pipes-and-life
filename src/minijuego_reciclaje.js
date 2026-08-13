@@ -81,8 +81,11 @@ export class MinijuegoReciclaje {
       this.agarrar(...pos(e));
     });
     this.lienzo.addEventListener('pointermove', e => {
-      if(this.enMano) [this.enMano.x, this.enMano.y] = pos(e);
+      [this.manoX, this.manoY] = pos(e);
+      this.manoDentro = true;
+      if(this.enMano) [this.enMano.x, this.enMano.y] = [this.manoX, this.manoY];
     });
+    this.lienzo.addEventListener('pointerleave', () => { this.manoDentro = false; });
     const soltar = e => { if(this.enMano) this.soltar(...pos(e)); };
     this.lienzo.addEventListener('pointerup', soltar);
     this.lienzo.addEventListener('pointercancel', soltar);
@@ -264,6 +267,10 @@ export class MinijuegoReciclaje {
       this.dibujarResiduo(ctx, this.enMano.def, 0, 0);
       ctx.restore();
     }
+    // Y LA MANO del operario como puntero: abierta al vuelo, agarrando
+    // cuando llevas algo. El cursor del sistema se esconde por CSS.
+    if(this.manoDentro && !this.fin)
+      this.dibujarMano(ctx, this.manoX, this.manoY, !!this.enMano);
 
     if(this.fin){
       const total = this.aciertos + this.fallos;
@@ -516,6 +523,55 @@ export class MinijuegoReciclaje {
     ctx.beginPath(); ctx.moveTo(2, -16); ctx.lineTo(9, -24); ctx.lineTo(9, -15); ctx.fill();
     ctx.fillStyle = 'rgba(255,255,255,0.2)';
     ctx.beginPath(); ctx.arc(-6, 0, 6, 0, 7); ctx.fill();
+  }
+
+  /**
+   * La mano del operario, de tebeo: guante de trabajo con puño amarillo.
+   * Abierta cuando va de vacío; cerrada en puño cuando agarra el residuo
+   * (que se dibuja debajo, en la cinta de sus dedos).
+   */
+  dibujarMano(ctx, x, y, agarrando){
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.lineJoin = 'round';
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ctx.beginPath(); ctx.ellipse(4, 8, 15, 6, 0, 0, 7); ctx.fill();
+    const guante = '#e8edf2';
+    if(agarrando){
+      // el puño cerrado sobre lo agarrado
+      this.forma(ctx, guante, c => {
+        c.moveTo(-14, -4); c.quadraticCurveTo(-16, -16, -4, -18);
+        c.quadraticCurveTo(12, -20, 15, -8); c.quadraticCurveTo(17, 4, 6, 8);
+        c.quadraticCurveTo(-8, 11, -14, -4);
+      });
+      ctx.strokeStyle = '#9fb0c0'; ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      for(const dx of [-6, 1, 8]){
+        ctx.moveTo(dx, -16); ctx.quadraticCurveTo(dx + 2, -10, dx, -5);
+      }
+      ctx.stroke();
+    } else {
+      // abierta, dedos arriba: "voy a por ese"
+      this.forma(ctx, guante, c => {
+        c.moveTo(-13, 4); c.lineTo(-13, -8);
+        for(const dx of [-13, -5, 3, 11]){
+          c.lineTo(dx, -20); c.quadraticCurveTo(dx + 4, -24, dx + 7, -19);
+          c.lineTo(dx + 7, -8);
+        }
+        c.quadraticCurveTo(18, 8, 2, 10); c.quadraticCurveTo(-10, 11, -13, 4);
+      });
+      // el pulgar
+      this.forma(ctx, guante, c => {
+        c.moveTo(-12, 0); c.quadraticCurveTo(-24, -4, -22, 4);
+        c.quadraticCurveTo(-20, 10, -10, 8);
+      });
+    }
+    // el puño del guante, amarillo de obra
+    ctx.fillStyle = '#141d26';
+    ctx.fillRect(-10, 8, 26, 12);
+    ctx.fillStyle = '#facc15';
+    ctx.fillRect(-8, 10, 22, 8);
+    ctx.restore();
   }
 
   /** Un contenedor de calle: cuerpo, tapa, ruedas y su nombre. */

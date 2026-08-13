@@ -199,12 +199,16 @@ if(Test-Path $hojaRes){
         $fondoPx = $img.GetPixel(3, 3)
         $UMBRAL = 60
         for($i = 0; $i -lt 12; $i++){
-            $cx = ($i % 4) * $cw; $cy = [Math]::Floor($i / 4) * $ch
+            # El recorte entra un 5% hacia dentro de cada casilla: los
+            # generadores DIBUJAN la rejilla aunque se les pida que no, y sin
+            # este margen las rayas quedaban en el borde de cada sprite.
+            $margen = [int]($cw * 0.05)
+            $cx = ($i % 4) * $cw + $margen; $cy = [Math]::Floor($i / 4) * $ch + $margen
             $lado = 128
             $bmp = New-Object System.Drawing.Bitmap($lado, $lado, [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
             $g = [System.Drawing.Graphics]::FromImage($bmp)
             $g.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
-            $rec = New-Object System.Drawing.Rectangle($cx, $cy, $cw, $ch)
+            $rec = New-Object System.Drawing.Rectangle($cx, $cy, ($cw - 2 * $margen), ($ch - 2 * $margen))
             $des = New-Object System.Drawing.Rectangle(0, 0, $lado, $lado)
             $g.DrawImage($img, $des, $rec, [System.Drawing.GraphicsUnit]::Pixel)
             $g.Dispose()
