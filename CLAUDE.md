@@ -88,6 +88,7 @@ red-hidraulica/
     ├── diagramas.js    Los esquemas animados de cada instalación (módulo puro)
     ├── entrada.js      Ratón, tacto, teclado → acciones
     ├── ui.js           DOM fuera de la escena: HUD, tienda, paneles
+    ├── analitica.js    Contador anónimo de visitas y vueltas (solo reacciona)
     └── main.js         Ensamblado y bucle principal
 ```
 
@@ -546,6 +547,33 @@ texto de Manuel: `py generar_voces.py`. APAGADA por defecto (decisión del
 autor) con botón propio que solo existe si hay CÓMO hablar; al encenderla,
 Manuel se presenta (texto en `CONFIG.sonido.voz.presentacion` — vive en config
 para que el generador lo lea). Lee pasos de guía y comentarios.
+
+**La ANALÍTICA es un contador, no telemetría.** `analitica.js` responde a lo
+único que no se puede preguntar ("¿te ha gustado?" siempre se contesta que sí):
+cuántos entran, cuántos pasan de la portada, **cuántos vuelven al día
+siguiente** y hasta dónde llegan. Cuatro reglas que no se negocian: NO carga el
+script de nadie (solo pide una imagen de 1px, como el resto del proyecto no
+admite código ajeno); cuenta QUÉ pasa y jamás QUIÉN (sin identificador, sin
+ubicación, sin nada de la partida); con `CONFIG.analitica.codigo` a null el
+módulo entero está mudo y no pide nada ni en local (como la música sin
+archivos); y respeta «No rastrear». Los sucesos de progreso NO se instrumentan
+a mano: se cuelgan de `contarHito()`, que ya ES la lista de momentos que
+importan. Cada etiqueta se manda UNA vez por sesión — se cuentan jugadores que
+llegan a un sitio, no veces que pasan. El contador de días vive en su propia
+clave (`redHidraulica_visitas`) y no en el guardado: tiene que sobrevivir a
+Reiniciar, porque si no cada reinicio parecería un jugador nuevo y la retención
+medida sería mentira.
+
+**Publicar son DOS sitios distintos.** La web (GitHub Pages, rama `clicker`) se
+actualiza con `git push` y nada más. El paquete de itch.io lo genera
+`hacer_zip.bat` y hay que subirlo a mano. Dos avisos que costaron un rato: el
+zip se hace con `tar.exe` de System32 y NO con `Compress-Archive`, que escribe
+las rutas con barra invertida y hay descompresores que entonces dejan todo en
+un archivo con el nombre lleno de barras; y se llama por ruta completa porque
+el `tar` de Git aparece antes en el PATH y toma la «C:» por un servidor remoto.
+El material de referencia suelto en `assets/` (esquemas, fondos viejos,
+capturas de otros juegos) se queda FUERA del zip: son 23 MB que nadie descarga
+para jugar. Los textos de la ficha de itch están en `docs/itch.md`.
 
 **La guía envejece mal y nadie lo ve.** El tutorial llegó a pedir "pulsa
 BOMBEAR" y "engrasa la instalación" dos versiones después de quitarse ambos: el

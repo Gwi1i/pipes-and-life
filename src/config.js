@@ -1407,5 +1407,28 @@ export const CONFIG = {
 
   /* ---------- GUARDADO ----------
      v3: mapa grande y pueblos dinámicos; el formato v2 no es convertible. */
-  guardado: { clave: 'redHidraulica_clicker_v3', intervaloSegundos: 10 }
+  guardado: { clave: 'redHidraulica_clicker_v3', intervaloSegundos: 10 },
+
+  /* ---------- ANALÍTICA ----------
+     Para saber si el juego GUSTA hacen falta números, no cumplidos: cuánta
+     gente entra, cuánta pasa de la portada, cuánta VUELVE al día siguiente y
+     hasta dónde llega. Los comentarios mienten por educación; esto no.
+
+     Cómo está montado, y por qué así:
+     - NO carga el script de nadie. Solo pide una imagen de 1px a un contador
+       (GoatCounter, gratis y sin cookies). Se respeta la regla de la casa: en
+       este proyecto no entra código ajeno.
+     - Sin cookies y sin nada personal: solo se cuenta QUÉ ha pasado, jamás
+       quién. Ni identificadores, ni ubicación, ni el contenido de la partida.
+     - Apagada mientras `codigo` sea null: sin cuenta creada no se pide nada a
+       nadie, ni siquiera en local. Igual que la música sin archivos.
+     - Se respeta «No rastrear» del navegador, sin discusión. */
+  analitica: {
+    codigo: null,       // el subdominio de tu cuenta ('pipesandlife') o null
+    servidor: 'goatcounter.com',
+    // El contador de días vive en su propia clave, fuera del guardado: tiene
+    // que sobrevivir al botón Reiniciar (si no, cada reinicio parece un
+    // jugador nuevo y la retención medida sería mentira).
+    clave: 'redHidraulica_visitas'
+  }
 };

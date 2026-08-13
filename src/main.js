@@ -29,6 +29,7 @@ import { pedirUbicacion, buscarNombres, guardarNombres,
          quitar as quitarLugares } from './lugares.js';
 import { MinijuegoTuberias } from './minijuego_tuberias.js';
 import { MinijuegoReciclaje } from './minijuego_reciclaje.js';
+import * as analitica from './analitica.js';
 
 const lienzo  = document.getElementById('escena');
 const estado  = new Estado();
@@ -62,6 +63,8 @@ if(!habiaPartida){
   botonPortada.textContent = habiaPartida ? 'Continuar la partida' : 'Empezar';
   botonPortada.onclick = () => {
     document.getElementById('portada').hidden = true;
+    // El primer embudo: cuántos de los que entran pasan de la portada
+    analitica.contar(habiaPartida ? 'continua' : 'empieza');
     // Con la voz ya activada de otra sesión, Manuel lee el paso que espera.
     // El clic de la portada es además el gesto que el navegador exige.
     const paso = pasoActual(estado);
@@ -572,6 +575,7 @@ function procesarAcciones(){
         const av = estado.averias[parseInt(a.clave, 10)];
         if(!av || av.aManoJugada) break;
         av.aManoJugada = true;
+        analitica.contar('minijuego/tuberias');
         ui.invalidarCache();
         miniTuberias.jugar((exito, razon) => {
           if(exito){
@@ -598,6 +602,7 @@ function procesarAcciones(){
       /* --- EL TALLER: los minijuegos de ensayo, sin premio ni castigo --- */
 
       case 'practicarTuberias':
+        analitica.contar('minijuego/tuberias');
         miniTuberias.jugar((exito, razon) => {
           if(razon === 'abandonado') return;
           avisar(exito ? '¡Bordado! Así se remata un tramo.'
@@ -606,6 +611,7 @@ function procesarAcciones(){
         break;
 
       case 'practicarReciclaje':
+        analitica.contar('minijuego/reciclaje');
         miniReciclaje.jugar((aciertos, total, razon) => {
           if(razon === 'abandonado') return;
           avisar(`Ensayo: ${aciertos} de ${total} bien separados.`);
@@ -1090,6 +1096,9 @@ function contarHito(id){
   // Único embudo de hitos Y logros: el sonido de tarjeta va aquí y en ningún
   // otro sitio, así ningún momento suena dos veces.
   sonido.hito();
+  // Y por lo mismo, el mejor sitio para contar hasta dónde llega la gente: los
+  // hitos YA son la lista de momentos que importan. Sin instrumentar nada más.
+  analitica.contar('hito/' + id);
 }
 
 /**
@@ -1292,6 +1301,9 @@ sonido.cargarMusica().then(hay => {
   window.addEventListener('pointerdown', arrancar, { once: true });
   window.addEventListener('keydown', arrancar, { once: true });
 });
+
+// El contador de visitas y vueltas. Sin cuenta configurada no hace nada.
+analitica.iniciar();
 
 // Solapas del lateral: enseñar una hoja y esconder las demás. Es DOM puro y no
 // toca el estado, así que vive aquí y no en entrada.js.
