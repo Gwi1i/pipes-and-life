@@ -12,7 +12,7 @@
 |---|---|---|
 | **El juego** | https://gwi1i.github.io/pipes-and-life/ | Es EL enlace. El que se reparte. |
 | **El repositorio** | https://github.com/Gwi1i/pipes-and-life | El código. Se actualiza solo al hacer `git push`. |
-| **La ficha de itch.io** | *(pendiente: pégala aquí)* | La otra tienda. Se actualiza **a mano**, subiendo el zip. |
+| **La ficha de itch.io** | https://gwiii.itch.io/pipes-and-life | La otra tienda. Se actualiza **a mano**, subiendo el zip. |
 | **El contador** | https://gwi.goatcounter.com | Cuánta gente entra y **cuánta vuelve**. |
 
 Cuenta de GitHub: **Gwi1i** · Código del contador: **gwi**
