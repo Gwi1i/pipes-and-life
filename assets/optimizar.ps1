@@ -178,32 +178,36 @@ if(Test-Path $hoja){
     }
 }
 
-# ---- LA HOJA DE RESIDUOS: doce sprites en rejilla 4x3 que se parten solos ----
+# ---- LA HOJA DE RESIDUOS: 24 sprites en rejilla 6x4 que se parten solos ----
 # Los residuos del minijuego con el estilo de las ilustraciones: se generan en
-# UNA tirada (rejilla de 4 columnas x 3 filas, fondo liso) y aqui se recorta
+# UNA tirada (rejilla de 6 columnas x 4 filas, fondo liso) y aqui se recorta
 # cada casilla y se le QUITA el fondo, que un sprite se agarra con el dedo y
-# necesita transparencia de verdad. El orden de la rejilla es sagrado:
-#   fila 1: caja, periodico, botellaVidrio, tarro
-#   fila 2: botellaPlastico, lata, brik, manzana
-#   fila 3: raspa, platano, bolsa, zapato
+# necesita transparencia de verdad. El orden de la rejilla es sagrado
+# (la misma tabla vive en PROMPTS.md y en minijuego_reciclaje.js):
+#   fila 1 (papel+vidrio):   caja, periodico, revista, huevera, tubo, botellaVidrio
+#   fila 2 (vidrio+envases): botellaMarron, tarro, frasco, botellaPlastico, lata, lataConservas
+#   fila 3 (envases+org.):   brik, yogur, aerosol, manzana, platano, raspa
+#   fila 4 (org.+resto):     hueso, cascara, bolsa, panal, maceta, esponja
 $hojaRes = Join-Path $carpeta 'residuos_hoja.png'
 if(Test-Path $hojaRes){
     try {
-        $ordenRes = @('caja','periodico','botellaVidrio','tarro',
-                      'botellaPlastico','lata','brik','manzana',
-                      'raspa','platano','bolsa','zapato')
+        $ordenRes = @('caja','periodico','revista','huevera','tubo','botellaVidrio',
+                      'botellaMarron','tarro','frasco','botellaPlastico','lata','lataConservas',
+                      'brik','yogur','aerosol','manzana','platano','raspa',
+                      'hueso','cascara','bolsa','panal','maceta','esponja')
         $img = New-Object System.Drawing.Bitmap($hojaRes)
-        $cw = [Math]::Floor($img.Width / 4)
-        $ch = [Math]::Floor($img.Height / 3)
+        $cols = 6; $filas = 4
+        $cw = [Math]::Floor($img.Width / $cols)
+        $ch = [Math]::Floor($img.Height / $filas)
         # el color del fondo, de la esquina de la hoja
         $fondoPx = $img.GetPixel(3, 3)
         $UMBRAL = 60
-        for($i = 0; $i -lt 12; $i++){
+        for($i = 0; $i -lt $ordenRes.Count; $i++){
             # El recorte entra un 5% hacia dentro de cada casilla: los
             # generadores DIBUJAN la rejilla aunque se les pida que no, y sin
             # este margen las rayas quedaban en el borde de cada sprite.
             $margen = [int]($cw * 0.05)
-            $cx = ($i % 4) * $cw + $margen; $cy = [Math]::Floor($i / 4) * $ch + $margen
+            $cx = ($i % $cols) * $cw + $margen; $cy = [Math]::Floor($i / $cols) * $ch + $margen
             $lado = 128
             $bmp = New-Object System.Drawing.Bitmap($lado, $lado, [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
             $g = [System.Drawing.Graphics]::FromImage($bmp)
@@ -230,10 +234,60 @@ if(Test-Path $hojaRes){
         }
         $img.Dispose()
         Move-Item -Force $hojaRes (Join-Path $originales 'residuos_hoja.png')
-        Write-Output "residuos_hoja.png  ->  12 sprites res_*.png con fondo transparente"
+        Write-Output "residuos_hoja.png  ->  $($ordenRes.Count) sprites res_*.png con fondo transparente"
         $hechas++
     } catch {
         Write-Output "FALLO con residuos_hoja.png: $($_.Exception.Message)"
+    }
+}
+
+# ---- LA HOJA DE CONTENEDORES: 4 sprites en fila que se parten solos ----
+# Los contenedores de calle del minijuego, ilustrados con el estilo de la
+# casa. UNA fila de 4 casillas, fondo liso, mismo croma que los residuos.
+# El orden es sagrado (el mismo de BINES en minijuego_reciclaje.js):
+#   envases (amarillo), organica (marron), papel (azul), vidrio (verde)
+$hojaCont = Join-Path $carpeta 'contenedores_hoja.png'
+if(Test-Path $hojaCont){
+    try {
+        $ordenCont = @('envases','organica','papel','vidrio')
+        $img = New-Object System.Drawing.Bitmap($hojaCont)
+        $cw = [Math]::Floor($img.Width / 4)
+        $ch = $img.Height
+        $fondoPx = $img.GetPixel(3, 3)
+        $UMBRAL = 60
+        for($i = 0; $i -lt 4; $i++){
+            $margen = [int]($cw * 0.04)
+            $cx = $i * $cw + $margen
+            # mas resolucion que los residuos: en pantalla son grandes
+            $lado = 256
+            $bmp = New-Object System.Drawing.Bitmap($lado, $lado, [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
+            $g = [System.Drawing.Graphics]::FromImage($bmp)
+            $g.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+            $rec = New-Object System.Drawing.Rectangle($cx, $margen, ($cw - 2 * $margen), ($ch - 2 * $margen))
+            $des = New-Object System.Drawing.Rectangle(0, 0, $lado, $lado)
+            $g.DrawImage($img, $des, $rec, [System.Drawing.GraphicsUnit]::Pixel)
+            $g.Dispose()
+            for($x = 0; $x -lt $lado; $x++){
+                for($y = 0; $y -lt $lado; $y++){
+                    $p = $bmp.GetPixel($x, $y)
+                    $d = [Math]::Sqrt([Math]::Pow($p.R-$fondoPx.R,2) + [Math]::Pow($p.G-$fondoPx.G,2) + [Math]::Pow($p.B-$fondoPx.B,2))
+                    if($d -lt $UMBRAL){
+                        $bmp.SetPixel($x, $y, [System.Drawing.Color]::FromArgb(0,0,0,0))
+                    } elseif($d -lt $UMBRAL * 1.7){
+                        $a = [int](255 * (($d - $UMBRAL) / ($UMBRAL * 0.7)))
+                        $bmp.SetPixel($x, $y, [System.Drawing.Color]::FromArgb($a, $p.R, $p.G, $p.B))
+                    }
+                }
+            }
+            $bmp.Save((Join-Path $carpeta ('cont_' + $ordenCont[$i] + '.png')), [System.Drawing.Imaging.ImageFormat]::Png)
+            $bmp.Dispose()
+        }
+        $img.Dispose()
+        Move-Item -Force $hojaCont (Join-Path $originales 'contenedores_hoja.png')
+        Write-Output "contenedores_hoja.png  ->  4 sprites cont_*.png con fondo transparente"
+        $hechas++
+    } catch {
+        Write-Output "FALLO con contenedores_hoja.png: $($_.Exception.Message)"
     }
 }
 

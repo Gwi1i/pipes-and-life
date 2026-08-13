@@ -22,20 +22,47 @@ import { CONFIG } from './config.js';
 import * as sonido from './sonido.js';
 
 /* Cada residuo es ALGO: su fracción y su dibujo. Varios por fracción, que la
-   cinta de verdad no repite la misma botella toda la mañana. */
+   cinta de verdad no repite la misma botella toda la mañana.
+
+   La regla del reparto, del autor (que trabaja en esto): residuos CLAROS, sin
+   dobleces. El zapato se fue por eso — si sirve va a textil y si no a resto,
+   y ese matiz no cabe en la cinta—. Y los del resto enseñan de verdad: el
+   pañal no se recicla, la maceta es CERÁMICA (no vidrio: es el error más
+   común del iglú verde), la esponja tampoco tiene contenedor.
+
+   Solo salen a la cinta los que TIENEN estampa: sprite del autor o dibujo por
+   código (residuoAlAzar filtra). Así la lista puede ir por delante del arte
+   sin que aparezca un bulto sin cara. */
 const RESIDUOS = [
+  // PAPEL Y CARTÓN (azul)
   { frac: 'papel',    dibujo: 'caja' },
   { frac: 'papel',    dibujo: 'periodico' },
+  { frac: 'papel',    dibujo: 'revista' },
+  { frac: 'papel',    dibujo: 'huevera' },
+  { frac: 'papel',    dibujo: 'tubo' },            // el rollo de cartón
+  // VIDRIO (verde)
   { frac: 'vidrio',   dibujo: 'botellaVidrio' },
+  { frac: 'vidrio',   dibujo: 'botellaMarron' },
   { frac: 'vidrio',   dibujo: 'tarro' },
-  { frac: 'envases',  dibujo: 'botellaPlastico' },
+  { frac: 'vidrio',   dibujo: 'frasco' },          // de colonia
+  // ENVASES (amarillo)
+  { frac: 'envases',  dibujo: 'botellaPlastico' }, // aplastada: se ve que es plástico
   { frac: 'envases',  dibujo: 'lata' },
+  { frac: 'envases',  dibujo: 'lataConservas' },
   { frac: 'envases',  dibujo: 'brik' },
+  { frac: 'envases',  dibujo: 'yogur' },
+  { frac: 'envases',  dibujo: 'aerosol' },
+  // ORGÁNICA (marrón)
   { frac: 'organica', dibujo: 'manzana' },
-  { frac: 'organica', dibujo: 'raspa' },
   { frac: 'organica', dibujo: 'platano' },
-  { frac: null,       dibujo: 'bolsa' },       // el resto: no se toca
-  { frac: null,       dibujo: 'zapato' }       // ...y el zapato viejo, tampoco
+  { frac: 'organica', dibujo: 'raspa' },
+  { frac: 'organica', dibujo: 'hueso' },           // muslo de pollo comido
+  { frac: 'organica', dibujo: 'cascara' },         // de huevo, rota
+  // RESTO: no se tocan
+  { frac: null,       dibujo: 'bolsa' },
+  { frac: null,       dibujo: 'panal' },           // el pañal, sin discusión
+  { frac: null,       dibujo: 'maceta' },          // cerámica: NO es vidrio
+  { frac: null,       dibujo: 'esponja' }
 ];
 
 /* Los sprites generados por el autor (assets/res_<dibujo>.png, de la hoja de
@@ -56,6 +83,17 @@ const BINES = [
   { id: 'papel',    nombre: 'PAPEL',    color: '#3b82f6' },
   { id: 'vidrio',   nombre: 'VIDRIO',   color: '#22c55e' }
 ];
+
+/* Los contenedores ilustrados (assets/cont_<id>.png, de la hoja de
+   contenedores): como los residuos, si existen mandan y si no, el dibujo por
+   código. La placa del nombre y el ✓/✗ los pone SIEMPRE el juego encima —
+   son interfaz, no carrocería. */
+const SPRITES_BIN = {};
+for(const b of BINES){
+  const img = new Image();
+  img.src = `assets/cont_${b.id}.png`;
+  SPRITES_BIN[b.id] = img;   // si 404, naturalWidth queda a 0 y no se usa
+}
 
 export class MinijuegoReciclaje {
 
@@ -127,8 +165,13 @@ export class MinijuegoReciclaje {
 
   residuoAlAzar(){
     const K = CONFIG.minijuegos.reciclaje;
-    if(Math.random() < K.probResto) return RESIDUOS[RESIDUOS.length - 1];
-    return RESIDUOS[Math.floor(Math.random() * (RESIDUOS.length - 1))];
+    // Solo residuos CON estampa: el sprite del autor ya cargado, o su dibujo
+    // por código. Los que aún no tienen arte esperan su turno sin romper nada.
+    const conCara = d => (SPRITES[d.dibujo] && SPRITES[d.dibujo].naturalWidth > 0)
+                         || typeof this['res_' + d.dibujo] === 'function';
+    const esResto = Math.random() < K.probResto;
+    const grupo = RESIDUOS.filter(d => conCara(d) && (d.frac === null) === esResto);
+    return grupo[Math.floor(Math.random() * grupo.length)];
   }
 
   /* ---------------- jugar ---------------- */
@@ -314,38 +357,90 @@ export class MinijuegoReciclaje {
     for(let x = 30; x < W - 60; x += 150) ctx.fillRect(x, 18, 90, 34);
   }
 
+  /**
+   * La cinta como MÁQUINA y no como una franja pintada: patas ancladas al
+   * suelo, bastidor metálico con sus tornillos, rodillos con eje que asoman
+   * entre pata y pata, la banda con sus flechas de marcha y el vertedero del
+   * final con rayas de peligro. El mismo cel-shading de las piezas: contorno
+   * gordo, color plano, banda de luz.
+   */
   dibujarCinta(ctx, W){
     const y = this.cintaY;
-    ctx.fillStyle = 'rgba(0,0,0,0.45)';
-    ctx.fillRect(0, y + 18, W, 16);
-    ctx.fillStyle = '#141d26';
-    ctx.fillRect(0, y + 6, W, 26);
-    ctx.fillStyle = '#26313d';
-    ctx.fillRect(0, y + 9, W, 20);
-    ctx.fillStyle = '#3a4a58';
-    ctx.fillRect(0, y + 11, W, 7);
-    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
-    ctx.lineWidth = 3;
-    ctx.setLineDash([16, 26]);
-    ctx.lineDashOffset = -(this.reloj * this.velocidad) % 42;
-    ctx.beginPath();
-    ctx.moveTo(0, y + 20); ctx.lineTo(W, y + 20);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    // rodillos
-    ctx.fillStyle = '#141d26';
-    for(let x = 26; x < W; x += 64){
-      ctx.beginPath(); ctx.arc(x, y + 34, 7, 0, 7); ctx.fill();
+    // las PATAS: ancladas cada tanto, con su zapata
+    for(let x = 46; x < W - 20; x += 128){
+      ctx.fillStyle = '#141d26';
+      ctx.fillRect(x - 7, y + 30, 14, 46);
+      ctx.fillStyle = '#26313d';
+      ctx.fillRect(x - 4, y + 32, 8, 42);
+      ctx.fillStyle = '#141d26';
+      ctx.fillRect(x - 13, y + 72, 26, 8);           // la zapata al suelo
     }
-    // el vertedero del final
+    // sombra de la máquina al suelo
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.fillRect(0, y + 76, W, 10);
+    // los RODILLOS, con eje y brillo, asomando bajo el bastidor
+    for(let x = 26; x < W; x += 64){
+      ctx.fillStyle = '#141d26';
+      ctx.beginPath(); ctx.arc(x, y + 42, 10, 0, 7); ctx.fill();
+      ctx.fillStyle = '#3a4a58';
+      ctx.beginPath(); ctx.arc(x, y + 42, 6.5, 0, 7); ctx.fill();
+      ctx.fillStyle = '#8ea3b6';
+      ctx.beginPath(); ctx.arc(x - 2, y + 40, 2.2, 0, 7); ctx.fill();
+    }
+    // la BANDA: goma oscura con lomo de luz
     ctx.fillStyle = '#141d26';
-    ctx.fillRect(W - 52, y - 52, 52, 104);
+    ctx.fillRect(0, y + 4, W, 28);
+    ctx.fillStyle = '#26313d';
+    ctx.fillRect(0, y + 8, W, 21);
+    ctx.fillStyle = '#3f5060';
+    ctx.fillRect(0, y + 10, W, 7);
+    // las FLECHAS de marcha viajando con la cinta: dicen hacia dónde va
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    ctx.lineWidth = 3; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    const paso = 46, corr = (this.reloj * this.velocidad) % paso;
+    ctx.beginPath();
+    for(let x = -paso + corr; x < W; x += paso){
+      ctx.moveTo(x - 5, y + 13); ctx.lineTo(x + 3, y + 19); ctx.lineTo(x - 5, y + 25);
+    }
+    ctx.stroke();
+    // el BASTIDOR: el perfil metálico que remata la máquina, con tornillos
+    ctx.fillStyle = '#141d26';
+    ctx.fillRect(0, y + 26, W, 12);
+    ctx.fillStyle = '#4b5c6b';
+    ctx.fillRect(0, y + 28, W, 8);
+    ctx.fillStyle = '#7d94a6';
+    ctx.fillRect(0, y + 28, W, 3);
+    ctx.fillStyle = '#141d26';
+    for(let x = 30; x < W; x += 64){
+      ctx.beginPath(); ctx.arc(x, y + 32, 2.4, 0, 7); ctx.fill();
+    }
+    // el VERTEDERO del final: la tolva con sus rayas de peligro
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.fillRect(W - 56, y + 50, 56, 12);
+    ctx.fillStyle = '#141d26';
+    ctx.fillRect(W - 52, y - 52, 52, 108);
     ctx.fillStyle = '#31404d';
-    ctx.fillRect(W - 46, y - 46, 40, 92);
+    ctx.fillRect(W - 46, y - 46, 40, 98);
+    ctx.fillStyle = '#26313d';
+    ctx.fillRect(W - 46, y - 46, 40, 12);
+    // boca oscura por donde cae lo que llega
+    ctx.fillStyle = '#0c151d';
+    ctx.beginPath(); ctx.ellipse(W - 26, y + 6, 16, 22, 0, 0, 7); ctx.fill();
+    // rayas amarillas y negras en el canto: aquí acaba la cinta
+    ctx.save();
+    ctx.beginPath(); ctx.rect(W - 52, y - 52, 8, 108); ctx.clip();
+    for(let i = 0; i < 12; i++){
+      ctx.fillStyle = i % 2 ? '#141d26' : '#facc15';
+      ctx.beginPath();
+      ctx.moveTo(W - 52, y - 52 + i * 10); ctx.lineTo(W - 44, y - 60 + i * 10);
+      ctx.lineTo(W - 44, y - 50 + i * 10); ctx.lineTo(W - 52, y - 42 + i * 10);
+      ctx.fill();
+    }
+    ctx.restore();
     ctx.fillStyle = '#c6d4e0';
     ctx.font = '700 9px "IBM Plex Mono", monospace';
     ctx.save();
-    ctx.translate(W - 21, y + 36); ctx.rotate(-Math.PI / 2);
+    ctx.translate(W - 18, y + 36); ctx.rotate(-Math.PI / 2);
     ctx.fillText('VERTEDERO', 0, 0);
     ctx.restore();
   }
@@ -364,7 +459,7 @@ export class MinijuegoReciclaje {
       // el sprite del autor, encajado en la caja del residuo (~60px de alto)
       const alto = 62, ancho = alto * (sprite.naturalWidth / sprite.naturalHeight);
       ctx.drawImage(sprite, -ancho / 2, -34, ancho, alto);
-    } else {
+    } else if(this['res_' + def.dibujo]){
       this['res_' + def.dibujo](ctx);
     }
     ctx.restore();
@@ -497,21 +592,6 @@ export class MinijuegoReciclaje {
     ctx.fillRect(-3, -14, 6, 9);
   }
 
-  res_zapato(ctx){   // un zapato viejo: al resto también
-    this.forma(ctx, '#7a5c40', c => {
-      c.moveTo(-20, -8); c.lineTo(-6, -8);
-      c.quadraticCurveTo(2, -8, 8, 2); c.quadraticCurveTo(14, 10, 22, 12);
-      c.lineTo(22, 20); c.lineTo(-20, 20); c.closePath();
-    });
-    ctx.fillStyle = '#4d3a27';
-    ctx.fillRect(-20, 14, 42, 6);
-    ctx.strokeStyle = '#e8edf2'; ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    ctx.moveTo(-14, -4); ctx.lineTo(-6, 0);
-    ctx.moveTo(-14, 2); ctx.lineTo(-6, 6);
-    ctx.stroke();
-  }
-
   res_bolsa(ctx){   // la bolsa de resto, atada: NO se toca
     this.forma(ctx, '#8a97a5', c => {
       c.moveTo(0, -18);
@@ -533,6 +613,7 @@ export class MinijuegoReciclaje {
   dibujarMano(ctx, x, y, agarrando){
     ctx.save();
     ctx.translate(x, y);
+    ctx.scale(1.3, 1.3);          // que se vea: es el actor principal
     ctx.lineJoin = 'round';
     ctx.fillStyle = 'rgba(0,0,0,0.25)';
     ctx.beginPath(); ctx.ellipse(4, 8, 15, 6, 0, 0, 7); ctx.fill();
@@ -565,52 +646,143 @@ export class MinijuegoReciclaje {
         c.moveTo(-12, 0); c.quadraticCurveTo(-24, -4, -22, 4);
         c.quadraticCurveTo(-20, 10, -10, 8);
       });
+      // las costuras del dorso, que lo hacen GUANTE y no mano de nieve
+      ctx.strokeStyle = '#9fb0c0'; ctx.lineWidth = 1.6;
+      ctx.setLineDash([2.5, 2.5]);
+      ctx.beginPath();
+      ctx.moveTo(-9, 2); ctx.quadraticCurveTo(0, 5, 10, 0);
+      ctx.stroke();
+      ctx.setLineDash([]);
     }
-    // el puño del guante, amarillo de obra
+    // el puño del guante, amarillo de obra con su banda cosida
     ctx.fillStyle = '#141d26';
-    ctx.fillRect(-10, 8, 26, 12);
+    ctx.fillRect(-11, 8, 28, 13);
     ctx.fillStyle = '#facc15';
-    ctx.fillRect(-8, 10, 22, 8);
+    ctx.fillRect(-9, 10, 24, 9);
+    ctx.fillStyle = '#c9a20e';
+    ctx.fillRect(-9, 16, 24, 3);
+    ctx.strokeStyle = '#141d26'; ctx.lineWidth = 1.4;
+    ctx.setLineDash([2.5, 2.5]);
+    ctx.beginPath(); ctx.moveTo(-9, 12.5); ctx.lineTo(15, 12.5); ctx.stroke();
+    ctx.setLineDash([]);
     ctx.restore();
   }
 
-  /** Un contenedor de calle: cuerpo, tapa, ruedas y su nombre. */
+  /**
+   * Un contenedor de CALLE, con la carrocería de los de verdad: cuerpo que se
+   * estrecha hacia abajo, nervios verticales, cel-shading (cara de luz a la
+   * izquierda, sombra a la derecha), tapa abombada con su asa, boca oscura
+   * bajo la tapa y ruedas con tapacubos. Es el botón del juego: cuanto más
+   * mueble parezca, menos interfaz parece.
+   */
   dibujarBin(ctx, bin, i){
     const x = this.binX(i), y = this.binY;
     const w = this.binAncho, h = this.binAlto - 34;
     const flash = this.flashBin && this.flashBin.id === bin.id ? this.flashBin : null;
     // si llevas algo en la mano, los contenedores se ofrecen
     if(this.enMano){
-      ctx.fillStyle = 'rgba(255,255,255,0.07)';
-      ctx.beginPath(); ctx.roundRect(x - 8, y - 10, w + 16, h + 24, 12); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.09)';
+      ctx.beginPath(); ctx.roundRect(x - 8, y - 12, w + 16, h + 28, 12); ctx.fill();
     }
+    ctx.lineJoin = 'round';
+    // sombra al suelo (la comparten el sprite y el dibujo por código)
     ctx.fillStyle = 'rgba(0,0,0,0.4)';
-    ctx.fillRect(x + 5, y + h + 2, w - 6, 8);
-    ctx.fillStyle = '#141d26';
-    ctx.beginPath(); ctx.roundRect(x - 3, y + 7, w + 6, h - 4, 10); ctx.fill();
-    ctx.fillStyle = bin.color;
-    ctx.beginPath(); ctx.roundRect(x, y + 10, w, h - 10, 8); ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,0.28)';
-    ctx.fillRect(x + 6, y + 14, w - 12, 9);
-    ctx.fillStyle = '#141d26';
-    ctx.beginPath(); ctx.roundRect(x - 6, y - 2, w + 12, 16, 6); ctx.fill();
-    ctx.fillStyle = bin.color;
-    ctx.beginPath(); ctx.roundRect(x - 3, y, w + 6, 11, 5); ctx.fill();
-    ctx.fillStyle = '#141d26';
-    for(const dx of [0.22, 0.78]){
-      ctx.beginPath(); ctx.arc(x + w * dx, y + h + 6, 7, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(x + w / 2, y + h + 8, w * 0.52, 7, 0, 0, 7); ctx.fill();
+
+    const spr = SPRITES_BIN[bin.id];
+    if(spr && spr.naturalWidth > 0){
+      // el contenedor ilustrado, apoyado en el mismo suelo que el de código
+      const alto = h + 26;
+      const ancho = Math.min(w + 14, alto * (spr.naturalWidth / spr.naturalHeight));
+      ctx.drawImage(spr, x + w / 2 - ancho / 2, y + h + 4 - alto, ancho, alto);
+      this.rotularBin(ctx, bin, x, y, w, h, flash);
+      return;
     }
+    // RUEDAS con tapacubos (antes que el cuerpo, que pisa)
+    for(const dx of [0.2, 0.8]){
+      ctx.fillStyle = '#141d26';
+      ctx.beginPath(); ctx.arc(x + w * dx, y + h + 2, 9, 0, 7); ctx.fill();
+      ctx.fillStyle = '#4b5c6b';
+      ctx.beginPath(); ctx.arc(x + w * dx, y + h + 2, 5, 0, 7); ctx.fill();
+      ctx.fillStyle = '#8ea3b6';
+      ctx.beginPath(); ctx.arc(x + w * dx - 1.5, y + h, 1.8, 0, 7); ctx.fill();
+    }
+    // el CUERPO: se estrecha hacia abajo, como los de polietileno de calle
+    const cuerpo = (m) => {
+      ctx.beginPath();
+      ctx.moveTo(x - m, y + 8);
+      ctx.lineTo(x + w + m, y + 8);
+      ctx.lineTo(x + w - 7 + m, y + h - 2);
+      ctx.quadraticCurveTo(x + w / 2, y + h + 4 + m, x + 7 - m, y + h - 2);
+      ctx.closePath();
+    };
+    ctx.fillStyle = '#141d26'; cuerpo(3.5); ctx.fill();       // contorno
+    ctx.fillStyle = bin.color; cuerpo(0); ctx.fill();
+    // cel-shading: cara de sombra a la derecha, filo de luz a la izquierda
+    ctx.save();
+    cuerpo(0); ctx.clip();
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    ctx.fillRect(x + w * 0.62, y + 8, w * 0.4, h);
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.fillRect(x + 4, y + 10, 9, h - 10);
+    // los NERVIOS verticales del cuerpo
+    ctx.strokeStyle = 'rgba(0,0,0,0.18)'; ctx.lineWidth = 4;
+    ctx.beginPath();
+    for(const t of [0.3, 0.5, 0.7]){
+      ctx.moveTo(x + w * t, y + 16); ctx.lineTo(x + w * t, y + h - 6);
+    }
+    ctx.stroke();
+    ctx.restore();
+    // la BOCA: la ranura oscura bajo la tapa, que es donde "entra" el residuo
+    ctx.fillStyle = '#141d26';
+    ctx.beginPath(); ctx.roundRect(x + 8, y + 6, w - 16, 9, 4); ctx.fill();
+    // la TAPA abombada, con su asa y su brillo
+    ctx.fillStyle = '#141d26';
+    ctx.beginPath();
+    ctx.moveTo(x - 9, y + 9);
+    ctx.quadraticCurveTo(x + w / 2, y - 20, x + w + 9, y + 9);
+    ctx.closePath(); ctx.fill();
+    const tapa = this.oscurecerColor(bin.color, 0.82);
+    ctx.fillStyle = tapa;
+    ctx.beginPath();
+    ctx.moveTo(x - 5, y + 7);
+    ctx.quadraticCurveTo(x + w / 2, y - 15, x + w + 5, y + 7);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.beginPath();
+    ctx.moveTo(x + 10, y + 2);
+    ctx.quadraticCurveTo(x + w / 2, y - 11, x + w - 10, y + 2);
+    ctx.quadraticCurveTo(x + w / 2, y - 6, x + 10, y + 2);
+    ctx.closePath(); ctx.fill();
+    // el asa
+    ctx.fillStyle = '#141d26';
+    ctx.beginPath(); ctx.roundRect(x + w / 2 - 14, y - 12, 28, 7, 3); ctx.fill();
+    ctx.fillStyle = '#4b5c6b';
+    ctx.beginPath(); ctx.roundRect(x + w / 2 - 11, y - 10, 22, 3.5, 2); ctx.fill();
+    this.rotularBin(ctx, bin, x, y, w, h, flash);
+  }
+
+  /** La capa de INTERFAZ del contenedor: placa del nombre y ✓/✗. Va encima
+   *  tanto del sprite como del dibujo por código. */
+  rotularBin(ctx, bin, x, y, w, h, flash){
     ctx.fillStyle = 'rgba(0,0,0,0.45)';
-    ctx.fillRect(x + 8, y + h - 34, w - 16, 22);
+    ctx.beginPath(); ctx.roundRect(x + 12, y + h - 32, w - 24, 20, 4); ctx.fill();
     ctx.fillStyle = '#eef6fb';
     ctx.font = '700 11px "IBM Plex Mono", monospace';
     ctx.textAlign = 'center';
-    ctx.fillText(bin.nombre, x + w / 2, y + h - 19);
+    ctx.fillText(bin.nombre, x + w / 2, y + h - 18);
     ctx.textAlign = 'left';
     if(flash){
       ctx.font = '700 34px "IBM Plex Mono", monospace';
       ctx.fillStyle = flash.bueno ? '#2dd48f' : '#f05a4a';
-      ctx.fillText(flash.bueno ? '✓' : '✗', x + w / 2 - 12, y - 16);
+      ctx.fillText(flash.bueno ? '✓' : '✗', x + w / 2 - 12, y - 24);
     }
+  }
+
+  /** Oscurecer un color #rrggbb sin salir del estilo plano (para las tapas). */
+  oscurecerColor(hex, f){
+    const n = parseInt(hex.slice(1), 16);
+    const c = v => Math.round(v * f);
+    return `rgb(${c(n >> 16)},${c((n >> 8) & 255)},${c(n & 255)})`;
   }
 }

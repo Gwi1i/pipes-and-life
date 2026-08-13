@@ -169,32 +169,51 @@ red que lo une todo.
 
 # LOS RESIDUOS DE LA LÍNEA (`residuos_hoja.png`)
 
-Los doce objetos que pasan por la cinta, con el estilo de las ilustraciones.
-Van en UNA hoja con rejilla de **4 columnas × 3 filas** sobre fondo liso, y el
+Los 24 objetos que pasan por la cinta, con el estilo de las ilustraciones.
+Van en UNA hoja con rejilla de **6 columnas × 4 filas** sobre fondo liso, y el
 `optimizar.bat` recorta cada casilla y le quita el fondo (por eso el fondo
 liso es obligatorio). **El orden de la rejilla es sagrado** — el juego asigna
 cada casilla a su contenedor por posición:
 
-|  |  |  |  |
-|---|---|---|---|
-| caja de cartón | periódico doblado | botella de vidrio verde | tarro de cristal con tapa |
-| botella de plástico | lata de refresco | brik de zumo | corazón de manzana |
-| raspa de pescado | piel de plátano | bolsa de basura gris atada | zapato viejo |
+|  |  |  |  |  |  |
+|---|---|---|---|---|---|
+| caja de cartón | periódico doblado | revista | huevera de cartón | rollo de cartón (tubo) | botella de vidrio verde |
+| botella de vidrio marrón (cerveza) | tarro de cristal con tapa | frasco de colonia de vidrio | botella de plástico APLASTADA | lata de refresco | lata de conservas abierta |
+| brik de zumo | vaso de yogur con la tapa a medio quitar | bote de aerosol | corazón de manzana | piel de plátano | raspa de pescado |
+| muslo de pollo comido (hueso) | cáscara de huevo rota | bolsa de basura gris atada | pañal enrollado | maceta de cerámica rota | esponja de fregar amarilla y verde |
+
+Las reglas de la selección, del oficio: **residuos CLAROS**, sin dobleces (el
+zapato viejo se retiró — si sirve va a textil y si no a resto, y ese matiz no
+cabe en una cinta). La botella de plástico va **aplastada, arrugada** a
+propósito: es lo que la distingue del vidrio de un vistazo. Y los del resto
+enseñan de verdad: pañal, maceta de CERÁMICA (el error clásico del iglú
+verde) y esponja no tienen contenedor. **Nada de marcas reales** — rótulos
+inventados y genéricos (SODA, ZUMO), que un logo registrado en un juego que
+quizá se venda es un pleito.
 
 ### `residuos_hoja.png`
-> Genera una imagen: rejilla de cuatro columnas por tres filas con doce
-> objetos de basura doméstica del mismo tamaño, cada uno centrado en su
-> casilla sobre fondo liso de un solo color claro, en este orden: una caja de
-> cartón cerrada, un periódico doblado, una botella de vidrio verde, un tarro
-> de cristal con tapa, una botella de plástico transparente con tapón, una
-> lata de refresco roja, un brik de zumo con pajita, un corazón de manzana
-> mordida, una raspa de pescado, una piel de plátano abierta, una bolsa de
-> basura gris atada y un zapato viejo marrón, *(+ coletilla)*
+> Genera una imagen: rejilla de seis columnas por cuatro filas con
+> veinticuatro objetos de basura doméstica del mismo tamaño, cada uno centrado
+> en su casilla sobre fondo liso de un solo color lila claro, sin líneas de
+> rejilla dibujadas y sin marcas comerciales reales, en este orden de
+> izquierda a derecha y de arriba abajo: una caja de cartón cerrada, un
+> periódico doblado, una revista, una huevera de cartón, un rollo de cartón de
+> papel higiénico gastado, una botella de vidrio verde; una botella de vidrio
+> marrón de cerveza, un tarro de cristal con tapa, un frasco de colonia de
+> vidrio, una botella de plástico transparente aplastada y arrugada con tapón,
+> una lata de refresco roja, una lata de conservas abierta; un brik de zumo
+> con pajita, un vaso de yogur con la tapa a medio quitar, un bote de aerosol,
+> un corazón de manzana mordida, una piel de plátano abierta, una raspa de
+> pescado; un hueso de muslo de pollo comido, una cáscara de huevo rota, una
+> bolsa de basura gris atada, un pañal enrollado y cerrado, una maceta de
+> cerámica naranja rota y una esponja de fregar amarilla con lomo verde,
+> *(+ coletilla)*
 
 Consejos: fondo de un color que no salga en los objetos (un lila o rosa claro
-va bien) y **sin líneas de rejilla dibujadas** — las casillas se cortan a
-tercios y cuartos exactos. Si algún objeto sale montado sobre la raya de su
-casilla, regenera: recortado a la mitad no hay quien lo reconozca.
+va bien) y **sin líneas de rejilla dibujadas** — aunque el partidor ya entra
+un 5% hacia dentro de cada casilla por si acaso. Las casillas se cortan a
+sextos y cuartos exactos: si algún objeto sale montado sobre la raya de su
+casilla, regenera, que recortado a la mitad no hay quien lo reconozca.
 
 ---
 
@@ -213,6 +232,30 @@ se pelearían.
 > altos con luz de día entrando, sacas y balas de material prensado apiladas
 > al fondo contra la pared, sin personas y sin maquinaria en primer plano,
 > dejando despejada la mitad inferior de la imagen, *(+ coletilla)*
+
+---
+
+# LOS CONTENEDORES DE LA LÍNEA (`contenedores_hoja.png`)
+
+Los cuatro contenedores de calle del minijuego, ilustrados para que casen con
+los residuos y la nave. El `optimizar.bat` parte la hoja en 4 sprites
+(`cont_envases/organica/papel/vidrio.png`) y les quita el fondo. La cinta y
+la mano del operario se quedan en código a propósito: la cinta ES la
+animación y la mano cambia de postura con lo que llevas. La placa con el
+nombre y el ✓/✗ los pinta el juego encima, así que **sin textos** en la
+imagen.
+
+El orden es sagrado: **amarillo (envases), marrón (orgánica), azul (papel),
+verde (vidrio)**. Hoja apaisada 4:1 para que cada casilla salga cuadrada.
+
+### `contenedores_hoja.png`
+> Genera una imagen apaisada de proporción 4:1: cuatro contenedores de basura
+> urbanos de calle en fila, del mismo tamaño, cada uno centrado en su cuarto
+> de imagen sobre fondo liso de un solo color lila claro, sin líneas de
+> separación dibujadas y sin ningún texto ni rótulo, vistos de frente: uno
+> amarillo de envases, uno marrón de materia orgánica, uno azul de papel y
+> cartón, y uno verde de vidrio, todos con tapa abombada y ruedas,
+> *(+ coletilla)*
 
 ---
 

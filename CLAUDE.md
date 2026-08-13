@@ -640,18 +640,34 @@ los ofrece en modo ensayo, sin premio ni castigo — nació para que el autor
 probara sin esperar una avería y se queda para que el jugador ensaye gratis.
 
 1. REPARACIÓN A MANO (`minijuego_tuberias.js`): desde el panel de averías, un
-tablero de tuberías contrarreloj — colocar y girar piezas de la cola hasta
-unir entrada y salida antes de que el agua alcance un hueco. Premio: la avería
+tablero de tuberías contrarreloj — el tablero nace LLENO de piezas giradas al
+azar y el clic solo GIRA: hay que recomponer el camino de entrada a salida
+antes de que el agua tope con un desencaje. Hubo una versión en que se
+COLOCABAN piezas de una cola y se quitó a petición del autor: una pieza mal
+puesta no tenía arreglo y un clic condenaba la partida — girar siempre tiene
+vuelta atrás. La generación EXCAVA primero un camino solución (paseo
+autoevitante de boca a boca, con el este en ventaja), pone en él las piezas
+correctas (`rotBuena`, guardada solo para poder verificar por consola),
+rellena el resto y baraja los giros comprobando con `yaResuelto()` que el azar
+no lo dejó resuelto de fábrica: un puzle sin solución no es difícil, es una
+estafa — y uno resuelto de serie, tampoco es un puzle. Premio: la avería
 queda gratis. UN intento por avería (`av.aManoJugada`, se gasta al ENTRAR —
 abandonar también cuenta): con reintentos infinitos, la llave no tendría
-sentido. El tablero se regenera hasta que EXISTA camino: un puzle sin solución
-no es difícil, es una estafa.
+sentido.
 
 2. LA LÍNEA DE RECICLAJE (`minijuego_reciclaje.js`): desde la ficha de la
-planta, "echar un turno" — separar residuos en la cinta tocando el contenedor
-que toca, LOS DE VERDAD (amarillo envases, azul papel, verde vidrio, marrón
+planta, "echar un turno" — agarrar cada residuo de la cinta y soltarlo en su
+contenedor, LOS DE VERDAD (amarillo envases, azul papel, verde vidrio, marrón
 orgánica). La lección escondida: el RESTO no se toca — dejarlo seguir hasta el
-vertedero ES lo correcto, porque no todo se recicla. Premio: la venta de
+vertedero ES lo correcto, porque no todo se recicla. El plantel son 24
+residuos CLAROS (regla del autor, que es del oficio: nada ambiguo — el zapato
+se retiró porque si sirve va a textil y si no a resto, y ese matiz no cabe en
+la cinta; los del resto enseñan: pañal, maceta de CERÁMICA —el error clásico
+del iglú verde— y esponja). Solo salen a la cinta los que TIENEN estampa
+(sprite `assets/res_*.png` de la hoja 6×4 o dibujo por código:
+`residuoAlAzar` filtra), así la lista va por delante del arte sin que aparezca
+un bulto sin cara. La mano del operario ES el cursor (guante por código,
+abierta/puño; `cursor:none` en el lienzo). Premio: la venta de
 reciclado sube según puntería (`factorTurnoReciclaje`, multiplica
 `precioMedioReciclaje`) durante `horasBonus`; `estado.turnoReciclaje` se
 guarda, y no hay segundo turno hasta que venza el bono. El tercero pensado (el

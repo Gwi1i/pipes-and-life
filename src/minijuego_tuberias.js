@@ -1,14 +1,20 @@
 /**
  * MINIJUEGO: LA REPARACIÓN A MANO.
  *
- * Una tubería ha reventado y el agua viene de camino: hay que reconstruir el
- * tramo uniendo la ENTRADA con la SALIDA, pieza a pieza, antes de que el agua
- * alcance un hueco y se derrame. Es el oficio contado a otra velocidad — y el
- * homenaje evidente a los juegos de tuberías de los 90.
+ * Una tubería ha reventado y el agua viene de camino: la zanja está LLENA de
+ * piezas descolocadas y hay que GIRARLAS para unir la ENTRADA con la SALIDA
+ * antes de que el agua alcance un desencaje y se derrame. Es el oficio contado
+ * a otra velocidad — y el homenaje evidente a los juegos de tuberías de los 90.
  *
- * Controles (pensados para el dedo): tocar una casilla vacía COLOCA la pieza
- * que toque de la cola; tocar una pieza ya puesta (y aún seca) la GIRA. El
- * agua no espera a nadie.
+ * Controles (pensados para el dedo): tocar una pieza seca la GIRA. Nada más:
+ * hubo una versión en que se COLOCABAN piezas de una cola y se quitó a
+ * propósito — una pieza mal puesta no tenía arreglo y el fallo de un clic
+ * condenaba la partida entera. Girar siempre tiene vuelta atrás.
+ *
+ * El tablero se genera EXCAVANDO primero un camino solución (paseo aleatorio
+ * autoevitante de boca a boca), poniendo en cada casilla del camino su pieza
+ * correcta, rellenando el resto con piezas al azar y BARAJANDO todos los
+ * giros. La solución existe siempre; encontrarla a tiempo es el juego.
  *
  * Módulo autocontenido: tiene su telón, su lienzo, su reloj y sus escuchas.
  * NO toca el estado del juego — devuelve el resultado por callback y es
@@ -47,28 +53,54 @@ export class MinijuegoTuberias {
     const K = CONFIG.minijuegos.tuberias;
     this.alTerminar = alTerminar;
 
-    // Tablero con rocas al azar, repetido hasta que EXISTA un camino posible:
-    // un puzle sin solución no es difícil, es una estafa.
-    let intentos = 0;
-    do{
-      this.entradaFila = 1 + Math.floor(Math.random() * (K.filas - 2));
-      this.salidaFila = 1 + Math.floor(Math.random() * (K.filas - 2));
-      this.celdas = Array.from({ length: K.filas },
-        () => new Array(K.columnas).fill(null));
-      let puestas = 0;
-      while(puestas < K.rocas){
-        const c = Math.floor(Math.random() * K.columnas);
-        const f = Math.floor(Math.random() * K.filas);
-        if(this.celdas[f][c]) continue;
-        if(c === 0 && f === this.entradaFila) continue;
-        if(c === K.columnas - 1 && f === this.salidaFila) continue;
-        this.celdas[f][c] = { roca: true };
-        puestas++;
-      }
-    } while(!this.haySalida(K) && ++intentos < 60);
+    this.entradaFila = 1 + Math.floor(Math.random() * (K.filas - 2));
+    this.salidaFila = 1 + Math.floor(Math.random() * (K.filas - 2));
+    this.celdas = Array.from({ length: K.filas },
+      () => new Array(K.columnas).fill(null));
 
-    // La cola de piezas: la actual y la siguiente, para poder pensar una jugada
-    this.cola = [this.pieza(), this.pieza()];
+    // 1. Se EXCAVA el camino solución: un paseo autoevitante de boca a boca.
+    // Existe siempre (el tablero aún está vacío), así que el puzle nace con
+    // solución garantizada: un puzle sin solución no es difícil, es una estafa.
+    const camino = this.carvarCamino(K);
+    const enCamino = new Set(camino.map(([c, f]) => c + ',' + f));
+
+    // 2. Cada casilla del camino recibe SU pieza con SU giro bueno
+    for(let i = 0; i < camino.length; i++){
+      const [c, f] = camino[i];
+      const ladoIn = i === 0 ? O
+        : this.ladoHacia(camino[i], camino[i - 1]);
+      const ladoOut = i === camino.length - 1 ? E
+        : this.ladoHacia(camino[i], camino[i + 1]);
+      const forma = ((ladoIn + 2) % 4 === ladoOut) ? 'recto' : 'codo';
+      // rotBuena no la usa el juego: queda para poder comprobar por consola
+      // que la solución existe (girar todo el camino a su rotBuena y simular)
+      const rotBuena = this.giroQueUne(forma, ladoIn, ladoOut);
+      this.celdas[f][c] = { forma, rot: rotBuena, rotBuena, mojada: 0 };
+    }
+    this._camino = camino;
+
+    // 3. Rocas fuera del camino, y el resto relleno de piezas al azar:
+    // un tablero LLENO donde girar es lo único que hay que hacer
+    let puestas = 0, cabida = K.columnas * K.filas - camino.length;
+    while(puestas < Math.min(K.rocas, cabida)){
+      const c = Math.floor(Math.random() * K.columnas);
+      const f = Math.floor(Math.random() * K.filas);
+      if(this.celdas[f][c] || enCamino.has(c + ',' + f)) continue;
+      this.celdas[f][c] = { roca: true };
+      puestas++;
+    }
+    for(let f = 0; f < K.filas; f++)
+      for(let c = 0; c < K.columnas; c++)
+        if(!this.celdas[f][c]) this.celdas[f][c] = this.pieza();
+
+    // 4. Se BARAJAN los giros de todas las piezas... comprobando que el azar
+    // no haya dejado el puzle ya resuelto de fábrica
+    let vueltas = 0;
+    do{
+      for(const [c, f] of camino)
+        this.celdas[f][c].rot = Math.floor(Math.random() * 4);
+    } while(this.yaResuelto(K) && ++vueltas < 20);
+
     this.reloj = 0;
     this.gracia = K.graciaSegundos;
     this.tCelda = K.segundosPorCelda;
@@ -96,22 +128,70 @@ export class MinijuegoTuberias {
              rot: Math.floor(Math.random() * 4), mojada: 0 };
   }
 
-  /** ¿Hay camino de entrada a salida por las celdas libres? (BFS a 4 vecinos) */
-  haySalida(K){
-    const visto = new Set();
-    const cola = [[0, this.entradaFila]];
-    while(cola.length){
-      const [c, f] = cola.pop();
+  /**
+   * El camino solución: paseo aleatorio AUTOEVITANTE de la boca de entrada a
+   * la de salida (DFS con vecinos barajados). El este va con ventaja para que
+   * el camino avance en vez de enredarse por todo el tablero; aun así serpentea
+   * lo suyo, que es lo que da codos que girar.
+   */
+  carvarCamino(K){
+    const visto = new Set(['0,' + this.entradaFila]);
+    const camino = [[0, this.entradaFila]];
+    const dfs = () => {
+      const [c, f] = camino[camino.length - 1];
       if(c === K.columnas - 1 && f === this.salidaFila) return true;
-      for(const [dc, df] of [[1,0],[-1,0],[0,1],[0,-1]]){
+      const vecinos = [[1,0],[-1,0],[0,1],[0,-1]]
+        .map(v => [v, Math.random() - (v[0] === 1 ? 0.45 : 0)])
+        .sort((a, b) => a[1] - b[1]).map(x => x[0]);
+      for(const [dc, df] of vecinos){
         const nc = c + dc, nf = f + df;
         if(nc < 0 || nf < 0 || nc >= K.columnas || nf >= K.filas) continue;
         const clave = nc + ',' + nf;
-        if(visto.has(clave) || this.celdas[nf][nc]) continue;
-        visto.add(clave); cola.push([nc, nf]);
+        if(visto.has(clave)) continue;
+        visto.add(clave);
+        camino.push([nc, nf]);
+        if(dfs()) return true;
+        camino.pop();
       }
+      return false;
+    };
+    dfs();
+    return camino;
+  }
+
+  /** Por qué lado de la celda `a` se llega a la vecina `b`. */
+  ladoHacia([c, f], [c2, f2]){
+    return c2 > c ? E : c2 < c ? O : f2 > f ? S : N;
+  }
+
+  /** El giro que hace que `forma` conecte esos dos lados. Existe siempre:
+   *  recto une lados opuestos y codo lados perpendiculares, por construcción. */
+  giroQueUne(forma, ladoA, ladoB){
+    for(let rot = 0; rot < 4; rot++){
+      const con = FORMAS[forma].map(l => (l + rot) % 4);
+      if(con.includes(ladoA) && con.includes(ladoB)) return rot;
     }
-    return false;
+    return 0;
+  }
+
+  /** ¿El agua llegaría YA de boca a boca sin tocar nada? Simulación en seco:
+   *  sirve para no estrenar un puzle que el azar dejó resuelto de fábrica. */
+  yaResuelto(K){
+    let c = 0, f = this.entradaFila, lado = O;
+    const pisado = new Set();
+    while(true){
+      const p = this.celdas[f][c];
+      if(!p || p.roca || !this.conexiones(p).includes(lado)) return false;
+      const clave = c + ',' + f + ',' + lado;
+      if(pisado.has(clave)) return false;          // bucle: no llega a ningún lado
+      pisado.add(clave);
+      const salida = this.conexiones(p).find(l => l !== lado);
+      const [dc, df] = [[0,-1],[1,0],[0,1],[-1,0]][salida];
+      const nc = c + dc, nf = f + df;
+      if(nc >= K.columnas) return f === this.salidaFila && salida === E;
+      if(nc < 0 || nf < 0 || nf >= K.filas) return false;
+      c = nc; f = nf; lado = (salida + 2) % 4;
+    }
   }
 
   conexiones(p){ return FORMAS[p.forma].map(l => (l + p.rot) % 4); }
@@ -125,19 +205,13 @@ export class MinijuegoTuberias {
     const K = CONFIG.minijuegos.tuberias;
     if(c < 0 || f < 0 || c >= K.columnas || f >= K.filas) return;
     const celda = this.celdas[f][c];
-    if(celda && celda.roca) return;
+    if(!celda || celda.roca) return;
     // Lo que el agua ya ha tocado no se toca: llegas tarde
-    if(celda && celda.mojada > 0) return;
+    if(celda.mojada > 0) return;
     if(this.agua.dentro && this.agua.col === c && this.agua.fila === f) return;
 
-    if(!celda){
-      this.celdas[f][c] = this.cola.shift();
-      this.cola.push(this.pieza());
-      sonido.colocar();
-    } else {
-      celda.rot = (celda.rot + 1) % 4;
-      sonido.tramo();
-    }
+    celda.rot = (celda.rot + 1) % 4;
+    sonido.tramo();
   }
 
   tick(dt){
@@ -211,7 +285,7 @@ export class MinijuegoTuberias {
     const ancho = 640;
     this.tam = Math.floor(ancho / (K.columnas + 1));
     this.margenX = Math.floor(this.tam / 2);
-    this.margenY = this.tam;                    // tira superior: cola y reloj
+    this.margenY = this.tam;                    // tira superior: consigna y reloj
     this.lienzo.width = ancho;
     this.lienzo.height = this.margenY + K.filas * this.tam + Math.floor(this.tam / 2);
   }
@@ -221,14 +295,10 @@ export class MinijuegoTuberias {
     const W = this.lienzo.width, H = this.lienzo.height;
     ctx.clearRect(0, 0, W, H);
 
-    // La tira de arriba: piezas que vienen y el reloj de gracia
+    // La tira de arriba: la consigna y el reloj de gracia
     ctx.font = '600 13px "IBM Plex Mono", monospace';
     ctx.fillStyle = '#8aa0b4';
-    ctx.fillText('SIGUIENTES', this.margenX, t * 0.4);
-    this.cola.forEach((p, i) => {
-      const x = this.margenX + 110 + i * (t * 0.75);
-      this.dibujarPieza(ctx, p, x, t * 0.08, t * 0.6, i === 0 ? 1 : 0.45);
-    });
+    ctx.fillText('GIRA LAS PIEZAS Y UNE LAS BOCAS', this.margenX, t * 0.4);
     if(!this.agua.dentro){
       const resta = Math.max(0, this.gracia - this.reloj);
       const frac = resta / this.gracia;

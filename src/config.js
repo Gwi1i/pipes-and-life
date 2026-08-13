@@ -411,12 +411,12 @@ export const CONFIG = {
       columnas: 7, filas: 5,
       rocas: 4,                // celdas bloqueadas: obligan a rodear
       /* Ajustado al alza tras jugarlo el autor: con 5 s de gracia no daba
-         tiempo a colocar ni una pieza pensada, y el minijuego iba de decidir
-         rápido, no de manotear. Ocho segundos dan para dos o tres piezas. */
+         tiempo ni a leer el tablero, y el minijuego va de decidir rápido, no
+         de manotear. Ocho segundos dan para orientar las primeras piezas. */
       graciaSegundos: 8,       // margen antes de que el agua entre al tablero
       segundosPorCelda: 1.35,  // lo que tarda el agua en cruzar cada pieza
       aceleracion: 0.97,       // cada celda cruzada, un poco más rápido
-      probRecto: 0.55          // reparto de la cola de piezas (resto: codos)
+      probRecto: 0.55          // reparto del RELLENO fuera del camino (resto: codos)
     },
     /* La LÍNEA DE RECICLAJE: separar residuos en la cinta tocando el
        contenedor que toca — los de verdad, con sus colores. El RESTO no se
