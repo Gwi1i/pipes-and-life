@@ -566,13 +566,23 @@ Reiniciar. Los volúmenes van en `CONFIG.sonido`; las frecuencias y envolventes
 de cada efecto son decisiones musicales y viven con el código, como los trazos
 del dibujo.
 
-La MÚSICA es la excepción: un archivo del autor (`assets/musica.ogg|mp3|wav`,
-generado como las ilustraciones), en bucle por `AudioBufferSourceNode` —sin el
-hueco que mete `<audio loop>`— y con canal y botón propios, independientes de
-los efectos: hay quien juega con música y sin efectos, y al revés. Si el
-archivo no existe, el botón NI APARECE (un mando que no manda nada es peor que
-ningún mando) y el juego suena igual que antes de tener música. El prompt y los
-trucos del bucle están en `assets/PROMPTS.md`.
+La MÚSICA es la excepción: archivos del autor (`assets/musica.ogg|mp3|wav`,
+`musica2`... hasta el primer hueco, generados como las ilustraciones), por
+`AudioBufferSourceNode` —sin el hueco que mete `<audio loop>`— y con canal y
+botón propios, independientes de los efectos: hay quien juega con música y sin
+efectos, y al revés. Las pistas van BARAJADAS en bolsa (`siguientePista()`):
+cada vuelta suena la lista entera en un orden nuevo y jamás repite dos veces
+seguidas — empezar siempre por la misma canción cantaba a monotonía (dixit el
+autor). Si no hay archivos, el botón NI APARECE (un mando que no manda nada es
+peor que ningún mando) y el juego suena igual que antes de tener música.
+
+El ARRANQUE (`sonido.arranque()`): lo primero que se oye al primer gesto —
+normalmente el botón de la portada, que es además el gesto que el navegador
+exige para dejar sonar nada; por eso la portada NO puede tener sonido antes
+del clic, es el navegador, no un descuido—. Con jingle del autor
+(`assets/intro.*`) suena entero y la música entra al terminar; sin él, una
+fanfarria corta de código. Suena UNA vez por sesión. El prompt y los trucos
+del bucle están en `assets/PROMPTS.md`.
 
 **El tacto es un ciudadano de primera.** El zoom táctil es el PELLIZCO:
 `entrada.js` lleva los dedos en un mapa y con dos reparte el gesto en `pellizco`

@@ -366,6 +366,9 @@ export const CONFIG = {
     /* La música de fondo (assets/musica.ogg|mp3|wav, generada por el autor).
        De fondo DE VERDAD: si compite con los efectos, cansa en diez minutos. */
     volumenMusica: 0.18,
+    /* El jingle de la portada (assets/intro.*): puede sonar algo más alto
+       que la música — es UNA vez y es la presentación. */
+    volumenIntro: 0.26,
     /* La VOZ de Manuel: síntesis del navegador (sin archivos, y lee el texto
        VIVO — si un paso cambia, la voz dice lo nuevo). APAGADA por defecto,
        decisión del autor: un juego que te habla sin avisar sobresalta. El

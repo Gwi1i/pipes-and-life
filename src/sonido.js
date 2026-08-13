@@ -208,7 +208,10 @@ export function comentario(){
 let musicaOn = localStorage.getItem(CLAVE_MUSICA) !== '0';
 let listaMusica = [];    // las canciones encontradas (urls), en su orden
 let bufferMusica = {};   // url -> AudioBuffer, decodificado la primera vez
-let pistaActual = -1;    // cuál suena, para seguir con la siguiente
+let pistaActual = -1;    // cuál suena, para no repetirla al rebarajar
+let bolsaMusica = [];    // las pistas pendientes de esta vuelta, barajadas
+let introUrl = null;     // el jingle de la portada, si el autor lo ha puesto
+let introHecha = false;  // la intro suena UNA vez por sesión
 let musicaGan = null;    // su mando de volumen
 let musicaSrc = null;    // la fuente sonando ahora mismo
 
@@ -240,25 +243,44 @@ function extremosFuertes(buf){
 
 /**
  * Busca las canciones del autor: `musica`, `musica2`, `musica3`... hasta el
- * primer hueco, cada una en ogg/mp3/wav. Con varias, el juego las ROTA — la
- * lista entera es el bucle, así una tarde de partida no repite la misma
- * melodía en bucle hasta gastarla. Devuelve si hay alguna.
+ * primer hueco, cada una en ogg/mp3/wav. Con varias, el juego las BARAJA —
+ * cada vuelta suena la lista entera en un orden nuevo (petición del autor:
+ * empezar siempre por la misma canción cantaba a monotonía). De paso busca
+ * la INTRO (`assets/intro.*`): el jingle de la portada, si el autor lo pone.
  */
 export async function cargarMusica(){
   listaMusica = [];
-  for(let n = 1; n <= 12; n++){
-    const base = n === 1 ? 'musica' : 'musica' + n;
-    let encontrada = null;
+  const busca = async base => {
     for(const ext of ['ogg', 'mp3', 'wav']){
       try{
         const resp = await fetch(`assets/${base}.${ext}`, { method: 'HEAD' });
-        if(resp.ok){ encontrada = `assets/${base}.${ext}`; break; }
+        if(resp.ok) return `assets/${base}.${ext}`;
       }catch(_){ /* siguiente formato */ }
     }
+    return null;
+  };
+  for(let n = 1; n <= 12; n++){
+    const encontrada = await busca(n === 1 ? 'musica' : 'musica' + n);
     if(!encontrada) break;   // al primer hueco se acabó la lista
     listaMusica.push(encontrada);
   }
+  introUrl = await busca('intro');
   return listaMusica.length > 0;
+}
+
+/** La bolsa de pistas: se baraja la lista entera, se juega, y se rebaraja al
+ *  agotarse — cuidando que la vuelta nueva no repita la última sonada. */
+function siguientePista(){
+  if(!bolsaMusica.length){
+    bolsaMusica = listaMusica.map((_, i) => i);
+    for(let i = bolsaMusica.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [bolsaMusica[i], bolsaMusica[j]] = [bolsaMusica[j], bolsaMusica[i]];
+    }
+    if(bolsaMusica.length > 1 && bolsaMusica[0] === pistaActual)
+      [bolsaMusica[0], bolsaMusica[1]] = [bolsaMusica[1], bolsaMusica[0]];
+  }
+  return bolsaMusica.shift();
 }
 
 /** Decodifica una pista la primera vez; después, de la caché. */
@@ -288,7 +310,7 @@ async function sonarPista(i){
   src.onended = () => {
     if(musicaSrc !== src) return;   // la paró alguien (el botón): sin cadena
     musicaSrc = null;
-    sonarPista((i + 1) % listaMusica.length);
+    sonarPista(siguientePista());
   };
   src.connect(musicaGan);
   src.start(0, ini, Math.max(1, fin - ini));
@@ -299,7 +321,48 @@ async function sonarPista(i){
 /** Arranca la música si hay lista y está activada. Llamar tras un gesto. */
 export function empezarMusica(){
   if(!musicaOn || !listaMusica.length || musicaSrc) return;
-  sonarPista(pistaActual >= 0 ? pistaActual : 0);
+  sonarPista(siguientePista());
+}
+
+/**
+ * EL ARRANQUE: lo primero que se oye al quitar la portada. Con jingle del
+ * autor (assets/intro.*), suena entero y la música entra al terminar; sin
+ * él, una fanfarria de código —el arpegio que sube y la gota de brillo— y
+ * la música detrás. Antes la portada se quitaba en silencio absoluto, y un
+ * juego que empieza mudo empieza pareciendo a medio hacer (dixit el autor).
+ * El navegador no deja sonar nada antes del primer gesto: por eso vive
+ * aquí y no en cuanto carga la página.
+ */
+export async function arranque(){
+  if(introHecha) return;
+  introHecha = true;
+  if(introUrl && musicaOn && despertar()){
+    try{
+      const buf = await bufferDe(introUrl);
+      const gan = ctx.createGain();
+      gan.gain.value = CONFIG.sonido.volumenIntro;
+      gan.connect(ctx.destination);
+      const [ini, fin] = extremosFuertes(buf);
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      src.onended = () => empezarMusica();
+      src.connect(gan);
+      src.start(0, ini, Math.max(0.5, fin - ini));
+      return;
+    }catch(_){ /* a la fanfarria de código */ }
+  }
+  if(encendido && despertar()){
+    // el arpegio del agua que sube por la tubería, y su gota de brillo
+    tono(294, 294, 0.22, 'triangle', 0.4);
+    tono(370, 370, 0.22, 'triangle', 0.4, 0.13);
+    tono(440, 440, 0.22, 'triangle', 0.4, 0.26);
+    tono(587, 587, 0.55, 'triangle', 0.5, 0.4);
+    tono(1175, 1175, 0.55, 'sine', 0.2, 0.4);
+    golpe(1600, 0.5, 0.15, 'highpass', 0.45);
+    setTimeout(empezarMusica, 1000);
+  } else {
+    empezarMusica();
+  }
 }
 
 export function musicaActiva(){ return musicaOn; }

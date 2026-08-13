@@ -1281,10 +1281,14 @@ sonido.cargarVoz().then(hay => {
   rotularVoz();
 });
 sonido.cargarMusica().then(hay => {
-  if(!hay) return;
-  btnMusica.hidden = false;
-  rotularMusica();
-  const arrancar = () => sonido.empezarMusica();
+  if(hay){
+    btnMusica.hidden = false;
+    rotularMusica();
+  }
+  // El primer gesto (normalmente el botón de la portada) dispara el ARRANQUE:
+  // el jingle de la intro y, al acabar, la música barajada. Va FUERA del
+  // `if(hay)`: sin canciones, la fanfarria de código suena igual.
+  const arrancar = () => sonido.arranque();
   window.addEventListener('pointerdown', arrancar, { once: true });
   window.addEventListener('keydown', arrancar, { once: true });
 });

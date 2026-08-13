@@ -350,6 +350,22 @@ Y los tres trucos que evitan los tropiezos típicos:
   lluvia) y muy baja. Las piezas épicas u orquestales cansan en diez minutos de
   juego incremental; la de los juegos que recuerdas con cariño era modesta.
 
+**Varias canciones**: `musica2`, `musica3`, `musica4`... hasta el primer
+hueco. El juego las BARAJA — cada vuelta suena la lista entera en un orden
+nuevo, sin repetir nunca dos veces seguidas la misma.
+
+## El jingle de la portada (`intro.ogg`, `intro.mp3` o `intro.wav`)
+
+Lo primero que se oye al pulsar Empezar; al terminar entra la música. Sin
+archivo suena una fanfarria corta hecha por código, así que **es opcional**,
+pero un jingle tuyo remata la entrada. Al contrario que la música, aquí NO
+hace falta bucle — necesita FINAL, y claro:
+
+> Genera una fanfarria corta de videojuego retro estilo chiptune de 8 bits, de
+> unos seis segundos, luminosa y con aire de comienzo de aventura, que
+> termine resuelta con una nota final clara, sin voces, en la misma paleta
+> sonora que una música chiptune alegre y tranquila.
+
 ---
 
 # YACIMIENTOS Y ZONA PROTEGIDA — la tanda nueva
