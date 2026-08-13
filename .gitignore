@@ -4,3 +4,10 @@ assets/originales/
 
 # Accesos directos de Windows: se generan con crear_acceso_directo.bat
 *.lnk
+
+# Basura local que no pinta nada en un repo público
+__pycache__/
+.idea/
+
+# Ajustes locales de Claude Code (son de esta máquina)
+.claude/settings.local.json
