@@ -532,22 +532,37 @@ button{touch-action:manipulation;}
 }
 .aviso-flotante.visible{opacity:1; transform:translateX(-50%) translateY(0);}
 
+/* ---------- PANTALLA MEDIANA (portátil, y el marco de itch.io) ----------
+   La barra de arriba en UNA fila necesita ~1360px: la marca (175) + los ocho
+   números (8 × 96 = 768) + los botones (~346) + huecos. Por debajo de eso los
+   números NO caben... y no se envolvían solos, porque `.hud` es un flex sin
+   wrap cuyos hijos tienen ancho mínimo: se DESBORDABAN por la derecha y los
+   botones acababan pintados encima de Servicio, Cauce y Expansión.
+
+   Se detectó jugando en el marco de itch.io, que mide 960 de ancho — justo en
+   la franja que quedaba sin cubrir entre este corte y el de 900px. Ojo al
+   tocar los botones de la barra: si añades uno, este número sube. */
+@media(max-width:1400px){
+  .acciones{order:2; margin-left:auto;}
+  .hud{
+    order:3; flex:1 1 100%; min-width:0;
+    display:grid; grid-template-columns:repeat(8, 1fr);
+  }
+  .hud-item{min-width:0;}
+  .hud-item .v{white-space:nowrap;}
+}
+
 /* ---------- MÓVIL ---------- */
 /* ---------- PANTALLA ESTRECHA (tablet en vertical, móvil grande) ---------- */
 @media(max-width:900px){
   .cuerpo{flex-direction:column;}
   .lateral{width:100%; max-height:42vh; border:none; border-top:1px solid var(--linea);}
   .mapa{min-height:44vh;}
-  /* Con menos de 900px los ocho números ya no caben en una fila: el último
-     acababa debajo del botón Reiniciar. En rejilla caben TODOS, siempre. */
+  /* Con menos de 900px los ocho números ya no caben ni ocupando la fila
+     entera: se parten en dos filas de cuatro. (El corte de 1400px ya los bajó
+     a su propia fila; aquí solo se pasa de ocho columnas a cuatro.) */
   .superior{gap:6px 10px;}
-  .acciones{order:2; margin-left:auto;}
-  .hud{
-    order:3; flex:1 1 100%; min-width:0;
-    display:grid; grid-template-columns:repeat(4, 1fr);
-  }
-  .hud-item{min-width:0;}
-  .hud-item .v{white-space:nowrap;}
+  .hud{grid-template-columns:repeat(4, 1fr);}
 }
 
 /* ---------- MÓVIL ----------
