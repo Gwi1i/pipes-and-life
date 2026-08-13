@@ -426,34 +426,39 @@ export class MinijuegoTuberias {
   dibujarPieza(ctx, p, x, y, t, alfa){
     const cx = x + t / 2, cy = y + t / 2;
     const lados = this.conexiones(p);
-    const traza = (dx, dy, grosor, color) => {
+    // La punta de cada rama muere EN su brida, no en el borde de la celda:
+    // el corte recto queda tapado por la placa (petición del autor — el tubo
+    // seguía de largo y la pieza parecía no acabar en nada).
+    const punta = l => {
+      const [dx, dy] = [[0,-1],[1,0],[0,1],[-1,0]][l];
+      return [cx + dx * t * 0.40, cy + dy * t * 0.40];
+    };
+    const traza = (dx, dy, grosor, color, conEmpalme) => {
       ctx.save(); ctx.translate(dx, dy);
-      ctx.strokeStyle = color; ctx.lineWidth = grosor;
-      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      ctx.strokeStyle = color; ctx.fillStyle = color;
+      ctx.lineWidth = grosor; ctx.lineCap = 'butt';
       ctx.beginPath();
       for(const l of lados){
         ctx.moveTo(cx, cy);
-        ctx.lineTo(...this.medioDe(x, y, t, l));
+        ctx.lineTo(...punta(l));
       }
-      ctx.stroke(); ctx.restore();
+      ctx.stroke();
+      // el empalme del centro: el mismo tubo redondeado, para que el codo y
+      // la te no hagan muesca donde se juntan las ramas (sin tambor: el
+      // tambor de antes era un parche para tapar justo esto)
+      if(conEmpalme){
+        ctx.beginPath(); ctx.arc(cx, cy, grosor / 2, 0, 7); ctx.fill();
+      }
+      ctx.restore();
     };
     ctx.globalAlpha = alfa;
-    traza(t * 0.05, t * 0.07, t * 0.42, 'rgba(0,0,0,0.4)');   // sombra al barro
-    traza(0, 0, t * 0.46, '#141d26');                          // CONTORNO gordo
-    traza(0, 0, t * 0.34, '#8ea3b6');                          // el tubo, plano
-    traza(t * 0.035, t * 0.05, t * 0.13, '#5d7183');           // banda de sombra
-    traza(-t * 0.04, -t * 0.055, t * 0.12, '#cfe0ec');         // banda de luz
-    for(const lado of this.conexiones(p))
+    traza(t * 0.05, t * 0.07, t * 0.42, 'rgba(0,0,0,0.4)', true);  // sombra al barro
+    traza(0, 0, t * 0.46, '#141d26', true);                        // CONTORNO gordo
+    traza(0, 0, t * 0.34, '#8ea3b6', true);                        // el tubo, plano
+    traza(t * 0.035, t * 0.05, t * 0.13, '#5d7183', false);        // banda de sombra
+    traza(-t * 0.04, -t * 0.055, t * 0.12, '#cfe0ec', false);      // banda de luz
+    for(const lado of lados)
       this.dibujarBrida(ctx, x, y, t, lado);
-    // La abrazadera del centro: un tambor con su tornillo gordo
-    ctx.fillStyle = '#141d26';
-    ctx.beginPath(); ctx.arc(cx, cy, t * 0.20, 0, 7); ctx.fill();
-    ctx.fillStyle = '#7d94a6';
-    ctx.beginPath(); ctx.arc(cx, cy, t * 0.145, 0, 7); ctx.fill();
-    ctx.fillStyle = '#cfe0ec';
-    ctx.beginPath(); ctx.arc(cx - t * 0.05, cy - t * 0.055, t * 0.055, 0, 7); ctx.fill();
-    ctx.fillStyle = '#141d26';
-    ctx.beginPath(); ctx.arc(cx + t * 0.045, cy + t * 0.05, t * 0.035, 0, 7); ctx.fill();
     ctx.globalAlpha = 1;
   }
 
