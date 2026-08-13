@@ -613,58 +613,49 @@ export class MinijuegoReciclaje {
   dibujarMano(ctx, x, y, agarrando){
     ctx.save();
     ctx.translate(x, y);
-    ctx.scale(1.3, 1.3);          // que se vea: es el actor principal
-    ctx.lineJoin = 'round';
-    ctx.fillStyle = 'rgba(0,0,0,0.25)';
-    ctx.beginPath(); ctx.ellipse(4, 8, 15, 6, 0, 0, 7); ctx.fill();
-    const guante = '#e8edf2';
-    if(agarrando){
-      // el puño cerrado sobre lo agarrado
-      this.forma(ctx, guante, c => {
-        c.moveTo(-14, -4); c.quadraticCurveTo(-16, -16, -4, -18);
-        c.quadraticCurveTo(12, -20, 15, -8); c.quadraticCurveTo(17, 4, 6, 8);
-        c.quadraticCurveTo(-8, 11, -14, -4);
-      });
-      ctx.strokeStyle = '#9fb0c0'; ctx.lineWidth = 2.5;
-      ctx.beginPath();
-      for(const dx of [-6, 1, 8]){
-        ctx.moveTo(dx, -16); ctx.quadraticCurveTo(dx + 2, -10, dx, -5);
+    ctx.lineJoin = ctx.lineCap = 'round';
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.beginPath(); ctx.ellipse(2, 7, 11, 4.5, 0, 0, 7); ctx.fill();
+    const guante = '#e8edf2', tinta = '#141d26';
+
+    // La mano se arma con CÁPSULAS (trazos de punta redonda): primero todas
+    // las tintas, luego todos los rellenos — así la silueta es una sola y no
+    // hay aristas. Antes iba a polígono y quedaba tosca y demasiado grande.
+    const capsulas = agarrando
+      // el puño: la palma cerrada y el pulgar cruzado por delante
+      ? [[-4, -6, 4, -6, 15], [-7, 2, 5, 3, 7]]
+      // abierta: palma, cuatro dedos y el pulgar hacia fuera
+      : [[-5, 0, 5, 0, 13],
+         [-7, -1, -7, -10, 4.5], [-2.5, -2, -2.5, -13, 4.5],
+         [2, -2, 2, -12, 4.5], [6.5, -1, 6.5, -9, 4.5],
+         [-6, 2, -13, -2, 5]];
+    for(const margen of [4.5, 0]){
+      ctx.strokeStyle = margen ? tinta : guante;
+      for(const [x1, y1, x2, y2, g] of capsulas){
+        ctx.lineWidth = g + margen;
+        ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
       }
-      ctx.stroke();
-    } else {
-      // abierta, dedos arriba: "voy a por ese"
-      this.forma(ctx, guante, c => {
-        c.moveTo(-13, 4); c.lineTo(-13, -8);
-        for(const dx of [-13, -5, 3, 11]){
-          c.lineTo(dx, -20); c.quadraticCurveTo(dx + 4, -24, dx + 7, -19);
-          c.lineTo(dx + 7, -8);
-        }
-        c.quadraticCurveTo(18, 8, 2, 10); c.quadraticCurveTo(-10, 11, -13, 4);
-      });
-      // el pulgar
-      this.forma(ctx, guante, c => {
-        c.moveTo(-12, 0); c.quadraticCurveTo(-24, -4, -22, 4);
-        c.quadraticCurveTo(-20, 10, -10, 8);
-      });
-      // las costuras del dorso, que lo hacen GUANTE y no mano de nieve
-      ctx.strokeStyle = '#9fb0c0'; ctx.lineWidth = 1.6;
-      ctx.setLineDash([2.5, 2.5]);
-      ctx.beginPath();
-      ctx.moveTo(-9, 2); ctx.quadraticCurveTo(0, 5, 10, 0);
-      ctx.stroke();
-      ctx.setLineDash([]);
     }
-    // el puño del guante, amarillo de obra con su banda cosida
-    ctx.fillStyle = '#141d26';
-    ctx.fillRect(-11, 8, 28, 13);
+    // los pliegues: nudillos en el puño, separación de dedos en la abierta
+    ctx.strokeStyle = '#b7c4d0'; ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    if(agarrando){
+      for(const dx of [-4, 0.5, 5]){
+        ctx.moveTo(dx, -11); ctx.quadraticCurveTo(dx + 1.5, -7, dx, -4);
+      }
+    } else {
+      for(const dx of [-4.8, -0.3, 4.2]){
+        ctx.moveTo(dx, -3); ctx.lineTo(dx, -8);
+      }
+    }
+    ctx.stroke();
+    // el puño del guante, amarillo de obra
+    ctx.fillStyle = tinta;
+    ctx.beginPath(); ctx.roundRect(-9, 5, 19, 11, 2); ctx.fill();
     ctx.fillStyle = '#facc15';
-    ctx.fillRect(-9, 10, 24, 9);
+    ctx.beginPath(); ctx.roundRect(-7.5, 6.5, 16, 8, 1.5); ctx.fill();
     ctx.fillStyle = '#c9a20e';
-    ctx.fillRect(-9, 16, 24, 3);
-    ctx.strokeStyle = '#141d26'; ctx.lineWidth = 1.4;
-    ctx.setLineDash([2.5, 2.5]);
-    ctx.beginPath(); ctx.moveTo(-9, 12.5); ctx.lineTo(15, 12.5); ctx.stroke();
-    ctx.setLineDash([]);
+    ctx.fillRect(-7.5, 12.5, 16, 2);
     ctx.restore();
   }
 
