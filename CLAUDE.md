@@ -666,7 +666,10 @@ reintentos infinitos, la llave no tendría sentido.
 planta, "echar un turno" — agarrar cada residuo de la cinta y soltarlo en su
 contenedor, LOS DE VERDAD (amarillo envases, azul papel, verde vidrio, marrón
 orgánica). La lección escondida: el RESTO no se toca — dejarlo seguir hasta el
-vertedero ES lo correcto, porque no todo se recicla. El plantel son 24
+vertedero ES lo correcto, porque no todo se recicla. Esa regla se cuenta EN
+GRANDE antes de arrancar la cinta (el preludio: `preludioSegundos`, con los
+cuatro del resto dibujados y toque para saltar) — vivía en la letra pequeña
+del telón y no la leía nadie. El plantel son 24
 residuos CLAROS (regla del autor, que es del oficio: nada ambiguo — el zapato
 se retiró porque si sirve va a textil y si no a resto, y ese matiz no cabe en
 la cinta; los del resto enseñan: pañal, maceta de CERÁMICA —el error clásico

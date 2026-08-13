@@ -141,6 +141,7 @@ export class MinijuegoReciclaje {
     this.binAncho = 130; this.binAlto = 130;
 
     this.velocidad = K.velocidad;
+    this.preludio = K.preludioSegundos;   // la regla en pantalla, antes de nada
     this.porSalir = K.objetos;
     this.residuos = [];        // en la cinta: { def, x, y, balanceo }
     this.enMano = null;        // el agarrado: { def, x, y }
@@ -181,6 +182,11 @@ export class MinijuegoReciclaje {
     if(this.fin){
       this.fin.t += dt;
       if(this.fin.t > 1.6) this.terminar('fin');
+      return;
+    }
+    // Durante el preludio la cinta gira en vacío: se lee la regla y nada más
+    if(this.preludio > 0){
+      this.preludio -= dt;
       return;
     }
     const K = CONFIG.minijuegos.reciclaje;
@@ -234,6 +240,7 @@ export class MinijuegoReciclaje {
 
   /** ¿Hay un residuo bajo el dedo? Se agarra y deja la cinta. */
   agarrar(x, y){
+    if(this.preludio > 0){ this.preludio = 0; return; }   // toque: empezamos
     if(this.fin || this.enMano) return;
     for(let i = 0; i < this.residuos.length; i++){
       const res = this.residuos[i];
@@ -314,6 +321,31 @@ export class MinijuegoReciclaje {
     // cuando llevas algo. El cursor del sistema se esconde por CSS.
     if(this.manoDentro && !this.fin)
       this.dibujarMano(ctx, this.manoX, this.manoY, !!this.enMano);
+
+    // El PRELUDIO: la regla del resto en grande, con sus cuatro caras, antes
+    // de que salga el primer residuo. Es la lección del minijuego y en la
+    // letra pequeña del telón no la leía nadie (petición del autor).
+    if(this.preludio > 0 && !this.fin){
+      ctx.fillStyle = 'rgba(6,12,18,0.8)';
+      ctx.fillRect(0, 0, W, H);
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#f0a04a';
+      ctx.font = '700 26px "IBM Plex Mono", monospace';
+      ctx.fillText('NO TODO SE RECICLA', W / 2, 88);
+      ctx.fillStyle = '#dfe9f1';
+      ctx.font = '600 15px "IBM Plex Mono", monospace';
+      ctx.fillText('Cada residuo, a su contenedor.', W / 2, 126);
+      ctx.fillText('Pero estos cuatro NO tienen: ni los toques.', W / 2, 150);
+      ctx.fillText('Déjalos seguir hasta el vertedero — eso también puntúa.', W / 2, 174);
+      const resto = RESIDUOS.filter(d => d.frac === null);
+      resto.forEach((d, i) =>
+        this.dibujarResiduo(ctx, d, W / 2 + (i - 1.5) * 95, 250));
+      ctx.fillStyle = '#8aa0b4';
+      ctx.font = '600 13px "IBM Plex Mono", monospace';
+      ctx.fillText('toca para empezar — la cinta arranca en '
+                   + Math.ceil(this.preludio) + ' s', W / 2, 340);
+      ctx.textAlign = 'left';
+    }
 
     if(this.fin){
       const total = this.aciertos + this.fallos;

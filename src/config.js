@@ -430,6 +430,10 @@ export const CONFIG = {
        toca: dejarlo seguir hasta el vertedero ES lo correcto, que también en
        la planta real la lección es que no todo se recicla. */
     reciclaje: {
+      /* El preludio: la regla del RESTO contada en grande ANTES de que la
+         cinta arranque — es la lección del minijuego y en el telón no la
+         leía nadie. Un toque lo salta, para quien repite. */
+      preludioSegundos: 5,
       objetos: 18,             // residuos por turno
       velocidad: 55,           // píxeles por segundo de cinta, al empezar
       aceleracion: 1.06,       // cada residuo resuelto, la cinta se anima
