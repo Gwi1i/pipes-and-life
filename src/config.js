@@ -1424,7 +1424,7 @@ export const CONFIG = {
        nadie, ni siquiera en local. Igual que la música sin archivos.
      - Se respeta «No rastrear» del navegador, sin discusión. */
   analitica: {
-    codigo: null,       // el subdominio de tu cuenta ('pipesandlife') o null
+    codigo: 'gwi',      // el subdominio de la cuenta del autor; null lo apaga
     servidor: 'goatcounter.com',
     // El contador de días vive en su propia clave, fuera del guardado: tiene
     // que sobrevivir al botón Reiniciar (si no, cada reinicio parece un
