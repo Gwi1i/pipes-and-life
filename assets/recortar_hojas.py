@@ -249,9 +249,37 @@ for i, nombre in enumerate(ORDEN_CONT):
     corte.save(os.path.join(ASSETS, f'cont_{nombre}.png'))
     print('cont_' + nombre)
 
+# ---- LA HOJA DEL CAMIÓN (5x2, OPCIONAL): el minijuego de la ruta ----
+# Fila 1: el camión cenital (caja NEUTRA: las tapas de color las pinta el
+# juego) y cuatro coches. Fila 2: los cinco contenedores cenitales en el
+# orden de las fracciones. Si la hoja aún no está, se salta sin drama.
+ORDEN_CAM = ['camion', 'coche1', 'coche2', 'coche3', 'coche4',
+             'cont_resto', 'cont_envases', 'cont_organica',
+             'cont_papel', 'cont_vidrio']
+try:
+    ruta_cam = hoja_donde_este('camion_hoja.png')
+except SystemExit:
+    ruta_cam = None
+    print('camion_hoja.png: aún no está — se salta')
+if ruta_cam:
+    hoja3 = Image.open(ruta_cam)
+    cw, ch = hoja3.width // 5, hoja3.height // 2
+    m = int(cw * 0.02)
+    for i, nombre in enumerate(ORDEN_CAM):
+        cx, cy = (i % 5) * cw, (i // 5) * ch
+        celda = hoja3.crop((cx + m, cy + m, cx + cw - m, cy + ch - m))
+        corte = cortar_fondo(celda, solo_mayor=True, min_frac=0)
+        corte = bbox_con_margen(corte, 6)
+        alto = 256
+        ancho = round(alto * corte.width / corte.height)
+        corte = corte.resize((ancho, alto), Image.LANCZOS)
+        corte.save(os.path.join(ASSETS, f'cam_{nombre}.png'))
+        print('cam_' + nombre)
+
 # ---- los originales, a su carpeta, como hace el optimizador ----
 os.makedirs(ORIG, exist_ok=True)
-for f in ['residuos_hoja.png', 'contenedores_hoja.png', 'contenedores_hoja2.png']:
+for f in ['residuos_hoja.png', 'contenedores_hoja.png', 'contenedores_hoja2.png',
+          'camion_hoja.png']:
     origen = os.path.join(ASSETS, f)
     if os.path.exists(origen):
         destino = os.path.join(ORIG, f)

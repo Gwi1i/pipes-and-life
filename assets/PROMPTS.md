@@ -329,6 +329,46 @@ se pelearían.
 
 ---
 
+# LA HOJA DEL CAMIÓN (`camion_hoja.png`)
+
+Los sprites CENITALES del minijuego de la ruta: el camión, cuatro coches y
+los cinco contenedores, todos vistos desde arriba. `recortar_hojas.py` la
+parte en 10 sprites (`cam_*.png`) y les quita el fondo; sin hoja, todo
+sigue dibujado por código.
+
+Tres reglas que importan:
+
+- **La caja del camión, NEUTRA** (gris oscuro, sin colores): las tapas de
+  las fracciones del día las pinta el juego encima — son la mecánica. La
+  cabina arriba (el camión "mira" hacia arriba) y la caja ocupando los dos
+  tercios de abajo.
+- **Los coches mirando hacia ABAJO** (vienen de frente): se les ve el capó
+  y el parabrisas delantero en la parte baja. Cuatro coches distintos de
+  colores distintos, turismos normales de pueblo.
+- **Los contenedores con la tapa CERRADA y lisa**: las bolsas del lleno y
+  la rendija del a-medias las pinta el juego encima. El orden es sagrado:
+  **gris (resto), amarillo (envases), marrón (orgánica), azul (papel),
+  verde (vidrio)**.
+
+Cuadrícula 5×2 sobre fondo liso de un color que no aparezca en los dibujos
+(el lila de siempre va bien), **sin textos y sin sombras arrojadas** — la
+sombra la pinta el juego. Tras generarla: `py assets/recortar_hojas.py`.
+
+### `camion_hoja.png`
+> Genera una imagen: hoja de sprites en cuadrícula de 5 columnas por 2
+> filas sobre fondo lila liso uniforme, estilo cartoon de videojuego con
+> contorno grueso y colores planos, todos los objetos VISTOS DESDE ARRIBA
+> (vista cenital pura). Fila superior: un camión de recogida de basuras
+> con la cabina blanca hacia arriba y la caja trasera gris oscuro NEUTRA
+> sin colores, y cuatro turismos distintos (rojo, blanco, azul, verde
+> oliva) mirando hacia abajo con el parabrisas delantero en su parte baja.
+> Fila inferior: cinco contenedores de basura de calle con ruedas, con la
+> tapa cerrada y lisa vista desde arriba, en este orden: gris, amarillo,
+> marrón, azul, verde. Sin textos, sin sombras arrojadas, cada objeto
+> centrado en su casilla, *(+ coletilla)*
+
+---
+
 # LOS CONTENEDORES DE LA LÍNEA (`contenedores_hoja.png`)
 
 Los cuatro contenedores de calle del minijuego, ilustrados para que casen con

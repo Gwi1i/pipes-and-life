@@ -44,6 +44,21 @@ const rotulo = id => ({
 
 const COLORES_COCHE = ['#d64545', '#e8e8e8', '#4a6fa5', '#3d3d46', '#7fa06a'];
 
+/* Los sprites del autor (assets/cam_*.png, de camion_hoja.png pasada por
+   recortar_hojas.py): si existen mandan y si no, el dibujo por código — el
+   reparto de siempre. Lo que SIGNIFICA algo lo pinta el juego encima
+   SIEMPRE: las tapas del día sobre el camión y el estado (las bolsas del
+   lleno, la rendija del a-medias) sobre los contenedores. */
+const SPRITES = {};
+for(const clave of ['camion', 'coche1', 'coche2', 'coche3', 'coche4',
+                    'cont_resto', 'cont_envases', 'cont_organica',
+                    'cont_papel', 'cont_vidrio']){
+  const img = new Image();
+  img.src = `assets/cam_${clave}.png`;
+  SPRITES[clave] = img;   // si 404, naturalWidth queda a 0 y no se usa
+}
+const conSprite = clave => SPRITES[clave] && SPRITES[clave].naturalWidth > 0;
+
 export class MinijuegoCamion {
 
   constructor(){
@@ -201,6 +216,7 @@ export class MinijuegoCamion {
       if(!this.items.some(o => o.y < 40 && Math.abs(o.x - x) < 70))
         this.items.push({ tipo: 'coche', x, y: -60,
                           color: COLORES_COCHE[Math.floor(Math.random() * COLORES_COCHE.length)],
+                          variante: 1 + Math.floor(Math.random() * 4),
                           chocado: false });
     }
 
@@ -382,19 +398,22 @@ export class MinijuegoCamion {
     ctx.fillStyle = '#131e2a';
     ctx.fillRect(0, 0, vi - 26, H);
     ctx.fillRect(vd + 26, 0, W - vd - 26, H);
+    // OJO al sentido: todo el decorado tiene que BAJAR con el mundo (screen
+    // y = avance − posición fija). La primera versión lo subía y el camión
+    // parecía ir marcha atrás — lo cazó el autor a la primera.
     const casa = (x0, ancho) => {
-      for(let i = Math.floor(this.avance / 130) - 1; i < (this.avance + H) / 130 + 1; i++){
-        const yy = i * 130 - this.avance;
-        if(yy < -140 || yy > H) continue;
-        ctx.fillStyle = (i % 2) ? '#182534' : '#152130';
+      for(let j = Math.floor((this.avance - H) / 130) - 1; j < this.avance / 130 + 1; j++){
+        const yy = this.avance - j * 130;
+        if(yy < -140 || yy > H + 20) continue;
+        ctx.fillStyle = (j % 2) ? '#182534' : '#152130';
         ctx.fillRect(x0, yy, ancho, 116);
         ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = 3;
         ctx.beginPath();
         ctx.moveTo(x0 + ancho / 2, yy + 4); ctx.lineTo(x0 + ancho / 2, yy + 112);
         ctx.stroke();
-        if((i * 13) % 4 === 0){
+        if(((j % 4) + 4) % 4 === 0){
           ctx.fillStyle = 'rgba(240,200,90,0.5)';
-          ctx.fillRect(x0 + 12 + (i * 29) % (ancho - 40), yy + 24, 12, 12);
+          ctx.fillRect(x0 + 12 + (((j * 29) % (ancho - 40)) + ancho - 40) % (ancho - 40), yy + 24, 12, 12);
         }
       }
     };
@@ -404,8 +423,9 @@ export class MinijuegoCamion {
     ctx.fillStyle = '#26313d';
     ctx.fillRect(vi - 26, 0, 26, H);
     ctx.fillRect(vd, 0, 26, H);
-    for(let i = Math.floor(this.avance / 200); i < (this.avance + H) / 200 + 1; i++){
-      const y = i * 200 - this.avance;
+    for(let j = Math.floor((this.avance - H) / 200) - 1; j < this.avance / 200 + 1; j++){
+      const y = this.avance - j * 200;
+      if(y < -70 || y > H + 70) continue;
       for(const lx of [vi - 13, vd + 13]){
         const luz = ctx.createRadialGradient(lx, y, 2, lx, y, 60);
         luz.addColorStop(0, 'rgba(240,200,90,0.30)');
@@ -420,7 +440,7 @@ export class MinijuegoCamion {
     ctx.fillStyle = '#1a232e';
     ctx.fillRect(vi, 0, vd - vi, H);
     ctx.fillStyle = 'rgba(230,235,240,0.22)';
-    for(let y = -((this.avance) % 64); y < H; y += 64)
+    for(let y = (this.avance % 64) - 64; y < H; y += 64)
       ctx.fillRect(W / 2 - 3, y, 6, 30);
     ctx.strokeStyle = 'rgba(230,235,240,0.18)'; ctx.lineWidth = 3;
     ctx.beginPath();
@@ -440,15 +460,22 @@ export class MinijuegoCamion {
     ctx.lineJoin = 'round';
     ctx.fillStyle = 'rgba(0,0,0,0.35)';
     ctx.beginPath(); ctx.ellipse(3, 4, 22, 20, 0, 0, 7); ctx.fill();
-    // el cuerpo (el canto que asoma) y la tapa
-    ctx.fillStyle = '#141d26';
-    ctx.beginPath(); ctx.roundRect(-21, -21, 42, 42, 7); ctx.fill();
-    ctx.fillStyle = this.oscurecerColor(c.frac.color, 0.62);
-    ctx.beginPath(); ctx.roundRect(-18, -18, 36, 36, 5); ctx.fill();
-    ctx.fillStyle = c.frac.color;
-    ctx.beginPath(); ctx.roundRect(-16, -16, 32, 30, 4); ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,0.25)';
-    ctx.fillRect(-13, -13, 26, 5);
+    const spr = SPRITES['cont_' + c.frac.id];
+    if(spr && spr.naturalWidth > 0){
+      // la lámina del autor, encajada en la caja del contenedor (~44px)
+      const alto = 44, ancho = alto * (spr.naturalWidth / spr.naturalHeight);
+      ctx.drawImage(spr, -ancho / 2, -22, ancho, alto);
+    } else {
+      // el cuerpo (el canto que asoma) y la tapa
+      ctx.fillStyle = '#141d26';
+      ctx.beginPath(); ctx.roundRect(-21, -21, 42, 42, 7); ctx.fill();
+      ctx.fillStyle = this.oscurecerColor(c.frac.color, 0.62);
+      ctx.beginPath(); ctx.roundRect(-18, -18, 36, 36, 5); ctx.fill();
+      ctx.fillStyle = c.frac.color;
+      ctx.beginPath(); ctx.roundRect(-16, -16, 32, 30, 4); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.25)';
+      ctx.fillRect(-13, -13, 26, 5);
+    }
     if(c.estadoC === 'lleno'){
       // las bolsas encima: esto ES "lleno", visible desde un tejado
       ctx.fillStyle = '#141d26';
@@ -463,8 +490,8 @@ export class MinijuegoCamion {
       // la rendija: tapa entreabierta, se ve lo oscuro de dentro
       ctx.fillStyle = '#0c151d';
       ctx.beginPath(); ctx.roundRect(-13, 2, 26, 8, 3); ctx.fill();
-    } else {
-      // vacío: tapa lisa, solo el asa
+    } else if(!(spr && spr.naturalWidth > 0)){
+      // vacío: tapa lisa, solo el asa (la lámina ya trae la suya)
       ctx.fillStyle = 'rgba(0,0,0,0.3)';
       ctx.beginPath(); ctx.roundRect(-9, -3, 18, 6, 3); ctx.fill();
     }
@@ -485,6 +512,13 @@ export class MinijuegoCamion {
     ctx.fill();
     ctx.fillStyle = 'rgba(0,0,0,0.35)';
     ctx.beginPath(); ctx.ellipse(3, 4, 20, 28, 0, 0, 7); ctx.fill();
+    const spr = SPRITES['coche' + (o.variante || 1)];
+    if(spr && spr.naturalWidth > 0){
+      const alto = 62, ancho = alto * (spr.naturalWidth / spr.naturalHeight);
+      ctx.drawImage(spr, -ancho / 2, -31, ancho, alto);
+      ctx.restore();
+      return;
+    }
     ctx.lineJoin = 'round';
     ctx.fillStyle = '#141d26';
     ctx.beginPath(); ctx.roundRect(-17, -29, 34, 58, 9); ctx.fill();
@@ -524,6 +558,30 @@ export class MinijuegoCamion {
     ctx.fillStyle = 'rgba(0,0,0,0.4)';
     ctx.beginPath(); ctx.ellipse(4, 6, 28, 48, 0, 0, 7); ctx.fill();
     ctx.lineJoin = 'round';
+    const nHoy = this.hoy.length;
+    if(conSprite('camion')){
+      // La lámina del autor pone la carrocería; las TAPAS del día las pinta
+      // el juego encima igualmente — son mecánica, no chapa.
+      const spr = SPRITES.camion;
+      const alto = 100, ancho = alto * (spr.naturalWidth / spr.naturalHeight);
+      ctx.drawImage(spr, -ancho / 2, -50, ancho, alto);
+      this.hoy.forEach((f, i) => {
+        ctx.fillStyle = golpeado ? '#8a4444' : this.oscurecerColor(f.color, 0.85);
+        const alto2 = 52 / nHoy;
+        ctx.globalAlpha = 0.92;
+        ctx.beginPath();
+        ctx.roundRect(-17, -8 + i * (alto2 + 2), 34, alto2 - 2, 4); ctx.fill();
+        ctx.globalAlpha = 1;
+      });
+      if(golpeado){
+        ctx.fillStyle = 'rgba(240,90,74,0.35)';
+        ctx.beginPath(); ctx.roundRect(-25, -50, 50, 100, 8); ctx.fill();
+      }
+      ctx.fillStyle = (Math.floor(this.reloj * 4) % 2) ? '#f0a04a' : '#c97b2e';
+      ctx.beginPath(); ctx.arc(0, -38, 4.5, 0, 7); ctx.fill();
+      ctx.restore();
+      return;
+    }
     // el chasis
     ctx.fillStyle = '#141d26';
     ctx.beginPath(); ctx.roundRect(-25, -48, 50, 96, 8); ctx.fill();
@@ -535,7 +593,6 @@ export class MinijuegoCamion {
     ctx.fillStyle = (Math.floor(this.reloj * 4) % 2) ? '#f0a04a' : '#c97b2e';
     ctx.beginPath(); ctx.arc(0, -36, 4.5, 0, 7); ctx.fill();
     // LA CAJA: las tapas del día — una, o dos con su nervio
-    const nHoy = this.hoy.length;
     this.hoy.forEach((f, i) => {
       ctx.fillStyle = golpeado ? '#8a4444' : this.oscurecerColor(f.color, 0.85);
       const alto = 58 / nHoy;
