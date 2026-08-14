@@ -842,18 +842,19 @@ reciclado sube según puntería (`factorTurnoReciclaje`, multiplica
 guarda, y no hay segundo turno hasta que venza el bono.
 
 3. LA RUTA DEL CAMIÓN (`minijuego_camion.js`): desde la ficha del VERTEDERO,
-"sacar la ruta" — la recogida trasera de madrugada, que es la de los pueblos
-pequeños en la casa del autor (Mancomunidad de Montejurra). El camión avanza
-por una calle con las flechas (o los botonazos ◀ ▶: nada de arrastrar, que
-conducir con el dedo era lo delicado — la decisión es DÓNDE PARAR, y pararse
-es un toque) y la cuadrilla iza solo los contenedores junto a los que te
-detienes. Solo puntúan los LLENOS de las fracciones del día — pararse en uno
-a medias, vacío o de otra fracción es parada en balde — y hay jornadas DOBLES
-con camión bicompartimentado (dos fracciones en una sola ruta, sin mezclar:
-el dato es real y de la empresa del autor). El reloj de la jornada manda y la
-calle acaba en el vertedero. Premio: `estado.rutaCamion` (se guarda) sube
-`capacidadRecogida()` según puntería durante `horasBonus`; sin bono vencido
-no hay segunda ruta. Números en `CONFIG.minijuegos.camion`.
+"sacar la ruta". VISTA CENITAL, diseño del autor (hubo una versión lateral
+de "parar junto al contenedor" que se sustituyó entera a petición suya): el
+camión va abajo y se mueve a los lados con las flechas o dos botonazos ◀ ▶
+—nada de arrastrar, que conducir con el dedo era lo delicado—, y la calle
+baja hacia él con contenedores y TRÁFICO. Se recoge PASANDO POR ENCIMA, y
+solo puntúan los LLENOS (se les ven las bolsas) de las fracciones del día:
+llevarse uno vacío, a medias o de otra fracción es recogida en balde, y un
+coche te deja clavado (`aturdimientoSegundos`) con la jornada corriendo.
+Jornadas DOBLES con camión bicompartimentado — dos tapas pintadas, dos
+fracciones en una sola ruta sin mezclar: el dato es real y de la casa del
+autor (Mancomunidad de Montejurra). Premio: `estado.rutaCamion` (se guarda)
+sube `capacidadRecogida()` según puntería durante `horasBonus`; sin bono
+vencido no hay segunda ruta. Números en `CONFIG.minijuegos.camion`.
 
 **Averías: tienen SITIO en el mapa.** Viven en `estado.averias`
 (`{col, fila, clics, desde}`) y son de la mancomunidad, no de un pueblo. Caen

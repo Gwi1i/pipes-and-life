@@ -181,12 +181,7 @@ export function seco(){
   tono(220, 110, 0.35, 'sine', 0.24);
 }
 
-/** La marcha atrás del camión: el pitido reglamentario, en pequeñito. */
-export function retro(){
-  tono(950, 950, 0.09, 'square', 0.08);
-}
-
-/** El bocinazo del camión: esa parada no tocaba. */
+/** El bocinazo del camión: esa recogida no tocaba (o te has dado). */
 export function bocina(){
   tono(345, 330, 0.22, 'square', 0.16);
   tono(230, 220, 0.22, 'square', 0.12);

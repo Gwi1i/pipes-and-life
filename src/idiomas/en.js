@@ -655,11 +655,11 @@ export const EN = {
 
     '#minijuego3 .mini-titulo': 'The truck route',
     '#mini3-cancelar': 'Give up',
-    '#minijuego3 .mini-desc': 'Drive the truck with the <b>arrow keys</b> (or ' +
-      'the ◀ ▶ buttons) and <b>stop</b> next to the <b>full</b> containers of ' +
-      'the day’s fractions: the crew lifts them on its own. Stopping at the ' +
-      'wrong one wastes the shift, and the clock rules. The street ends at ' +
-      'the landfill.',
+    '#minijuego3 .mini-desc': 'Steer the truck with the <b>arrow keys</b> (or ' +
+      'the ◀ ▶ buttons) and <b>collect</b> by driving over the <b>full</b> ' +
+      'containers of the day’s fractions. Dodge the empty ones, the wrong ' +
+      'fractions... and the traffic: a crash pins you down while the shift ' +
+      'clock keeps running.',
     '#minijuego2 .mini-desc': '<b>Grab</b> each item off the belt and ' +
       '<b>drop</b> it into its container. But not everything recycles: ' +
       'what has no container — the tied bag, the nappy, the plant pot, the ' +
@@ -1308,16 +1308,15 @@ export const EN = {
     'ORGÁNICA': 'ORGANIC',
     'PAPEL': 'PAPER',
     'VIDRIO': 'GLASS',
-    'VERTEDERO': 'LANDFILL',
     'LA RUTA DEL DÍA': 'TODAY’S ROUTE',
     'Solo se recogen los contenedores LLENOS de:': 'Only FULL containers of these get collected:',
     'Camión de DOBLE COMPARTIMENTO: dos fracciones': 'A DUAL-COMPARTMENT truck: two fractions',
     'en una sola ruta, sin mezclarse. Así se sirve': 'in a single route, never mixing. That is how',
     'a los pueblos pequeños sin doblar viajes.': 'small towns get served without doubling trips.',
-    'Párate junto a un contenedor y la cuadrilla lo iza.':
-      'Stop next to a container and the crew lifts it.',
-    'Pararse donde no toca gasta jornada — y el reloj manda.':
-      'Stopping at the wrong one wastes the shift — and the clock rules.',
+    'Recoge pasando por encima. Esquiva los vacíos, los de':
+      'Collect by driving over them. Dodge the empty ones, the',
+    'otra fracción... y el tráfico: un golpe te deja clavado.':
+      'wrong fractions... and the traffic: a crash pins you down.',
     'flechas o botones ◀ ▶ · toca para salir ya — arrancas en {0} s':
       'arrow keys or ◀ ▶ buttons · tap to leave now — you roll out in {0} s',
     'quedan {0}': '{0} to go',
@@ -1326,7 +1325,7 @@ export const EN = {
     'vacío': 'empty',
     'FIN DE LA JORNADA': 'END OF THE SHIFT',
     '{0} de {1} contenedores recogidos': '{0} of {1} containers collected',
-    '{0} paradas en balde': '{0} wasted stops',
+    '{0} recogidas en balde · {1} golpes': '{0} wasted pickups · {1} crashes',
     'Ensayo: {0} de {1} contenedores recogidos.': 'Practice run: {0} of {1} containers collected.',
     'La ruta ya está echada: espera a que venza el bono.':
       'The route is already done: wait for the bonus to run out.',

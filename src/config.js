@@ -455,22 +455,27 @@ export const CONFIG = {
       bonusMax: 0.5,           // +50% de precio de venta con puntería perfecta
       horasBonus: 48           // dos días de juego de turno bien hecho
     },
-    /* LA RUTA DEL CAMIÓN: la recogida trasera vista desde la calle, que es
-       la de los pueblos pequeños en la casa del autor — con camiones de
-       DOBLE COMPARTIMENTO que levantan dos fracciones en una sola ruta.
-       Solo puntúan los contenedores LLENOS de las fracciones del día;
-       pararse donde no toca gasta jornada. El premio (desde el vertedero;
-       el taller no premia) sube la eficiencia de recogida una temporada. */
+    /* LA RUTA DEL CAMIÓN: la recogida vista desde arriba (diseño del autor).
+       El camión va abajo y se mueve a los lados; la calle baja hacia él con
+       contenedores y TRÁFICO. Se recoge pasando por encima, y solo puntúan
+       los LLENOS de las fracciones del día — llevarse uno vacío, a medias o
+       de otra fracción es viaje en balde, y un coche te deja clavado. Hay
+       jornadas DOBLES con camión bicompartimentado, como en la casa del
+       autor. El premio (desde el vertedero; el taller no premia) sube la
+       eficiencia de recogida una temporada. */
     camion: {
-      preludioSegundos: 6,     // la ruta del día en grande, antes de arrancar
-      contenedores: 14,        // contenedores sembrados en la calle
-      jornadaSegundos: 45,     // el reloj: la calle no se recorre dos veces
-      velocidad: 175,          // píxeles por segundo del camión a fondo
-      velocidadAtras: 85,      // la marcha atrás, más corta y pitando
-      segundosVaciado: 0.9,    // lo que tarda el volquete en izar un cubo
-      probLleno: 0.5,          // cuántos contenedores están para recoger
-      probDoble: 0.5,          // jornadas de camión bicompartimentado
-      bonusMax: 0.35,          // +35% de recogida con jornada perfecta
+      preludioSegundos: 6,       // la ruta del día en grande, antes de arrancar
+      contenedores: 18,          // contenedores que bajan en la jornada
+      jornadaSegundos: 50,       // el reloj de la jornada
+      velocidadBajada: 150,      // píxeles por segundo a los que baja la calle
+      velocidadLateral: 330,     // lo que corre el camión a los lados
+      separacion: 130,           // píxeles de calle entre contenedor y contenedor
+      cochesCadaSegundos: 3.2,   // cada cuánto asoma un coche (con azar encima)
+      velocidadCocheExtra: 105,  // lo que el coche baja MÁS que la calle
+      aturdimientoSegundos: 1.4, // lo que un golpe te deja clavado
+      probLleno: 0.5,            // cuántos contenedores están para recoger
+      probDoble: 0.5,            // jornadas de camión bicompartimentado
+      bonusMax: 0.35,            // +35% de recogida con jornada perfecta
       horasBonus: 48
     }
   },
