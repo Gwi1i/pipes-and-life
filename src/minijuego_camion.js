@@ -105,7 +105,7 @@ export class MinijuegoCamion {
 
   /** ¿Qué botón de pantalla cae bajo ese punto? Zonas anchas: son para dedos. */
   botonEn(x, y){
-    if(y < this.lienzo.height - 96) return null;
+    if(y < this.lienzo.height - (this.altoBoton || 64) - 32) return null;
     if(x < this.lienzo.width * 0.38) return 'izq';
     if(x > this.lienzo.width * 0.62) return 'der';
     return null;
@@ -160,6 +160,15 @@ export class MinijuegoCamion {
     this.fin = null;
 
     this.fondo.hidden = false;
+    // El dedo no es un puntero: si el lienzo se ve encogido (móvil), los
+    // botonazos CRECEN para que su alto real no baje de lo tocable (~45px).
+    // Se mide con el telón ya visible, que antes el rect mide cero.
+    const rect = this.lienzo.getBoundingClientRect();
+    const escala = rect.width > 0 ? rect.width / this.lienzo.width : 1;
+    this.altoBoton = escala < 0.7 ? 100 : 64;
+    // Y el camión sube lo justo para no quedar detrás de los botones
+    this.camion.y = this.lienzo.height - this.altoBoton - 88;
+
     this._ultimo = performance.now();
     const paso = (ahora) => {
       if(this.fondo.hidden) return;
@@ -617,16 +626,17 @@ export class MinijuegoCamion {
 
   /** Los dos botonazos del dedo. En teclado también valen las flechas. */
   dibujarBotones(ctx, W, H){
-    const y = H - 84;
+    const alto = this.altoBoton || 64;
+    const y = H - alto - 20;
     const boton = (x, w, txt, activo) => {
       ctx.fillStyle = activo ? 'rgba(56,189,248,0.28)' : 'rgba(20,29,38,0.72)';
-      ctx.beginPath(); ctx.roundRect(x, y, w, 64, 12); ctx.fill();
+      ctx.beginPath(); ctx.roundRect(x, y, w, alto, 12); ctx.fill();
       ctx.strokeStyle = 'rgba(198,212,224,0.35)'; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.roundRect(x, y, w, 64, 12); ctx.stroke();
+      ctx.beginPath(); ctx.roundRect(x, y, w, alto, 12); ctx.stroke();
       ctx.fillStyle = '#dfe9f1';
-      ctx.font = '700 30px "IBM Plex Mono", monospace';
+      ctx.font = `700 ${alto > 64 ? 40 : 30}px "IBM Plex Mono", monospace`;
       ctx.textAlign = 'center';
-      ctx.fillText(txt, x + w / 2, y + 42);
+      ctx.fillText(txt, x + w / 2, y + alto / 2 + 12);
       ctx.textAlign = 'left';
     };
     const izq = this.teclas.ArrowLeft || this.teclas.KeyA || this.pulsado === 'izq';
