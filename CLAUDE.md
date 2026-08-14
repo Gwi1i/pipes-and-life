@@ -647,6 +647,29 @@ oscura que los ayudantes isométricos (isoCaja, isoCilindro, isoTejado) trazan
 alrededor de cada pieza — el mismo lenguaje que los minijuegos y los
 residuos. A 0 se apaga.
 
+**El agua BRUTA se potabiliza, o frena.** La POTABILIZADORA (ETAP) es pieza
+de la red de abastecimiento. `aguaBrutaLh()` dice cuánta agua necesita
+tratamiento: TODA la superficial (un río limpio no es un río potable) más la
+de pozos sobre masas por debajo de `umbralMerma` (al bajar el nivel se
+concentran las partículas por millón — lo trajo el autor, que es del oficio).
+`capacidadPotabilizacion()` es lo que las ETAP conectadas tratan; el déficit
+FRENA el crecimiento (`calidad.penalizacionBruta`, como el cauce sucio y la
+basura: frena, no mata). El aviso vive en `avisosRed` y en un comentario de
+Manuel — el freno era silencioso y sin contarlo el jugador ve el pueblo
+estancado sin saber por qué. En el mapa, la ETAP son balsas RECTANGULARES
+(cuadrado = beber; círculo = devolver, que es la depuradora). Medido: la ETAP
+temprana retrasa fase 2 de 58 a 69 min — es el precio de la decisión, no un
+error de calibrado.
+
+**El clic tiene dos límites** (`CONFIG.bombeo`): con el depósito LLENO cada
+golpe se DERRAMA y ensucia el cauce un poco (`contaminacionPorDesborde`, lo
+aplica `bombear()` en simulacion; main le pone cara: sin destello, sonido
+seco y un aviso la primera vez). Y hay TOPE DE RITMO
+(`maxClicsPorSegundo`): más clics de los que da una mano se ignoran. NO es un
+detector de autoclickers — en un juego que corre entero en el navegador del
+jugador no se puede detectar de verdad, y perseguirlos castigaría a los
+rápidos legítimos —: los vuelve INÚTILES, que es mejor que prohibirlos.
+
 **El mapa y el abastecimiento son UN SOLO bucle.** `poderExpansion(estado)` sale
 de la población, el nivel de servicio, el desgaste y las averías, y DIVIDE el
 coste en clics de destapar casillas (`clicsParaDestapar`). Es lo que impide que

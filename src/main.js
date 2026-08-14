@@ -114,6 +114,41 @@ let multaZECAvisada = false;   // para anunciar la multa solo al empezar
    ACCIONES
    ================================================================== */
 
+/**
+ * EL GOLPE DE BOMBA, con sus dos límites (petición del autor):
+ * - TOPE DE RITMO: más clics por segundo de los que da una mano se ignoran
+ *   sin ruido. No detecta autoclickers —en un juego que corre entero en tu
+ *   navegador no se puede—: los vuelve inútiles, que es mejor.
+ * - DESBORDE: con el depósito lleno el agua se tira y ensucia el cauce (eso
+ *   lo hace `bombear` en simulacion). Aquí se le pone cara: sin destello ni
+ *   gota — un clic que no sirve no debe sonar a que sirve — y el primer
+ *   desborde se explica una vez.
+ */
+let clicsBombeo = [];
+let desbordeAvisado = false;
+function golpeDeBomba(px, py){
+  const ahora = performance.now();
+  clicsBombeo = clicsBombeo.filter(x => ahora - x < 1000);
+  if(clicsBombeo.length >= CONFIG.bombeo.maxClicsPorSegundo) return;
+  clicsBombeo.push(ahora);
+
+  const entro = bombear(estado.activo, estado);
+  if(entro <= 0.001){
+    if(!desbordeAvisado){
+      desbordeAvisado = true;
+      avisar('¡El depósito está LLENO! Cada golpe de más se derrama... y lo derramado acaba en el cauce.');
+      estado.anotar('Bombeo con el depósito lleno: el agua sobrante se derrama al cauce.', 'alarma');
+    }
+    sonido.seco();
+    return;
+  }
+  escena.destello(px, py);
+  // Que la caseta de bombeo acuse el clic: hasta ahora bombear solo movía
+  // números y la pieza del mapa se quedaba igual.
+  escena.golpeBomba();
+  sonido.bombear();
+}
+
 function procesarAcciones(){
   for(const a of entrada.vaciarAcciones()){
     switch(a.tipo){
@@ -123,12 +158,7 @@ function procesarAcciones(){
         const O = CONFIG.mapaMundo, t = escena.tam;
         const px = a.x != null ? a.x : O.origen.col * t - estado.camara.x + t / 2;
         const py = a.y != null ? a.y : O.origen.fila * t - estado.camara.y + t / 2;
-        bombear(estado.activo, estado);
-        escena.destello(px, py);
-        // Que la caseta de bombeo acuse el clic: hasta ahora bombear solo movía
-        // números y la pieza del mapa se quedaba igual.
-        escena.golpeBomba();
-        sonido.bombear();
+        golpeDeBomba(px, py);
         break;
       }
 
@@ -386,10 +416,7 @@ function procesarAcciones(){
           // enseñaba nada. Ahora tiene ficha (nombre, estampa, datos) y
           // esconderla era el fallo que el autor encontró jugando.
           estado.seleccion = { col, fila };
-          bombear(estado.activo, estado);
-          escena.destello(a.x, a.y);
-          escena.golpeBomba();
-          sonido.bombear();
+          golpeDeBomba(a.x, a.y);
           break;
         }
 

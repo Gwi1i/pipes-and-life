@@ -262,7 +262,15 @@ export const CONFIG = {
   /* ---------- CALIDAD DEL PUEBLO ----------
      Multiplica el crecimiento: un pueblo con buen saneamiento crece mejor. */
   calidad: {
-    base: 1.0, bonusTanque: 0.10, bonusPluviales: 0.05, max: 1.6
+    base: 1.0, bonusTanque: 0.10, bonusPluviales: 0.05, max: 1.6,
+    /* AGUA SIN POTABILIZAR (petición del autor, que es del oficio): la
+       superficial SIEMPRE necesita tratamiento —un río limpio no es un río
+       potable— y los pozos sobre masas sobreexplotadas también, porque al
+       bajar el nivel se concentran las partículas por millón. Servir agua
+       sin garantía FRENA el crecimiento (como el cauce sucio y la basura):
+       nadie se fía del grifo. Frena, no mata: con 0.35, en el peor caso el
+       crecimiento va al 65%. */
+    penalizacionBruta: 0.35
   },
 
   /* ---------- RESIDUOS ----------
@@ -747,6 +755,29 @@ export const CONFIG = {
         'agua. '
       }
     },
+    potabilizadora: {
+      nombre: 'Potabilizadora', coste: 1200, orden: 3.5, color: '#67e8f9',
+      terreno: ['prado', 'pastizal'],
+      desc: 'Trata el agua bruta del río y de los pozos exprimidos. Sin ella, servirla frena el crecimiento.',
+      // Ficha divulgativa: esto no es texto de juego, es lo que
+      // esta pieza ES de verdad. El objetivo del autor es que quien
+      // juegue acabe sabiendo algo del oficio.
+      ficha: {
+        que: 'Una ETAP: Estación de Tratamiento de Agua Potable. Coagulación ' +
+        'para juntar lo fino, decantación para que caiga, FILTROS de arena ' +
+        'para lo que queda y desinfección al final — el cloro que hace que el ' +
+        'agua aguante sana todo el viaje hasta el grifo. ',
+        para: 'Convertir agua del medio en agua de grifo. Toda el agua ' +
+        'SUPERFICIAL se potabiliza siempre: un río limpio no es un río ' +
+        'potable. Y un acuífero sobreexplotado también acaba pidiéndola: al ' +
+        'bajar el nivel se concentra lo que lleva — suben las partículas por ' +
+        'millón. ',
+        dato: 'La turbidez es la peor enemiga de una ETAP: tras una tormenta el ' +
+        'río baja tan cargado que a veces sale más a cuenta PARAR la toma y ' +
+        'tirar del depósito que forzar los filtros. Esa es la otra mitad del ' +
+        'trabajo del depósito regulador. '
+      }
+    },
     depuradora: {
       nombre: 'Depuradora', coste: 2000, orden: 4, color: '#34d399',
       terreno: ['prado', 'pastizal'], junto: ['agua', 'lago'],
@@ -893,10 +924,28 @@ export const CONFIG = {
      La tienda de mejoras sube el NIVEL (lo bien que rinde cada una); el mapa
      decide CUÁNTAS tienes y si están enganchadas. Una pieza sin tubería al
      pueblo no cuenta: por eso el trazado importa. */
+  /* ---------- EL CLIC DE BOMBEAR: límites ----------
+     Dos protecciones que van juntas (petición del autor):
+     - DESBORDE: bombear con el depósito LLENO tira el agua, y el agua tirada
+       arrastra y acaba en el cauce. Cada clic desbordado ensucia un poco:
+       malgastar tiene precio, como en la realidad.
+     - TOPE DE RITMO: más clics por segundo de los que da una mano humana se
+       IGNORAN. No es un detector de autoclickers — en un juego que corre
+       entero en el navegador del jugador no se puede detectar de verdad, y
+       perseguirlos castigaría a los rápidos legítimos —: los vuelve
+       inútiles, que es mejor que prohibirlos. */
+  bombeo: {
+    maxClicsPorSegundo: 10,
+    contaminacionPorDesborde: 0.06   // puntos de cauce por clic desbordado
+  },
+
   aportePorPieza: {
     captacion: 0.10,     // L/s de producción pasiva que suma cada captación
     deposito: 9000,      // litros de capacidad que suma cada depósito
     bomba: 220,          // litros por clic que suma cada bombeo
+    /* La ETAP: L/h de agua BRUTA que potabiliza cada planta. Escala pareja a
+       la depuradora: son las dos caras del mismo oficio. */
+    potabilizadora: 5000,
     // Estas dos van por la red de SANEAMIENTO, no por la de abastecimiento
     depuradora: 8000,    // L/h de tratamiento que suma cada depuradora
     // ...y lo BIEN que lo trata. Sin esto una depuradora del mapa hacía pasar el
@@ -920,7 +969,7 @@ export const CONFIG = {
          señaló: quien no es del oficio no sabe qué es tender. */
       nombre: 'Abastecimiento', corto: 'tubería de agua', color: '#38bdf8',
       tiers: 'tuberia',
-      piezas: ['captacion', 'bomba', 'deposito', 'acuifero'],
+      piezas: ['captacion', 'bomba', 'deposito', 'acuifero', 'potabilizadora'],
       desc: 'Trae el agua desde la captación hasta el pueblo.'
     },
     saneamiento: {

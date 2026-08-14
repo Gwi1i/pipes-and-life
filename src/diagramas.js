@@ -137,6 +137,8 @@ function medida(fuente){
 const MOVIMIENTO = {
   captacion: (ctx, W, H, t) =>
     corriente(ctx, q => ({ x: W * 0.62 + q * W * 0.38, y: H * 0.66 }), t, 4, W * 0.014, AGUA_CLARA, 0.6),
+  potabilizadora: (ctx, W, H, t) =>
+    corriente(ctx, q => ({ x: W * 0.72 + q * W * 0.28, y: H * 0.66 }), t, 4, W * 0.014, AGUA_CLARA, 0.6),
   bomba: (ctx, W, H, t) =>
     corriente(ctx, q => ({ x: W * 0.70, y: H * 0.80 - q * H * 0.60 }), t, 4, W * 0.014, AGUA_CLARA, 0.7),
   deposito: (ctx, W, H, t) =>
@@ -210,6 +212,47 @@ const DIBUJOS = {
               t, 4, W * 0.016, AGUA_CLARA, 0.6);
     flecha(ctx, W * 0.80, H * 0.42, W * 0.14, 0, W * 0.03, AGUA_CLARA);
     etiqueta(ctx, 'AGUA BRUTA', W * 0.80, H * 0.32, AGUA_CLARA, H);
+  },
+
+  /** La ETAP en sección: entra turbia, decanta, cruza el FILTRO de arena y
+   *  sale clara con su gota de cloro. Turbia a un lado y clara al otro: ese
+   *  contraste ES la explicación entera. */
+  potabilizadora(ctx, W, H, t){
+    const TURBIA = '#7a8a5a';
+    // llegada turbia
+    ctx.fillStyle = OBRA;
+    ctx.fillRect(0, H * 0.40, W * 0.14, H * 0.08);
+    corriente(ctx, q => ({ x: q * W * 0.14, y: H * 0.44 }), t, 3, W * 0.014, TURBIA, 0.5);
+    // el decantador: vaso con agua turbia y el poso cayendo (lo que se mueve)
+    ctx.fillStyle = OBRA;
+    ctx.fillRect(W * 0.14, H * 0.30, W * 0.30, H * 0.50);
+    ctx.fillStyle = TURBIA;
+    ctx.fillRect(W * 0.16, H * 0.34, W * 0.26, H * 0.42);
+    ctx.fillStyle = '#4c5a38';
+    for(let i = 0; i < 5; i++){
+      const q = ((t * 0.5 + i / 5) % 1);
+      ctx.fillRect(W * (0.18 + (i % 3) * 0.08), H * (0.36 + q * 0.36),
+                   W * 0.012, W * 0.012);
+    }
+    etiqueta(ctx, 'DECANTA', W * 0.29, H * 0.26, METAL, H);
+    // el filtro de arena: lámina de agua sobre el lecho
+    ctx.fillStyle = OBRA;
+    ctx.fillRect(W * 0.48, H * 0.42, W * 0.22, H * 0.38);
+    ctx.fillStyle = '#c9b078';
+    ctx.fillRect(W * 0.50, H * 0.55, W * 0.18, H * 0.22);
+    ctx.fillStyle = AGUA;
+    ctx.fillRect(W * 0.50, H * 0.46, W * 0.18, H * 0.09);
+    etiqueta(ctx, 'FILTRO', W * 0.59, H * 0.38, METAL, H);
+    // la dosificación de cloro y la salida, ya clara
+    ctx.fillStyle = METAL;
+    ctx.fillRect(W * 0.76, H * 0.30, W * 0.05, H * 0.16);
+    etiqueta(ctx, 'CLORO', W * 0.785, H * 0.26, METAL, H);
+    ctx.fillStyle = OBRA;
+    ctx.fillRect(W * 0.70, H * 0.62, W * 0.30, H * 0.08);
+    corriente(ctx, q => ({ x: W * 0.72 + q * W * 0.28, y: H * 0.66 }),
+              t, 4, W * 0.014, AGUA_CLARA, 0.6);
+    flecha(ctx, W * 0.84, H * 0.52, W * 0.12, 0, W * 0.03, AGUA_CLARA);
+    etiqueta(ctx, 'POTABLE', W * 0.86, H * 0.44, AGUA_CLARA, H);
   },
 
   /** Lo que hace una bomba: dar altura. Se ve subir el agua. */

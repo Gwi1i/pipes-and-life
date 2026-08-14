@@ -94,6 +94,15 @@ const COMENTARIOS = [
            'mirando el mapa, que ahí fuera hay pueblos esperando.'
   },
   {
+    /* El agua bruta es un freno SILENCIOSO: sin este aviso, el jugador ve el
+       pueblo estancado y no sabe por qué. */
+    id: 'aguaBruta', animo: 'mal',
+    cuando: (e, res) => (res.aguaBrutaLh || 0) > (res.aguaTrataLh || 0) + 1,
+    texto: 'Estás sirviendo el agua tal y como baja del río. Un río limpio ' +
+           'no es un río potable: ponle una POTABILIZADORA antes de que la ' +
+           'gente le pierda la confianza al grifo.'
+  },
+  {
     id: 'creciendo', animo: 'bien',
     cuando: (e) => e.activo.racha >= CONFIG.poblacion.horasBuenServicioParaCrecer
                    && e.activo.servicio >= CONFIG.poblacion.servicioBueno,

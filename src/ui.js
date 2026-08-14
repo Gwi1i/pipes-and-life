@@ -361,6 +361,13 @@ export class UI {
         tocado techo: por ${cuello.def.nombre} no cabe agua para más de
         ${formatear(cuello.def.habitantesMax)} habitantes. Hasta que no renueves la
         línea entera, no crece.`);
+      // AGUA SIN POTABILIZAR: el freno silencioso. Si no se cuenta aquí, el
+      // jugador ve el pueblo estancado y no sabe por qué.
+      if(resultado && (resultado.aguaBrutaLh || 0) > (resultado.aguaTrataLh || 0) + 1e-6)
+        fuera.push(`Estás sirviendo ${formatear(resultado.aguaBrutaLh - resultado.aguaTrataLh)}
+          L/h de agua BRUTA sin potabilizar (del río, o de pozos exprimidos), y eso
+          frena el crecimiento: nadie se fía de un grifo sin garantía. Una
+          POTABILIZADORA conectada lo resuelve.`);
     } else if(clave === 'pluviales'){
       if(!cuello.lineas.length) fuera.push(`No hay red de pluviales: la lluvia y las
         aguas fecales van juntas por el mismo colector, y en tormenta eso es lo que
@@ -969,6 +976,10 @@ export class UI {
         return `Suma <b>${formatear(nivel * P.bomba)} L</b> a cada clic de bombeo.`;
       case 'deposito':
         return `Añade <b>${formatear(nivel * P.deposito)} L</b> de capacidad de reserva.`;
+      case 'potabilizadora':
+        return `Potabiliza <b>${formatear(nivel * P.potabilizadora)} L/h</b> de agua
+                bruta del río o de pozos exprimidos. Sin tratar, esa agua frena
+                el crecimiento.`;
       case 'depuradora':
         return `Trata <b>${formatear(nivel * P.depuradora)} L/h</b> de aguas residuales
                 y mejora la limpieza un <b>${Math.round(nivel * P.depuradoraCalidad * 100)} %</b>.`;

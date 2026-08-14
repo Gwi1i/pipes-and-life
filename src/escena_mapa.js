@@ -1750,6 +1750,33 @@ export class EscenaMapa extends Escena {
         break;
       }
 
+      case 'potabilizadora': {
+        // ETAP: FILTROS en batería — balsas RECTANGULARES con lámina de agua
+        // clara (los círculos son de la depuradora: cuadrado = beber, círculo
+        // = devolver), más la caseta de cloración con su tanque blanco.
+        for(const dx of [-0.34, 0.32]){
+          const px = cx + W * dx;
+          this.isoCaja(px, suelo, W * 0.40, H * 0.40, t * 0.055, color);
+          const tyB = suelo - t * 0.055, w2 = W * 0.32, h2 = H * 0.32;
+          ctx.fillStyle = mezclarColor('#8fd8f2', color, 0.20);
+          ctx.beginPath();
+          ctx.moveTo(px, tyB - h2); ctx.lineTo(px + w2, tyB);
+          ctx.lineTo(px, tyB + h2); ctx.lineTo(px - w2, tyB);
+          ctx.closePath(); ctx.fill();
+          // el brillo del agua en calma
+          ctx.fillStyle = 'rgba(255,255,255,0.35)';
+          ctx.beginPath();
+          ctx.ellipse(px - w2 * 0.25, tyB - h2 * 0.2, w2 * 0.28, h2 * 0.22, 0, 0, 7);
+          ctx.fill();
+        }
+        // caseta de cloración y su tanque blanco
+        this.isoCaja(cx + W * 0.72, suelo - t * 0.015, W * 0.20, H * 0.20,
+                     t * 0.15, aclarar(color, 0.10));
+        this.isoCilindro(cx - W * 0.72, suelo - t * 0.015, W * 0.13, H * 0.13,
+                         t * 0.15, '#dde8f0');
+        break;
+      }
+
       case 'depuradora': {    // decantadores con el PUENTE DE RASQUETAS girando
         for(const dx of [-0.42, 0.42]){
           const px = cx + W * dx, rw = W * 0.46, rh = H * 0.46;

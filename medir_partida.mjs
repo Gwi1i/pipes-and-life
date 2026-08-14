@@ -125,6 +125,12 @@ export async function medir(pasoSeg = 0.25, maxMin = 240, informar = () => {}){
     if(!estado.construcciones.some(o => o.tipo === 'captacion')){
       if(construir(estado, 'captacion', 'abastecimiento')) marca('obra captacion');
     }
+    // El agua del río se potabiliza SIEMPRE: en cuanto hay captación, la ETAP
+    // es la siguiente obra o el crecimiento va frenado.
+    if(estado.construcciones.some(o => o.tipo === 'captacion')
+       && !estado.construcciones.some(o => o.tipo === 'potabilizadora')){
+      if(construir(estado, 'potabilizadora', 'abastecimiento')) marca('obra potabilizadora');
+    }
     if(servicioActivo(p, 'saneamiento') && !estado.construcciones.some(o => o.tipo === 'depuradora')){
       if(construir(estado, 'depuradora', 'saneamiento')) marca('obra depuradora');
     }

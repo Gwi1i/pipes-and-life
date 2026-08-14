@@ -727,12 +727,44 @@ export function requisitosAutobomba(pueblo){
   return { cumple: lista.every(f => f.ok), lista };
 }
 
-/** Un golpe de bomba en un pueblo. Devuelve los litros que entraron. */
+/** Un golpe de bomba en un pueblo. Devuelve los litros que entraron.
+ *  DESBORDE: con el depósito lleno el golpe no cabe y el agua se tira — y el
+ *  agua tirada arrastra y acaba en el cauce. Malgastar ensucia un poco cada
+ *  vez (petición del autor): aporrear el clic con todo lleno tiene precio. */
 export function bombear(pueblo, estado){
   const cap = capacidad(pueblo, estado);
   const antes = pueblo.agua;
   pueblo.agua = Math.min(cap, pueblo.agua + litrosPorClic(pueblo, estado));
-  return pueblo.agua - antes;
+  const entro = pueblo.agua - antes;
+  if(entro <= 0.001)
+    estado.contaminacion = Math.min(CONFIG.cauce.contaminacionMax,
+      estado.contaminacion + CONFIG.bombeo.contaminacionPorDesborde);
+  return entro;
+}
+
+/**
+ * Agua BRUTA que entra al sistema y necesita potabilizarse, en L/h: TODA la
+ * superficial (un río limpio no es un río potable) más la de los pozos sobre
+ * masas por debajo del umbral de merma, que concentran partículas al bajar.
+ */
+export function aguaBrutaLh(estado, estiaje = 1){
+  const P = piezas(estado);
+  let lh = (P.captacion || 0) * CONFIG.aportePorPieza.captacion * 3600;
+  const masas = masasDelMapa(estado.mapa);
+  for(const [masa, pozos] of pozosPorMasa(estado)){
+    const info = masas.get(masa);
+    if(!info) continue;
+    const nivel = nivelMasa(estado, masa);
+    if(nivel >= CONFIG.acuiferos.umbralMerma) continue;
+    const clase = CONFIG.acuiferos.clases[info.clase];
+    lh += pozos * caudalPozo(clase, nivel, estiaje) * 3600;
+  }
+  return lh;
+}
+
+/** Lo que las ETAP conectadas pueden tratar, en L/h. Suma NIVELES, como todo. */
+export function capacidadPotabilizacion(estado){
+  return (piezas(estado).potabilizadora || 0) * CONFIG.aportePorPieza.potabilizadora;
 }
 
 /* ---------------- AVANCE ---------------- */
@@ -925,7 +957,15 @@ export function avanzar(estado, dt){
   const punta = coefHora(estado.horas);
   const estiaje = factorEstiaje(estado.horas);
   const suciedad = estado.contaminacion / K.contaminacionMax;   // 0..1
-  const frenoCrec = 1 - suciedad * K.frenoCrecimiento;
+  // EL AGUA SIN POTABILIZAR frena el crecimiento como el cauce sucio y la
+  // basura: nadie se fía de un grifo sin garantía. Se calcula una vez para
+  // toda la mancomunidad (la red hoy es común) y multiplica el freno.
+  const brutaLh = aguaBrutaLh(estado, estiaje);
+  const trataLh = capacidadPotabilizacion(estado);
+  const frenoAgua = brutaLh > 0
+    ? 1 - (Math.max(0, brutaLh - trataLh) / brutaLh) * CONFIG.calidad.penalizacionBruta
+    : 1;
+  const frenoCrec = (1 - suciedad * K.frenoCrecimiento) * frenoAgua;
   const lluvia = factorLluvia(estado.horas);
 
   let totalResidual = 0;
@@ -992,6 +1032,10 @@ export function avanzar(estado, dt){
     suciedad,
     multa,
     frenoCrec,
+    // El agua bruta contra lo potabilizado: el panel y los avisos beben de
+    // aquí, no recalculan su propia versión.
+    aguaBrutaLh: brutaLh,
+    aguaTrataLh: trataLh,
     lluvia,
     saneamientoNuevo,
     serviciosNuevos
