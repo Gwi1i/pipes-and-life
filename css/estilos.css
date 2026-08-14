@@ -62,7 +62,20 @@ button{touch-action:manipulation;}
 .v.ok{color:var(--ok);} .v.alarma{color:var(--alarma);}
 .v.critico{color:var(--critico);} .v.neutro{color:var(--texto);}
 
-.acciones{display:flex; gap:6px;}
+.acciones{display:flex; gap:6px; position:relative;}
+/* EL ENGRANAJE: las opciones caben en un botón, como en cualquier juego.
+   El menú es un desplegable anclado a la esquina; los botones de dentro son
+   los de siempre, en columna y a lo ancho. */
+#btn-ajustes{font-size:15px; line-height:1; padding:5px 12px;}
+.ajustes-menu{
+  position:absolute; right:0; top:calc(100% + 6px); z-index:60;
+  display:flex; flex-direction:column; gap:6px; min-width:170px;
+  background:var(--panel); border:1px solid var(--linea-viva);
+  border-radius:5px; padding:8px;
+  box-shadow:0 8px 24px rgba(0,0,0,0.45);
+}
+.ajustes-menu[hidden]{display:none;}
+.ajustes-menu button{width:100%; text-align:left;}
 .acciones button{
   background:none; border:1px solid var(--linea-viva); color:var(--tenue);
   padding:6px 11px; border-radius:3px; cursor:pointer;
@@ -560,6 +573,19 @@ button{touch-action:manipulation;}
 }
 .aviso-flotante.visible{opacity:1; transform:translateX(-50%) translateY(0);}
 
+/* EL ESCAPE DEL DEDO: cancela la herramienta armada. Flotando abajo del
+   mapa, gordo para el pulgar, y solo existe con un modo activo. */
+.cancelar-modo{
+  position:absolute; bottom:52px; left:50%; transform:translateX(-50%);
+  z-index:11; cursor:pointer;
+  background:rgba(15,28,40,0.95); color:#f2c9c2;
+  border:1px solid var(--critico); border-radius:20px;
+  padding:10px 20px; font-family:var(--mono); font-size:12px; font-weight:600;
+  letter-spacing:.08em; box-shadow:0 6px 20px rgba(0,0,0,0.5);
+}
+.cancelar-modo:hover{background:rgba(40,20,20,0.95);}
+.cancelar-modo[hidden]{display:none;}
+
 /* ---------- PANTALLA MEDIANA (portátil, y el marco de itch.io) ----------
    La barra de arriba en UNA fila necesita ~1360px: la marca (175) + los ocho
    números (8 × 96 = 768) + los botones (~346) + huecos. Por debajo de eso los
@@ -610,10 +636,25 @@ button{touch-action:manipulation;}
   .marca-sub{display:none;}          /* el lema no paga su sitio en 375px */
   .acciones button{padding:4px 8px; font-size:8px;}
 
+  /* La MARCA no cabe en un teléfono: la portada ya presenta el juego, y esa
+     fila entera es mapa que se gana (petición del autor: "la parte de
+     arriba ocupa mucho"). El engranaje se queda, pequeño y a la derecha. */
+  .marca{display:none;}
+  .superior{padding:6px 8px; gap:4px 8px;}
+
   /* La rejilla viene del corte de 900px; aquí solo se encoge la letra */
   .hud-item{padding:3px 7px;}
   .hud-item .e{font-size:6.5px; letter-spacing:.08em;}
   .hud-item .v{font-size:11.5px;}
+
+  /* La carta del tajo, compacta: en 46vh de lateral cada píxel es oro y la
+     carta se partía por el pliegue en algunos teléfonos */
+  .tajo-cab{gap:7px; margin-bottom:4px;}
+  .tajo-cara{width:24px; height:24px;}
+  .tajo-eti{font-size:7.5px;}
+  .tajo-tit{font-size:12px;}
+  .tajo-txt{font-size:10.5px; line-height:1.4;}
+  .tajo-btn{margin-top:5px; padding:8px 10px;}
 
   /* El dedo no es un puntero: mínimo ~40px de alto en lo tocable */
   .solapa{padding:11px 4px; font-size:10px;}

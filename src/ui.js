@@ -1688,6 +1688,13 @@ export class UI {
     const pct = Math.round((p.agua / cap) * 100);
     this.refrescarMetricas(estado);
     this.refrescarSolapas(estado);
+    // El escape del dedo: visible solo con una herramienta armada
+    const modoActivo = !!estado.modo.tipo;
+    if(this.cache.cancelarModo !== modoActivo){
+      this.cache.cancelarModo = modoActivo;
+      const btnC = document.getElementById('btn-cancelar-modo');
+      if(btnC) btnC.hidden = !modoActivo;
+    }
 
     this.fijar('hud-agua', `${formatear(p.agua)} / ${formatear(cap)} L`,
       p.agua < cap * 0.08 ? 'critico' : 'agua');

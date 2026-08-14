@@ -600,6 +600,7 @@ export const EN = {
     '.hud-item:has(#hud-reloj) .e': 'Time · month',
 
     '#btn-reiniciar': 'Reset',
+    '#btn-cancelar-modo': '✕ Cancel',
 
     '.solapa[data-solapa="mapa"]': 'Map',
     '.solapa[data-solapa="pueblo"]': 'Town',
@@ -734,7 +735,8 @@ export const EN = {
   /* Selector CSS → [atributo, valor]. Para lo que no es contenido. */
   atributos: [
     ['.hud-item:has(#hud-expansion)', 'title',
-     'Good service makes clearing tiles cheaper']
+     'Good service makes clearing tiles cheaper'],
+    ['#btn-ajustes', 'title', 'Options']
   ],
 
   /* ============ LAS FRASES DE LA ETIQUETA t ============

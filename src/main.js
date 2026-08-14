@@ -1557,6 +1557,25 @@ document.getElementById('btn-reiniciar').onclick = () => {
   location.reload();
 };
 
+// EL ENGRANAJE: las opciones viven plegadas en un botón. Se cierra al tocar
+// fuera o al elegir cualquier opción — como en cualquier juego.
+const btnAjustes = document.getElementById('btn-ajustes');
+const menuAjustes = document.getElementById('menu-ajustes');
+btnAjustes.onclick = (e) => {
+  e.stopPropagation();
+  menuAjustes.hidden = !menuAjustes.hidden;
+};
+document.addEventListener('click', (e) => {
+  if(!menuAjustes.hidden && !menuAjustes.contains(e.target)) menuAjustes.hidden = true;
+});
+
+// EL ESCAPE DEL DEDO: el botón flotante que cancela la herramienta armada.
+// Hace lo mismo que la tecla Esc; en el móvil no hay otra salida a mano.
+document.getElementById('btn-cancelar-modo').onclick = () => {
+  estado.modo = { tipo: null, elemento: null, trazado: [] };
+  ui.refrescarConstruccion(estado);
+};
+
 // El interruptor del sonido. La preferencia sobrevive al Reiniciar: va en su
 // propia clave de localStorage, no en el guardado de la partida.
 const btnSonido = document.getElementById('btn-sonido');

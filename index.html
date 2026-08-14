@@ -70,14 +70,20 @@
       <div class="hud-item"><span class="e">Hora · mes</span><span class="v" id="hud-reloj">—</span></div>
     </div>
 
+    <!-- LAS OPCIONES, bajo UN solo engranaje (petición del autor probando en
+         el móvil: cinco botones a la vista ocupaban media cabecera). El menú
+         guarda los botones de siempre con sus ids: todo el cableado igual. -->
     <div class="acciones">
-      <button id="btn-voz" hidden>Voz: no</button>
-      <button id="btn-musica" hidden>Música: sí</button>
-      <button id="btn-sonido">Sonido: sí</button>
-      <!-- El rótulo enseña el idioma al que CAMBIAS, en ese idioma: así lo
-           entiende justo quien lo necesita. Lo pone main.js al arrancar. -->
-      <button id="btn-idioma">English</button>
-      <button id="btn-reiniciar">Reiniciar</button>
+      <button id="btn-ajustes" title="Opciones">⚙</button>
+      <div class="ajustes-menu" id="menu-ajustes" hidden>
+        <button id="btn-voz" hidden>Voz: no</button>
+        <button id="btn-musica" hidden>Música: sí</button>
+        <button id="btn-sonido">Sonido: sí</button>
+        <!-- El rótulo enseña el idioma al que CAMBIAS, en ese idioma: así lo
+             entiende justo quien lo necesita. Lo pone main.js al arrancar. -->
+        <button id="btn-idioma">English</button>
+        <button id="btn-reiniciar">Reiniciar</button>
+      </div>
     </div>
   </header>
 
@@ -90,6 +96,11 @@
       <div class="lienzo-caja">
         <canvas id="escena"></canvas>
         <div id="aviso" class="aviso-flotante"></div>
+        <!-- EL ESCAPE DEL DEDO: con una herramienta armada (colocar, tender)
+             el móvil no tiene tecla Esc, y clicar el pueblo con el bombeo en
+             la mano no bombeaba: intentaba colocar (lo cazó el autor). Sale
+             solo cuando hay modo activo; lo enseña ui.actualizar. -->
+        <button class="cancelar-modo" id="btn-cancelar-modo" hidden>✕ Cancelar</button>
         <div class="barra-agua-caja">
           <div class="barra-agua-fondo"><div class="barra-agua-relleno" id="barra-agua"></div></div>
         </div>
