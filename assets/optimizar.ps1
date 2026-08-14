@@ -28,16 +28,30 @@ $par.Param[0] = New-Object System.Drawing.Imaging.EncoderParameter(
                   [System.Drawing.Imaging.Encoder]::Quality, $CALIDAD)
 
 $hechas = 0
+$yaEstaban = 0
+# Tambien entran los .jpg: guardar un JPG es lo mas natural del mundo y antes
+# se quedaban fuera del filtro sin decir nada (el autor solto cuatro fichas de
+# 3 MB creyendo que se habian optimizado). Ojo: la salida TAMBIEN es .jpg, asi
+# que ahi hay que escribir en un temporal y sustituir, y ademas solo se toca si
+# la imagen es MAS ANCHA de la cuenta — sin eso, cada pasada del optimizador
+# volveria a recomprimir lo ya optimizado y la calidad se iria cayendo sola.
 Get-ChildItem $carpeta -File | Where-Object {
-    $_.Name -match '^(f|h|l|a)_.+\.(png|jpeg)$' -or $_.Name -match '^(guia|mini_reciclaje)\.(png|jpeg)$'
+    $_.Name -match '^(f|h|l|a)_.+\.(png|jpe?g)$' -or $_.Name -match '^(guia|mini_reciclaje)\.(png|jpe?g)$'
 } | ForEach-Object {
     $entrada = $_.FullName
     $nombre  = [System.IO.Path]::GetFileNameWithoutExtension($_.Name)
     $salida  = Join-Path $carpeta ($nombre + '.jpg')
     $antesKB = [Math]::Round($_.Length / 1KB)
+    $mismoArchivo = ($entrada -eq $salida)
 
     try {
         $img = [System.Drawing.Image]::FromFile($entrada)
+        if($mismoArchivo -and $img.Width -le $ANCHO){
+            $img.Dispose()
+            Write-Output "$($_.Name)  ya estaba optimizada ($antesKB KB), se deja como esta"
+            $script:yaEstaban++
+            return
+        }
         $alto = [int][Math]::Round($img.Height * ($ANCHO / $img.Width))
         $bmp  = New-Object System.Drawing.Bitmap($ANCHO, $alto)
         $g    = [System.Drawing.Graphics]::FromImage($bmp)
@@ -48,11 +62,15 @@ Get-ChildItem $carpeta -File | Where-Object {
         $anchoOrig = $img.Width; $altoOrig = $img.Height
         $img.Dispose()
 
-        $bmp.Save($salida, $codec, $par)
+        # Con .jpg de entrada no se puede escribir encima del que aun se lee:
+        # se deja en un temporal, se archiva el original y se pone en su sitio.
+        $destino = if($mismoArchivo){ $salida + '.tmp' } else { $salida }
+        $bmp.Save($destino, $codec, $par)
         $bmp.Dispose()
 
         # el original se guarda, no se pierde
         Move-Item -Force $entrada (Join-Path $originales $_.Name)
+        if($mismoArchivo){ Move-Item -Force $destino $salida }
 
         $despuesKB = [Math]::Round((Get-Item $salida).Length / 1KB)
         Write-Output "$($_.Name)  ${anchoOrig}x${altoOrig} $antesKB KB  ->  $nombre.jpg  ${ANCHO}x${alto} $despuesKB KB"
@@ -291,7 +309,14 @@ if(Test-Path $hojaCont){
     }
 }
 
-if($hechas -eq 0){
+if($hechas -eq 0 -and $yaEstaban -gt 0){
+    # Decir "no he encontrado nada" despues de revisar treinta imagenes es
+    # justo lo que hace dudar de si el optimizador ha corrido o no.
+    Write-Output ""
+    Write-Output "Todo al dia: las $yaEstaban imagenes ya estaban optimizadas."
+    Write-Output "Si acabas de soltar alguna y no aparece arriba, revisa el nombre:"
+    Write-Output "  f_<pieza>, h_<hito>, l_<logro> o a_<yacimiento>, en .png o .jpg"
+} elseif($hechas -eq 0){
     Write-Output ""
     Write-Output "No he encontrado nada que optimizar."
     Write-Output "Suelta aqui las imagenes y vuelve a ejecutarlo."
