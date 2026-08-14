@@ -81,7 +81,7 @@ export class UI {
           ${piezas}
           <button class="mejora obra tender" data-accion="elegirRedYTender" data-clave="${clave}"
                   id="tender-${clave}" style="--tono:${r.color}">
-            <span class="m-cab"><span class="m-nom">Tender ${r.corto}</span>
+            <span class="m-cab"><span class="m-nom">Colocar ${r.corto}</span>
               <span class="m-coste" id="tender-coste-${clave}">—</span></span>
             <span class="m-desc">Marca el recorrido casilla a casilla. Clic en la
               última para rematar, en la anterior para deshacer.</span>
@@ -210,7 +210,7 @@ export class UI {
     // trazas allí sin saber si estás poniendo agua limpia o un colector.
     const nombre = document.querySelector('#obra-tuberia .m-nom');
     const etiqueta = document.querySelector('#obra-tuberia .m-coste');
-    if(nombre) nombre.textContent = `Tender ${R.corto}`;
+    if(nombre) nombre.textContent = `Colocar ${R.corto}`;
     if(etiqueta) etiqueta.textContent = `${R.nombre} · ${objetivo.nombre}`;
     const boton = document.getElementById('obra-tuberia');
     if(boton) boton.style.setProperty('--tono', R.color);

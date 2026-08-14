@@ -98,9 +98,12 @@ export class Entrada {
       this.emitir('zoom', { delta: e.deltaY, x: e.clientX - r.left, y: e.clientY - r.top });
     }, { passive: false });
 
-    // Barra espaciadora = bombear en el pueblo, para quien prefiera el teclado
+    // Barra espaciadora = bombear en el pueblo, para quien prefiera el teclado.
+    // OJO al `repeat`: mantenerla pulsada dispara la repetición del sistema y
+    // bombeaba en ráfaga sola — un autoclic gratis que el autor cazó jugando.
+    // Una pulsación, una bombada, como el ratón.
     window.addEventListener('keydown', e => {
-      if(e.code === 'Space' && e.target === document.body){
+      if(e.code === 'Space' && e.target === document.body && !e.repeat){
         e.preventDefault();
         this.emitir('bombear');
       }

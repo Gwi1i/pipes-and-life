@@ -75,16 +75,20 @@ const azar = (min, max) => min + Math.random() * (max - min);
 
 /* ---------------- los efectos, uno por gesto del juego ---------------- */
 
-/** El clic de bombear: golpe grave de bomba + chapoteo. El más oído: con azar. */
+/** El clic de bombear: una GOTA de agua ("plip" que sube) con el cuerpo de la
+ *  bomba muy por debajo. Rehecho a petición del autor: el golpe grave de
+ *  antes sonaba a máquina y esto es agua. El más oído: con azar en el tono. */
 export function bombear(){
-  const v = azar(0.9, 1.1);
-  tono(150 * v, 55, 0.10, 'sine', 0.55);
-  golpe(900 * v, 0.07, 0.18, 'bandpass', 0.015);
+  const v = azar(0.88, 1.14);
+  tono(420 * v, 980 * v, 0.055, 'sine', 0.38);   // la gota
+  tono(130 * v, 60, 0.08, 'sine', 0.26);          // el cuerpo, discreto
+  golpe(1400 * v, 0.05, 0.09, 'bandpass', 0.02);  // el chapoteo mínimo
 }
 
-/** Picar una casilla tapada: el golpe seco de la azada. */
+/** Picar una casilla tapada: un toque mate, corto y bajito — se pica decenas
+ *  de veces seguidas y no puede cansar (rebajado a petición del autor). */
 export function picar(){
-  golpe(300 * azar(0.85, 1.15), 0.05, 0.22, 'lowpass');
+  golpe(260 * azar(0.85, 1.15), 0.04, 0.13, 'lowpass');
 }
 
 /** La casilla se abre del todo: el mismo golpe y un brillo pequeño. */
@@ -395,6 +399,7 @@ let vozOn = localStorage.getItem(CLAVE_VOZ) === '1';
 let vozElegida = null;      // la del sintetizador de RESPALDO, si la hay
 let hayArchivos = false;    // ¿existen las voces neuronales generadas?
 let locucion = null;        // el <audio> que suena ahora mismo
+let turnoLocucion = 0;      // para que un respaldo tardío no pise a la siguiente
 
 /**
  * La huella de un texto: djb2 sobre UTF-8, 32 bits, en hexadecimal. La misma
@@ -466,12 +471,17 @@ function sintetizar(texto){
 export function hablar(texto, id){
   if(!vozOn) return;
   pararLocucion();
+  // El TURNO evita el solape que cazó el autor en el tutorial: si el archivo
+  // de una frase falla, su respaldo sintetizado llegaba TARDE — cuando ya
+  // estaba sonando la frase siguiente — y Manuel hablaba a dos voces. Un
+  // respaldo solo suena si su frase sigue siendo la última pedida.
+  const turno = ++turnoLocucion;
   if(id && hayArchivos){
     const a = new Audio(`assets/voz/${id}-${huellaVoz(texto)}.mp3`);
     a.volume = CONFIG.sonido.voz.volumen;
-    a.onerror = () => { locucion = null; sintetizar(texto); };
+    a.onerror = () => { if(turno !== turnoLocucion) return; locucion = null; sintetizar(texto); };
     locucion = a;
-    a.play().catch(() => { locucion = null; sintetizar(texto); });
+    a.play().catch(() => { if(turno !== turnoLocucion) return; locucion = null; sintetizar(texto); });
     return;
   }
   sintetizar(texto);

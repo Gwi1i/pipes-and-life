@@ -631,6 +631,18 @@ export const CONFIG = {
     // lo que separa las teselas debe ser el borde, no el vacío.
     separacion: 0.016,      // hueco entre teselas, en fracción de casilla
     radio: 0.11,            // redondeo de las esquinas
+    /* SUELO CONTINUO bajo las fichas: el hueco entre teselas se pinta con el
+       propio color de la casilla, bien oscurecido. Antes era el negro del
+       fondo, y el mapa —lo señaló el autor— se leía como fichas flotando en
+       el vacío en vez de como un territorio. La ficha sigue mandando (el
+       hueco sigue existiendo); solo cambia DE QUÉ está hecho el hueco. */
+    sueloOscuro: 0.42,      // cuánto se oscurece el color para el suelo de abajo
+    /* MOTEADO: parches suaves de luz y sombra sembrados dentro de cada
+       casilla. Es lo que separa "hierba" de "pintura plana": el ojo espera
+       que un prado tenga calvas y matas, aunque no las mire. Poco alfa —
+       con 0.10 ya parecía camuflaje militar. */
+    motas: 4,               // parches por casilla
+    moteado: 0.05,          // cuánto aclara/oscurece cada parche
     // El contorno de cada ficha, en vez de un negro duro: oscurece su propio
     // color. Así la línea pertenece a la tesela y no la recorta contra el fondo.
     contorno: 0.30,         // cuánto se oscurece el color base para el borde
@@ -893,13 +905,16 @@ export const CONFIG = {
      tercera, cuando toque separarlas del colector unitario. */
   redes: {
     abastecimiento: {
-      nombre: 'Abastecimiento', corto: 'agua', color: '#38bdf8',
+      /* `corto` va detrás de "Colocar" en el botón de trazar: "Colocar
+         tubería de agua". Antes decía "Tender agua", y el autor jugando lo
+         señaló: quien no es del oficio no sabe qué es tender. */
+      nombre: 'Abastecimiento', corto: 'tubería de agua', color: '#38bdf8',
       tiers: 'tuberia',
       piezas: ['captacion', 'bomba', 'deposito', 'acuifero'],
       desc: 'Trae el agua desde la captación hasta el pueblo.'
     },
     saneamiento: {
-      nombre: 'Saneamiento', corto: 'colector', color: '#a3a15c',
+      nombre: 'Saneamiento', corto: 'colector', color: '#a3a15c',   // "Colocar colector"
       tiers: 'tuberia',
       piezas: ['depuradora'],
       desc: 'Se lleva las aguas residuales del pueblo hasta la depuradora.'
@@ -909,7 +924,7 @@ export const CONFIG = {
     // es tender esta red aparte, y lo que separa es lo que le quepa: por eso
     // aquí el diámetro no es un detalle, es la mecánica entera.
     pluviales: {
-      nombre: 'Pluviales', corto: 'pluvial', color: '#60a5fa',
+      nombre: 'Pluviales', corto: 'red de pluviales', color: '#60a5fa',
       tiers: 'tuberia',
       piezas: ['tanque'], requiere: 'pluviales',
       desc: 'Saca el agua de lluvia del colector antes de que sature la depuradora.'
@@ -1318,7 +1333,7 @@ export const CONFIG = {
              'DEPÓSITO. El agua se guarda EN ALTO para bajar por gravedad con ' +
              'presión: por eso esta pieza pide relieve, no llano.' },
     { id: 'tuberia',   titulo: 'Paso 4: únelo todo con tubería',
-      texto: 'Elige «Tender agua» y marca el recorrido casilla a casilla DESDE ' +
+      texto: 'Elige «Colocar tubería de agua» y marca el recorrido casilla a casilla DESDE ' +
              'tu pueblo HASTA la captación, pasando pegado al bombeo y al ' +
              'depósito — tocar una casilla vecina basta para conectarlos. Clic ' +
              'en la última casilla para rematar y pagar. Lo que no queda ' +
@@ -1331,6 +1346,17 @@ export const CONFIG = {
              'búscalo en el mapa y repáralo clicando encima. Al crecer llegarán ' +
              'el saneamiento, las pluviales y la basura, cada uno con SU red.' }
   ],
+
+  /* El CIERRE de la guía (OJO: clave propia porque `tutorial` es un array):
+     Manuel se despedía sin decir nada, y el final del tutorial es justo
+     donde hay que dar la enhorabuena y señalar el horizonte (petición del
+     autor). Sale como "Manuel dice" al completarse el último paso. */
+  cierreGuia: {
+    texto: '¡Enhorabuena, esto ya es una red de verdad! Lo que has montado ' +
+           'aquí es lo mismo que hice yo toda mi vida, a otra escala. Ahí ' +
+           'fuera hay treinta y cinco pueblos esperando: sirve bien al tuyo, ' +
+           'que crezca, y ve a por el siguiente. Yo estaré por aquí.'
+  },
 
   /* ---------- LOS HITOS ----------
      Cuando se abre un servicio nuevo, el juego CAMBIA de problema: hasta ese

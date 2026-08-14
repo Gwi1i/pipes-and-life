@@ -64,6 +64,11 @@ def lineas_del_juego():
     if m:
         lineas['presentacion'] = unir_cadenas(m.group(1))
 
+    # El cierre de la guia (CONFIG.cierreGuia): la enhorabuena de Manuel
+    m = re.search(r"cierreGuia: \{\s*texto: ((?:'[^']*'\s*\+?\s*)+)", config)
+    if m:
+        lineas['cierreGuia'] = unir_cadenas(m.group(1))
+
     comentarios = open(os.path.join(RAIZ, 'src', 'comentarios.js'), encoding='utf-8').read()
     for m in re.finditer(r"id: '(\w+)'.*?texto: ((?:'[^']*'\s*\+?\s*)+)\n",
                          comentarios, re.DOTALL):

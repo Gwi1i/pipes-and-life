@@ -13,7 +13,7 @@
 import { CONFIG } from './config.js';
 import { celdaEn, clicsParaDestapar, esAlcanzable, puedeColocar,
          puedeSeguirTrazado, costeTrazado, costeCasillaTuberia,
-         diametro, nivelDiametro, redDe } from './mapa.js';
+         diametro, nivelDiametro, redDe, casillaEnRed } from './mapa.js';
 import { poderExpansion, llenadoVaso, factorEstiaje,
          capacidad, escalonCaserio } from './simulacion.js';
 import { formatear } from './util.js';
@@ -205,6 +205,13 @@ export class EscenaMapa extends Escena {
     base = mezclarColor(base, v > 0.5 ? '#ffffff' : '#000000', Math.abs(v - 0.5) * E.variacion);
     if(esAgua && celda.insalubre > 0)
       base = mezclarColor(base, '#7a6a34', Math.min(0.75, celda.insalubre));
+    // El SUELO CONTINUO: la casilla entera, sin hueco ni redondeo, con su
+    // color bien oscurecido. Es lo que hay "debajo" de la ficha — el hueco
+    // entre teselas pasa de vacío negro a tierra del mismo tono, y el mapa
+    // se lee como territorio en vez de como fichas flotando.
+    ctx.fillStyle = oscurecer(base, E.sueloOscuro);
+    ctx.fillRect(x, y, t + 0.5, t + 0.5);
+
     // La FICHA: cuadrado redondeado con hueco alrededor. Todo lo de dentro se
     // recorta contra ella, asi el terreno nunca se sale de su tesela.
     const g = t * E.separacion, r = t * E.radio;
@@ -217,6 +224,21 @@ export class EscenaMapa extends Escena {
 
     ctx.fillStyle = base;
     ctx.fillRect(fx, fy, fl, fl);
+
+    // El MOTEADO: parches suaves de luz y sombra, sembrados por casilla (el
+    // ruido de siempre decide dónde). Sin esto la hierba era pintura plana.
+    if(!esAgua && E.moteado > 0){
+      for(let k = 0; k < E.motas; k++){
+        const mu = (v * 17 + k * 0.41) % 1, mw = (v * 29 + k * 0.67) % 1;
+        // Pequeñas: con parches grandes el prado parecía de camuflaje
+        const mr = fl * (0.09 + ((v * 7 + k * 0.23) % 1) * 0.11);
+        ctx.fillStyle = mezclarColor(base, k % 2 ? '#ffffff' : '#000000', E.moteado);
+        ctx.beginPath();
+        ctx.ellipse(fx + fl * (0.15 + mu * 0.7), fy + fl * (0.15 + mw * 0.7),
+                    mr, mr * 0.7, mu * 3, 0, 7);
+        ctx.fill();
+      }
+    }
 
     if(esAgua) this.pintarAgua(celda, c, f, fx, fy, fl, base);
     else this.pintarTierra(celda, c, f, fx, fy, fl, base, v);
@@ -334,13 +356,23 @@ export class EscenaMapa extends Escena {
     // Ojo con la normalización: `factorEstiaje` va de factorMin a factorMax y el
     // máximo pasa de 1, así que restarle a 1 daba negativo casi todo el año y el
     // lecho no aparecía nunca.
+    // Y el lecho SOLO aparece donde hay ORILLA de verdad: se mira vecino a
+    // vecino. Antes se pintaba en los dos bordes perpendiculares a la
+    // corriente, y una casilla en mitad del río lucía orillas contra otra
+    // agua — lo cazó el autor jugando.
     const Q = CONFIG.estiaje;
     const seco = limitar((Q.factorMax - this.estiaje) / (Q.factorMax - Q.factorMin), 0, 1) * 0.34;
-    if(seco > 0.01){
+    if(seco > 0.01 && mapa){
+      const esTierra = (dc, df) => {
+        const v = celdaEn(mapa, c + dc, f + df);
+        return !!v && v.tipo !== 'agua' && v.tipo !== 'lago';
+      };
       ctx.fillStyle = 'rgba(150,132,96,0.55)';
       const b = t * seco * 0.5;
-      if(horizontal){ ctx.fillRect(x, y, t, b); ctx.fillRect(x, y + t - b, t, b); }
-      else { ctx.fillRect(x, y, b, t); ctx.fillRect(x + t - b, y, b, t); }
+      if(esTierra(0, -1)) ctx.fillRect(x, y, t, b);
+      if(esTierra(0, 1))  ctx.fillRect(x, y + t - b, t, b);
+      if(esTierra(-1, 0)) ctx.fillRect(x, y, b, t);
+      if(esTierra(1, 0))  ctx.fillRect(x + t - b, y, b, t);
     }
 
     if(celda.insalubre > 0){
@@ -1463,7 +1495,12 @@ export class EscenaMapa extends Escena {
         // EL NIVEL SE VE. `vivo.lleno` sale del agua que de verdad tienes en el
         // pueblo activo: el depósito deja de ser un adorno y pasa a ser el
         // mismo dato que la barra de abajo, pero puesto donde está la cosa.
-        if(this.vivo){
+        // SOLO si está CONECTADO: un depósito sin tubería llenándose y
+        // vaciándose al ritmo del pueblo no es lógico (lo cazó el autor
+        // jugando el tutorial) — sin red, se queda vacío, como debe.
+        const enchufado = obra && this._estado
+          && casillaEnRed(this._estado, obra.col, obra.fila, 'abastecimiento');
+        if(this.vivo && enchufado){
           ctx.save();
           ctx.globalAlpha = 0.85;
           this.laminaEnCilindro(cx, suelo - t * 0.20, rw * 0.86, rh * 0.86,
@@ -1476,27 +1513,66 @@ export class EscenaMapa extends Escena {
         break;
       }
 
-      case 'bomba': {         // caseta: puerta, dos ventanas y respiradero
-        const an = W * 0.82, al = t * 0.24;
-        // EL GOLPE. Al clicar, la caseta da un respingo y suelta vapor: es la
-        // pieza del clic principal y era la única que no reaccionaba al usarla.
+      case 'bomba': {
+        // ESTACIÓN DE BOMBEO, rehecha para que se ENTIENDA (el autor no la
+        // leía): la caseta se encoge y el protagonista pasa a ser el GRUPO
+        // DE BOMBEO a la vista — cuerpo de bomba azul, motor y la tubería
+        // de impulsión gorda con sus bridas. Una caseta sola era una casita.
+        const an = W * 0.62, al = t * 0.22;
+        // EL GOLPE. Al clicar, el conjunto da un respingo y suelta vapor: es
+        // la pieza del clic principal y era la única que no reaccionaba.
         const g = this.golpe > 0 ? this.golpe / CONFIG.estiloMapa.duracionGolpe : 0;
         if(g > 0){
           ctx.save();
           ctx.translate(0, Math.sin(g * Math.PI * 3) * t * 0.02 * g);
         }
-        this.isoCaja(cx, suelo, an, an * 0.5, al, color);
-        this.ventanas(cx - an * 0.85, suelo - al, an * 0.75, al, 2, luz);
-        this.puerta(cx + an * 0.42, suelo, an * 0.26, al * 0.62, color);
-        this.isoTejado(cx, suelo - al, an, an * 0.5, t * 0.11, oscurecer(color, 0.15));
-        // tubo de impulsión con su codo
-        ctx.strokeStyle = metal;
-        ctx.lineWidth = Math.max(2, t * 0.045);
+        // la caseta, más pequeña y a un lado
+        this.isoCaja(cx - W * 0.38, suelo - t * 0.01, an, an * 0.5, al, color);
+        this.puerta(cx - W * 0.20, suelo - t * 0.01, an * 0.30, al * 0.62, color);
+        this.isoTejado(cx - W * 0.38, suelo - t * 0.01 - al, an, an * 0.5,
+                       t * 0.09, oscurecer(color, 0.15));
+        // EL GRUPO DE BOMBEO, fuera y a la vista: bancada, cuerpo azul
+        // horizontal y motor acoplado
+        const gx = cx + W * 0.48, gy = suelo + t * 0.03;
+        this.isoCaja(gx, gy, W * 0.42, H * 0.42, t * 0.045, oscurecer(color, 0.35));
+        const azul = '#3f7fb5';
+        // cuerpo de la bomba (cilindro tumbado)
+        ctx.fillStyle = azul;
         ctx.beginPath();
-        ctx.moveTo(cx - an * 1.05, suelo - t * 0.02);
-        ctx.lineTo(cx - an * 1.05, suelo - t * 0.26);
-        ctx.lineTo(cx - an * 0.55, suelo - t * 0.30);
+        ctx.ellipse(gx, gy - t * 0.095, W * 0.34, t * 0.055, 0, 0, 7);
+        ctx.fill();
+        ctx.fillStyle = aclarar(azul, 0.25);
+        ctx.beginPath();
+        ctx.ellipse(gx - W * 0.1, gy - t * 0.115, W * 0.20, t * 0.028, 0, 0, 7);
+        ctx.fill();
+        // el motor, un tambor más claro en el extremo
+        ctx.fillStyle = oscurecer(azul, 0.25);
+        ctx.beginPath();
+        ctx.ellipse(gx + W * 0.30, gy - t * 0.095, W * 0.11, t * 0.05, 0, 0, 7);
+        ctx.fill();
+        // la IMPULSIÓN: tubería gorda que sube y cruza hacia la caseta,
+        // con sus bridas marcadas
+        ctx.strokeStyle = metal;
+        ctx.lineWidth = Math.max(2.5, t * 0.055);
+        ctx.beginPath();
+        ctx.moveTo(gx - W * 0.28, gy - t * 0.10);
+        ctx.lineTo(gx - W * 0.28, suelo - t * 0.30);
+        ctx.lineTo(cx - W * 0.38, suelo - t * 0.34);
         ctx.stroke();
+        ctx.lineWidth = Math.max(1.5, t * 0.02);
+        for(const [fx2, fy2] of [[gx - W * 0.28, suelo - t * 0.20],
+                                 [cx - W * 0.05, suelo - t * 0.325]]){
+          ctx.beginPath();
+          ctx.moveTo(fx2 - t * 0.03, fy2); ctx.lineTo(fx2 + t * 0.03, fy2);
+          ctx.stroke();
+        }
+        // manómetro: el circulito con aguja que dice "aquí hay presión"
+        const mx = gx - W * 0.28, my = suelo - t * 0.36;
+        ctx.fillStyle = '#e8eef4';
+        ctx.beginPath(); ctx.arc(mx, my, t * 0.035, 0, 7); ctx.fill();
+        ctx.strokeStyle = '#b8452e'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(mx, my);
+        ctx.lineTo(mx + t * 0.02, my - t * 0.02); ctx.stroke();
         if(g > 0){
           ctx.restore();
           // vapor: sale de golpe y se deshace, como el escape de una bomba
@@ -1513,7 +1589,12 @@ export class EscenaMapa extends Escena {
         break;
       }
 
-      case 'captacion': {     // toma sobre pilotes, con reja y barandilla
+      case 'captacion': {
+        // OBRA DE TOMA, rehecha para que se ENTIENDA (el autor no la leía):
+        // sus tres señas del oficio, exageradas — la REJA de barrotes por la
+        // que entra el agua, el VOLANTE rojo de la compuerta y la TUBERÍA
+        // gruesa que se lleva lo captado.
+        // pilotes clavados al lecho
         ctx.strokeStyle = oscurecer(color, 0.55);
         ctx.lineWidth = Math.max(1.5, t * 0.030);
         for(const dx of [-0.55, 0, 0.55]){
@@ -1522,21 +1603,47 @@ export class EscenaMapa extends Escena {
           ctx.lineTo(cx + W * dx, suelo - t * 0.02);
           ctx.stroke();
         }
-        this.isoCaja(cx, suelo, W * 0.9, H * 0.9, t * 0.08, color);
+        this.isoCaja(cx, suelo, W * 0.9, H * 0.9, t * 0.08, color);      // plataforma
         this.barandilla(cx, suelo - t * 0.08, W * 0.9, H * 0.9, t * 0.05, metal);
-        // casetilla de la reja, con su ventanuco
-        const an = W * 0.40, al = t * 0.16;
-        this.isoCaja(cx, suelo - t * 0.08, an, an * 0.5, al, aclarar(color, 0.10));
-        this.ventanas(cx - an * 0.8, suelo - t * 0.08 - al, an * 0.7, al, 1, luz);
-        // reja de la toma, bajo el agua
-        ctx.strokeStyle = 'rgba(255,255,255,0.30)';
-        ctx.lineWidth = 1;
-        for(let i = 0; i < 4; i++){
-          const px = cx - W * 0.5 + (W * i) / 3;
-          ctx.beginPath();
-          ctx.moveTo(px, suelo + t * 0.02); ctx.lineTo(px, suelo + t * 0.10);
-          ctx.stroke();
+        // la TORRE de toma, con su cara frontal abierta en REJA
+        const an = W * 0.52, al = t * 0.26, techoT = suelo - t * 0.08;
+        this.isoCaja(cx, techoT, an, an * 0.5, al, aclarar(color, 0.08));
+        // la boca: hueco oscuro con barrotes bien visibles
+        const bx = cx - an * 0.78, by = techoT - al * 0.82;
+        const bw = an * 1.15, bh = al * 0.62;
+        ctx.fillStyle = 'rgba(10,22,32,0.85)';
+        ctx.fillRect(bx, by, bw, bh);
+        ctx.strokeStyle = metal;
+        ctx.lineWidth = Math.max(1, t * 0.016);
+        for(let i = 1; i <= 4; i++){
+          const px = bx + (bw * i) / 5;
+          ctx.beginPath(); ctx.moveTo(px, by); ctx.lineTo(px, by + bh); ctx.stroke();
         }
+        // el VOLANTE de la compuerta, rojo óxido sobre la torre: la señal
+        // universal de "aquí se abre y se cierra el agua"
+        const vx = cx + an * 0.55, vy = techoT - al - t * 0.055, vr = t * 0.055;
+        ctx.strokeStyle = '#b8452e';
+        ctx.lineWidth = Math.max(1.5, t * 0.022);
+        ctx.beginPath(); ctx.ellipse(vx, vy, vr, vr * 0.45, 0, 0, 7); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(vx - vr, vy); ctx.lineTo(vx + vr, vy);
+        ctx.moveTo(vx, vy - vr * 0.45); ctx.lineTo(vx, vy + vr * 0.45);
+        ctx.stroke();
+        ctx.strokeStyle = oscurecer('#b8452e', 0.3);
+        ctx.beginPath(); ctx.moveTo(vx, vy); ctx.lineTo(vx, techoT - al); ctx.stroke();
+        // la TUBERÍA que se lleva el agua: gruesa, con bridas, hacia tierra
+        ctx.strokeStyle = metal;
+        ctx.lineWidth = Math.max(2.5, t * 0.055);
+        ctx.beginPath();
+        ctx.moveTo(cx + an * 0.9, techoT - al * 0.35);
+        ctx.lineTo(cx + W * 1.15, techoT - al * 0.35);
+        ctx.lineTo(cx + W * 1.15, suelo + t * 0.06);
+        ctx.stroke();
+        ctx.lineWidth = Math.max(1.5, t * 0.02);
+        ctx.beginPath();
+        ctx.moveTo(cx + W * 1.02, techoT - al * 0.35 - t * 0.035);
+        ctx.lineTo(cx + W * 1.02, techoT - al * 0.35 + t * 0.035);
+        ctx.stroke();
         break;
       }
 

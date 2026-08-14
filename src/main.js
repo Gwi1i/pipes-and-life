@@ -380,7 +380,10 @@ function procesarAcciones(){
             ui.invalidarCache();
             ui.reconstruirPestanas(estado);
           }
-          estado.seleccion = null;
+          // Y lo SELECCIONA: aquí se ponía null de cuando clicar tu pueblo no
+          // enseñaba nada. Ahora tiene ficha (nombre, estampa, datos) y
+          // esconderla era el fallo que el autor encontró jugando.
+          estado.seleccion = { col, fila };
           bombear(estado.activo, estado);
           escena.destello(a.x, a.y);
           escena.golpeBomba();
@@ -1286,9 +1289,24 @@ function bucle(ahora){
     estado.anotar(`Guía: ${pasoHecho.titulo} ✓`, 'ok');
     sonido.hallazgo();      // el paso conseguido se celebra, bajito
     ui.caraGuia('bien');    // ...y el guía lo celebra con la cara, si la tiene
+    // Conectar la tubería al pueblo es EL momento del tutorial: se subraya
+    // aparte del avance de la guía (petición del autor).
+    if(pasoHecho.id === 'tuberia'){
+      avisar('¡Conectado! El agua ya tiene camino hasta el pueblo.');
+      sonido.reparada();
+    }
     // Y lee el paso NUEVO, si hay voz: el que acaba de aparecer en el bocadillo
     const siguiente = pasoActual(estado);
     if(siguiente) sonido.hablar(siguiente.titulo + '. ' + siguiente.texto, siguiente.id);
+    else {
+      // EL CIERRE: la guía se acababa y Manuel se iba sin despedirse — el
+      // último paso merece enhorabuena y un empujón hacia lo que viene
+      // (petición del autor). Sale como "Manuel dice", no como paso.
+      const c = CONFIG.cierreGuia;
+      ui.mostrarComentario({ id: 'cierreGuia', texto: c.texto, animo: 'bien' });
+      sonido.pueblo();
+      sonido.hablar(c.texto, 'cierreGuia');
+    }
   }
   anotarCrecimiento();
 
