@@ -97,6 +97,15 @@ export function destapar(){
   tono(660, 990, 0.09, 'sine', 0.14, 0.05);
 }
 
+/** Un PUEBLO descubierto: campanitas que suben — el logro del explorador.
+ *  Distinta de la fanfarria de hito, que esa es de contarHito y de nadie más. */
+export function descubierto(){
+  tono(523, 523, 0.16, 'triangle', 0.35);
+  tono(659, 659, 0.16, 'triangle', 0.35, 0.11);
+  tono(784, 784, 0.26, 'triangle', 0.40, 0.22);
+  tono(1046, 1046, 0.40, 'sine', 0.22, 0.22);
+}
+
 /** Colocar una pieza: un buen zumbo de obra que asienta. */
 export function colocar(){
   tono(95, 60, 0.16, 'triangle', 0.5);

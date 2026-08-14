@@ -13,7 +13,8 @@
 import { CONFIG } from './config.js';
 import { celdaEn, clicsParaDestapar, esAlcanzable, puedeColocar,
          puedeSeguirTrazado, costeTrazado, costeCasillaTuberia,
-         diametro, nivelDiametro, redDe, casillaEnRed } from './mapa.js';
+         diametro, nivelDiametro, redDe, casillaEnRed,
+         nucleoMasCercano } from './mapa.js';
 import { poderExpansion, llenadoVaso, factorEstiaje,
          capacidad, escalonCaserio } from './simulacion.js';
 import { formatear } from './util.js';
@@ -768,10 +769,13 @@ export class EscenaMapa extends Escena {
         const y = Math.round(f * t - estado.camara.y);
         if(celda.arqueologia && celda.aflorado) this.dibujarYacimiento(celda, x, y, t);
         if(celda.hallazgo)
-          // Los habitantes se resuelven aquí, que es donde se sabe la casilla:
-          // los del pueblo si está incorporado, los sembrados si aún no. Así un
-          // núcleo lejano ya enseña de lejos si es una aldea o una ciudad.
-          this.dibujarHallazgo(celda, x, y, t, this.habitantesDe(celda, estado, c, f));
+          // El dato extra se resuelve aquí, que es donde se sabe la casilla:
+          // para un pueblo, sus habitantes (los reales o los sembrados); para
+          // una señal, el núcleo sin resolver más cercano — su brújula.
+          this.dibujarHallazgo(celda, x, y, t,
+            celda.hallazgo === 'senal'
+              ? nucleoMasCercano(estado.mapa, c, f)
+              : this.habitantesDe(celda, estado, c, f));
       }
     }
   }
@@ -793,7 +797,8 @@ export class EscenaMapa extends Escena {
     return p ? p.habitantes : (celda.habIni || 0);
   }
 
-  dibujarHallazgo(celda, x, y, t, habitantes){
+  dibujarHallazgo(celda, x, y, t, extra){
+    const habitantes = typeof extra === 'number' ? extra : 0;
     const ctx = this.ctx;
     const col = CONFIG.hallazgos.color[celda.hallazgo] || '#ffffff';
     const cx = x + t / 2, cy = y + t / 2;
@@ -803,7 +808,8 @@ export class EscenaMapa extends Escena {
     // muro roto dejaba fantasmas por el mapa y ensuciaba la pieza reparada.
     if(celda.resuelto && celda.hallazgo === 'ruina') return;
 
-    if(!celda.resuelto){   // aún por atender: late para que se vea
+    // La señal no late: es un cartel, no un premio pendiente
+    if(!celda.resuelto && celda.hallazgo !== 'senal'){
       const pulso = 0.5 + Math.sin(this.tiempo * 3) * 0.5;
       ctx.globalAlpha = 0.20 + pulso * 0.28;
       ctx.fillStyle = col;
@@ -822,6 +828,7 @@ export class EscenaMapa extends Escena {
     if(celda.hallazgo === 'pueblo')
       this.caserio(cx, y + t * 0.70, t, col, habitantes);
     else if(celda.hallazgo === 'ruina') this.ruina(cx, y + t * 0.70, t, col);
+    else if(celda.hallazgo === 'senal') this.senal(cx, y + t * 0.72, t, extra);
     else return;
 
     ctx.globalAlpha = 1;
@@ -936,6 +943,51 @@ export class EscenaMapa extends Escena {
     // el chapitel
     this.isoTejado(bx, by - t * 0.26, t * 0.05, t * 0.025, t * 0.09,
                    oscurecer(tejado, 0.18));
+  }
+
+  /**
+   * La SEÑAL DE CAMINO: poste de madera con su flecha apuntando al pueblo sin
+   * resolver más cercano, y encima la distancia en casillas. Es la brújula
+   * del explorador — encontrarla es encontrar un rumbo.
+   */
+  senal(cx, suelo, t, objetivo){
+    const ctx = this.ctx;
+    const madera = '#8a6a42';
+    // sombra y poste
+    this.sombraPieza(cx, suelo + t * 0.015, t * 0.10, t * 0.035, 0.25);
+    ctx.fillStyle = oscurecer(madera, 0.30);
+    ctx.fillRect(cx - t * 0.018, suelo - t * 0.30, t * 0.036, t * 0.31);
+    ctx.fillStyle = madera;
+    ctx.fillRect(cx - t * 0.018, suelo - t * 0.30, t * 0.018, t * 0.31);
+    if(!objetivo) return;   // ya no queda a quién señalar
+    // la FLECHA: tabla que apunta hacia el pueblo (solo giro suave, que un
+    // cartel boca abajo no hay quien lo lea)
+    ctx.save();
+    ctx.translate(cx, suelo - t * 0.26);
+    let a = Math.atan2(objetivo.dy, objetivo.dx);
+    const mira = Math.abs(a) > Math.PI / 2;   // apunta a la izquierda
+    if(mira) a = a > 0 ? a - Math.PI : a + Math.PI;   // se voltea la tabla
+    a = Math.max(-0.5, Math.min(0.5, a));     // inclinación contenida
+    ctx.rotate(a);
+    const L = t * 0.30, alto = t * 0.115, dir = mira ? -1 : 1;
+    ctx.fillStyle = oscurecer(madera, 0.18);
+    ctx.beginPath();
+    ctx.moveTo(-L * 0.55 * dir, -alto / 2);
+    ctx.lineTo(L * 0.75 * dir, -alto / 2);
+    ctx.lineTo(L * dir, 0);
+    ctx.lineTo(L * 0.75 * dir, alto / 2);
+    ctx.lineTo(-L * 0.55 * dir, alto / 2);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = oscurecer(madera, 0.45);
+    ctx.lineWidth = Math.max(1, t * 0.014);
+    ctx.stroke();
+    // la distancia, grabada en la tabla
+    ctx.fillStyle = '#f4ead2';
+    ctx.font = `700 ${Math.max(8, t * 0.13)}px "IBM Plex Mono", monospace`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(String(Math.round(objetivo.d)), L * 0.12 * dir, 0.5);
+    ctx.restore();
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
   }
 
   /** Instalación abandonada: muros derruidos y cascotes. */
@@ -1061,13 +1113,19 @@ export class EscenaMapa extends Escena {
     if(!estado.tuberias.length) return;
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
 
+    const ordenRedes = Object.keys(CONFIG.redes);
     for(const tub of estado.tuberias){
-      const pts = tub.camino.map(p => ({
-        x: p.col * t - estado.camara.x + t / 2,
-        y: p.fila * t - estado.camara.y + t / 2
-      }));
       const clave = redDe(tub);
       const R = CONFIG.redes[clave] || CONFIG.redes.abastecimiento;
+      // El CARRIL de esta red: desvío fijo en diagonal, igual para toda la
+      // línea. En tramos horizontales separa en vertical y al revés — cuatro
+      // redes por la misma casilla se ven las cuatro, en paralelo.
+      const k = (ordenRedes.indexOf(clave) - (ordenRedes.length - 1) / 2)
+                * t * CONFIG.estiloMapa.carril;
+      const pts = tub.camino.map(p => ({
+        x: p.col * t - estado.camara.x + t / 2 + k,
+        y: p.fila * t - estado.camara.y + t / 2 + k
+      }));
       // El GROSOR dice el calibre y el COLOR la red: el cuello de botella se
       // localiza mirando el mapa, sin abrir ninguna tabla.
       const escala = 1 + nivelDiametro(tub.dn, clave) * 0.55;
@@ -1307,6 +1365,24 @@ export class EscenaMapa extends Escena {
     ctx.strokeStyle = oscurecer(color, 0.55);
     ctx.lineWidth = Math.max(0.8, W * 0.05);
     ctx.stroke();
+
+    // La TINTA: silueta exterior en oscuro, como el arte de los minijuegos.
+    // Es lo que despega la pieza del terreno (probado a petición del autor).
+    const tinta = CONFIG.estiloMapa.tinta;
+    if(tinta > 0){
+      ctx.strokeStyle = `rgba(14,21,29,${tinta})`;
+      ctx.lineWidth = Math.max(1, W * 0.075);
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      ctx.moveTo(cx - W, baseY);
+      ctx.lineTo(cx, baseY + H);
+      ctx.lineTo(cx + W, baseY);
+      ctx.lineTo(cx + W, ty);
+      ctx.lineTo(cx, ty - H);
+      ctx.lineTo(cx - W, ty);
+      ctx.closePath();
+      ctx.stroke();
+    }
   }
 
   /** Cilindro isométrico: depósitos, tanques y decantadores. */
@@ -1336,6 +1412,21 @@ export class EscenaMapa extends Escena {
     ctx.strokeStyle = oscurecer(color, 0.5);
     ctx.lineWidth = Math.max(0.8, W * 0.05);
     ctx.stroke();
+
+    // La TINTA: silueta exterior del cilindro (ver isoCaja)
+    const tinta = CONFIG.estiloMapa.tinta;
+    if(tinta > 0){
+      ctx.strokeStyle = `rgba(14,21,29,${tinta})`;
+      ctx.lineWidth = Math.max(1, W * 0.075);
+      ctx.beginPath();
+      ctx.moveTo(cx - W, baseY);
+      ctx.lineTo(cx - W, ty);
+      ctx.ellipse(cx, ty, W, H, 0, Math.PI, 0);
+      ctx.lineTo(cx + W, baseY);
+      ctx.ellipse(cx, baseY, W, H, 0, 0, Math.PI);
+      ctx.closePath();
+      ctx.stroke();
+    }
   }
 
   /**
@@ -1367,6 +1458,18 @@ export class EscenaMapa extends Escena {
     ctx.moveTo(O[0], O[1]); ctx.lineTo(S[0], S[1]); ctx.lineTo(E[0], E[1]);
     ctx.moveTo(S[0], S[1]); ctx.lineTo(cx, cumbre);
     ctx.stroke();
+
+    // La TINTA: el perímetro del tejado (ver isoCaja)
+    const tinta = CONFIG.estiloMapa.tinta;
+    if(tinta > 0){
+      ctx.strokeStyle = `rgba(14,21,29,${tinta})`;
+      ctx.lineWidth = Math.max(1, W * 0.07);
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      ctx.moveTo(O[0], O[1]); ctx.lineTo(cx, cumbre); ctx.lineTo(E[0], E[1]);
+      ctx.lineTo(S[0], S[1]); ctx.closePath();
+      ctx.stroke();
+    }
   }
 
   /* ---------- detalles finos de las piezas ----------

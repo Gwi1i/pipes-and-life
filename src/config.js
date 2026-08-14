@@ -643,6 +643,16 @@ export const CONFIG = {
        con 0.10 ya parecía camuflaje militar. */
     motas: 4,               // parches por casilla
     moteado: 0.05,          // cuánto aclara/oscurece cada parche
+    /* CARRILES: cuando varias redes cruzan la misma casilla, cada una va por
+       su desvío en paralelo — como una zanja de servicios de verdad. Antes
+       todas pasaban por el centro exacto y la última pintada tapaba a las
+       demás (pregunta del autor: se solapaban, sí). El orden del carril es
+       el de CONFIG.redes. */
+    carril: 0.11,           // separación entre redes, en fracción de casilla
+    /* TINTA: contorno oscuro en las aristas de las edificaciones, como en el
+       resto del arte del juego (residuos, contenedores, piezas del
+       minijuego). 0 lo apaga. */
+    tinta: 0.45,            // alfa del contorno de las piezas
     // El contorno de cada ficha, en vez de un negro duro: oscurece su propio
     // color. Así la línea pertenece a la tesela y no la recorta contra el fondo.
     contorno: 0.30,         // cuánto se oscurece el color base para el borde
@@ -1034,7 +1044,15 @@ export const CONFIG = {
     // Los PUEBLOS ya no se siembran aquí: van por anillos (CONFIG.nucleos)
     ruinas: 30,
     distanciaMinima: 4,      // nada de hallazgos pegados al origen
-    color: { pueblo: '#facc15', ruina: '#c084fc', arqueologia: '#d9a441' },
+    color: { pueblo: '#facc15', ruina: '#c084fc', arqueologia: '#d9a441',
+             senal: '#d9c58a' },
+    /* SEÑALES DE CAMINO: cada núcleo siembra una a medio camino hacia el
+       origen. Al destaparla apunta al pueblo sin descubrir MÁS CERCANO con
+       su distancia — explorar deja de ser dar clics sin rumbo (petición del
+       autor). La dirección se calcula en vivo: cuando ese pueblo cae, la
+       señal pasa a apuntar al siguiente. */
+    senalDistMin: 4,        // a cuántas casillas del pueblo se planta
+    senalDistMax: 7,
 
     // Qué pieza puede salir de una instalación abandonada, y con qué peso
     piezasRuina: ['bomba', 'bomba', 'deposito', 'captacion', 'depuradora', 'tanque'],

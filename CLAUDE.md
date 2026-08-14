@@ -625,6 +625,28 @@ del pellizco antes que el otro colaba un tap — se bloquea con `fuePellizco`
 hasta soltar TODOS los dedos. En móvil (≤640px) el HUD pasa a rejilla 4×2
 porque en fila se cortaban cuatro números de ocho, entre ellos Servicio.
 
+**Explorar tiene RUMBO: las señales de camino.** Cada núcleo siembra una
+señal (`hallazgo: 'senal'`, `sembrarSenales`) a `senalDistMin..Max` casillas
+hacia el origen. Destapada, es un poste con flecha y distancia que apunta al
+pueblo SIN RESOLVER más cercano (`nucleoMasCercano`, calculado EN VIVO: al
+incorporar ese pueblo pasa sola al siguiente). No late como los premios —es
+un cartel, no un hallazgo pendiente— y no bloquea obra. Y descubrir un
+PUEBLO ya no es una línea del registro: sale la TARJETA (`mostrarDescubierto`
+en main, overlay `descubierto-fondo`) con la estampa de su escalón, el nombre
+y sus vecinos pidiendo el agua, más fanfarria propia (`sonido.descubierto` —
+distinta del hito, que sigue siendo solo de `contarHito`). Sale CADA vez: 36
+pueblos son 36 momentos, no un hito de una sola vez.
+
+**Las redes van por CARRILES.** Cuando varias cruzan la misma casilla ya no
+se tapan (se solapaban en el centro exacto y la última pintada ganaba): cada
+red lleva un desvío diagonal fijo (`estiloMapa.carril`, orden el de
+`CONFIG.redes`) y se ven las cuatro en paralelo, como una zanja de servicios.
+
+**Las piezas llevan TINTA.** `estiloMapa.tinta` es el alfa de la silueta
+oscura que los ayudantes isométricos (isoCaja, isoCilindro, isoTejado) trazan
+alrededor de cada pieza — el mismo lenguaje que los minijuegos y los
+residuos. A 0 se apaga.
+
 **El mapa y el abastecimiento son UN SOLO bucle.** `poderExpansion(estado)` sale
 de la población, el nivel de servicio, el desgaste y las averías, y DIVIDE el
 coste en clics de destapar casillas (`clicsParaDestapar`). Es lo que impide que

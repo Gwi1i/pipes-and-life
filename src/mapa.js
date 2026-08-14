@@ -102,6 +102,7 @@ export function generarMapa(semilla = CONFIG.mapaMundo.semilla, radioExtra = 0){
 
   suavizarArranque(celdas);
   sembrarPueblos(celdas, azar);
+  sembrarSenales(celdas, azar);
   sembrarProteccion(celdas, azar);
   // La garantía va DESPUÉS de proteger y ANTES de nada más: si una zona ha
   // dejado un pueblo incomunicado, aquí se le abre el paso.
@@ -129,6 +130,48 @@ function suavizarArranque(celdas){
     if(distanciaAlOrigen(c, f) > M.radioAmable) return;
     if(rebaja[celda.tipo]) celda.tipo = rebaja[celda.tipo];
   });
+}
+
+/**
+ * Cada núcleo planta una SEÑAL DE CAMINO a medio camino hacia el origen: al
+ * destaparla apunta al pueblo SIN DESCUBRIR más cercano, con su distancia.
+ * Explorar deja de ser dar clics sin rumbo (petición del autor): encontrar
+ * una señal es encontrar un rumbo, no todavía el premio.
+ */
+function sembrarSenales(celdas, azar){
+  const M = CONFIG.mapaMundo, H = CONFIG.hallazgos;
+  recorrer(celdas, (celda, c, f) => {
+    if(celda.hallazgo !== 'pueblo') return;
+    if(c === M.origen.col && f === M.origen.fila) return;
+    const dx = M.origen.col - c, dy = M.origen.fila - f;
+    const d = Math.hypot(dx, dy) || 1;
+    const paso = H.senalDistMin + azar() * (H.senalDistMax - H.senalDistMin);
+    for(let intento = 0; intento < 6; intento++){
+      const sc = Math.round(c + (dx / d) * paso + (azar() - 0.5) * 3);
+      const sf = Math.round(f + (dy / d) * paso + (azar() - 0.5) * 3);
+      const sitio = celdaEn(celdas, sc, sf);
+      if(!sitio || sitio.hallazgo || sitio.protegida) continue;
+      if(sitio.tipo === 'agua' || sitio.tipo === 'lago') continue;
+      sitio.hallazgo = 'senal';
+      return;
+    }
+  });
+}
+
+/** El núcleo SIN RESOLVER más cercano a (col,fila). Es la brújula de las
+ *  señales, calculada EN VIVO: cuando ese pueblo se incorpora, la señal pasa
+ *  sola a apuntar al siguiente. */
+export function nucleoMasCercano(celdas, col, fila){
+  let mejor = null, mejorD = Infinity;
+  recorrer(celdas, (celda, c, f) => {
+    if(celda.hallazgo !== 'pueblo' || celda.resuelto) return;
+    const d = Math.hypot(c - col, f - fila);
+    if(d < mejorD){
+      mejorD = d;
+      mejor = { c, f, celda, d, dx: c - col, dy: f - fila };
+    }
+  });
+  return mejor;
 }
 
 /**

@@ -15,12 +15,14 @@ import { celdaEn, clicarCasilla, clicsParaDestapar, puedeColocar,
          piezaDeRuina, diametro, nivelDiametro, costeRenovar,
          averiaEn, aflorarArqueologia, tipoYacimiento,
          puedeEstudiar, estudiarZona, puedeSondear, sondear,
-         costeSondeo, claseAcuifero, edadAños, bautizarObra } from './mapa.js';
+         costeSondeo, claseAcuifero, edadAños, bautizarObra,
+         nombreDeNucleo } from './mapa.js';
 import { avanzar, bombear, costeMejora, requisitosAutobomba,
          poderExpansion, servicioActivo, costeAmpliarVertedero,
          capacidadVaso, faseActual, faltanParaFase,
          incorporarPueblo, canonIncorporacion, costeAmpliarPieza,
-         nivelCaserio, costeEstudio, veteraniaAlTrasladarse } from './simulacion.js';
+         nivelCaserio, escalonCaserio, costeEstudio,
+         veteraniaAlTrasladarse } from './simulacion.js';
 import { legado, cargarLegado, guardarLegado, borrarLegado,
          comprarVentaja, nivelVentaja, regionActual } from './legado.js';
 import { mezclarColor } from './escena.js';
@@ -674,6 +676,10 @@ function procesarAcciones(){
         break;
       }
 
+      case 'cerrarDescubierto':
+        document.getElementById('descubierto-fondo').hidden = true;
+        break;
+
       case 'trasladarse': {
         if(faseActual(estado) < CONFIG.comarcas.faseParaTrasladarse) break;
         const ganada = Math.max(estado.mejorVeterania || 0, veteraniaAlTrasladarse(estado));
@@ -941,13 +947,44 @@ function rematarTuberia(){
 function anunciarHallazgo(celda, col, fila){
   estado.descubiertas++;
   if(!celda.hallazgo) return;
+  // Un PUEBLO no es un aviso más: es EL premio del mapa. Tarjeta con su
+  // estampa, sus vecinos pidiendo el agua, y fanfarria propia (petición del
+  // autor). Sale cada vez — descubrir 36 pueblos son 36 momentos.
+  if(celda.hallazgo === 'pueblo'){
+    mostrarDescubierto(celda, col, fila);
+    return;
+  }
   const textos = {
-    pueblo:     `¡Un pueblo sin abastecer! Está a ${Math.round(distancia(col, fila))} casillas.`,
     ruina:      'Instalación abandonada. Se podrá reparar o llevar al inventario.',
+    senal:      'Una señal de camino: apunta al pueblo más cercano por descubrir.',
   };
+  if(!textos[celda.hallazgo]) return;
   estado.anotar(textos[celda.hallazgo], 'ok');
   avisar(textos[celda.hallazgo]);
   sonido.hallazgo();
+}
+
+/** La tarjeta del pueblo descubierto: estampa, nombre y el ruego de sus
+ *  vecinos. La estampa es la del ESCALÓN que le toca por tamaño sembrado. */
+function mostrarDescubierto(celda, col, fila){
+  const hab = Math.round(celda.habIni || CONFIG.nucleos.habitantesMin);
+  const esc = escalonCaserio(hab);
+  const nombre = nombreDeNucleo(celda.nombreIdx || 0);
+  const img = document.getElementById('desc-img');
+  img.hidden = false;
+  img.onerror = () => { img.hidden = true; };
+  img.src = `assets/f_${esc.nombre}.jpg`;
+  document.getElementById('desc-titulo').textContent = `¡Has encontrado ${nombre}!`;
+  document.getElementById('desc-texto').textContent =
+    `${esc.art === 'una' ? 'Una' : 'Un'} ${esc.nombre} de ${hab.toLocaleString('es-ES')} ` +
+    `habitantes, a ${Math.round(distancia(col, fila))} casillas de tu red.`;
+  document.getElementById('desc-ruego').textContent =
+    'Sus vecinos salen a recibirte: «Llevamos toda la vida esperando. ' +
+    'Por favor... ¡traednos el agua!»';
+  document.getElementById('descubierto-fondo').hidden = false;
+  estado.anotar(`Descubierto ${nombre}: ${hab.toLocaleString('es-ES')} habitantes esperando agua.`, 'ok');
+  sonido.descubierto();
+  analitica.contar('pueblo-descubierto');
 }
 const distancia = (c, f) =>
   Math.hypot(c - CONFIG.mapaMundo.origen.col, f - CONFIG.mapaMundo.origen.fila);
@@ -1375,7 +1412,8 @@ function bucle(ahora){
     acumManuel = 0;
     if(document.getElementById('portada').hidden
        && document.getElementById('minijuego').hidden
-       && document.getElementById('vuelta-fondo').hidden){
+       && document.getElementById('vuelta-fondo').hidden
+       && document.getElementById('descubierto-fondo').hidden){
       const com = comentar(estado, resultado, ahora / 1000);
       if(com){
         ui.mostrarComentario(com);

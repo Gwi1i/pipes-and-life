@@ -23,7 +23,7 @@ import { legado, nivelVentaja, costeVentaja, regionActual,
          epocaActual } from './legado.js';
 import { formatear } from './util.js';
 import { celdaEn, piezaDeRuina, diametro, nivelDiametro, costeRenovar,
-         nombreDeNucleo, tipoYacimiento,
+         nombreDeNucleo, tipoYacimiento, nucleoMasCercano,
          costeCasillaTuberia, puedeColocar,
          lineasConectadas, cuelloDeBotella, escalaDeRed,
          claseAcuifero, puedeSondear, costeSondeo,
@@ -566,6 +566,23 @@ export class UI {
     if(celda && celda.hallazgo === 'pueblo'){
       panel.style.display = '';
       cont.innerHTML = this.fichaPueblo(estado, celda, sel);
+      return;
+    }
+
+    // La SEÑAL DE CAMINO: dice a quién apunta y a cuánto, en vivo.
+    if(celda && celda.hallazgo === 'senal'){
+      panel.style.display = '';
+      const obj = nucleoMasCercano(estado.mapa, sel.col, sel.fila);
+      cont.innerHTML = obj
+        ? `<p class="red-cuello" style="--tono:${H.color.senal}"><b>Señal de camino</b></p>
+           <p class="m-desc">«${nombreDeNucleo(obj.celda.nombreIdx || 0)} ·
+             a ${Math.round(obj.d)} casillas»</p>
+           <p class="m-desc">Los camineros las plantaban donde el viajero dudaba.
+             Apunta siempre al pueblo por descubrir más cercano: cuando lo
+             incorpores, señalará al siguiente.</p>`
+        : `<p class="red-cuello" style="--tono:${H.color.senal}"><b>Señal de camino</b></p>
+           <p class="m-desc">Ya no señala a nadie: no queda ningún pueblo por
+             descubrir en la comarca. Buen trabajo.</p>`;
       return;
     }
 
