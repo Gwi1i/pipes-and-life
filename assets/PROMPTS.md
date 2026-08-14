@@ -137,6 +137,14 @@ ligera.** Aquí no hay transparencia que preservar, así que el PNG no aporta na
 > excavadora amarilla compactando arriba, chimeneas de desgasificación asomando y
 > una valla metálica rodeando todo el recinto
 
+### `f_potabilizadora.png`
+> Genera una imagen: una estación de tratamiento de agua potable vista desde
+> fuera, con dos balsas rectangulares de filtros llenas de agua clara y
+> quieta, un pequeño decantador, un edificio bajo de control con una puerta y
+> un tanque cilíndrico blanco de cloro junto a él, tuberías gruesas
+> conectando las balsas, todo limpio y ordenado sobre una explanada de
+> hierba, *(+ coletilla)*
+
 ### `f_reciclaje.png`
 > Genera una imagen: el interior luminoso de una planta de reciclaje de residuos,
 > una cinta transportadora larga con envases y cartones mezclados avanzando,

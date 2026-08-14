@@ -468,12 +468,18 @@ export class EscenaMapa extends Escena {
       // matorral son arbustos bajos y dispersos y el bosque cerrado una masa
       // apretada, así que si te lo encuentras tupido ya sabes que cruzarlo va a
       // costar sin necesidad de leer el precio.
+      // El BOSQUE CERRADO ya no es "un pinar con más conos": es frondoso, de
+      // copas redondas por lóbulos — el contraste de siluetas (cono contra
+      // nube) es lo que hace legible la familia de un vistazo. Y todos los
+      // árboles llevan TINTA, como las piezas (petición del autor: los
+      // árboles se veían pobres).
       const perfil = {
         matorral: { n: 3, alto: 0.24, an: 0.13, mata: true },
-        pinar:    { n: 4, alto: 0.44, an: 0.15, mata: false },
-        bosque:   { n: 6, alto: 0.50, an: 0.16, mata: false }
-      }[celda.tipo] || { n: 4, alto: 0.44, an: 0.15, mata: false };
+        pinar:    { n: 4, alto: 0.44, an: 0.15 },
+        bosque:   { n: 5, alto: 0.42, an: 0.18, frondoso: true }
+      }[celda.tipo] || { n: 4, alto: 0.44, an: 0.15 };
 
+      const tinta = `rgba(14,21,29,${CONFIG.estiloMapa.tinta * 0.8})`;
       const sitios = [[0.26, 0.58], [0.60, 0.48], [0.42, 0.80], [0.76, 0.70],
                       [0.16, 0.82], [0.66, 0.90]];
       for(let i = 0; i < perfil.n; i++){
@@ -483,18 +489,49 @@ export class EscenaMapa extends Escena {
         const an = t * perfil.an * esc, alto = t * perfil.alto * esc;
         const claro = aclarar(verde, 0.14 + rnd * 0.16);
         const oscuro = oscurecer(verde, 0.34 + rnd * 0.14);
+        // un lóbulo de follaje con su contorno: el ladrillo de matas y copas
+        const lobulo = (lx, ly, r, color) => {
+          ctx.fillStyle = tinta;
+          ctx.beginPath(); ctx.arc(lx, ly, r + Math.max(1, t * 0.012), 0, 7); ctx.fill();
+          ctx.fillStyle = color;
+          ctx.beginPath(); ctx.arc(lx, ly, r, 0, 7); ctx.fill();
+        };
 
         this.sombraPieza(px, baseY, an * 0.9, an * 0.30, 0.22);
 
         if(perfil.mata){
           // arbusto: dos bollos y sin tronco. Un matorral no tiene copa.
-          ctx.fillStyle = oscuro;
-          ctx.beginPath(); ctx.arc(px, baseY - alto * 0.42, an * 0.78, 0, 7); ctx.fill();
-          ctx.fillStyle = claro;
-          ctx.beginPath(); ctx.arc(px - an * 0.3, baseY - alto * 0.60, an * 0.52, 0, 7); ctx.fill();
+          lobulo(px, baseY - alto * 0.42, an * 0.78, oscuro);
+          lobulo(px - an * 0.3, baseY - alto * 0.60, an * 0.52, claro);
           continue;
         }
 
+        if(perfil.frondoso){
+          // FRONDOSO: tronco corto y copa de tres lóbulos, del oscuro de la
+          // base a la luz de arriba — una nube de follaje, no un cono
+          ctx.fillStyle = tinta;
+          ctx.fillRect(px - an * 0.11, baseY - alto * 0.34, an * 0.22, alto * 0.36);
+          ctx.fillStyle = '#4a3524';
+          ctx.fillRect(px - an * 0.08, baseY - alto * 0.32, an * 0.16, alto * 0.34);
+          lobulo(px + an * 0.32, baseY - alto * 0.50, an * 0.62, oscuro);
+          lobulo(px - an * 0.34, baseY - alto * 0.55, an * 0.58, mezclarColor(claro, oscuro, 0.5));
+          lobulo(px, baseY - alto * 0.78, an * 0.56, claro);
+          // el brillo de la copa, arriba a la izquierda como toda la luz
+          ctx.fillStyle = aclarar(claro, 0.22);
+          ctx.beginPath();
+          ctx.arc(px - an * 0.18, baseY - alto * 0.88, an * 0.24, 0, 7); ctx.fill();
+          if(nieve > 0.02){
+            ctx.fillStyle = 'rgba(240,248,255,' + (0.6 * nieve) + ')';
+            ctx.beginPath();
+            ctx.ellipse(px, baseY - alto * 0.86, an * 0.5, an * 0.22, 0, 0, 7);
+            ctx.fill();
+          }
+          continue;
+        }
+
+        // PINO: tronco y faldones en cono, ahora con su silueta a tinta
+        ctx.fillStyle = tinta;
+        ctx.fillRect(px - an * 0.12, baseY - alto * 0.20, an * 0.24, alto * 0.22);
         ctx.fillStyle = '#4a3524';
         ctx.fillRect(px - an * 0.09, baseY - alto * 0.18, an * 0.18, alto * 0.19);
         ctx.fillStyle = '#33251a';
@@ -505,6 +542,13 @@ export class EscenaMapa extends Escena {
           const w = an * (1 - k * (0.78 / faldones));
           const yb = baseY - alto * (0.14 + k * (0.72 / faldones));
           const yt = yb - alto * (0.40 / faldones * 1.6);
+          // la tinta del faldón, debajo de sus dos caras
+          ctx.strokeStyle = tinta;
+          ctx.lineWidth = Math.max(1, t * 0.016);
+          ctx.lineJoin = 'round';
+          ctx.beginPath();
+          ctx.moveTo(px - w, yb); ctx.lineTo(px, yt); ctx.lineTo(px + w, yb);
+          ctx.stroke();
           ctx.fillStyle = claro;
           ctx.beginPath();
           ctx.moveTo(px, yt); ctx.lineTo(px - w, yb);
@@ -544,6 +588,9 @@ export class EscenaMapa extends Escena {
       const alto = t * (perfil.alto + v * 0.10);
       const cumbre = base - alto;
       const cima = cx + (v - 0.5) * W * 0.35;
+
+      // la sombra de contacto: sin ella la montaña flotaba sobre la ficha
+      this.sombraPieza(cx + W * 0.12, base + t * 0.015, W * 0.85, H * 0.5, 0.20);
 
       if(v > 0.55 && perfil.alto > 0.3){
         const px2 = cx - W * 0.62, alto2 = alto * 0.62;
@@ -606,6 +653,25 @@ export class EscenaMapa extends Escena {
       ctx.lineWidth = Math.max(0.8, t * 0.012);
       ctx.beginPath();
       ctx.moveTo(cima, cumbre); ctx.lineTo(cx, base);
+      ctx.stroke();
+
+      // el filo de LUZ de la arista izquierda: es lo que hace pico y no mancha
+      ctx.strokeStyle = 'rgba(255,255,255,0.30)';
+      ctx.lineWidth = Math.max(1, t * 0.016);
+      ctx.beginPath();
+      ctx.moveTo(cima, cumbre); ctx.lineTo(cx - W, base - H);
+      ctx.stroke();
+
+      // y la SILUETA a tinta, como todo lo que se levanta del suelo
+      ctx.strokeStyle = `rgba(14,21,29,${CONFIG.estiloMapa.tinta * 0.9})`;
+      ctx.lineWidth = Math.max(1, t * 0.018);
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      ctx.moveTo(cx - W, base - H);
+      ctx.lineTo(cima, cumbre);
+      ctx.lineTo(cx + W, base - H);
+      ctx.lineTo(cx, base);
+      ctx.closePath();
       ctx.stroke();
     }
   }
@@ -960,33 +1026,38 @@ export class EscenaMapa extends Escena {
     ctx.fillStyle = madera;
     ctx.fillRect(cx - t * 0.018, suelo - t * 0.30, t * 0.018, t * 0.31);
     if(!objetivo) return;   // ya no queda a quién señalar
-    // la FLECHA: tabla que apunta hacia el pueblo (solo giro suave, que un
-    // cartel boca abajo no hay quien lo lea)
+    // la FLECHA gira DE VERDAD hacia el pueblo. Hubo una versión con el giro
+    // recortado a ±28° "para que la tabla se leyera"... y con destinos casi
+    // verticales la flecha apuntaba de lado — lo cazó el autor comprobándola
+    // sobre el mapa. La legibilidad no puede comerse la dirección: por eso
+    // el NÚMERO ya no va en la tabla, va en su plaquita horizontal.
+    const a = Math.atan2(objetivo.dy, objetivo.dx);
+    const L = t * 0.26, alto = t * 0.10;
     ctx.save();
-    ctx.translate(cx, suelo - t * 0.26);
-    let a = Math.atan2(objetivo.dy, objetivo.dx);
-    const mira = Math.abs(a) > Math.PI / 2;   // apunta a la izquierda
-    if(mira) a = a > 0 ? a - Math.PI : a + Math.PI;   // se voltea la tabla
-    a = Math.max(-0.5, Math.min(0.5, a));     // inclinación contenida
+    ctx.translate(cx, suelo - t * 0.30);
     ctx.rotate(a);
-    const L = t * 0.30, alto = t * 0.115, dir = mira ? -1 : 1;
     ctx.fillStyle = oscurecer(madera, 0.18);
     ctx.beginPath();
-    ctx.moveTo(-L * 0.55 * dir, -alto / 2);
-    ctx.lineTo(L * 0.75 * dir, -alto / 2);
-    ctx.lineTo(L * dir, 0);
-    ctx.lineTo(L * 0.75 * dir, alto / 2);
-    ctx.lineTo(-L * 0.55 * dir, alto / 2);
+    ctx.moveTo(-L * 0.45, -alto / 2);
+    ctx.lineTo(L * 0.68, -alto / 2);
+    ctx.lineTo(L, 0);
+    ctx.lineTo(L * 0.68, alto / 2);
+    ctx.lineTo(-L * 0.45, alto / 2);
     ctx.closePath(); ctx.fill();
     ctx.strokeStyle = oscurecer(madera, 0.45);
     ctx.lineWidth = Math.max(1, t * 0.014);
     ctx.stroke();
-    // la distancia, grabada en la tabla
-    ctx.fillStyle = '#f4ead2';
-    ctx.font = `700 ${Math.max(8, t * 0.13)}px "IBM Plex Mono", monospace`;
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(String(Math.round(objetivo.d)), L * 0.12 * dir, 0.5);
     ctx.restore();
+    // la DISTANCIA, en su plaquita horizontal sobre el poste: legible siempre
+    const py2 = suelo - t * 0.12;
+    ctx.fillStyle = oscurecer(madera, 0.30);
+    ctx.beginPath();
+    ctx.roundRect(cx - t * 0.085, py2 - t * 0.075, t * 0.17, t * 0.15, t * 0.02);
+    ctx.fill();
+    ctx.fillStyle = '#f4ead2';
+    ctx.font = `700 ${Math.max(8, t * 0.115)}px "IBM Plex Mono", monospace`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(String(Math.round(objetivo.d)), cx, py2 + 0.5);
     ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
   }
 
