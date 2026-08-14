@@ -64,6 +64,10 @@ export function iniciar(){
   const K = CONFIG.analitica;
   if(!K || !K.codigo) return;                       // sin cuenta, silencio
   if(navigator.doNotTrack === '1' || window.doNotTrack === '1') return;
+  // ?nocontar en la dirección = noContarme() sin consola: en el móvil del
+  // autor no hay consola que valga, y sus pruebas ensuciaban la medición.
+  // Basta entrar UNA vez así; queda guardado como en el ordenador.
+  if(location.search.includes('nocontar')) noContarme();
   if(excluido()) return;                            // el navegador del autor
   activa = true;
 
