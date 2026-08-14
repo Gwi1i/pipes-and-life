@@ -109,6 +109,13 @@ button{touch-action:manipulation;}
 .pestana.activa{color:var(--agua); background:var(--panel-alto);
   border-color:var(--linea-viva); box-shadow:inset 0 2px 0 var(--agua);}
 .pestana.con-averia{color:var(--critico); border-color:var(--critico);}
+/* Los CHIPS DE ALERTA de la barra: sed y averías, en rojo y a un toque del
+   problema. Solo existen mientras el problema existe. */
+.pestana.chip-alerta{
+  color:var(--critico); border-color:var(--critico);
+  background:rgba(240,90,74,0.08); white-space:nowrap;
+}
+.pestana.chip-alerta:hover{background:rgba(240,90,74,0.18);}
 .pestana.bloqueada{color:var(--apagado); background:transparent;
   border-style:dashed; cursor:default;}
 .pestana:focus-visible{outline:2px solid var(--agua); outline-offset:2px;}

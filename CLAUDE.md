@@ -591,6 +591,17 @@ antes, porque nada útil puede quedar detrás de una solapa escondida — y
 condiciones salen del ESTADO — a una partida cargada no se le quita nada,
 solo se retrasa lo que el jugador nuevo aún no necesita.
 
+**EL MAPA ES EL SELECTOR de pueblos; la barra, el parte de alertas.** Las
+pestañas por pueblo no escalaban a 36 y se quitaron: tocar un pueblo en el
+mapa ya lo hace activo, y desde `estiloMapa.zoomNombres` cada núcleo lleva
+su NOMBRE rotulado bajo el caserío (azul el activo, blanco los tuyos,
+dorado los por incorporar — el color dice de quién es). La fila de arriba
+(`reconstruirPestanas`) queda en una barra fina: el pueblo activo (tocarlo
+CENTRA la cámara — el "¿dónde estaba yo?" del móvil), la fase, y los CHIPS
+DE ALERTA: un pueblo con servicio por debajo de `servicioMalo` o una
+avería sacan su botón rojo que lleva al problema (`irProblema`,
+`irAAveria`). Con veinte pueblos: cero pestañas, salvo problemas.
+
 **El guía se llama MANUEL y comenta la partida.** `comentarios.js` es el motor
 (lectura pura, como `tutorial.js`): una lista de comentarios con su condición,
 en orden de prioridad — lo que duele antes que lo que luce. La regla que lo

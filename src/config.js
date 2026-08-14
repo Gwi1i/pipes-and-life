@@ -693,6 +693,11 @@ export const CONFIG = {
        resto del arte del juego (residuos, contenedores, piezas del
        minijuego). 0 lo apaga. */
     tinta: 0.45,            // alfa del contorno de las piezas
+    /* Los NOMBRES de los pueblos, rotulados bajo el caserío: el mapa ES el
+       selector (petición del autor: las pestañas no escalaban a 20 pueblos)
+       y un selector sin nombres no selecciona nada. Desde este tamaño de
+       casilla; más lejos serían hormigas ilegibles. */
+    zoomNombres: 34,        // px de casilla desde los que se rotula el nombre
     // El contorno de cada ficha, en vez de un negro duro: oscurece su propio
     // color. Así la línea pertenece a la tesela y no la recorta contra el fondo.
     contorno: 0.30,         // cuánto se oscurece el color base para el borde

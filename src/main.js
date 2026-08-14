@@ -595,12 +595,22 @@ function procesarAcciones(){
         break;
       }
 
-      case 'cambiarPueblo': {
+      /* --- LA BARRA DE ESTADO: el mapa es el selector; esto, el atajo --- */
+
+      case 'irPuebloActivo':
+        // Tocar el nombre centra la cámara en tu pueblo: el "¿dónde estaba
+        // yo?" del móvil, resuelto con un toque
+        escena.centrarEn(estado, estado.activo.col, estado.activo.fila);
+        break;
+
+      case 'irProblema': {
+        // El chip de la sed: activa ese pueblo y te planta delante de él
         const i = parseInt(a.clave, 10);
-        if(estado.pueblos[i] && estado.pueblos[i].desbloqueado){
+        const p = estado.pueblos[i];
+        if(p && p.desbloqueado){
           estado.puebloActivo = i;
-          ui.reconstruirPestanas(estado);
           ui.invalidarCache();
+          escena.centrarEn(estado, p.col, p.fila);
         }
         break;
       }

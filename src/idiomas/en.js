@@ -999,6 +999,9 @@ export const EN = {
     'Incorpora {0} núcleos más para abrir el siguiente anillo':
       'Bring in {0} more towns to open the next ring',
     'fase {0} · faltan {1}': 'phase {0} · {1} to go',
+    'Centrar el mapa en tu pueblo': 'Centre the map on your town',
+    '⚠ 1 avería': '⚠ 1 breakdown',
+    '⚠ {0} averías': '⚠ {0} breakdowns',
 
     /* --- Tienda --- */
     'Otras mejoras': 'Other upgrades',

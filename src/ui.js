@@ -1363,22 +1363,42 @@ export class UI {
   /** Fuerza que el próximo refresco reconstruya todo (al cambiar de pueblo). */
   invalidarCache(){ this.cache = {}; }
 
-  /* ---------------- PESTAÑAS DE PUEBLOS ---------------- */
+  /* ---------------- LA BARRA DE ESTADO (antes, pestañas de pueblos) -------- */
 
+  /**
+   * Las pestañas no escalaban: con veinte pueblos eran una fila infinita, y
+   * el SELECTOR de verdad ya es el mapa — tocar un pueblo lo hace activo, y
+   * ahora además llevan su nombre rotulado. La fila queda en una barra
+   * fina: el pueblo activo (tocarlo centra la cámara en él), la fase, y los
+   * CHIPS DE ALERTA — un pueblo con sed o una avería sacan su botón rojo
+   * que te lleva al problema (petición del autor). Con veinte pueblos:
+   * cero pestañas, salvo problemas.
+   */
   reconstruirPestanas(estado){
     const cont = document.getElementById('pestanas');
     if(!cont) return;
-    // Los pueblos son dinámicos: no hay pestañas bloqueadas, los que faltan
-    // están en el mapa esperando a que llegues. La cuenta de fase va al final.
     const faltan = faltanParaFase(estado);
-    const conAveria = (estado.averias || []).length > 0;
-    cont.innerHTML = estado.pueblos.map((p, i) => {
-      const activa = i === estado.puebloActivo ? ' activa' : '';
-      return `<button class="pestana${activa}${conAveria && i === estado.puebloActivo ? ' con-averia' : ''}"
-        data-accion="cambiarPueblo" data-clave="${i}">${p.nombre}</button>`;
-    }).join('') + (faltan != null
-      ? `<span class="pestana bloqueada" title="${t`Incorpora ${faltan} núcleos más para abrir el siguiente anillo`}">${t`fase ${faseActual(estado)} · faltan ${faltan}`}</span>`
-      : '');
+    const P = CONFIG.poblacion;
+    const p = estado.activo;
+
+    const sedientos = estado.pueblos
+      .map((pb, i) => ({ pb, i }))
+      .filter(({ pb }) => pb.desbloqueado && (pb.servicio || 0) < P.servicioMalo);
+    const nAverias = (estado.averias || []).length;
+
+    cont.innerHTML = `
+      <button class="pestana activa" data-accion="irPuebloActivo"
+              title="${t`Centrar el mapa en tu pueblo`}">${p.nombre}</button>
+      ${faltan != null
+        ? `<span class="pestana bloqueada" title="${t`Incorpora ${faltan} núcleos más para abrir el siguiente anillo`}">${t`fase ${faseActual(estado)} · faltan ${faltan}`}</span>`
+        : ''}
+      ${sedientos.map(({ pb, i }) => `
+        <button class="pestana chip-alerta" data-accion="irProblema" data-clave="${i}">
+          💧 ${pb.nombre}</button>`).join('')}
+      ${nAverias > 0
+        ? `<button class="pestana chip-alerta" data-accion="irAAveria" data-clave="0">
+             ${nAverias === 1 ? t`⚠ 1 avería` : t`⚠ ${nAverias} averías`}</button>`
+        : ''}`;
   }
 
   /* ---------------- TIENDA (del pueblo activo) ---------------- */
@@ -1779,9 +1799,13 @@ export class UI {
     this.actualizarRegistro(estado);
   }
 
-  /** Pinta una alerta en la pestaña de cualquier pueblo con avería. */
+  /** Vigila TODO lo que pinta la barra de estado y la reconstruye al cambiar. */
   marcarPestanaAveria(estado){
-    const firma = (estado.averias || []).length + '|' + estado.puebloActivo;
+    const P = CONFIG.poblacion;
+    const sed = estado.pueblos
+      .map(pb => pb.desbloqueado && (pb.servicio || 0) < P.servicioMalo ? 1 : 0).join('');
+    const firma = [(estado.averias || []).length, estado.puebloActivo,
+                   estado.pueblos.length, faltanParaFase(estado), sed].join('|');
     if(this.cache.pestanaFirma === firma) return;
     this.cache.pestanaFirma = firma;
     this.reconstruirPestanas(estado);

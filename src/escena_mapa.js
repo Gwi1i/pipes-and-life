@@ -14,7 +14,7 @@ import { CONFIG } from './config.js';
 import { celdaEn, clicsParaDestapar, esAlcanzable, puedeColocar,
          puedeSeguirTrazado, costeTrazado, costeCasillaTuberia,
          diametro, nivelDiametro, redDe, casillaEnRed,
-         nucleoMasCercano } from './mapa.js';
+         nucleoMasCercano, nombreDeNucleo } from './mapa.js';
 import { poderExpansion, llenadoVaso, factorEstiaje,
          capacidad, escalonCaserio } from './simulacion.js';
 import { formatear } from './util.js';
@@ -894,8 +894,38 @@ export class EscenaMapa extends Escena {
             celda.hallazgo === 'senal'
               ? nucleoMasCercano(estado.mapa, c, f)
               : this.habitantesDe(celda, estado, c, f));
+        // EL NOMBRE, bajo el caserío: el mapa es el selector de pueblos
+        // (las pestañas no escalaban) y un selector necesita rótulos. Solo
+        // con zoom suficiente; de lejos serían hormigas.
+        if(celda.hallazgo === 'pueblo' && t >= CONFIG.estiloMapa.zoomNombres){
+          const p = estado.pueblos.find(pb => pb.col === c && pb.fila === f);
+          this.rotuloPueblo(
+            p ? p.nombre : nombreDeNucleo(celda.nombreIdx || 0),
+            x + t / 2, y + t * 0.9, t,
+            p && estado.pueblos.indexOf(p) === estado.puebloActivo, !p);
+        }
       }
     }
+  }
+
+  /**
+   * La placa con el nombre del pueblo. El ACTIVO en azul claro (es el que
+   * responde a tus clics), los tuyos en blanco, los POR INCORPORAR en el
+   * dorado de los hallazgos — el color ya dice de quién es cada uno.
+   */
+  rotuloPueblo(nombre, cx, cy, t, activo, ajeno){
+    const ctx = this.ctx;
+    const fs = Math.max(9, Math.round(t * 0.16));
+    ctx.font = `600 ${fs}px "IBM Plex Mono", monospace`;
+    const w = ctx.measureText(nombre).width;
+    ctx.fillStyle = 'rgba(8,14,22,0.62)';
+    ctx.beginPath();
+    ctx.roundRect(cx - w / 2 - 5, cy - fs, w + 10, fs + 7, 4);
+    ctx.fill();
+    ctx.fillStyle = activo ? '#7fd4f7' : ajeno ? '#d9c58a' : '#e6eef5';
+    ctx.textAlign = 'center';
+    ctx.fillText(nombre, cx, cy + 2);
+    ctx.textAlign = 'left';
   }
 
   /* ---------- lo que esconde una casilla ---------- */
