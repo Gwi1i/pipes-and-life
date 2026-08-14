@@ -677,7 +677,8 @@ export class UI {
     if(!cont) return;
     const K = CONFIG.comarcas;
     const puede = faseActual(estado) >= K.faseParaTrasladarse;
-    const ganada = veteraniaAlTrasladarse(estado);
+    // El MÁXIMO alcanzado, no el de hoy: el mérito no caduca (ver main.js)
+    const ganada = Math.max(estado.mejorVeterania || 0, veteraniaAlTrasladarse(estado));
     const firma = `${legado.comarca},${legado.veterania},` +
       `${JSON.stringify(legado.ventajas)},${puede},${ganada}`;
     if(this.cache.expedienteFirma === firma) return;

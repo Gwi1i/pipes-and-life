@@ -796,9 +796,21 @@ estampas de la ficha del pueblo prueban `f_<escalón>_e2/_e3.jpg` según
 `epocaActual()` (pueblos más modernos, si el autor los genera) y caen a la
 base. Reiniciar borra TODO, legado incluido: para conservar la experiencia
 está el traslado, y el confirm lo dice. El hito `traslado` solo salta en la
-comarca 1. CALIBRADO PENDIENTE: el objetivo del autor es que una partida
-rinda ~8 h; se medirá con el bot y se ajustará `veteraniaPorEscalon` y los
-costes del expediente.
+comarca 1.
+
+CALIBRADO (medido con el bot, 14/08/2026): la curva base NO se movió con las
+comarcas (fase 2 en 58,3, fase 3 en 148, contaminación 0 — la referencia
+exacta), y la comarca 424242 con expediente tier-1 da una curva sana
+(fase 3 en 143). El hallazgo importante: la veteranía "de hoy" SUBE a ~13 y
+luego BAJA (los pueblos menguan en el juego largo) — quien más se quedaba
+podía cobrar menos. Por eso existe `estado.mejorVeterania` (se guarda): el
+traslado paga el MÁXIMO alcanzado, no el estado del momento. El encaje de
+números: primer traslado (fase 3) da ~13-22 según mapa, y el tier-1 completo
+del expediente cuesta 15 — el primer traslado compra la mayoría; los tier-2
+(30) piden quedarse a criar villas (4) y ciudades (7), que es justo la
+partida larga de ~8 h que quiere el autor. Las ventajas actúan sobre la
+EXPLORACIÓN, que el bot se salta: su aceleración medida (~3%) es un suelo
+muy por debajo de la real.
 
 **Offline.** `progresoOffline()` en `main.js` simula el tiempo ausente a pasos
 (la curva diaria y el estiaje cambian por el camino) con tope `offline.maxHoras`

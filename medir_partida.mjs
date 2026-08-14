@@ -21,7 +21,8 @@ import { CONFIG } from './src/config.js';
 import { Estado } from './src/estado.js';
 import { avanzar, bombear, costeMejora, servicioActivo, redEstrangula,
          redDelPueblo, requisitosAutobomba, faseActual,
-         incorporarPueblo, canonIncorporacion } from './src/simulacion.js';
+         incorporarPueblo, canonIncorporacion,
+         veteraniaAlTrasladarse, nivelCaserio } from './src/simulacion.js';
 import { puedeColocar, costeTrazado, costeRenovar, celdaEn,
          escalaDeRed, nivelDiametro } from './src/mapa.js';
 
@@ -94,6 +95,7 @@ function renovarRed(estado, red){
 export async function medir(pasoSeg = 0.25, maxMin = 240, informar = () => {}){
   const estado = new Estado();
   const marcas = [];
+  const veterania = [];
   const marca = (id) => { if(!marcas.some(m => m.id === id))
     marcas.push({ id, min: +(seg / 60).toFixed(1) }); };
   let seg = 0, res = null;
@@ -209,6 +211,18 @@ export async function medir(pasoSeg = 0.25, maxMin = 240, informar = () => {}){
     if(totalHab >= 10000) marca('10000 hab totales');
     if(totalHab >= 20000) marca('20000 hab totales');
 
+    // --- la curva de VETERANÍA: cuánto pagaría trasladarse en cada momento.
+    // Es el dato que calibra las comarcas: dónde se aplana dice cuándo deja
+    // de rentar quedarse. Se muestrea cada 15 min de partida simulada. ---
+    estado.mejorVeterania = Math.max(estado.mejorVeterania || 0,
+                                     veteraniaAlTrasladarse(estado));
+    if(seg % 900 < pasoSeg)
+      veterania.push({ min: Math.round(seg / 60),
+        vet: veteraniaAlTrasladarse(estado),
+        mejor: estado.mejorVeterania,
+        pueblos: estado.pueblos.length,
+        escalones: estado.pueblos.map(x => nivelCaserio(x.habitantes)).join('') });
+
     if(seg % 600 < pasoSeg) await new Promise(r => setTimeout(r));   // respirar
     if(seg % 1800 < pasoSeg) informar({ min: +(seg / 60).toFixed(0), marcas: marcas.length });
   }
@@ -219,6 +233,6 @@ export async function medir(pasoSeg = 0.25, maxMin = 240, informar = () => {}){
     habTotales: Math.round(estado.pueblos.reduce((a, x) => a + x.habitantes, 0)),
     peorServicio: +Math.min(...estado.pueblos.map(x => x.servicio)).toFixed(2)
   };
-  return { marcas, foto, dinero: Math.round(estado.dinero),
+  return { marcas, foto, veterania, dinero: Math.round(estado.dinero),
            contaminacion: Math.round(estado.contaminacion) };
 }

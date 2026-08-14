@@ -673,7 +673,7 @@ function procesarAcciones(){
 
       case 'trasladarse': {
         if(faseActual(estado) < CONFIG.comarcas.faseParaTrasladarse) break;
-        const ganada = veteraniaAlTrasladarse(estado);
+        const ganada = Math.max(estado.mejorVeterania || 0, veteraniaAlTrasladarse(estado));
         if(!confirm(`¿Trasladarse a otra comarca? La red, la caja y los pueblos SE QUEDAN. ` +
                     `Te llevas ${ganada} de veteranía y el expediente completo.`)) break;
         legado.comarca += 1;
@@ -1291,6 +1291,14 @@ function bucle(ahora){
     if(siguiente) sonido.hablar(siguiente.titulo + '. ' + siguiente.texto, siguiente.id);
   }
   anotarCrecimiento();
+
+  // EL MÉRITO NO CADUCA: se registra la mejor veteranía alcanzada y el
+  // traslado paga el máximo. Lo dijo el bot: en el juego largo los pueblos
+  // menguan y la veteranía "de hoy" BAJA — quien se quedara más horas podía
+  // acabar cobrando menos, que es un castigo por jugar. Con el máximo,
+  // quedarse a criar villas siempre suma y una mala racha no roba lo ganado.
+  estado.mejorVeterania = Math.max(estado.mejorVeterania || 0,
+                                   veteraniaAlTrasladarse(estado));
 
   if(resultado.serviciosNuevos && resultado.serviciosNuevos.length){
     for(const clave of resultado.serviciosNuevos) contarHito(clave);
