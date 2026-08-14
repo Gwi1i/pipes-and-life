@@ -770,7 +770,10 @@ export class UI {
     const nLineas = obra ? lineasEnCasilla(estado, obra.col, obra.fila).length : 0;
     // El bono del turno se agota con las horas: la ficha de la planta lo cuenta
     const turnoFirma = obra && obra.tipo === 'reciclaje'
-      ? Math.ceil(((estado.turnoReciclaje || {}).hasta || 0) - estado.horas) : '';
+      ? Math.ceil(((estado.turnoReciclaje || {}).hasta || 0) - estado.horas) : ''
+    // ...y el de la ruta del camión, en la del vertedero
+      + (obra && obra.tipo === 'vertedero'
+        ? Math.ceil(((estado.rutaCamion || {}).hasta || 0) - estado.horas) : '');
     const firma = obra ? `${obra.tipo},${obra.col},${obra.fila},${obra.nivel || 1},${Math.round(obra.lleno || 0)},${nivelPozo},${estadoObra},${nLineas},${turnoFirma}` : 'nada';
     if(this.cache.obraFirma === firma) return;
     this.cache.obraFirma = firma;
@@ -852,6 +855,21 @@ export class UI {
     const nivel = obra.nivel || 1;
     const tope = nivel >= V.nivelMax;
     const coste = costeAmpliarVertedero(obra);
+    // LA RUTA DEL CAMIÓN: la jornada con premio se saca desde aquí — el
+    // camión acaba en el vertedero de todas formas. Un turno cada vez, como
+    // el de la planta: mientras dure el bono, no hay segunda jornada.
+    const rutaViva = estado.rutaCamion && estado.horas < estado.rutaCamion.hasta;
+    const ruta = rutaViva
+      ? `<p class="m-desc">${t`Ruta echada: la recogida va al
+           <b>+${Math.round((estado.rutaCamion.factor - 1) * 100)} %</b> todavía
+           ${Math.ceil(estado.rutaCamion.hasta - estado.horas)} horas más.`}</p>`
+      : `<button class="mejora obra" data-accion="rutaCamion" style="--tono:#b7a08a">
+           <span class="m-cab"><span class="m-nom">${t`Sacar la ruta del camión`}</span></span>
+           <span class="m-desc">${t`Recoge bien los contenedores del día y la
+             recogida sube hasta un ${Math.round(CONFIG.minijuegos.camion.bonusMax * 100)} %
+             una temporada.`}</span>
+           <span class="m-coste">${t`jugar`}</span>
+         </button>`;
     cont.innerHTML = `
       <p class="red-cuello" style="--tono:${def.color}">
         <b>${titulo}</b> · ${t`vaso nivel ${nivel}`}
@@ -864,6 +882,7 @@ export class UI {
           : ''}</p>
       <p class="m-desc">${t`Gotea sobre el agua que tiene alrededor, y cuanto más
         lleno, más. Un agua insalubre da menos caudal.`}</p>
+      ${ruta}
       ${this.fichaHTML(def, 'vertedero')}
       ${tope
         ? `<p class="m-desc">${t`No se puede ampliar más: abre otro vertedero en otra parte.`}</p>`

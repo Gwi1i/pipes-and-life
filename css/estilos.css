@@ -677,6 +677,9 @@ button{touch-action:manipulation;}
 /* En la línea, el puntero ES la mano del operario dibujada en el lienzo */
 #mini2-lienzo{display:block; width:100%; height:auto; touch-action:none;
   border-radius:4px; cursor:none;}
+/* La ruta del camión: mismo lienzo elástico, puntero normal (se conduce) */
+#mini3-lienzo{display:block; width:100%; height:auto; touch-action:none;
+  border-radius:4px; cursor:pointer;}
 
 /* LA PORTADA: el telón de entrada. Más oscura que las tarjetas —debajo el
    juego ya corre y no debe competir— y con el título al estilo de la marca. */

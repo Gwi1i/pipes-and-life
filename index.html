@@ -227,6 +227,10 @@
               <span class="m-cab"><span class="m-nom">La línea de reciclaje</span></span>
               <span class="m-desc">Separar residuos en la cinta, de ensayo.</span>
             </button>
+            <button class="mejora obra" data-accion="practicarCamion" style="--tono:#b7a08a">
+              <span class="m-cab"><span class="m-nom">La ruta del camión</span></span>
+              <span class="m-desc">La recogida de madrugada, de ensayo.</span>
+            </button>
           </div>
         </section>
 
@@ -396,6 +400,23 @@
       —la bolsa atada, el pañal, la maceta, la esponja— <b>se deja pasar</b>
       hasta el vertedero, y eso también puntúa. La cinta no espera.</p>
     <canvas id="mini2-lienzo"></canvas>
+  </div>
+</div>
+
+<!-- EL MINIJUEGO de la ruta del camión: la recogida trasera desde la calle.
+     Opcional siempre — se juega desde el vertedero (jornada con premio) o
+     desde el taller (ensayo). -->
+<div class="hito-fondo" id="minijuego3" hidden>
+  <div class="mini-caja">
+    <div class="mini-cab">
+      <span class="mini-titulo">La ruta del camión</span>
+      <button id="mini3-cancelar">Dejarlo</button>
+    </div>
+    <p class="mini-desc">Lleva el camión con las <b>flechas</b> (o los botones
+      ◀ ▶) y <b>párate</b> junto a los contenedores <b>llenos</b> de las
+      fracciones del día: la cuadrilla los iza sola. Pararse donde no toca
+      gasta jornada, y el reloj manda. La calle acaba en el vertedero.</p>
+    <canvas id="mini3-lienzo"></canvas>
   </div>
 </div>
 

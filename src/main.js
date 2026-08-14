@@ -48,6 +48,7 @@ import { pedirUbicacion, buscarNombres, guardarNombres,
          quitar as quitarLugares } from './lugares.js';
 import { MinijuegoTuberias } from './minijuego_tuberias.js';
 import { MinijuegoReciclaje } from './minijuego_reciclaje.js';
+import { MinijuegoCamion } from './minijuego_camion.js';
 import * as analitica from './analitica.js';
 import { aplicarIdioma, idiomaActual, cambiarIdioma, sinTraducir, t } from './idioma.js';
 
@@ -73,6 +74,7 @@ const ui      = new UI(entrada);
 let escena = new EscenaMapa(lienzo);
 const miniTuberias = new MinijuegoTuberias();
 const miniReciclaje = new MinijuegoReciclaje();
+const miniCamion = new MinijuegoCamion();
 // La ficha de casilla pinta su miniatura con el MISMO dibujo del mapa, asi que
 // necesita la escena. Se la damos aqui para que ui.js no tenga que importarla.
 ui.escena = escena;
@@ -751,6 +753,14 @@ function procesarAcciones(){
         });
         break;
 
+      case 'practicarCamion':
+        analitica.contar('minijuego/camion');
+        miniCamion.jugar((aciertos, total, razon) => {
+          if(razon === 'abandonado') return;
+          avisar(t`Ensayo: ${aciertos} de ${total} contenedores recogidos.`);
+        });
+        break;
+
       /* --- EL TURNO DE VERDAD en la planta: con premio a la venta --- */
 
       case 'turnoReciclaje': {
@@ -767,6 +777,29 @@ function procesarAcciones(){
           estado.anotar(t`Turno en la línea: ${aciertos} de ${total}. La venta de
                         reciclado sube un ${Math.round((factor - 1) * 100)} % una temporada.`, 'ok');
           avisar(t`¡Turno hecho! Venta de reciclado +${Math.round((factor - 1) * 100)} %.`);
+          if(punteria > 0.7){ sonido.reparada(); ui.caraGuia('bien'); }
+          ui.invalidarCache();
+        });
+        break;
+      }
+
+      /* --- LA RUTA DE VERDAD, desde el vertedero: con premio a la recogida --- */
+
+      case 'rutaCamion': {
+        const K = CONFIG.minijuegos.camion;
+        if(estado.rutaCamion && estado.horas < estado.rutaCamion.hasta){
+          avisar(t`La ruta ya está echada: espera a que venza el bono.`);
+          break;
+        }
+        analitica.contar('minijuego/camion');
+        miniCamion.jugar((aciertos, total, razon) => {
+          if(razon === 'abandonado') return;
+          const punteria = total ? aciertos / total : 0;
+          const factor = 1 + K.bonusMax * punteria;
+          estado.rutaCamion = { hasta: estado.horas + K.horasBonus, factor };
+          estado.anotar(t`Ruta del camión: ${aciertos} de ${total} contenedores.
+                        La recogida sube un ${Math.round((factor - 1) * 100)} % una temporada.`, 'ok');
+          avisar(t`¡Ruta hecha! Recogida +${Math.round((factor - 1) * 100)} %.`);
           if(punteria > 0.7){ sonido.reparada(); ui.caraGuia('bien'); }
           ui.invalidarCache();
         });
@@ -1555,7 +1588,7 @@ if(solapas) solapas.addEventListener('click', e => {
 
 // Depuración: `juego` en la consola. `juego.dinero(n)` fija el saldo.
 window.juego = {
-  estado, entrada, escena, ui, CONFIG, miniTuberias, miniReciclaje,
+  estado, entrada, escena, ui, CONFIG, miniTuberias, miniReciclaje, miniCamion,
   dinero: n => { estado.dinero = n; },
   agua: n => { estado.activo.agua = n; },
   // Para el autor: excluir su navegador de la analítica (y revertirlo)

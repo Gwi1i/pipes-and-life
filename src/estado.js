@@ -69,6 +69,8 @@ export class Estado {
     this.acuiferos = {};
     // El bono del turno en la línea de reciclaje: { hasta, factor } o null
     this.turnoReciclaje = null;
+    // Y el de la ruta del camión: misma forma, sube la recogida una temporada
+    this.rutaCamion = null;
     // La mejor veteranía alcanzada en ESTA comarca: el mérito no caduca
     // aunque los pueblos menguen (el traslado paga el máximo, no el de hoy)
     this.mejorVeterania = 0;
@@ -134,7 +136,8 @@ export class Estado {
       dinero: this.dinero, horas: this.horas, m3Servidos: this.m3Servidos,
       contaminacion: this.contaminacion, puebloActivo: this.puebloActivo,
       pluvialesActivas: this.pluvialesActivas, acuiferos: this.acuiferos,
-      turnoReciclaje: this.turnoReciclaje, mejorVeterania: this.mejorVeterania,
+      turnoReciclaje: this.turnoReciclaje, rutaCamion: this.rutaCamion,
+      mejorVeterania: this.mejorVeterania,
       pueblos: this.pueblos, ultimoInstante: this.ultimoInstante,
       // El terreno se regenera de la semilla: solo se guarda lo que has tocado
       mapa: comprimir(this.mapa),
@@ -204,6 +207,7 @@ export class Estado {
       estado.pluvialesActivas = d.pluvialesActivas ?? false;
       estado.acuiferos = d.acuiferos ?? {};
       estado.turnoReciclaje = d.turnoReciclaje ?? null;
+      estado.rutaCamion = d.rutaCamion ?? null;
       estado.mejorVeterania = d.mejorVeterania ?? 0;
       estado.puebloActivo = d.puebloActivo ?? 0;
       estado.ultimoInstante = d.ultimoInstante ?? Date.now();

@@ -20,7 +20,8 @@ import re, json, sys, os
 
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FUENTES = [os.path.join(RAIZ, 'src', a)
-           for a in ('ui.js', 'simulacion.js', 'main.js', 'mapa.js', 'comentarios.js')]
+           for a in ('ui.js', 'simulacion.js', 'main.js', 'mapa.js', 'comentarios.js',
+                     'minijuego_camion.js')]
 DICCIONARIO = os.path.join(RAIZ, 'src', 'idiomas', 'en.js')
 
 

@@ -267,7 +267,11 @@ export function basuraGenerada(pueblo){
 export function capacidadRecogida(estado){
   const red = redDelPueblo(estado, 'residuos');
   if(!red.lineas || !red.lineas.length) return 0;
-  return red.def.caudalMax * (1 - red.def.fugas);
+  // El bono de la RUTA DEL CAMIÓN (minijuego, desde el vertedero): una ruta
+  // bien echada saca más basura con la misma vía, durante una temporada.
+  const bono = estado.rutaCamion && estado.horas < estado.rutaCamion.hasta
+    ? estado.rutaCamion.factor : 1;
+  return red.def.caudalMax * (1 - red.def.fugas) * bono;
 }
 
 /** Los vertederos enganchados a la carretera, con su llenado y su nivel. */

@@ -581,6 +581,9 @@ export const EN = {
     '[data-accion="practicarReciclaje"]':
       '<span class="m-cab"><span class="m-nom">The sorting line</span></span>' +
       '<span class="m-desc">Sorting waste on the belt — a practice run.</span>',
+    '[data-accion="practicarCamion"]':
+      '<span class="m-cab"><span class="m-nom">The truck route</span></span>' +
+      '<span class="m-desc">The early-morning collection — a practice run.</span>',
 
     '#respaldo > .m-desc': 'Your game lives in this browser. Copy it as ' +
       'text to keep a lifeline or move it to another device.',
@@ -649,6 +652,14 @@ export const EN = {
 
     '#minijuego2 .mini-titulo': 'The sorting line',
     '#mini2-cancelar': 'Give up',
+
+    '#minijuego3 .mini-titulo': 'The truck route',
+    '#mini3-cancelar': 'Give up',
+    '#minijuego3 .mini-desc': 'Drive the truck with the <b>arrow keys</b> (or ' +
+      'the ◀ ▶ buttons) and <b>stop</b> next to the <b>full</b> containers of ' +
+      'the day’s fractions: the crew lifts them on its own. Stopping at the ' +
+      'wrong one wastes the shift, and the clock rules. The street ends at ' +
+      'the landfill.',
     '#minijuego2 .mini-desc': '<b>Grab</b> each item off the belt and ' +
       '<b>drop</b> it into its container. But not everything recycles: ' +
       'what has no container — the tied bag, the nappy, the plant pot, the ' +
@@ -1288,6 +1299,44 @@ export const EN = {
     'Menuda red vas tejiendo ya... En la cuadrilla a esto lo llamábamos encaje de bolillos, pero con zanja.':
       'Quite a network you are weaving... In the crew we used to call this lacework, only with trenches.',
     'Hora punta: medio pueblo duchándose a la vez. Para esto está el depósito, que el río no entiende de prisas.':
-      'Peak hour: half the town in the shower at once. This is what the tank is for — the river does not do hurry.'
+      'Peak hour: half the town in the shower at once. This is what the tank is for — the river does not do hurry.',
+
+    /* ================= minijuego_camion.js: la ruta del camión ================= */
+
+    'RESTO': 'GENERAL',
+    'ENVASES': 'PACKAGING',
+    'ORGÁNICA': 'ORGANIC',
+    'PAPEL': 'PAPER',
+    'VIDRIO': 'GLASS',
+    'VERTEDERO': 'LANDFILL',
+    'LA RUTA DEL DÍA': 'TODAY’S ROUTE',
+    'Solo se recogen los contenedores LLENOS de:': 'Only FULL containers of these get collected:',
+    'Camión de DOBLE COMPARTIMENTO: dos fracciones': 'A DUAL-COMPARTMENT truck: two fractions',
+    'en una sola ruta, sin mezclarse. Así se sirve': 'in a single route, never mixing. That is how',
+    'a los pueblos pequeños sin doblar viajes.': 'small towns get served without doubling trips.',
+    'Párate junto a un contenedor y la cuadrilla lo iza.':
+      'Stop next to a container and the crew lifts it.',
+    'Pararse donde no toca gasta jornada — y el reloj manda.':
+      'Stopping at the wrong one wastes the shift — and the clock rules.',
+    'flechas o botones ◀ ▶ · toca para salir ya — arrancas en {0} s':
+      'arrow keys or ◀ ▶ buttons · tap to leave now — you roll out in {0} s',
+    'quedan {0}': '{0} to go',
+    'hoy no toca': 'not today',
+    'a medias': 'half full',
+    'vacío': 'empty',
+    'FIN DE LA JORNADA': 'END OF THE SHIFT',
+    '{0} de {1} contenedores recogidos': '{0} of {1} containers collected',
+    '{0} paradas en balde': '{0} wasted stops',
+    'Ensayo: {0} de {1} contenedores recogidos.': 'Practice run: {0} of {1} containers collected.',
+    'La ruta ya está echada: espera a que venza el bono.':
+      'The route is already done: wait for the bonus to run out.',
+    'Ruta del camión: {0} de {1} contenedores. La recogida sube un {2} % una temporada.':
+      'Truck route: {0} of {1} containers. Collection rises {2} % for a while.',
+    '¡Ruta hecha! Recogida +{0} %.': 'Route done! Collection +{0} %.',
+    'Ruta echada: la recogida va al <b>+{0} %</b> todavía {1} horas más.':
+      'Route done: collection is at <b>+{0} %</b> for {1} more hours.',
+    'Sacar la ruta del camión': 'Take the truck out',
+    'Recoge bien los contenedores del día y la recogida sube hasta un {0} % una temporada.':
+      'Collect the day’s containers well and collection rises up to {0} % for a while.'
   }
 };
