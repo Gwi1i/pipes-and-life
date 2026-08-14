@@ -125,25 +125,148 @@ export const EN = {
 
     construibles: {
       captacion: { nombre: 'Intake',
-        desc: 'Takes water from the watercourse. Goes on the river or a lake.' },
+        desc: 'Takes water from the watercourse. Goes on the river or a lake.',
+        ficha: {
+          que: 'The INTAKE WORKS: the point where the water stops belonging to ' +
+          'the river and enters the system. Usually a chamber or a tower with ' +
+          'gates, and always with a coarse SCREEN that stops branches, leaves ' +
+          'and everything floating down before it reaches the pumps. ',
+          para: 'To take the raw water and hand it to the rest of the system in ' +
+          'a state fit for treatment. The water is not drinkable yet. ',
+          dato: 'You do not decide how much you can take: the administrative ' +
+          'licence sets it, and the river itself limits it. In low flow there ' +
+          'is less, and in a flood the problem is the opposite — so much ' +
+          'turbidity that the plant cannot cope, and sometimes the intake has ' +
+          'to be shut. '
+        } },
       bomba: { nombre: 'Pumping station',
-        desc: 'Pushes the water. On flat, open ground, right by the water.' },
+        desc: 'Pushes the water. On flat, open ground, right by the water.',
+        ficha: {
+          que: 'The PUMPING STATION. A building with one or more pump sets, ' +
+          'their valves, the surge vessel and the electrical panel. It is what ' +
+          'gives the water the energy it needs to climb. ',
+          para: 'To beat the height difference and the friction losses of the ' +
+          'pipe. What the pump provides is called HEAD, and it is measured in ' +
+          'metres of water column, not just pressure. ',
+          dato: 'Electricity is almost always the biggest running cost of a ' +
+          'water supply. That is why pumping happens at night whenever ' +
+          'possible: the tariff is cheaper and the tank keeps the water for ' +
+          'the day. '
+        } },
       deposito: { nombre: 'Tank',
-        desc: 'Stores water UP HIGH so it flows down by gravity: needs high ground, and a hill will do.' },
+        desc: 'Stores water UP HIGH so it flows down by gravity: needs high ground, and a hill will do.',
+        ficha: {
+          que: 'The SERVICE RESERVOIR. A closed vessel, usually concrete, ' +
+          'placed above the town. It can be buried in a hillside or raised on ' +
+          'a tower when there is no natural height. ',
+          para: 'Two things at once, which is why it is the key piece. To ' +
+          'REGULATE: demand peaks in the morning and evening, and the tank ' +
+          'absorbs them so the intake can work at a steady flow. And to GIVE ' +
+          'PRESSURE: water flows down by gravity, so the height of the tank ' +
+          'is the pressure at the tap. ',
+          dato: 'It is sized to hold between half a day and a full day of ' +
+          'demand. That reserve is not just comfort: it is what lets you stop ' +
+          'the intake for a breakdown or a turbidity episode without leaving ' +
+          'anyone dry. '
+        } },
       potabilizadora: { nombre: 'Purification plant',
-        desc: 'Treats raw water from the river and from squeezed wells. Serving it untreated slows growth.' },
+        desc: 'Treats raw water from the river and from squeezed wells. Serving it untreated slows growth.',
+        ficha: {
+          que: 'A drinking water treatment works. Coagulation to clump the fine ' +
+          'stuff, settling so it falls, sand FILTERS for what remains, and ' +
+          'disinfection at the end — the chlorine that keeps the water safe ' +
+          'all the way to the tap. ',
+          para: 'To turn water from the environment into tap water. ALL surface ' +
+          'water gets treated, always: a clean river is not a drinkable ' +
+          'river. And an overdrawn aquifer ends up needing it too: as the ' +
+          'level drops, what it carries gets concentrated — the parts per ' +
+          'million go up. ',
+          dato: 'Turbidity is the worst enemy of a treatment plant: after a ' +
+          'storm the river comes down so loaded that sometimes it pays to ' +
+          'STOP the intake and live off the tank rather than force the ' +
+          'filters. That is the other half of the service reservoir’s job. '
+        } },
       depuradora: { nombre: 'Sewage plant',
-        desc: 'Treats wastewater before returning it to the river.' },
+        desc: 'Treats wastewater before returning it to the river.',
+        ficha: {
+          que: 'A wastewater treatment works. What you see are the circular ' +
+          'clarifiers with their rotating scraper bridge, but that is only ' +
+          'part of the process. ',
+          para: 'To return the water the town has dirtied to the river, in a ' +
+          'state the river can cope with. The water goes through ' +
+          'PRETREATMENT (screening and grit removal), primary SETTLING that ' +
+          'separates what sinks, and a BIOLOGICAL stage where bacteria eat ' +
+          'the organic matter. ',
+          dato: 'What actually cleans the water is not a machine: it is living ' +
+          'microorganisms. That is why a sewage plant cannot be switched on ' +
+          'and off like an engine — it needs weeks to start up, and one toxic ' +
+          'spill can kill its biology and leave it useless for days. '
+        } },
       tanque: { nombre: 'Storm tank',
-        desc: 'Holds back the peak of a downpour. On flat land, or by clearing scrub.' },
+        desc: 'Holds back the peak of a downpour. On flat land, or by clearing scrub.',
+        ficha: {
+          que: 'A STORM TANK. A large vessel, almost always buried, connected ' +
+          'to the sewer just before the treatment plant. ',
+          para: 'To hold the first rush of a storm and release it slowly when ' +
+          'the treatment plant has room again, instead of spilling it to the ' +
+          'river. ',
+          dato: 'It is called the FIRST FLUSH and it is the dirtiest part of ' +
+          'the whole episode: the first rain sweeps up at once the oil, ' +
+          'rubber and grime that have been building up on the streets for ' +
+          'days. Holding just those first minutes prevents most of the ' +
+          'pollution of the entire downpour. '
+        } },
       vertedero: { nombre: 'Landfill',
         desc: 'Where whatever is not recycled ends up. It fills, and it ' +
-              'leaks: put it near water and you poison it — your own intake suffers.' },
+              'leaks: put it near water and you poison it — your own intake suffers.',
+        ficha: {
+          que: 'A CONTROLLED LANDFILL. Not a hole: a lined cell sealed with ' +
+          'membranes and clay, with a drainage network at the bottom and gas ' +
+          'vents. ',
+          para: 'To confine what cannot be recovered, isolating it from the ' +
+          'ground and the groundwater. The waste is spread in layers and ' +
+          'covered with earth every day so it does not blow away or attract ' +
+          'vermin. ',
+          dato: 'What seeps through inside is called LEACHATE and it is a very ' +
+          'loaded liquid: it has to be collected and treated separately, ' +
+          'sometimes for decades after the landfill closes. A landfill does ' +
+          'not end when it is full; it has to be watched for thirty more ' +
+          'years. '
+        } },
       reciclaje: { nombre: 'Recycling plant',
         desc: 'Sorts and sells what can be recovered. The better it is, the ' +
-              'more fractions it recovers and the more they pay for them.' },
+              'more fractions it recovers and the more they pay for them.',
+        ficha: {
+          que: 'A WASTE TREATMENT PLANT. A shed with conveyor belts, a ' +
+          'trommel, magnetic and eddy-current separators, and manual sorting ' +
+          'stations. ',
+          para: 'To separate what can be recovered from what has to be buried. ' +
+          'The better sorted the waste arrives from the street containers, ' +
+          'the more is recovered and the cleaner the material comes out. ',
+          dato: 'Recovered material IS SOLD, and each fraction has its market ' +
+          'price: used oil or aluminium are worth far more per tonne than ' +
+          'organic matter. That is why sorting at home is not a symbolic ' +
+          'gesture — it is what makes the system pay for itself. '
+        } },
       acuifero: { nombre: 'Production well',
-        desc: 'Draws the water the borehole found. Can only go on a drilling that struck water.' }
+        desc: 'Draws the water the borehole found. Can only go on a drilling that struck water.',
+        ficha: {
+          que: 'A BOREHOLE into an aquifer. A narrow, deep drilling — tens or ' +
+          'hundreds of metres — with its casing, its screen at the level of ' +
+          'the aquifer and a pump submerged at the bottom. ',
+          para: 'To draw groundwater when there is no river nearby, or when the ' +
+          'river has no more to give. It comes out at a very steady ' +
+          'temperature and quality all year round, which makes it very easy ' +
+          'to treat. ',
+          dato: 'An aquifer recharges slowly, with years of rain. If you draw ' +
+          'more than comes in, the level drops, you have to pump from deeper ' +
+          '— more energy — and on the coast seawater can creep in and turn ' +
+          'it salty forever. It is the most convenient resource, and the ' +
+          'easiest to ruin. That is why what matters is not what the pump ' +
+          'delivers, but the SUSTAINABLE YIELD: what the rain returns each ' +
+          'year. Drawing more than that is not supplying water, it is mining ' +
+          'it. '
+        } }
     },
 
     redes: {
@@ -243,6 +366,128 @@ export const EN = {
         { nombre: 'the high plains' },
         { nombre: 'the eastern lands' }
       ]
+    },
+
+    hitos: {
+      traslado: {
+        titulo: 'Another county is calling',
+        pasa: 'Your district can walk on its own now, and your name is getting ' +
+              'around: another county is looking for someone to build its ' +
+              'water supply from scratch.',
+        hacer: 'Whenever you like, TRANSFER from the District tab. The network ' +
+               'stays; you take the SENIORITY earned from every well-served ' +
+               'town, to spend on advantages that last forever.',
+        porque: 'That is how the trade works: the works belong to whoever paid ' +
+                'for them, but the experience is yours. Every county is new ' +
+                'land — another river, other aquifers, other towns — and every ' +
+                'transfer makes you better at the hard part: starting.'
+      },
+      saneamiento: {
+        titulo: 'The town is making dirty water now',
+        pasa: 'It has grown enough to produce wastewater. Everything you serve ' +
+              'comes back, and right now it goes back to the river as it is.',
+        hacer: 'Lay a SEWER from the town down to a SEWAGE PLANT by the water. ' +
+               'It is a separate network: the drinking pipe will not do.',
+        porque: 'A river can take a certain load and clean itself, but past ' +
+                'that point it dies. And it is the same river you are drawing ' +
+                'from: what you dump untreated, you end up drinking.'
+      },
+      pluviales: {
+        titulo: 'When it rains, it bursts',
+        pasa: 'The district now runs three towns, and with size comes the ' +
+              'classic problem: rain enters the same sewer as the sewage.',
+        hacer: 'Lay the STORM DRAIN network to separate the rainwater, and add ' +
+               'a STORM TANK to hold back the peak of the downpour.',
+        porque: 'A sewage plant is sized for an ordinary day’s flow. In a storm ' +
+                'it can receive ten times more, and what does not fit spills ' +
+                'raw into the river. Separating the rain takes off its back ' +
+                'water that was never dirty in the first place.'
+      },
+      residuos: {
+        titulo: 'And now, the rubbish',
+        pasa: 'The town produces waste every day. With nobody to take it away, ' +
+              'it piles up in the street and people leave.',
+        hacer: 'Lay a ROAD to a LANDFILL far from water. Then a RECYCLING ' +
+               'PLANT: each level opens a new fraction.',
+        porque: 'Burying only costs money. What gets sorted is SOLD, and every ' +
+                'fraction has its real price: oil is worth far more per tonne ' +
+                'than organic waste. It is the first service that turns a ' +
+                'profit instead of an expense.'
+      },
+      mancomunidad: {
+        titulo: 'Not a town anymore — a district',
+        pasa: 'Another town comes under your management. It has its own ' +
+              'people, its own tank and its own upgrades.',
+        hacer: 'Switch between towns with the tabs above. Each one runs its ' +
+               'own system, but the funds are ONE.',
+        porque: 'This is how it really works: small towns cannot each afford a ' +
+                'water service of their own, so they band together to share ' +
+                'staff, works and rates. That is a water district.'
+      },
+      proteccion: {
+        titulo: 'Special conservation area',
+        pasa: 'You have run into a protected environment: a habitat the State ' +
+              'watches over, and no works may touch it.',
+        hacer: 'Go around it. No building or networks inside, and if your ' +
+               'leachate reaches it there will be a fine for as long as the ' +
+               'damage lasts.',
+        porque: 'Real networks are designed this way: routes take enormous ' +
+                'detours to avoid protected land. A town needs water, but the ' +
+                'land is not only its own.'
+      },
+      acuifero: {
+        titulo: 'It struck water',
+        pasa: 'The borehole found an aquifer. Under that tile there is water ' +
+              'you cannot see from the surface, and it depends on no river.',
+        hacer: 'Build the well on top and hook it to the network. It yields ' +
+               'less than a river intake, but it is there where no river is.',
+        porque: 'Half of Spain drinks from wells. Where the river does not ' +
+                'reach, the alternative to thirty kilometres of pipeline is ' +
+                'to look down: the water comes out at constant temperature ' +
+                'and quality all year, which makes it the most convenient ' +
+                'resource... and the easiest to ruin.'
+      },
+      rioLimpio: {
+        titulo: 'The river is alive again',
+        pasa: 'Your sewage plant treats what the town returns, and the river ' +
+              'has dropped to levels it can handle on its own.',
+        hacer: 'Keep it up: as the town grows, more load will come, and a ' +
+               'plant that falls short starts spilling raw again.',
+        porque: 'A clean river is not just scenery. It is the same one you ' +
+                'draw from, so treating well what you return makes the water ' +
+                'you take cheaper. And downstream there are more towns doing ' +
+                'the same.'
+      },
+      sinAlivios: {
+        titulo: 'It rained, and nothing happened',
+        pasa: 'The storm drains separate the downpour and the tank cuts the ' +
+              'peak. The sewage plant kept working as on any other day.',
+        hacer: 'Watch the diameter. What the network separates is what fits ' +
+               'through the pipe, and storms do not send warning.',
+        porque: 'Most of a year’s pollution does not arrive bit by bit: it ' +
+                'arrives in four or five storms. Withstanding those is ' +
+                'withstanding nearly everything.'
+      },
+      puebloLimpio: {
+        titulo: 'The streets are clean — and it pays',
+        pasa: 'All the rubbish leaves the town, and the plant sorts fractions ' +
+              'that get sold. The service pays for itself.',
+        hacer: 'Raise the plant’s level: each one opens a new fraction, and ' +
+               'the most valuable ones come last.',
+        porque: 'A clean town grows. And recovered material has real buyers, ' +
+                'so recycling stops being a cost and becomes the business of ' +
+                'the service.'
+      },
+      todosServidos: {
+        titulo: 'The whole district has water',
+        pasa: 'Every town you manage is well supplied at the same time, ' +
+              'without a single cut.',
+        hacer: 'Keep growing. The better you serve, the cheaper it is to open ' +
+               'new land.',
+        porque: 'This is what a real district does: a town of two hundred gets ' +
+                'the same water as one of five thousand, because they share ' +
+                'the works and the staff.'
+      }
     },
 
     /* Solo `titulo` y `ficha`: el `nombre` es la clave de las imágenes
@@ -747,6 +992,252 @@ export const EN = {
 
     /* --- Registro --- */
     'Sin novedades.': 'Nothing to report.',
-    '{0} h': '{0} h'
+    '{0} h': '{0} h',
+
+    /* ================= main.js: avisos, registro y tarjetas ================= */
+
+    'Nueva mancomunidad. {0} espera agua: clica el pueblo para bombear.':
+      'A new district. {0} is waiting for water: click the town to pump.',
+    'Continuar la partida': 'Continue playing',
+    'Empezar': 'Start',
+    '¡El depósito está LLENO! Cada golpe de más se derrama... y lo derramado acaba en el cauce.':
+      'The tank is FULL! Every extra stroke spills over... and what spills ends up in the river.',
+    'Bombeo con el depósito lleno: el agua sobrante se derrama al cauce.':
+      'Pumping with a full tank: the excess water spills into the river.',
+    'Esa red llega con el servicio de {0}.': 'That network arrives with the {0} service.',
+    'Elige arriba un calibre mayor — o el mismo, si la línea está vieja.':
+      'Pick a bigger size above — or the same one, if the line is old.',
+    'Renovar esa línea cuesta {0} € y no hay fondos.':
+      'Renewing that line costs {0} € and there are no funds.',
+    'Línea renovada de {0} a {1} por {2} €.': 'Line renewed from {0} to {1} for {2} €.',
+    'Línea renovada a {0}.': 'Line renewed to {0}.',
+    'Ampliar cuesta {0} € y no hay fondos.': 'Expanding costs {0} € and there are no funds.',
+    '{0} ampliado a nivel {1}: aporta como {2} piezas.':
+      '{0} expanded to level {1}: it contributes like {2} pieces.',
+    '¡Ampliación terminada! Nivel {0}.': 'Expansion complete! Level {0}.',
+    '¿Derribar {0}? Del derribo se recuperan {1} €.':
+      'Demolish {0}? The demolition recovers {1} €.',
+    '{0} derribado: {1} € recuperados.': '{0} demolished: {1} € recovered.',
+    'Derribado. La casilla queda libre.': 'Demolished. The tile is free.',
+    '¿Levantar esta línea de {0} ({1} casillas)? Se recuperan {2} € de material. Ojo: lo que colgaba de ella quedará sin conectar.':
+      'Take up this {0} line ({1} tiles)? You recover {2} € in material. Careful: whatever hung from it will be left unconnected.',
+    'Línea de {0} levantada: {1} € de material recuperado.':
+      '{0} line taken up: {1} € of material recovered.',
+    'Línea levantada.': 'Line taken up.',
+    'Ese vaso ya no da más de sí.': 'That cell has no more room to grow.',
+    'Ampliar el vaso cuesta {0} € y no hay fondos.':
+      'Expanding the cell costs {0} € and there are no funds.',
+    'Vertedero ampliado a nivel {0}: {1} t de capacidad.':
+      'Landfill expanded to level {0}: {1} t of capacity.',
+    'Guía saltada. Suerte ahí fuera.': 'Guide skipped. Good luck out there.',
+    'Ahí no llegas todavía: abre primero una casilla de al lado.':
+      'You cannot reach that yet: uncover a neighbouring tile first.',
+    'La excavación cuesta {0} € y no hay fondos.':
+      'The excavation costs {0} € and there are no funds.',
+    '{0} puesto en valor: renta {1} €/h.': '{0} put on display: it earns {1} €/h.',
+    '¡{0}! Empieza a rentar.': '{0}! It starts earning.',
+    'El estudio cuesta {0} € y no hay fondos.':
+      'The survey costs {0} € and there are no funds.',
+    'Estudio hidrogeológico: {0} casillas con indicios.':
+      'Hydrogeological survey: {0} tiles with signs of water.',
+    'Indicios favorables en {0} casillas. Ahí vale la pena perforar.':
+      'Favourable signs on {0} tiles. Drilling there is worth it.',
+    'Estudio hidrogeológico: sin indicios en esta zona.':
+      'Hydrogeological survey: no signs in this area.',
+    'Nada prometedor por aquí. Zona descartada: prueba en otro sitio.':
+      'Nothing promising here. Area ruled out: try somewhere else.',
+    'Perforar aquí cuesta {0} € y no hay fondos.':
+      'Drilling here costs {0} € and there are no funds.',
+    '¡Sondeo positivo! {0} bajo esa casilla.': 'The borehole struck water! {0} under that tile.',
+    '¡Ha dado agua! {0}. Ya puedes poner el pozo encima.':
+      'Water! {0}. You can now build the well on top.',
+    'Sondeo seco: {0} € y ni gota.': 'Dry borehole: {0} € and not a drop.',
+    'Seco. Ahí abajo no hay nada, y la perforación ya está pagada.':
+      'Dry. There is nothing down there, and the drilling is already paid for.',
+    'Primero hay que llegar hasta él con una tubería.':
+      'First you have to reach it with a pipe.',
+    'La mancomunidad aún no puede absorber este núcleo: incorpora un pueblo más cercano primero.':
+      'The district cannot absorb this town yet: bring in one closer town first.',
+    'La mancomunidad aún no puede absorber este núcleo: incorpora {0} pueblos más cercanos primero.':
+      'The district cannot absorb this town yet: bring in {0} closer towns first.',
+    'Incorporarlo cuesta un canon de {0} € y no hay fondos.':
+      'Joining costs a fee of {0} € and there are no funds.',
+    '{0} entra en la mancomunidad: ya recibe agua.':
+      '{0} joins the district: it now receives water.',
+    '¡{0} incorporado! ({1} núcleos)': '{0} has joined! ({1} towns)',
+    'FASE {0}: la mancomunidad puede absorber los núcleos del siguiente anillo, más lejanos.':
+      'PHASE {0}: the district can absorb the towns of the next, more distant ring.',
+    '¡Fase {0}! Se abre el siguiente anillo de núcleos.':
+      'Phase {0}! The next ring of towns opens up.',
+    '{0}: ya está al máximo.': '{0}: already maxed out.',
+    'Sin fondos: {0} cuesta {1} €.': 'No funds: {0} costs {1} €.',
+    '{0} · {1} nivel {2}.': '{0} · {1} level {2}.',
+    'Este pueblo aún no cumple los requisitos para el auto-bombeo.':
+      'This town does not yet meet the requirements for auto-pumping.',
+    'El auto-bombeo cuesta {0} €.': 'Auto-pumping costs {0} €.',
+    '¡Auto-bombeo activado en {0}!': 'Auto-pumping activated in {0}!',
+    'La instalación': 'The facility',
+    '{0}: reparación a mano impecable. Ni un euro en llaves.':
+      '{0}: a flawless repair by hand. Not one euro on wrenches.',
+    '¡En servicio! Reparada a mano, gratis.': 'Back in service! Repaired by hand, for free.',
+    'El agua llegó antes que tú: esa avería ya solo se arregla con la llave.':
+      'The water got there before you: that breakdown can only be fixed with the wrench now.',
+    '¡Derrame! A golpe de llave, como toda la vida.':
+      'Spillover! Back to the wrench, the old way.',
+    'Todavía no hay nada que copiar.': 'There is nothing to copy yet.',
+    'Partida copiada al portapapeles. Pégala en un sitio seguro.':
+      'Game copied to the clipboard. Paste it somewhere safe.',
+    'Copia este texto y guárdalo:': 'Copy this text and keep it:',
+    'Pega aquí la partida copiada:': 'Paste the copied game here:',
+    'Esto SUSTITUYE la partida actual por la del texto. ¿Seguimos?':
+      'This REPLACES the current game with the one in the text. Continue?',
+    'Ese texto no parece una partida de Pipes and Life.':
+      'That text does not look like a Pipes and Life game.',
+    'Expediente: {0} a nivel {1}.': 'Record: {0} at level {1}.',
+    '{0}: comprada. Es tuya para siempre, en todas las comarcas.':
+      '{0}: bought. Yours forever, in every county.',
+    'No hay veteranía suficiente. Se gana al trasladarse.':
+      'Not enough seniority. It is earned by transferring.',
+    '¿Trasladarse a otra comarca? La red, la caja y los pueblos SE QUEDAN. Te llevas {0} de veteranía y el expediente completo.':
+      'Transfer to another county? The network, the funds and the towns STAY BEHIND. You take {0} seniority and your whole record.',
+    '¡Bordado! Así se remata un tramo.': 'Nailed it! That is how you finish a stretch.',
+    'Se derramó... en el taller no pasa nada: otra.':
+      'It spilled... no harm done in the workshop: again.',
+    'Ensayo: {0} de {1} bien separados.': 'Practice run: {0} of {1} sorted right.',
+    'El turno ya está echado: espera a que venza el bono.':
+      'The shift is already worked: wait for the bonus to run out.',
+    'Turno en la línea: {0} de {1}. La venta de reciclado sube un {2} % una temporada.':
+      'Shift on the line: {0} of {1}. Recycling sales rise {2} % for a while.',
+    '¡Turno hecho! Venta de reciclado +{0} %.': 'Shift done! Recycling sales +{0} %.',
+    'Ahí la tienes: clica encima hasta dejarla arreglada.':
+      'There it is: click on it until it is fixed.',
+    'Pidiendo la ubicación al navegador…': 'Asking the browser for your location…',
+    'Preguntando a OpenStreetMap por tu comarca…': 'Asking OpenStreetMap about your area…',
+    'El mapa no da nombres por tu zona: se quedan los inventados.':
+      'The map has no names for your area: the invented ones stay.',
+    'Pueblos de tu zona activados: {0} nombres, empezando por {1}.':
+      'Towns from your area activated: {0} names, starting with {1}.',
+    '¡Hecho! Los pueblos por descubrir llevarán nombres de tu comarca.':
+      'Done! Undiscovered towns will carry names from your area.',
+    'No se ha podido: se quedan los nombres inventados.':
+      'It could not be done: the invented names stay.',
+    'Nombres inventados de vuelta.': 'Invented names are back.',
+    '¡{0} al excavar! No se puede construir ahí: hay que rodearlo.':
+      '{0} while digging! You cannot build there: you go around it.',
+    '¡{0}! Rodéalo... o excávalo y ponlo en valor.':
+      '{0}! Go around it... or excavate it and put it on display.',
+    '{0} construido por {1} €.': '{0} built for {1} €.',
+    '{0} del almacén, colocado.': '{0} from the storehouse, placed.',
+    'Hacen falta {0} €.': 'You need {0} €.',
+    'No se puede poner en marcha aquí: {0} Prueba a desmontarla.':
+      'It cannot be restored here: {0} Try dismantling it.',
+    '{0} recuperado y puesto en marcha por {1} €.': '{0} restored and running for {1} €.',
+    '{0} desmontado y guardado en el almacén.': '{0} dismantled and kept in the storehouse.',
+    'Una tubería necesita al menos dos casillas.': 'A pipe needs at least two tiles.',
+    'Ese trazado cuesta {0} € y no hay fondos.':
+      'That route costs {0} € and there are no funds.',
+    '{0}: {1} de {2} casillas por {3} €.': '{0}: {1}, {2} tiles, for {3} €.',
+    'Instalación abandonada. Se podrá reparar o llevar al inventario.':
+      'An abandoned facility. It can be repaired or taken to the storehouse.',
+    'Una señal de camino: apunta al pueblo más cercano por descubrir.':
+      'A waymark: it points to the nearest undiscovered town.',
+    '¡Has encontrado {0}!': 'You found {0}!',
+    '{0} {1} de {2} habitantes, a {3} casillas de tu red.':
+      'A {1} of {2} people, {3} tiles from your network.',
+    'Sus vecinos salen a recibirte: «Llevamos toda la vida esperando. Por favor... ¡traednos el agua!»':
+      'Its people come out to meet you: “We have been waiting all our lives. Please... bring us the water!”',
+    'Descubierto {0}: {1} habitantes esperando agua.':
+      'Discovered {0}: {1} people waiting for water.',
+    'El equipo de mantenimiento termina una reparación.':
+      'The maintenance crew finishes a repair.',
+    'Avería: {0} fuera de servicio hasta que lo repares.':
+      'Breakdown: {0} is out of service until you repair it.',
+    '¡Avería en {0}! Ve al mapa y clica encima.':
+      'Breakdown at the {0}! Go to the map and click on it.',
+    'Cada golpe de llave cuesta {0} € y no hay fondos.':
+      'Each turn of the wrench costs {0} € and there are no funds.',
+    'Reparando... quedan {0} (−{1} €)': 'Repairing... {0} to go (−{1} €)',
+    '{0}: avería reparada, vuelve a estar en servicio.':
+      '{0}: breakdown repaired, back in service.',
+    '¡Reparada! Vuelve a contar en la red.': 'Repaired! It counts in the network again.',
+    '{0} crece: {1} habitantes.': '{0} is growing: {1} people.',
+    '{0} pierde población: {1} habitantes.': '{0} is losing people: {1} left.',
+    '{0} ya es {1} {2}: {3} habitantes.': '{0} is now a {2}: {3} people.',
+    '{0} vuelve a ser {1} {2}: la población se va.':
+      '{0} is a {2} again: people are leaving.',
+    '¡{0} ya es {1} {2}!': '{0} is now a {2}!',
+    '{0} encoge: vuelve a ser {1} {2}.': '{0} is shrinking: it is a {2} again.',
+    'Mientras no estabas ({0} min): {1}{2} €.': 'While you were away ({0} min): {1}{2} €.',
+    'La caja': 'The funds',
+    'Al {0} %: sin nadie al mando, la explotación rinde la mitad.':
+      'At {0} %: with nobody in charge, the operation yields half.',
+    'La población': 'Population',
+    '{0}{1} habitantes': '{0}{1} people',
+    'Agua servida': 'Water served',
+    'El cauce': 'The river',
+    'se ensució {0} puntos': 'got {0} points dirtier',
+    'se recuperó {0} puntos': 'recovered {0} points',
+    '1 mes': '1 month',
+    '{0} meses': '{0} months',
+    '{0} horas': '{0} hours',
+    // La clave llega recortada; el espacio inicial va en el VALOR.
+    '(se cuentan las primeras {0} h)': ' (only the first {0} h count)',
+    'Fuera {0}{1}: {2} de juego.': 'Away {0}{1}: {2} of game time.',
+    'Guía: {0} ✓': 'Guide: {0} ✓',
+    '¡Conectado! El agua ya tiene camino hasta el pueblo.':
+      'Connected! The water now has a way to the town.',
+    'Lixiviados en una zona protegida: multa del Estado mientras dure el daño.':
+      'Leachate in a protected area: a State fine for as long as the damage lasts.',
+    '¡Multa! Tus lixiviados han alcanzado una zona de especial conservación.':
+      'Fined! Your leachate has reached a special conservation area.',
+    'El nivel del {0} está bajando: {1} pozos sacan más de lo que entra.':
+      'The {0} level is dropping: {1} wells draw more than comes in.',
+    'El acuífero se está agotando: sacas más agua de la que se repone.':
+      'The aquifer is running out: you draw more water than it recovers.',
+    '{0} genera aguas residuales. Vigila el cauce y piensa en una depuradora.':
+      '{0} produces wastewater. Watch the river and think about a sewage plant.',
+    '{0} ya vierte al cauce. Sin depuradora, contaminas.':
+      '{0} now discharges into the river. Without a sewage plant, you pollute.',
+
+    /* ================= mapa.js: los motivos legibles ================= */
+
+    'Fuera del mapa.': 'Off the map.',
+    'Primero hay que destapar esa zona.': 'You have to uncover that area first.',
+    'Primero hay que destapar esa casilla.': 'You have to uncover that tile first.',
+    'Esta zona ya está estudiada.': 'This area is already surveyed.',
+    'Zona de especial conservación: aquí no se perfora.':
+      'Special conservation area: no drilling here.',
+    'Eso es agua superficial: se capta, no se perfora.':
+      'That is surface water: you capture it, you do not drill it.',
+    'Ahí está el pueblo.': 'The town is there.',
+    'Yacimiento arqueológico: no se puede tocar.':
+      'Archaeological site: it cannot be touched.',
+    'Aquí ya se perforó y salió seco.': 'Someone already drilled here and it came up dry.',
+    'Aquí ya hay un sondeo con agua.': 'There is already a borehole with water here.',
+    'Eso no se puede construir.': 'That cannot be built.',
+    'Zona de especial conservación: aquí no se construye. Hay que rodearla.':
+      'Special conservation area: no building here. You go around it.',
+    'Ya hay algo construido ahí.': 'Something is already built there.',
+    'Ese sondeo salió seco: ahí abajo no hay agua.':
+      'That borehole came up dry: there is no water down there.',
+    'Ahí no se ha perforado todavía. Hay que sondear antes y que dé agua.':
+      'Nobody has drilled there yet. You need a borehole first, and it must strike water.',
+    // La clave llega recortada; los espacios del enlace van en el VALOR.
+    'o': ' or ',
+    '{0} solo va en {1}.': '{0} only goes on {1}.',
+    '{0} tiene que estar pegado al agua.': '{0} has to be right by the water.',
+    'Yacimiento arqueológico: no se puede tocar. Hay que rodearlo.':
+      'Archaeological site: it cannot be touched. You go around it.',
+    'Hay agua cerca: sale mucho más barato captarla que perforar.':
+      'There is water nearby: capturing it is far cheaper than drilling.',
+    'Hay agua a tiro: los lixiviados la envenenarán.':
+      'Water within reach: the leachate will poison it.',
+    'Por ahí no has explorado todavía.': 'You have not explored that way yet.',
+    'Zona protegida: ninguna red puede atravesarla. Rodéala.':
+      'Protected area: no network can cross it. Go around it.',
+    'Yacimiento arqueológico: no se puede atravesar. Rodéalo.':
+      'Archaeological site: it cannot be crossed. Go around it.',
+    'La tubería ya pasa por ahí.': 'The pipe already runs through there.',
+    'Tiene que ser una casilla contigua.': 'It has to be an adjacent tile.'
   }
 };

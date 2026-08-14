@@ -19,7 +19,7 @@ una t suelta, que este extractor se los toma por una plantilla etiquetada.
 import re, json, sys, os
 
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-FUENTES = [os.path.join(RAIZ, 'src', a) for a in ('ui.js', 'simulacion.js', 'main.js')]
+FUENTES = [os.path.join(RAIZ, 'src', a) for a in ('ui.js', 'simulacion.js', 'main.js', 'mapa.js')]
 DICCIONARIO = os.path.join(RAIZ, 'src', 'idiomas', 'en.js')
 
 

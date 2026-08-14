@@ -19,6 +19,9 @@
 import { CONFIG } from './config.js';
 import { generadorAleatorio } from './util.js';
 import { nivelVentaja } from './legado.js';
+// Solo para los MOTIVOS legibles (puedeColocar, puedeSondear...): la etiqueta
+// t los traduce sin sacarlos de aquí. La lógica no mira el idioma para nada.
+import { t } from './idioma.js';
 // La única concesión de este módulo "puro": el semillero de nombres puede
 // venir de los lugares del jugador. Es leer una lista, no tocar el mundo.
 import { lista as listaLugares } from './lugares.js';
@@ -456,23 +459,24 @@ function sembrarHallazgos(celdas, azar){
     { clave: 'ruina', n: H.ruinas, separacion: 4, terreno: null }
   ];
 
-  for(const t of tipos){
+  // (tipo, no t: la t queda para la etiqueta de traducción importada)
+  for(const tipo of tipos){
     let puestosDeEste = 0, intentos = 0;
-    while(puestosDeEste < t.n && intentos++ < 4000){
+    while(puestosDeEste < tipo.n && intentos++ < 4000){
       const c = Math.floor(azar() * M.cols);
       const f = Math.floor(azar() * M.filas);
       const celda = celdas[f * M.cols + c];
       const dist = Math.hypot(c - M.origen.col, f - M.origen.fila);
       //  = vale cualquier tierra firme
       if(celda.tipo === 'agua' || celda.tipo === 'lago') continue;
-      if(t.terreno && !t.terreno.includes(celda.tipo)) continue;
+      if(tipo.terreno && !tipo.terreno.includes(celda.tipo)) continue;
       if(celda.hallazgo) continue;
       if(dist < H.distanciaMinima) continue;      // que no salga todo en la puerta
-      if(!lejosDeOtros(c, f, t.separacion)) continue;
-      celda.hallazgo = t.clave;
+      if(!lejosDeOtros(c, f, tipo.separacion)) continue;
+      celda.hallazgo = tipo.clave;
       // Cada instalación abandonada esconde una pieza concreta, decidida aquí
       // (con la semilla) para que sea siempre la misma en la misma partida.
-      if(t.clave === 'ruina'){
+      if(tipo.clave === 'ruina'){
         const lista = H.piezasRuina;
         celda.pieza = lista[Math.floor(azar() * lista.length)];
       }
@@ -622,9 +626,9 @@ export function aflorarArqueologia(celdas, col, fila){
  */
 export function puedeEstudiar(celdas, col, fila){
   const celda = celdaEn(celdas, col, fila);
-  if(!celda) return { ok: false, motivo: 'Fuera del mapa.' };
-  if(celda.oculta) return { ok: false, motivo: 'Primero hay que destapar esa zona.' };
-  if(celda.estudiada) return { ok: false, motivo: 'Esta zona ya está estudiada.' };
+  if(!celda) return { ok: false, motivo: t`Fuera del mapa.` };
+  if(celda.oculta) return { ok: false, motivo: t`Primero hay que destapar esa zona.` };
+  if(celda.estudiada) return { ok: false, motivo: t`Esta zona ya está estudiada.` };
   return { ok: true, motivo: '' };
 }
 
@@ -652,19 +656,19 @@ export function estudiarZona(celdas, col, fila){
  */
 export function puedeSondear(celdas, col, fila){
   const celda = celdaEn(celdas, col, fila);
-  if(!celda) return { ok: false, motivo: 'Fuera del mapa.' };
-  if(celda.oculta) return { ok: false, motivo: 'Primero hay que destapar esa casilla.' };
+  if(!celda) return { ok: false, motivo: t`Fuera del mapa.` };
+  if(celda.oculta) return { ok: false, motivo: t`Primero hay que destapar esa casilla.` };
   if(celda.protegida)
-    return { ok: false, motivo: 'Zona de especial conservación: aquí no se perfora.' };
+    return { ok: false, motivo: t`Zona de especial conservación: aquí no se perfora.` };
   if(celda.tipo === 'agua' || celda.tipo === 'lago')
-    return { ok: false, motivo: 'Eso es agua superficial: se capta, no se perfora.' };
+    return { ok: false, motivo: t`Eso es agua superficial: se capta, no se perfora.` };
   if(celda.hallazgo === 'pueblo')
-    return { ok: false, motivo: 'Ahí está el pueblo.' };
+    return { ok: false, motivo: t`Ahí está el pueblo.` };
   if(arqueologiaBloquea(celda))
-    return { ok: false, motivo: 'Yacimiento arqueológico: no se puede tocar.' };
+    return { ok: false, motivo: t`Yacimiento arqueológico: no se puede tocar.` };
   if(celda.sondeo)
     return { ok: false, motivo: celda.sondeo === 'seco'
-      ? 'Aquí ya se perforó y salió seco.' : 'Aquí ya hay un sondeo con agua.' };
+      ? t`Aquí ya se perforó y salió seco.` : t`Aquí ya hay un sondeo con agua.` };
   return { ok: true, motivo: '' };
 }
 
@@ -695,42 +699,43 @@ export function sondear(celdas, col, fila){
 
 export function puedeColocar(celdas, construcciones, tipo, col, fila){
   const def = CONFIG.construibles[tipo];
-  if(!def) return { ok: false, motivo: 'Eso no se puede construir.' };
+  if(!def) return { ok: false, motivo: t`Eso no se puede construir.` };
 
   const celda = celdaEn(celdas, col, fila);
-  if(!celda) return { ok: false, motivo: 'Fuera del mapa.' };
-  if(celda.oculta) return { ok: false, motivo: 'Primero hay que destapar esa casilla.' };
+  if(!celda) return { ok: false, motivo: t`Fuera del mapa.` };
+  if(celda.oculta) return { ok: false, motivo: t`Primero hay que destapar esa casilla.` };
   // La protección se dice ANTES que ninguna otra pega: si el motivo fuera "ese
   // terreno no vale", el jugador pensaría que con otro terreno sí se podría.
   if(celda.protegida)
-    return { ok: false, motivo: 'Zona de especial conservación: aquí no se construye. Hay que rodearla.' };
+    return { ok: false, motivo: t`Zona de especial conservación: aquí no se construye. Hay que rodearla.` };
   if(construcciones.some(o => o.col === col && o.fila === fila))
-    return { ok: false, motivo: 'Ya hay algo construido ahí.' };
+    return { ok: false, motivo: t`Ya hay algo construido ahí.` };
   if(celda.hallazgo === 'pueblo')
-    return { ok: false, motivo: 'Ahí está el pueblo.' };
+    return { ok: false, motivo: t`Ahí está el pueblo.` };
 
   // El pozo no va "en un terreno": va donde el sondeo ha dado agua. Por eso su
   // definición no lleva `terreno` y la comprobación es esta.
   if(def.requiereSondeo && celda.sondeo !== 'positivo')
     return { ok: false, motivo: celda.sondeo === 'seco'
-      ? 'Ese sondeo salió seco: ahí abajo no hay agua.'
-      : 'Ahí no se ha perforado todavía. Hay que sondear antes y que dé agua.' };
+      ? t`Ese sondeo salió seco: ahí abajo no hay agua.`
+      : t`Ahí no se ha perforado todavía. Hay que sondear antes y que dé agua.` };
 
   if(def.terreno && !def.terreno.includes(celda.tipo)){
-    const nombres = def.terreno.map(t => CONFIG.terrenos[t].nombre.toLowerCase()).join(' o ');
-    return { ok: false, motivo: `${def.nombre} solo va en ${nombres}.` };
+    const nombres = def.terreno.map(tr => CONFIG.terrenos[tr].nombre.toLowerCase())
+      .join(t` o `);
+    return { ok: false, motivo: t`${def.nombre} solo va en ${nombres}.` };
   }
   if(def.junto && !vecinas(celdas, col, fila).some(v => def.junto.includes(v.celda.tipo)))
-    return { ok: false, motivo: `${def.nombre} tiene que estar pegado al agua.` };
+    return { ok: false, motivo: t`${def.nombre} tiene que estar pegado al agua.` };
   if(arqueologiaBloquea(celda))
-    return { ok: false, motivo: 'Yacimiento arqueológico: no se puede tocar. Hay que rodearlo.' };
+    return { ok: false, motivo: t`Yacimiento arqueológico: no se puede tocar. Hay que rodearlo.` };
   if(def.lejosDeAgua && hayAguaCerca(celdas, col, fila, def.lejosDeAgua))
-    return { ok: false, motivo: 'Hay agua cerca: sale mucho más barato captarla que perforar.' };
+    return { ok: false, motivo: t`Hay agua cerca: sale mucho más barato captarla que perforar.` };
 
   // Jugadas legales pero malas. Se deja hacer y se avisa: prohibirlas quita la
   // decisión, y un juego que no te deja equivocarte no tiene nada que decidir.
   if(def.avisaSiAguaCerca && hayAguaCerca(celdas, col, fila, def.avisaSiAguaCerca))
-    return { ok: true, motivo: '', aviso: 'Hay agua a tiro: los lixiviados la envenenarán.' };
+    return { ok: true, motivo: '', aviso: t`Hay agua a tiro: los lixiviados la envenenarán.` };
 
   return { ok: true, motivo: '' };
 }
@@ -774,20 +779,20 @@ export function costeCasillaTuberia(celda, dn, red = 'abastecimiento'){
  */
 export function puedeSeguirTrazado(celdas, trazado, col, fila){
   const celda = celdaEn(celdas, col, fila);
-  if(!celda) return { ok: false, motivo: 'Fuera del mapa.' };
-  if(celda.oculta) return { ok: false, motivo: 'Por ahí no has explorado todavía.' };
+  if(!celda) return { ok: false, motivo: t`Fuera del mapa.` };
+  if(celda.oculta) return { ok: false, motivo: t`Por ahí no has explorado todavía.` };
   if(celda.protegida)
-    return { ok: false, motivo: 'Zona protegida: ninguna red puede atravesarla. Rodéala.' };
+    return { ok: false, motivo: t`Zona protegida: ninguna red puede atravesarla. Rodéala.` };
   if(arqueologiaBloquea(celda))
-    return { ok: false, motivo: 'Yacimiento arqueológico: no se puede atravesar. Rodéalo.' };
+    return { ok: false, motivo: t`Yacimiento arqueológico: no se puede atravesar. Rodéalo.` };
   if(!trazado.length) return { ok: true, motivo: '' };
 
   if(trazado.some(p => p.col === col && p.fila === fila))
-    return { ok: false, motivo: 'La tubería ya pasa por ahí.' };
+    return { ok: false, motivo: t`La tubería ya pasa por ahí.` };
 
   const ultimo = trazado[trazado.length - 1];
   const salto = Math.abs(ultimo.col - col) + Math.abs(ultimo.fila - fila);
-  if(salto !== 1) return { ok: false, motivo: 'Tiene que ser una casilla contigua.' };
+  if(salto !== 1) return { ok: false, motivo: t`Tiene que ser una casilla contigua.` };
   return { ok: true, motivo: '' };
 }
 

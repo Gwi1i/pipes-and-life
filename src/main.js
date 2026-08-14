@@ -49,7 +49,7 @@ import { pedirUbicacion, buscarNombres, guardarNombres,
 import { MinijuegoTuberias } from './minijuego_tuberias.js';
 import { MinijuegoReciclaje } from './minijuego_reciclaje.js';
 import * as analitica from './analitica.js';
-import { aplicarIdioma, idiomaActual, cambiarIdioma, sinTraducir } from './idioma.js';
+import { aplicarIdioma, idiomaActual, cambiarIdioma, sinTraducir, t } from './idioma.js';
 
 const lienzo  = document.getElementById('escena');
 // El LEGADO va antes que el estado: el constructor necesita saber la semilla
@@ -78,7 +78,7 @@ const miniReciclaje = new MinijuegoReciclaje();
 ui.escena = escena;
 
 if(!habiaPartida){
-  estado.anotar(`Nueva mancomunidad. ${estado.activo.nombre} espera agua: clica el pueblo para bombear.`, 'info');
+  estado.anotar(t`Nueva mancomunidad. ${estado.activo.nombre} espera agua: clica el pueblo para bombear.`, 'info');
 } else {
   progresoOffline();
 }
@@ -88,7 +88,7 @@ if(!habiaPartida){
 // para dejar sonar la música: entrar por aquí lo resuelve solo.
 {
   const botonPortada = document.getElementById('portada-jugar');
-  botonPortada.textContent = habiaPartida ? 'Continuar la partida' : 'Empezar';
+  botonPortada.textContent = habiaPartida ? t`Continuar la partida` : t`Empezar`;
   botonPortada.onclick = () => {
     document.getElementById('portada').hidden = true;
     // El primer embudo: cuántos de los que entran pasan de la portada
@@ -141,8 +141,8 @@ function golpeDeBomba(px, py){
   if(entro <= 0.001){
     if(!desbordeAvisado){
       desbordeAvisado = true;
-      avisar('¡El depósito está LLENO! Cada golpe de más se derrama... y lo derramado acaba en el cauce.');
-      estado.anotar('Bombeo con el depósito lleno: el agua sobrante se derrama al cauce.', 'alarma');
+      avisar(t`¡El depósito está LLENO! Cada golpe de más se derrama... y lo derramado acaba en el cauce.`);
+      estado.anotar(t`Bombeo con el depósito lleno: el agua sobrante se derrama al cauce.`, 'alarma');
     }
     sonido.seco();
     return;
@@ -160,9 +160,10 @@ function procesarAcciones(){
 
       case 'bombear': {
         // Sin coordenadas (barra espaciadora): el destello va sobre el pueblo.
-        const O = CONFIG.mapaMundo, t = escena.tam;
-        const px = a.x != null ? a.x : O.origen.col * t - estado.camara.x + t / 2;
-        const py = a.y != null ? a.y : O.origen.fila * t - estado.camara.y + t / 2;
+        // (tam, no t: la t es la etiqueta de traducción importada)
+        const O = CONFIG.mapaMundo, tam = escena.tam;
+        const px = a.x != null ? a.x : O.origen.col * tam - estado.camara.x + tam / 2;
+        const py = a.y != null ? a.y : O.origen.fila * tam - estado.camara.y + tam / 2;
         golpeDeBomba(px, py);
         break;
       }
@@ -209,7 +210,7 @@ function procesarAcciones(){
         const def = CONFIG.redes[a.clave];
         if(!def) break;
         if(def.requiere && !servicioActivo(estado.activo, def.requiere)){
-          avisar(`Esa red llega con el servicio de ${CONFIG.servicios[def.requiere].nombre.toLowerCase()}.`);
+          avisar(t`Esa red llega con el servicio de ${CONFIG.servicios[def.requiere].nombre.toLowerCase()}.`);
           break;
         }
         const yaEstaba = estado.modo.tipo === 'tuberia' && estado.redActual === a.clave;
@@ -234,7 +235,7 @@ function procesarAcciones(){
       case 'elegirRed': {
         const def = CONFIG.redes[a.clave];
         if(def && def.requiere && !servicioActivo(estado.activo, def.requiere)){
-          avisar(`Esa red llega con el servicio de ${CONFIG.servicios[def.requiere].nombre.toLowerCase()}.`);
+          avisar(t`Esa red llega con el servicio de ${CONFIG.servicios[def.requiere].nombre.toLowerCase()}.`);
           break;
         }
         if(def){
@@ -265,12 +266,12 @@ function procesarAcciones(){
         const vieja = edadAños(tub, estado.horas) > (diametro(tub.dn, red).vidaAños || Infinity);
         const salto = nivelDiametro(destino, red) - nivelDiametro(tub.dn, red);
         if(salto < 0 || (salto === 0 && !vieja)){
-          avisar('Elige arriba un calibre mayor — o el mismo, si la línea está vieja.');
+          avisar(t`Elige arriba un calibre mayor — o el mismo, si la línea está vieja.`);
           break;
         }
         const coste = costeRenovar(estado.mapa, tub, destino, red);
         if(!estado.puedePagar(coste)){
-          avisar(`Renovar esa línea cuesta ${formatear(coste)} € y no hay fondos.`);
+          avisar(t`Renovar esa línea cuesta ${formatear(coste)} € y no hay fondos.`);
           break;
         }
         estado.pagar(coste);
@@ -279,8 +280,8 @@ function procesarAcciones(){
         tub.coste = (tub.coste || 0) + coste;
         // Renovar es tubería NUEVA: el reloj de la vida útil vuelve a cero
         tub.nacida = estado.horas;
-        estado.anotar(`Línea renovada de ${antes} a ${diametro(destino, red).nombre} por ${formatear(coste)} €.`, 'ok');
-        avisar(`Línea renovada a ${diametro(destino, red).nombre}.`);
+        estado.anotar(t`Línea renovada de ${antes} a ${diametro(destino, red).nombre} por ${formatear(coste)} €.`, 'ok');
+        avisar(t`Línea renovada a ${diametro(destino, red).nombre}.`);
         ui.invalidarCache();
         break;
       }
@@ -293,15 +294,14 @@ function procesarAcciones(){
         if(!A.tipos.includes(obra.tipo) || (obra.nivel || 1) >= A.nivelMax) break;
         const coste = costeAmpliarPieza(obra);
         if(!estado.puedePagar(coste)){
-          avisar(`Ampliar cuesta ${formatear(coste)} € y no hay fondos.`);
+          avisar(t`Ampliar cuesta ${formatear(coste)} € y no hay fondos.`);
           break;
         }
         estado.pagar(coste);
         obra.nivel = (obra.nivel || 1) + 1;
         sonido.compra();
-        estado.anotar(`${obra.nombre || obra.tipo} ampliado a nivel ${obra.nivel}: ` +
-                      `aporta como ${obra.nivel} piezas.`, 'ok');
-        avisar(`¡Ampliación terminada! Nivel ${obra.nivel}.`);
+        estado.anotar(t`${obra.nombre || obra.tipo} ampliado a nivel ${obra.nivel}: aporta como ${obra.nivel} piezas.`, 'ok');
+        avisar(t`¡Ampliación terminada! Nivel ${obra.nivel}.`);
         ui.invalidarCache();
         break;
       }
@@ -317,13 +317,13 @@ function procesarAcciones(){
         const def = CONFIG.construibles[obra.tipo];
         const recupera = Math.round(def.coste * (obra.nivel || 1)
                                     * CONFIG.derribo.fraccionRecuperada);
-        if(!confirm(`¿Derribar ${obra.nombre || def.nombre}? Del derribo se recuperan ${formatear(recupera)} €.`)) break;
+        if(!confirm(t`¿Derribar ${obra.nombre || def.nombre}? Del derribo se recuperan ${formatear(recupera)} €.`)) break;
         estado.construcciones.splice(idx, 1);
         // Lo que estaba roto en esa casilla se va con el escombro
         estado.averias = estado.averias.filter(av => av.col !== sel.col || av.fila !== sel.fila);
         estado.dinero += recupera;
-        estado.anotar(`${obra.nombre || def.nombre} derribado: ${formatear(recupera)} € recuperados.`, 'info');
-        avisar('Derribado. La casilla queda libre.');
+        estado.anotar(t`${obra.nombre || def.nombre} derribado: ${formatear(recupera)} € recuperados.`, 'info');
+        avisar(t`Derribado. La casilla queda libre.`);
         sonido.picar();
         estado.seleccion = null;
         ui.invalidarCache();
@@ -337,13 +337,13 @@ function procesarAcciones(){
         const recupera = Math.round(costeTrazado(estado.mapa, tub.camino, tub.dn, red)
                                     * CONFIG.tuberia.valorRecuperado);
         const R = CONFIG.redes[red];
-        if(!confirm(`¿Levantar esta línea de ${R.nombre.toLowerCase()} (${tub.camino.length} casillas)? ` +
-                    `Se recuperan ${formatear(recupera)} € de material. ` +
-                    `Ojo: lo que colgaba de ella quedará sin conectar.`)) break;
+        if(!confirm(t`¿Levantar esta línea de ${R.nombre.toLowerCase()} (${tub.camino.length} casillas)?
+                    Se recuperan ${formatear(recupera)} € de material.
+                    Ojo: lo que colgaba de ella quedará sin conectar.`)) break;
         estado.tuberias.splice(estado.tuberias.indexOf(tub), 1);
         estado.dinero += recupera;
-        estado.anotar(`Línea de ${R.nombre.toLowerCase()} levantada: ${formatear(recupera)} € de material recuperado.`, 'info');
-        avisar('Línea levantada.');
+        estado.anotar(t`Línea de ${R.nombre.toLowerCase()} levantada: ${formatear(recupera)} € de material recuperado.`, 'info');
+        avisar(t`Línea levantada.`);
         sonido.picar();
         ui.invalidarCache();
         break;
@@ -355,15 +355,15 @@ function procesarAcciones(){
           o => o.col === sel.col && o.fila === sel.fila && o.tipo === 'vertedero');
         if(!obra) break;
         const V = CONFIG.residuos.vertedero;
-        if((obra.nivel || 1) >= V.nivelMax){ avisar('Ese vaso ya no da más de sí.'); break; }
+        if((obra.nivel || 1) >= V.nivelMax){ avisar(t`Ese vaso ya no da más de sí.`); break; }
         const coste = costeAmpliarVertedero(obra);
         if(!estado.puedePagar(coste)){
-          avisar(`Ampliar el vaso cuesta ${formatear(coste)} € y no hay fondos.`);
+          avisar(t`Ampliar el vaso cuesta ${formatear(coste)} € y no hay fondos.`);
           break;
         }
         estado.pagar(coste);
         obra.nivel = (obra.nivel || 1) + 1;
-        estado.anotar(`Vertedero ampliado a nivel ${obra.nivel}: ${formatear(capacidadVaso(obra))} t de capacidad.`, 'ok');
+        estado.anotar(t`Vertedero ampliado a nivel ${obra.nivel}: ${formatear(capacidadVaso(obra))} t de capacidad.`, 'ok');
         ui.invalidarCache();
         break;
       }
@@ -383,7 +383,7 @@ function procesarAcciones(){
 
       case 'saltarGuia':
         saltarGuia(estado);
-        estado.anotar('Guía saltada. Suerte ahí fuera.', 'info');
+        estado.anotar(t`Guía saltada. Suerte ahí fuera.`, 'info');
         break;
 
       case 'cancelarModo':
@@ -432,7 +432,7 @@ function procesarAcciones(){
 
         if(celda.oculta){
           const r = clicarCasilla(estado.mapa, col, fila, poderExpansion(estado));
-          if(r === null){ avisar('Ahí no llegas todavía: abre primero una casilla de al lado.'); break; }
+          if(r === null){ avisar(t`Ahí no llegas todavía: abre primero una casilla de al lado.`); break; }
           escena.destello(a.x, a.y);
           if(r === 'descubierta'){ sonido.destapar(); anunciarHallazgo(celda, col, fila); }
           else sonido.picar();
@@ -458,14 +458,14 @@ function procesarAcciones(){
         if(!celda || !celda.arqueologia || !celda.aflorado || celda.excavado) break;
         const A = CONFIG.arqueologia;
         if(!estado.puedePagar(A.costeExcavar)){
-          avisar(`La excavación cuesta ${formatear(A.costeExcavar)} € y no hay fondos.`);
+          avisar(t`La excavación cuesta ${formatear(A.costeExcavar)} € y no hay fondos.`);
           break;
         }
         estado.pagar(A.costeExcavar);
         celda.excavado = true;
         const tipoY = tipoYacimiento(celda);
-        estado.anotar(`${tipoY.nombre} puesto en valor: renta ${formatear(tipoY.renta)} €/h.`, 'ok');
-        avisar(`¡${tipoY.nombre}! Empieza a rentar.`);
+        estado.anotar(t`${tipoY.nombre} puesto en valor: renta ${formatear(tipoY.renta)} €/h.`, 'ok');
+        avisar(t`¡${tipoY.nombre}! Empieza a rentar.`);
         ui.invalidarCache();
         break;
       }
@@ -479,7 +479,7 @@ function procesarAcciones(){
         if(!puede.ok){ avisar(puede.motivo); break; }
         const precioEstudio = costeEstudio();   // con el Ojo clínico del legado
         if(!estado.puedePagar(precioEstudio)){
-          avisar(`El estudio cuesta ${formatear(precioEstudio)} € y no hay fondos.`);
+          avisar(t`El estudio cuesta ${formatear(precioEstudio)} € y no hay fondos.`);
           break;
         }
         estado.pagar(precioEstudio);
@@ -487,11 +487,11 @@ function procesarAcciones(){
         // Un estudio sin indicios NO es dinero tirado y hay que decirlo así:
         // descartar una zona es la mitad del trabajo de un hidrogeólogo.
         if(conIndicios > 0){
-          estado.anotar(`Estudio hidrogeológico: ${conIndicios} casillas con indicios.`, 'ok');
-          avisar(`Indicios favorables en ${conIndicios} casillas. Ahí vale la pena perforar.`);
+          estado.anotar(t`Estudio hidrogeológico: ${conIndicios} casillas con indicios.`, 'ok');
+          avisar(t`Indicios favorables en ${conIndicios} casillas. Ahí vale la pena perforar.`);
         } else {
-          estado.anotar('Estudio hidrogeológico: sin indicios en esta zona.', 'aviso');
-          avisar('Nada prometedor por aquí. Zona descartada: prueba en otro sitio.');
+          estado.anotar(t`Estudio hidrogeológico: sin indicios en esta zona.`, 'aviso');
+          avisar(t`Nada prometedor por aquí. Zona descartada: prueba en otro sitio.`);
         }
         ui.invalidarCache();
         break;
@@ -505,7 +505,7 @@ function procesarAcciones(){
         if(!puede.ok){ avisar(puede.motivo); break; }
         const coste = costeSondeo(celda);
         if(!estado.puedePagar(coste)){
-          avisar(`Perforar aquí cuesta ${formatear(coste)} € y no hay fondos.`);
+          avisar(t`Perforar aquí cuesta ${formatear(coste)} € y no hay fondos.`);
           break;
         }
         estado.pagar(coste);
@@ -513,14 +513,14 @@ function procesarAcciones(){
         if(clase){
           contarHito('acuifero');
           sonido.agua();
-          estado.anotar(`¡Sondeo positivo! ${clase.nombre} bajo esa casilla.`, 'ok');
-          avisar(`¡Ha dado agua! ${clase.nombre}. Ya puedes poner el pozo encima.`);
+          estado.anotar(t`¡Sondeo positivo! ${clase.nombre} bajo esa casilla.`, 'ok');
+          avisar(t`¡Ha dado agua! ${clase.nombre}. Ya puedes poner el pozo encima.`);
         } else {
           sonido.seco();
           // El sondeo seco es la lección cara, y por eso se cuenta entero: lo que
           // ha costado y que ese punto ya está descartado para siempre.
-          estado.anotar(`Sondeo seco: ${formatear(coste)} € y ni gota.`, 'critico');
-          avisar('Seco. Ahí abajo no hay nada, y la perforación ya está pagada.');
+          estado.anotar(t`Sondeo seco: ${formatear(coste)} € y ni gota.`, 'critico');
+          avisar(t`Seco. Ahí abajo no hay nada, y la perforación ya está pagada.`);
         }
         ui.invalidarCache();
         break;
@@ -531,34 +531,35 @@ function procesarAcciones(){
         if(!celda || celda.hallazgo !== 'pueblo' || celda.resuelto) break;
         const sel = estado.seleccion;
         if(!estaEnLaRed(sel.col, sel.fila)){
-          avisar('Primero hay que llegar hasta él con una tubería.');
+          avisar(t`Primero hay que llegar hasta él con una tubería.`);
           break;
         }
         // La FASE manda: los anillos lejanos exigen una mancomunidad grande.
         if((celda.anillo || 1) > faseActual(estado)){
           const faltan = faltanParaFase(estado);
-          avisar(`La mancomunidad aún no puede absorber este núcleo: incorpora ` +
-                 `${faltan} pueblo${faltan === 1 ? '' : 's'} más cercanos primero.`);
+          avisar(faltan === 1
+            ? t`La mancomunidad aún no puede absorber este núcleo: incorpora un pueblo más cercano primero.`
+            : t`La mancomunidad aún no puede absorber este núcleo: incorpora ${faltan} pueblos más cercanos primero.`);
           break;
         }
         const canon = canonIncorporacion(estado);
         if(!estado.puedePagar(canon)){
-          avisar(`Incorporarlo cuesta un canon de ${formatear(canon)} € y no hay fondos.`);
+          avisar(t`Incorporarlo cuesta un canon de ${formatear(canon)} € y no hay fondos.`);
           break;
         }
         estado.pagar(canon);
         const faseAntes = faseActual(estado);
         const nuevo = incorporarPueblo(estado, sel.col, sel.fila, celda);
         habPrev.push(Math.floor(nuevo.habitantes));
-        estado.anotar(`${nuevo.nombre} entra en la mancomunidad: ya recibe agua.`, 'ok');
-        avisar(`¡${nuevo.nombre} incorporado! (${estado.pueblos.length} núcleos)`);
+        estado.anotar(t`${nuevo.nombre} entra en la mancomunidad: ya recibe agua.`, 'ok');
+        avisar(t`¡${nuevo.nombre} incorporado! (${estado.pueblos.length} núcleos)`);
         sonido.pueblo();
         ui.reconstruirPestanas(estado);
         contarHito('mancomunidad');
         if(faseActual(estado) > faseAntes){
-          estado.anotar(`FASE ${faseActual(estado)}: la mancomunidad puede absorber ` +
-                        `los núcleos del siguiente anillo, más lejanos.`, 'ok');
-          avisar(`¡Fase ${faseActual(estado)}! Se abre el siguiente anillo de núcleos.`);
+          estado.anotar(t`FASE ${faseActual(estado)}: la mancomunidad puede absorber
+                        los núcleos del siguiente anillo, más lejanos.`, 'ok');
+          avisar(t`¡Fase ${faseActual(estado)}! Se abre el siguiente anillo de núcleos.`);
         }
         // La llamada de otra comarca: tarjeta UNA vez, y solo en la primera —
         // quien ya se ha trasladado no necesita que se lo cuenten otra vez.
@@ -594,16 +595,16 @@ function procesarAcciones(){
         if(!m) break;
         const p = estado.activo;
         const nivel = p.mejoras[a.clave];
-        if(nivel >= m.nivelMax){ avisar(`${m.nombre}: ya está al máximo.`); break; }
+        if(nivel >= m.nivelMax){ avisar(t`${m.nombre}: ya está al máximo.`); break; }
         const coste = costeMejora(a.clave, nivel);
         if(!estado.puedePagar(coste)){
-          avisar(`Sin fondos: ${m.nombre.toLowerCase()} cuesta ${formatear(coste)} €.`);
+          avisar(t`Sin fondos: ${m.nombre.toLowerCase()} cuesta ${formatear(coste)} €.`);
           break;
         }
         estado.pagar(coste);
         p.mejoras[a.clave]++;
         sonido.compra();
-        estado.anotar(`${p.nombre} · ${m.nombre} nivel ${p.mejoras[a.clave]}.`, 'ok');
+        estado.anotar(t`${p.nombre} · ${m.nombre} nivel ${p.mejoras[a.clave]}.`, 'ok');
         if(a.clave === 'deposito'   && p.mejoras.deposito   === 1) escena.aparecerDeposito();
         if(a.clave === 'captacion'  && p.mejoras.captacion  === 1) escena.aparecerCaptacion();
         if(a.clave === 'depuradora' && p.mejoras.depuradora === 1) escena.aparecerDepuradora();
@@ -617,16 +618,16 @@ function procesarAcciones(){
         // GANCHO de monetización futura (P.desbloqueoExterno). De momento solo
         // se activa cumpliendo requisitos y pagando en el juego.
         if(!requisitosAutobomba(p).cumple){
-          avisar('Este pueblo aún no cumple los requisitos para el auto-bombeo.');
+          avisar(t`Este pueblo aún no cumple los requisitos para el auto-bombeo.`);
           break;
         }
         if(!estado.puedePagar(P.coste)){
-          avisar(`El auto-bombeo cuesta ${formatear(P.coste)} €.`);
+          avisar(t`El auto-bombeo cuesta ${formatear(P.coste)} €.`);
           break;
         }
         estado.pagar(P.coste);
         p.autobombaActivo = true;
-        estado.anotar(`¡Auto-bombeo activado en ${p.nombre}!`, 'ok');
+        estado.anotar(t`¡Auto-bombeo activado en ${p.nombre}!`, 'ok');
         break;
       }
 
@@ -645,16 +646,16 @@ function procesarAcciones(){
             const i = estado.averias.indexOf(av);
             if(i >= 0) estado.averias.splice(i, 1);
             const obra = estado.construcciones.find(o => o.col === av.col && o.fila === av.fila);
-            const nombre = obra ? CONFIG.construibles[obra.tipo].nombre : 'La instalación';
-            estado.anotar(`${nombre}: reparación a mano impecable. Ni un euro en llaves.`, 'ok');
-            avisar('¡En servicio! Reparada a mano, gratis.');
+            const nombre = obra ? CONFIG.construibles[obra.tipo].nombre : t`La instalación`;
+            estado.anotar(t`${nombre}: reparación a mano impecable. Ni un euro en llaves.`, 'ok');
+            avisar(t`¡En servicio! Reparada a mano, gratis.`);
             sonido.reparada();
             ui.caraGuia('bien');
             escena.destelloMantenimiento();
             ui.invalidarCache();
           } else if(razon === 'derrame'){
-            estado.anotar('El agua llegó antes que tú: esa avería ya solo se arregla con la llave.', 'alarma');
-            avisar('¡Derrame! A golpe de llave, como toda la vida.');
+            estado.anotar(t`El agua llegó antes que tú: esa avería ya solo se arregla con la llave.`, 'alarma');
+            avisar(t`¡Derrame! A golpe de llave, como toda la vida.`);
             sonido.seco();
             ui.caraGuia('mal');
           }
@@ -666,28 +667,28 @@ function procesarAcciones(){
 
       case 'exportarPartida': {
         const texto = estado.exportar();
-        if(!texto){ avisar('Todavía no hay nada que copiar.'); break; }
+        if(!texto){ avisar(t`Todavía no hay nada que copiar.`); break; }
         if(navigator.clipboard && navigator.clipboard.writeText){
           navigator.clipboard.writeText(texto)
-            .then(() => avisar('Partida copiada al portapapeles. Pégala en un sitio seguro.'))
+            .then(() => avisar(t`Partida copiada al portapapeles. Pégala en un sitio seguro.`))
             // Sin permiso de portapapeles, el prompt de siempre: feo pero infalible
-            .catch(() => prompt('Copia este texto y guárdalo:', texto));
+            .catch(() => prompt(t`Copia este texto y guárdalo:`, texto));
         } else {
-          prompt('Copia este texto y guárdalo:', texto);
+          prompt(t`Copia este texto y guárdalo:`, texto);
         }
         break;
       }
 
       case 'importarPartida': {
-        const texto = prompt('Pega aquí la partida copiada:');
+        const texto = prompt(t`Pega aquí la partida copiada:`);
         if(texto === null || texto.trim() === '') break;
-        if(!confirm('Esto SUSTITUYE la partida actual por la del texto. ¿Seguimos?')) break;
+        if(!confirm(t`Esto SUSTITUYE la partida actual por la del texto. ¿Seguimos?`)) break;
         if(Estado.importar(texto)){
           // Como en Reiniciar: el sello del adiós resucitaría la partida vieja
           estado.guardar = () => {};
           location.reload();
         } else {
-          avisar('Ese texto no parece una partida de Pipes and Life.');
+          avisar(t`Ese texto no parece una partida de Pipes and Life.`);
         }
         break;
       }
@@ -698,11 +699,11 @@ function procesarAcciones(){
         const def = CONFIG.comarcas.ventajas[a.clave];
         if(!def) break;
         if(comprarVentaja(a.clave)){
-          estado.anotar(`Expediente: ${def.nombre} a nivel ${nivelVentaja(a.clave)}.`, 'ok');
-          avisar(`${def.nombre}: comprada. Es tuya para siempre, en todas las comarcas.`);
+          estado.anotar(t`Expediente: ${def.nombre} a nivel ${nivelVentaja(a.clave)}.`, 'ok');
+          avisar(t`${def.nombre}: comprada. Es tuya para siempre, en todas las comarcas.`);
           sonido.compra();
         } else {
-          avisar('No hay veteranía suficiente. Se gana al trasladarse.');
+          avisar(t`No hay veteranía suficiente. Se gana al trasladarse.`);
         }
         ui.invalidarCache();
         break;
@@ -715,8 +716,8 @@ function procesarAcciones(){
       case 'trasladarse': {
         if(faseActual(estado) < CONFIG.comarcas.faseParaTrasladarse) break;
         const ganada = Math.max(estado.mejorVeterania || 0, veteraniaAlTrasladarse(estado));
-        if(!confirm(`¿Trasladarse a otra comarca? La red, la caja y los pueblos SE QUEDAN. ` +
-                    `Te llevas ${ganada} de veteranía y el expediente completo.`)) break;
+        if(!confirm(t`¿Trasladarse a otra comarca? La red, la caja y los pueblos SE QUEDAN.
+                    Te llevas ${ganada} de veteranía y el expediente completo.`)) break;
         legado.comarca += 1;
         legado.veterania += ganada;
         // La semilla nueva, echada AHORA y guardada en el legado: el próximo
@@ -737,8 +738,8 @@ function procesarAcciones(){
         analitica.contar('minijuego/tuberias');
         miniTuberias.jugar((exito, razon) => {
           if(razon === 'abandonado') return;
-          avisar(exito ? '¡Bordado! Así se remata un tramo.'
-                       : 'Se derramó... en el taller no pasa nada: otra.');
+          avisar(exito ? t`¡Bordado! Así se remata un tramo.`
+                       : t`Se derramó... en el taller no pasa nada: otra.`);
         });
         break;
 
@@ -746,7 +747,7 @@ function procesarAcciones(){
         analitica.contar('minijuego/reciclaje');
         miniReciclaje.jugar((aciertos, total, razon) => {
           if(razon === 'abandonado') return;
-          avisar(`Ensayo: ${aciertos} de ${total} bien separados.`);
+          avisar(t`Ensayo: ${aciertos} de ${total} bien separados.`);
         });
         break;
 
@@ -755,7 +756,7 @@ function procesarAcciones(){
       case 'turnoReciclaje': {
         const K = CONFIG.minijuegos.reciclaje;
         if(estado.turnoReciclaje && estado.horas < estado.turnoReciclaje.hasta){
-          avisar('El turno ya está echado: espera a que venza el bono.');
+          avisar(t`El turno ya está echado: espera a que venza el bono.`);
           break;
         }
         miniReciclaje.jugar((aciertos, total, razon) => {
@@ -763,9 +764,9 @@ function procesarAcciones(){
           const punteria = total ? aciertos / total : 0;
           const factor = 1 + K.bonusMax * punteria;
           estado.turnoReciclaje = { hasta: estado.horas + K.horasBonus, factor };
-          estado.anotar(`Turno en la línea: ${aciertos} de ${total}. La venta de ` +
-                        `reciclado sube un ${Math.round((factor - 1) * 100)} % una temporada.`, 'ok');
-          avisar(`¡Turno hecho! Venta de reciclado +${Math.round((factor - 1) * 100)} %.`);
+          estado.anotar(t`Turno en la línea: ${aciertos} de ${total}. La venta de
+                        reciclado sube un ${Math.round((factor - 1) * 100)} % una temporada.`, 'ok');
+          avisar(t`¡Turno hecho! Venta de reciclado +${Math.round((factor - 1) * 100)} %.`);
           if(punteria > 0.7){ sonido.reparada(); ui.caraGuia('bien'); }
           ui.invalidarCache();
         });
@@ -778,7 +779,7 @@ function procesarAcciones(){
         if(!av) break;
         escena.centrarEn(estado, av.col, av.fila);
         estado.seleccion = { col: av.col, fila: av.fila };
-        avisar('Ahí la tienes: clica encima hasta dejarla arreglada.');
+        avisar(t`Ahí la tienes: clica encima hasta dejarla arreglada.`);
         break;
       }
 
@@ -790,25 +791,25 @@ function procesarAcciones(){
       /* --- LUGARES: nombres de la zona del jugador, si él quiere --- */
 
       case 'usarLugares': {
-        avisar('Pidiendo la ubicación al navegador…');
+        avisar(t`Pidiendo la ubicación al navegador…`);
         // Asíncrono de verdad (permiso + consulta): el juego sigue corriendo
         // y el resultado se anuncia cuando llega.
         (async () => {
           try{
             const pos = await pedirUbicacion();
-            avisar('Preguntando a OpenStreetMap por tu comarca…');
+            avisar(t`Preguntando a OpenStreetMap por tu comarca…`);
             const nombres = await buscarNombres(pos);
             if(!nombres.length){
-              avisar('El mapa no da nombres por tu zona: se quedan los inventados.');
+              avisar(t`El mapa no da nombres por tu zona: se quedan los inventados.`);
               return;
             }
             guardarNombres(nombres);
-            estado.anotar(`Pueblos de tu zona activados: ${nombres.length} nombres, ` +
-                          `empezando por ${nombres.slice(0, 3).join(', ')}.`, 'ok');
-            avisar('¡Hecho! Los pueblos por descubrir llevarán nombres de tu comarca.');
+            estado.anotar(t`Pueblos de tu zona activados: ${nombres.length} nombres,
+                          empezando por ${nombres.slice(0, 3).join(', ')}.`, 'ok');
+            avisar(t`¡Hecho! Los pueblos por descubrir llevarán nombres de tu comarca.`);
             ui.invalidarCache();
           }catch(err){
-            avisar(err.message || 'No se ha podido: se quedan los nombres inventados.');
+            avisar(err.message || t`No se ha podido: se quedan los nombres inventados.`);
           }
         })();
         break;
@@ -817,7 +818,7 @@ function procesarAcciones(){
       case 'quitarLugares':
         quitarLugares();
         ui.invalidarCache();
-        avisar('Nombres inventados de vuelta.');
+        avisar(t`Nombres inventados de vuelta.`);
         break;
     }
   }
@@ -837,8 +838,8 @@ function tropiezoArqueologico(col, fila){
   estado.seleccion = { col, fila };
   estado.modo.trazado = [];
   const tipoA = tipoYacimiento(celdaEn(estado.mapa, col, fila));
-  estado.anotar(`¡${tipoA.nombre} al excavar! No se puede construir ahí: hay que rodearlo.`, 'alarma');
-  avisar(`¡${tipoA.nombre}! Rodéalo... o excávalo y ponlo en valor.`);
+  estado.anotar(t`¡${tipoA.nombre} al excavar! No se puede construir ahí: hay que rodearlo.`, 'alarma');
+  avisar(t`¡${tipoA.nombre}! Rodéalo... o excávalo y ponlo en valor.`);
   ui.invalidarCache();
   return true;
 }
@@ -857,14 +858,14 @@ function colocarElemento(col, fila){
   const deInv = estado.modo.deInventario;
   if(deInv === false){
     if(!estado.puedePagar(def.coste)){
-      avisar(`Sin fondos: ${def.nombre.toLowerCase()} cuesta ${formatear(def.coste)} €.`);
+      avisar(t`Sin fondos: ${def.nombre.toLowerCase()} cuesta ${formatear(def.coste)} €.`);
       return;
     }
     estado.pagar(def.coste);
-    estado.anotar(`${def.nombre} construido por ${formatear(def.coste)} €.`, 'ok');
+    estado.anotar(t`${def.nombre} construido por ${formatear(def.coste)} €.`, 'ok');
   } else {
     estado.inventario.splice(deInv, 1);
-    estado.anotar(`${def.nombre} del almacén, colocado.`, 'ok');
+    estado.anotar(t`${def.nombre} del almacén, colocado.`, 'ok');
     estado.modo = { tipo: null, elemento: null, trazado: [], deInventario: false };
   }
   estado.construcciones.push({ tipo: clave, col, fila, nivel: 1,
@@ -898,23 +899,23 @@ function accionRuina(desmontar){
   const H = CONFIG.hallazgos;
   const coste = Math.round(def.coste * (desmontar ? H.costeDesmontar : H.costeReparar));
 
-  if(!estado.puedePagar(coste)){ avisar(`Hacen falta ${formatear(coste)} €.`); return; }
+  if(!estado.puedePagar(coste)){ avisar(t`Hacen falta ${formatear(coste)} €.`); return; }
 
   if(!desmontar){
     // Reparar en el sitio exige que el terreno le sirva a esa pieza
     const v = puedeColocar(estado.mapa, estado.construcciones, tipo, sel.col, sel.fila);
     if(!v.ok){
-      avisar(`No se puede poner en marcha aquí: ${v.motivo} Prueba a desmontarla.`);
+      avisar(t`No se puede poner en marcha aquí: ${v.motivo} Prueba a desmontarla.`);
       return;
     }
     estado.pagar(coste);
     estado.construcciones.push({ tipo, col: sel.col, fila: sel.fila, nivel: 1,
                                  nombre: bautizarObra(estado.construcciones, tipo) });
-    estado.anotar(`${def.nombre} recuperado y puesto en marcha por ${formatear(coste)} €.`, 'ok');
+    estado.anotar(t`${def.nombre} recuperado y puesto en marcha por ${formatear(coste)} €.`, 'ok');
   } else {
     estado.pagar(coste);
     estado.inventario.push({ tipo });
-    estado.anotar(`${def.nombre} desmontado y guardado en el almacén.`, 'ok');
+    estado.anotar(t`${def.nombre} desmontado y guardado en el almacén.`, 'ok');
   }
   celda.resuelto = true;
   estado.seleccion = null;
@@ -956,18 +957,18 @@ function clicTuberia(col, fila){
 
 function rematarTuberia(){
   const trazado = estado.modo.trazado;
-  if(trazado.length < 2){ avisar('Una tubería necesita al menos dos casillas.'); return; }
+  if(trazado.length < 2){ avisar(t`Una tubería necesita al menos dos casillas.`); return; }
   const red = estado.redActual, dn = estado.dnActual[red];
   const coste = costeTrazado(estado.mapa, trazado, dn, red);
   if(!estado.puedePagar(coste)){
-    avisar(`Ese trazado cuesta ${formatear(coste)} € y no hay fondos.`);
+    avisar(t`Ese trazado cuesta ${formatear(coste)} € y no hay fondos.`);
     return;
   }
   estado.pagar(coste);
   estado.tuberias.push({ camino: trazado.slice(), coste, dn, red,
                          nacida: estado.horas });
-  estado.anotar(`${CONFIG.redes[red].nombre}: ${diametro(dn, red).nombre} de ` +
-                `${trazado.length} casillas por ${formatear(coste)} €.`, 'ok');
+  estado.anotar(t`${CONFIG.redes[red].nombre}: ${diametro(dn, red).nombre} de
+                ${trazado.length} casillas por ${formatear(coste)} €.`, 'ok');
   estado.modo.trazado = [];
   sonido.rematar();
 }
@@ -987,8 +988,8 @@ function anunciarHallazgo(celda, col, fila){
     return;
   }
   const textos = {
-    ruina:      'Instalación abandonada. Se podrá reparar o llevar al inventario.',
-    senal:      'Una señal de camino: apunta al pueblo más cercano por descubrir.',
+    ruina:      t`Instalación abandonada. Se podrá reparar o llevar al inventario.`,
+    senal:      t`Una señal de camino: apunta al pueblo más cercano por descubrir.`,
   };
   if(!textos[celda.hallazgo]) return;
   estado.anotar(textos[celda.hallazgo], 'ok');
@@ -1006,15 +1007,16 @@ function mostrarDescubierto(celda, col, fila){
   img.hidden = false;
   img.onerror = () => { img.hidden = true; };
   img.src = `assets/f_${esc.nombre}.jpg`;
-  document.getElementById('desc-titulo').textContent = `¡Has encontrado ${nombre}!`;
+  document.getElementById('desc-titulo').textContent = t`¡Has encontrado ${nombre}!`;
+  // El artículo con género viaja como valor: en inglés la frase lo ignora.
   document.getElementById('desc-texto').textContent =
-    `${esc.art === 'una' ? 'Una' : 'Un'} ${esc.nombre} de ${hab.toLocaleString('es-ES')} ` +
-    `habitantes, a ${Math.round(distancia(col, fila))} casillas de tu red.`;
+    t`${esc.art === 'una' ? 'Una' : 'Un'} ${esc.titulo} de ${hab.toLocaleString('es-ES')}
+      habitantes, a ${Math.round(distancia(col, fila))} casillas de tu red.`;
   document.getElementById('desc-ruego').textContent =
-    'Sus vecinos salen a recibirte: «Llevamos toda la vida esperando. ' +
-    'Por favor... ¡traednos el agua!»';
+    t`Sus vecinos salen a recibirte: «Llevamos toda la vida esperando.
+      Por favor... ¡traednos el agua!»`;
   document.getElementById('descubierto-fondo').hidden = false;
-  estado.anotar(`Descubierto ${nombre}: ${hab.toLocaleString('es-ES')} habitantes esperando agua.`, 'ok');
+  estado.anotar(t`Descubierto ${nombre}: ${hab.toLocaleString('es-ES')} habitantes esperando agua.`, 'ok');
   sonido.descubierto();
   analitica.contar('pueblo-descubierto');
 }
@@ -1040,7 +1042,7 @@ function tickAverias(dtHoras){
     const tiempo = A.reparacionAutoHoras * Math.pow(A.reparacionAutoFactor, nivel - 1);
     if(estado.horas - av.desde >= tiempo){
       estado.averias.splice(i, 1);
-      estado.anotar('El equipo de mantenimiento termina una reparación.', 'ok');
+      estado.anotar(t`El equipo de mantenimiento termina una reparación.`, 'ok');
     }
   }
 
@@ -1064,8 +1066,8 @@ function tickAverias(dtHoras){
     col: victima.col, fila: victima.fila,
     clics: clicsDeReparacion(), desde: estado.horas
   });
-  estado.anotar(`Avería: ${def.nombre} fuera de servicio hasta que lo repares.`, 'critico');
-  avisar(`¡Avería en ${def.nombre}! Ve al mapa y clica encima.`);
+  estado.anotar(t`Avería: ${def.nombre} fuera de servicio hasta que lo repares.`, 'critico');
+  avisar(t`¡Avería en ${def.nombre}! Ve al mapa y clica encima.`);
   sonido.averia();
   ui.caraGuia('mal');
 }
@@ -1087,22 +1089,22 @@ function clicAveria(col, fila){
   if(!av) return false;
   const coste = CONFIG.averias.costePorClic;
   if(!estado.puedePagar(coste)){
-    avisar(`Cada golpe de llave cuesta ${formatear(coste)} € y no hay fondos.`);
+    avisar(t`Cada golpe de llave cuesta ${formatear(coste)} € y no hay fondos.`);
     return true;
   }
   estado.pagar(coste);
   av.clics--;
   sonido.llave();
   if(av.clics > 0){
-    avisar(`Reparando... quedan ${av.clics} (−${formatear(coste)} €)`);
+    avisar(t`Reparando... quedan ${av.clics} (−${formatear(coste)} €)`);
     return true;
   }
   estado.averias.splice(estado.averias.indexOf(av), 1);
   sonido.reparada();
   const obra = estado.construcciones.find(o => o.col === col && o.fila === fila);
-  const nombre = obra ? CONFIG.construibles[obra.tipo].nombre : 'La instalación';
-  estado.anotar(`${nombre}: avería reparada, vuelve a estar en servicio.`, 'ok');
-  avisar('¡Reparada! Vuelve a contar en la red.');
+  const nombre = obra ? CONFIG.construibles[obra.tipo].nombre : t`La instalación`;
+  estado.anotar(t`${nombre}: avería reparada, vuelve a estar en servicio.`, 'ok');
+  avisar(t`¡Reparada! Vuelve a contar en la red.`);
   escena.destelloMantenimiento();
   return true;
 }
@@ -1127,8 +1129,8 @@ function anotarCrecimiento(){
     // contando lo mismo ensucian el registro.
     if(Math.floor(ahora / 100) !== Math.floor(antes / 100) && nivelAhora === nivelAntes){
       estado.anotar(ahora > antes
-        ? `${p.nombre} crece: ${ahora.toLocaleString('es-ES')} habitantes.`
-        : `${p.nombre} pierde población: ${ahora.toLocaleString('es-ES')} habitantes.`,
+        ? t`${p.nombre} crece: ${ahora.toLocaleString('es-ES')} habitantes.`
+        : t`${p.nombre} pierde población: ${ahora.toLocaleString('es-ES')} habitantes.`,
         ahora > antes ? 'ok' : 'alarma');
     }
     /* CAMBIO DE ESCALÓN: de aldea a pueblo, de pueblo a villa... Es el premio
@@ -1140,19 +1142,21 @@ function anotarCrecimiento(){
     if(nivelAhora !== nivelAntes){
       const esc = CONFIG.caserio.escalones[nivelAhora];
       const crece = nivelAhora > nivelAntes;
+      // El artículo (esc.art) viaja como valor: la frase inglesa lo ignora.
       estado.anotar(crece
-        ? `${p.nombre} ya es ${esc.art} ${esc.nombre}: ${ahora.toLocaleString('es-ES')} habitantes.`
-        : `${p.nombre} vuelve a ser ${esc.art} ${esc.nombre}: la población se va.`,
+        ? t`${p.nombre} ya es ${esc.art} ${esc.titulo}: ${ahora.toLocaleString('es-ES')} habitantes.`
+        : t`${p.nombre} vuelve a ser ${esc.art} ${esc.titulo}: la población se va.`,
         crece ? 'ok' : 'alarma');
-      avisar(crece ? `¡${p.nombre} ya es ${esc.art} ${esc.nombre.toUpperCase()}!`
-                   : `${p.nombre} encoge: vuelve a ser ${esc.art} ${esc.nombre}.`);
+      avisar(crece ? t`¡${p.nombre} ya es ${esc.art} ${esc.titulo.toUpperCase()}!`
+                   : t`${p.nombre} encoge: vuelve a ser ${esc.art} ${esc.titulo}.`);
       if(crece){
         sonido.pueblo();
         // El destello va en coordenadas de PANTALLA, así que hay que traducir
-        // la casilla del pueblo con la cámara de este momento.
-        const t = escena.tam;
-        escena.destello(p.col * t - estado.camara.x + t / 2,
-                        p.fila * t - estado.camara.y + t / 2);
+        // la casilla del pueblo con la cámara de este momento. (tam, no t: la
+        // t es la etiqueta de traducción y aquí taparla rompería las frases.)
+        const tam = escena.tam;
+        escena.destello(p.col * tam - estado.camara.x + tam / 2,
+                        p.fila * tam - estado.camara.y + tam / 2);
       } else sonido.seco();
     }
     habPrev[i] = ahora;
@@ -1192,7 +1196,7 @@ function progresoOffline(){
     dinero -= recorte;
   }
   const minutos = Math.round(aSimular / 60);
-  estado.anotar(`Mientras no estabas (${minutos} min): ${dinero >= 0 ? '+' : ''}${formatear(dinero)} €.`, 'info');
+  estado.anotar(t`Mientras no estabas (${minutos} min): ${dinero >= 0 ? '+' : ''}${formatear(dinero)} €.`, 'info');
 
   // La tarjeta, solo desde ausencias de verdad. El momento de volver es LA
   // razón de reabrir un incremental: merece contarse de frente, no en una
@@ -1225,19 +1229,19 @@ function mostrarVuelta(r){
     filas.push(`<div class="vuelta-fila${tono ? ' ' + tono : ''}">
       <span>${eti}</span><b>${valor}</b></div>`);
 
-  fila('La caja', `${r.dinero >= 0 ? '+' : ''}${formatear(r.dinero)} €`,
+  fila(t`La caja`, `${r.dinero >= 0 ? '+' : ''}${formatear(r.dinero)} €`,
        r.dinero >= 0 ? 'bien' : 'mal');
   if(r.dinero > 0)
-    filas.push(`<p class="m-desc vuelta-nota">Al ${Math.round(CONFIG.offline.rendimiento * 100)} %:
-      sin nadie al mando, la explotación rinde la mitad.</p>`);
+    filas.push(`<p class="m-desc vuelta-nota">${t`Al ${Math.round(CONFIG.offline.rendimiento * 100)} %:
+      sin nadie al mando, la explotación rinde la mitad.`}</p>`);
   if(Math.abs(r.hab) >= 1)
-    fila('La población', `${r.hab >= 0 ? '+' : ''}${Math.round(r.hab)} habitantes`,
+    fila(t`La población`, t`${r.hab >= 0 ? '+' : ''}${Math.round(r.hab)} habitantes`,
          r.hab >= 0 ? 'bien' : 'mal');
-  if(r.m3 > 0.5) fila('Agua servida', `${formatear(r.m3)} m³`);
+  if(r.m3 > 0.5) fila(t`Agua servida`, `${formatear(r.m3)} m³`);
   // El cauce solo se menciona si se ha movido de verdad en algún sentido
   const contPct = r.cont / CONFIG.cauce.contaminacionMax * 100;
-  if(contPct > 2) fila('El cauce', `se ensució ${Math.round(contPct)} puntos`, 'mal');
-  else if(contPct < -2) fila('El cauce', `se recuperó ${Math.round(-contPct)} puntos`, 'bien');
+  if(contPct > 2) fila(t`El cauce`, t`se ensució ${Math.round(contPct)} puntos`, 'mal');
+  else if(contPct < -2) fila(t`El cauce`, t`se recuperó ${Math.round(-contPct)} puntos`, 'bien');
 
   // El tiempo FUERA es el real entero, no el simulado: decir "fuera 3 h" a
   // quien estuvo 5 es mentirle justo en la línea que explica el recorte.
@@ -1247,17 +1251,18 @@ function mostrarVuelta(r){
   // El tiempo de juego, en el calendario DEL JUEGO (el año son 360 horas):
   // decir "961 horas" es verdad y no significa nada; "casi 3 años", sí.
   const años = r.horasJuego / CONFIG.tiempo.horasPorAño;
+  const meses = Math.round(años * 12);
   const tiempoJuego = años >= 1
-    ? `${años.toFixed(años < 3 ? 1 : 0).replace('.', ',')} años`
+    ? t`${años.toFixed(años < 3 ? 1 : 0).replace('.', ',')} años`
     : años >= 1 / 12
-      ? `${Math.round(años * 12)} mes${Math.round(años * 12) === 1 ? '' : 'es'}`
-      : `${Math.round(r.horasJuego)} horas`;
+      ? (meses === 1 ? t`1 mes` : t`${meses} meses`)
+      : t`${Math.round(r.horasJuego)} horas`;
   // Si estuviste fuera más del tope, se dice: creer que se simuló todo y ver
   // menos dinero del esperado parecería un robo.
   const tope = r.seg > CONFIG.offline.maxHoras * 3600
-    ? ` (se cuentan las primeras ${CONFIG.offline.maxHoras} h)` : '';
+    ? t` (se cuentan las primeras ${CONFIG.offline.maxHoras} h)` : '';
   document.getElementById('vuelta-tiempo').textContent =
-    `Fuera ${tiempoReal}${tope}: ${tiempoJuego} de juego.`;
+    t`Fuera ${tiempoReal}${tope}: ${tiempoJuego} de juego.`;
   document.getElementById('vuelta-lineas').innerHTML = filas.join('');
   document.getElementById('vuelta-fondo').hidden = false;
 }
@@ -1355,13 +1360,13 @@ function bucle(ahora){
   // La guía avanza sola cuando el jugador consigue de verdad cada paso
   const pasoHecho = comprobarGuia(estado);
   if(pasoHecho){
-    estado.anotar(`Guía: ${pasoHecho.titulo} ✓`, 'ok');
+    estado.anotar(t`Guía: ${pasoHecho.titulo} ✓`, 'ok');
     sonido.hallazgo();      // el paso conseguido se celebra, bajito
     ui.caraGuia('bien');    // ...y el guía lo celebra con la cara, si la tiene
     // Conectar la tubería al pueblo es EL momento del tutorial: se subraya
     // aparte del avance de la guía (petición del autor).
     if(pasoHecho.id === 'tuberia'){
-      avisar('¡Conectado! El agua ya tiene camino hasta el pueblo.');
+      avisar(t`¡Conectado! El agua ya tiene camino hasta el pueblo.`);
       sonido.reparada();
     }
     // Y lee el paso NUEVO, si hay voz: el que acaba de aparecer en el bocadillo
@@ -1398,8 +1403,8 @@ function bucle(ahora){
   // goteo ya se ve en la caja, lo que hay que contar es por qué ha empezado.
   if(resultado.celdasProtegidasSucias > 0 && !multaZECAvisada){
     multaZECAvisada = true;
-    estado.anotar('Lixiviados en una zona protegida: multa del Estado mientras dure el daño.', 'critico');
-    avisar('¡Multa! Tus lixiviados han alcanzado una zona de especial conservación.');
+    estado.anotar(t`Lixiviados en una zona protegida: multa del Estado mientras dure el daño.`, 'critico');
+    avisar(t`¡Multa! Tus lixiviados han alcanzado una zona de especial conservación.`);
   } else if(resultado.celdasProtegidasSucias === 0){
     multaZECAvisada = false;
   }
@@ -1408,14 +1413,14 @@ function bucle(ahora){
   // avería, ni multa, ni humo. Solo el pozo dando cada vez menos. Si no se
   // cuenta, el jugador ve caer la producción y no entiende por qué.
   for(const av of resultado.avisosAcuifero || []){
-    estado.anotar(`El nivel del ${av.clase.nombre.toLowerCase()} está bajando: ` +
-      `${av.pozos} pozos sacan más de lo que entra.`, 'alarma');
-    avisar('El acuífero se está agotando: sacas más agua de la que se repone.');
+    estado.anotar(t`El nivel del ${av.clase.nombre.toLowerCase()} está bajando:
+      ${av.pozos} pozos sacan más de lo que entra.`, 'alarma');
+    avisar(t`El acuífero se está agotando: sacas más agua de la que se repone.`);
   }
   if(resultado.saneamientoNuevo && resultado.saneamientoNuevo.length){
     for(const nombre of resultado.saneamientoNuevo){
-      estado.anotar(`${nombre} genera aguas residuales. Vigila el cauce y piensa en una depuradora.`, 'alarma');
-      avisar(`${nombre} ya vierte al cauce. Sin depuradora, contaminas.`);
+      estado.anotar(t`${nombre} genera aguas residuales. Vigila el cauce y piensa en una depuradora.`, 'alarma');
+      avisar(t`${nombre} ya vierte al cauce. Sin depuradora, contaminas.`);
     }
   }
 
