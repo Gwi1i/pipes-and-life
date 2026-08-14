@@ -49,6 +49,13 @@ button{touch-action:manipulation;}
 .hud{display:flex; gap:1px; background:var(--linea); flex:1;
      border:1px solid var(--linea); min-width:300px;}
 .hud-item{background:var(--panel-alto); padding:5px 12px; flex:1; min-width:96px;}
+/* El GUIÑO de estreno: la métrica que acaba de nacer se enciende un momento.
+   Una sola vez y sin latido: nace, saluda y a trabajar. */
+@keyframes hud-estreno{
+  0%{background:rgba(56,189,248,0.5);}
+  100%{background:var(--panel-alto);}
+}
+.hud-item.estreno{animation:hud-estreno 1.6s ease-out;}
 .hud-item .e{display:block; font-family:var(--mono); font-size:8px;
   letter-spacing:.15em; text-transform:uppercase; color:var(--apagado);}
 .hud-item .v{font-family:var(--mono); font-size:15px; font-weight:600;}
@@ -568,7 +575,9 @@ button{touch-action:manipulation;}
   .acciones{order:2; margin-left:auto;}
   .hud{
     order:3; flex:1 1 100%; min-width:0;
-    display:grid; grid-template-columns:repeat(8, 1fr);
+    /* auto-fit y no un 8 fijo: con el HUD progresivo el número de métricas
+       visibles cambia con la partida, y las escondidas no deben dejar hueco */
+    display:grid; grid-template-columns:repeat(auto-fit, minmax(110px, 1fr));
   }
   .hud-item{min-width:0;}
   .hud-item .v{white-space:nowrap;}
@@ -584,7 +593,7 @@ button{touch-action:manipulation;}
      entera: se parten en dos filas de cuatro. (El corte de 1400px ya los bajó
      a su propia fila; aquí solo se pasa de ocho columnas a cuatro.) */
   .superior{gap:6px 10px;}
-  .hud{grid-template-columns:repeat(4, 1fr);}
+  .hud{grid-template-columns:repeat(auto-fit, minmax(23%, 1fr));}
 }
 
 /* ---------- MÓVIL ----------

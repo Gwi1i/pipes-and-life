@@ -1601,10 +1601,52 @@ export class UI {
     if(clase) el.className = 'v ' + clase;
   }
 
+  /**
+   * EL HUD PROGRESIVO: se arranca con TRES números (Agua, Caja, Servicio) y
+   * los demás se INCORPORAN cuando nace su mecánica — la Población al acabar
+   * la guía, la Producción y el reloj con la primera captación, el Cauce
+   * cuando algún pueblo vierte, la Expansión al ir destapando. Ocho números
+   * el minuto uno era abrumar ("hay que dárselo mascado", el autor); y la
+   * regla del plan: no se QUITA nada a quien ya lo usa — las condiciones
+   * salen del estado, así que una partida cargada enseña lo suyo sin guiño.
+   */
+  refrescarMetricas(estado){
+    const conCaptacion = estado.pueblos.some(pb => pb.mejoras.captacion > 0)
+      || estado.construcciones.some(o => o.tipo === 'captacion' || o.tipo === 'acuifero');
+    const visibles = {
+      'hud-agua': true, 'hud-dinero': true, 'hud-servicio': true,
+      'hud-poblacion': !!(estado.tutorial && estado.tutorial.terminado),
+      'hud-produccion': conCaptacion,
+      'hud-reloj': conCaptacion,   // el reloj importa cuando el estiaje importa
+      'hud-cauce': estado.contaminacion > 0.5
+        || estado.pueblos.some(pb => pb.desbloqueado && servicioActivo(pb, 'saneamiento')),
+      'hud-expansion': (estado.descubiertas || 0) >= 3
+    };
+    const firma = Object.values(visibles).map(v => v ? 1 : 0).join('');
+    if(this.cache.hudFirma === firma) return;
+    // Sin firma previa (arranque o caché invalidada) se aplica EN SILENCIO:
+    // el guiño de estreno es solo para lo que nace jugando.
+    const estreno = this.cache.hudFirma !== undefined;
+    this.cache.hudFirma = firma;
+    for(const [id, ver] of Object.entries(visibles)){
+      const caja = document.getElementById(id);
+      const item = caja && caja.closest('.hud-item');
+      if(!item) continue;
+      const estaba = item.style.display !== 'none';
+      item.style.display = ver ? '' : 'none';
+      if(ver && !estaba && estreno){
+        item.classList.remove('estreno');
+        void item.offsetWidth;
+        item.classList.add('estreno');
+      }
+    }
+  }
+
   actualizar(estado, resultado){
     const p = estado.activo;
     const cap = capacidad(p, estado);
     const pct = Math.round((p.agua / cap) * 100);
+    this.refrescarMetricas(estado);
 
     this.fijar('hud-agua', `${formatear(p.agua)} / ${formatear(cap)} L`,
       p.agua < cap * 0.08 ? 'critico' : 'agua');
