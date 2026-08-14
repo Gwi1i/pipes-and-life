@@ -1411,6 +1411,14 @@ export const CONFIG = {
     tenue:      '#6f8aa1'
   },
 
+  /* ---------- INTERFAZ ---------- */
+  interfaz: {
+    /* La barra de alertas enseña los PEORES con nombre y agrupa el resto:
+       veinte chips serían las pestañas otra vez, que es justo lo que se
+       quitó. El chip del grupo lleva al peor de los que no salen. */
+    chipsDeSed: 3
+  },
+
   /* ---------- TEXTOS DE LA INTERFAZ ----------
      Las cadenas que la lógica (main.js, ui.js) necesita escribir en vivo.
      Viven aquí y no en el código POR EL IDIOMA: el diccionario inglés

@@ -1381,9 +1381,15 @@ export class UI {
     const P = CONFIG.poblacion;
     const p = estado.activo;
 
+    // Los sedientos, DEL PEOR AL MENOS MALO, y solo los primeros con nombre:
+    // veinte chips serían las pestañas otra vez. El resto va en un chip de
+    // grupo que lleva al peor de los que no caben.
     const sedientos = estado.pueblos
       .map((pb, i) => ({ pb, i }))
-      .filter(({ pb }) => pb.desbloqueado && (pb.servicio || 0) < P.servicioMalo);
+      .filter(({ pb }) => pb.desbloqueado && (pb.servicio || 0) < P.servicioMalo)
+      .sort((a, b) => (a.pb.servicio || 0) - (b.pb.servicio || 0));
+    const conNombre = sedientos.slice(0, CONFIG.interfaz.chipsDeSed);
+    const demas = sedientos.slice(CONFIG.interfaz.chipsDeSed);
     const nAverias = (estado.averias || []).length;
 
     cont.innerHTML = `
@@ -1392,9 +1398,13 @@ export class UI {
       ${faltan != null
         ? `<span class="pestana bloqueada" title="${t`Incorpora ${faltan} núcleos más para abrir el siguiente anillo`}">${t`fase ${faseActual(estado)} · faltan ${faltan}`}</span>`
         : ''}
-      ${sedientos.map(({ pb, i }) => `
+      ${conNombre.map(({ pb, i }) => `
         <button class="pestana chip-alerta" data-accion="irProblema" data-clave="${i}">
           💧 ${pb.nombre}</button>`).join('')}
+      ${demas.length > 0
+        ? `<button class="pestana chip-alerta" data-accion="irProblema"
+                   data-clave="${demas[0].i}">${t`💧 +${demas.length} más`}</button>`
+        : ''}
       ${nAverias > 0
         ? `<button class="pestana chip-alerta" data-accion="irAAveria" data-clave="0">
              ${nAverias === 1 ? t`⚠ 1 avería` : t`⚠ ${nAverias} averías`}</button>`

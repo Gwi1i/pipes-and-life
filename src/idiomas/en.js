@@ -1002,6 +1002,7 @@ export const EN = {
     'Centrar el mapa en tu pueblo': 'Centre the map on your town',
     '⚠ 1 avería': '⚠ 1 breakdown',
     '⚠ {0} averías': '⚠ {0} breakdowns',
+    '💧 +{0} más': '💧 +{0} more',
 
     /* --- Tienda --- */
     'Otras mejoras': 'Other upgrades',
