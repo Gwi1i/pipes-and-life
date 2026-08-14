@@ -187,6 +187,13 @@ export function bocina(){
   tono(230, 220, 0.22, 'square', 0.12);
 }
 
+/** El volquete: el cubo golpea la tolva y algo bueno acaba de pasar. */
+export function volcado(){
+  tono(150, 110, 0.09, 'square', 0.2);
+  tono(85, 70, 0.13, 'square', 0.14, 0.05);
+  tono(1180, 1180, 0.06, 'sine', 0.12, 0.12);
+}
+
 /**
  * El ambiente de lluvia: un chorro de ruido en bucle cuya ganancia sigue a la
  * intensidad. Es lo único continuo que suena, y va muy bajo a propósito: está

@@ -256,11 +256,15 @@ for i, nombre in enumerate(ORDEN_CONT):
 ORDEN_CAM = ['camion', 'coche1', 'coche2', 'coche3', 'coche4',
              'cont_resto', 'cont_envases', 'cont_organica',
              'cont_papel', 'cont_vidrio']
-try:
-    ruta_cam = hoja_donde_este('camion_hoja.png')
-except SystemExit:
-    ruta_cam = None
-    print('camion_hoja.png: aún no está — se salta')
+ruta_cam = None
+for nombre_hoja in ('camion_hoja.png', 'camion_hoja.jpg'):
+    try:
+        ruta_cam = hoja_donde_este(nombre_hoja)
+        break
+    except SystemExit:
+        pass
+if not ruta_cam:
+    print('camion_hoja: aún no está — se salta')
 if ruta_cam:
     hoja3 = Image.open(ruta_cam)
     cw, ch = hoja3.width // 5, hoja3.height // 2
@@ -279,7 +283,7 @@ if ruta_cam:
 # ---- los originales, a su carpeta, como hace el optimizador ----
 os.makedirs(ORIG, exist_ok=True)
 for f in ['residuos_hoja.png', 'contenedores_hoja.png', 'contenedores_hoja2.png',
-          'camion_hoja.png']:
+          'camion_hoja.png', 'camion_hoja.jpg']:
     origen = os.path.join(ASSETS, f)
     if os.path.exists(origen):
         destino = os.path.join(ORIG, f)

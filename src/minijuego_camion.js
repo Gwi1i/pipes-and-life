@@ -259,7 +259,7 @@ export class MinijuegoCamion {
     if(bueno){
       this.aciertos++;
       this.buenosVivos--;
-      sonido.compra();
+      sonido.volcado();
     } else {
       this.fallos++;
       sonido.bocina();
