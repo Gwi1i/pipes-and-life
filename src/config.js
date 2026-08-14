@@ -465,11 +465,20 @@ export const CONFIG = {
        eficiencia de recogida una temporada. */
     camion: {
       preludioSegundos: 6,       // la ruta del día en grande, antes de arrancar
-      contenedores: 18,          // contenedores que bajan en la jornada
-      jornadaSegundos: 50,       // el reloj de la jornada
+      /* Alargado a petición del autor jugándolo ("se hace cortito"). OJO al
+         calibrar: la jornada acaba cuando caen todos los del día, así que lo
+         que manda es contenedores × separación ÷ velocidad (~48 s de calle),
+         no el reloj — el reloj es el tope para quien choca mucho. */
+      contenedores: 40,          // contenedores que bajan en la jornada
+      minimoDelDia: 8,           // llenos de las fracciones del día garantizados
+      jornadaSegundos: 75,       // el reloj de la jornada
       velocidadBajada: 150,      // píxeles por segundo a los que baja la calle
+      /* Cada contenedor baja con SU velocidad (±esta fracción): dos a la
+         vez a ritmos distintos obligan a elegir trayectoria — idea del
+         autor, y es lo que hace pensar un poquito. */
+      variacionVelocidad: 0.3,
       velocidadLateral: 330,     // lo que corre el camión a los lados
-      separacion: 130,           // píxeles de calle entre contenedor y contenedor
+      separacion: 160,           // píxeles de calle entre contenedor y contenedor
       cochesCadaSegundos: 3.2,   // cada cuánto asoma un coche (con azar encima)
       velocidadCocheExtra: 105,  // lo que el coche baja MÁS que la calle
       aturdimientoSegundos: 1.4, // lo que un golpe te deja clavado

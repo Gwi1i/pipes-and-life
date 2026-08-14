@@ -138,7 +138,7 @@ export class MinijuegoCamion {
     const buenos = () => this.porBajar.filter(
       c => c.estadoC === 'lleno' && this.hoy.some(f => f.id === c.frac.id));
     let vueltas = 0;
-    while(buenos().length < 5 && vueltas++ < 60){
+    while(buenos().length < K.minimoDelDia && vueltas++ < 80){
       const c = this.porBajar[Math.floor(Math.random() * this.porBajar.length)];
       c.frac = this.hoy[Math.floor(Math.random() * this.hoy.length)];
       c.estadoC = 'lleno';
@@ -205,6 +205,9 @@ export class MinijuegoCamion {
       const def = this.porBajar.shift();
       def.x = this.viaIzq + 40 + Math.random() * (this.viaDer - this.viaIzq - 80);
       def.y = -40;
+      // Cada contenedor baja a SU ritmo: dos a la vez a velocidades
+      // distintas piden elegir trayectoria (idea del autor jugándolo)
+      def.velFactor = 1 + (Math.random() * 2 - 1) * K.variacionVelocidad;
       this.items.push(def);
       this._siguienteCont = this.avance + K.separacion * (0.75 + Math.random() * 0.5);
     }
@@ -222,7 +225,8 @@ export class MinijuegoCamion {
 
     // BAJADA y choques
     for(const o of this.items){
-      o.y += (K.velocidadBajada * marcha + (o.tipo === 'coche' ? K.velocidadCocheExtra : 0)) * dt;
+      o.y += (K.velocidadBajada * marcha * (o.velFactor || 1)
+              + (o.tipo === 'coche' ? K.velocidadCocheExtra : 0)) * dt;
       if(o.resuelto || o.y < this.camion.y - 70 || o.y > this.camion.y + 60) continue;
       if(Math.abs(o.x - this.camion.x) > (o.tipo === 'coche' ? 44 : 40)) continue;
       if(o.tipo === 'cont'){
