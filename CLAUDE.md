@@ -562,7 +562,9 @@ importan. Cada etiqueta se manda UNA vez por sesión — se cuentan jugadores qu
 llegan a un sitio, no veces que pasan. El contador de días vive en su propia
 clave (`redHidraulica_visitas`) y no en el guardado: tiene que sobrevivir a
 Reiniciar, porque si no cada reinicio parecería un jugador nuevo y la retención
-medida sería mentira.
+medida sería mentira. Y el AUTOR se excluye con `juego.noContarme()` en la
+consola (revierte `juego.contarme()`; clave `redHidraulica_noContar`): sus
+pruebas ensuciaban la medición real.
 
 **Publicar son DOS sitios distintos.** La web (GitHub Pages, rama `clicker`) se
 actualiza con `git push` y nada más. El paquete de itch.io lo genera

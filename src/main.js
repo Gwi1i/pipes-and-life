@@ -1448,7 +1448,10 @@ if(solapas) solapas.addEventListener('click', e => {
 window.juego = {
   estado, entrada, escena, ui, CONFIG, miniTuberias, miniReciclaje,
   dinero: n => { estado.dinero = n; },
-  agua: n => { estado.activo.agua = n; }
+  agua: n => { estado.activo.agua = n; },
+  // Para el autor: excluir su navegador de la analítica (y revertirlo)
+  noContarme: analitica.noContarme,
+  contarme: analitica.contarme
 };
 
 requestAnimationFrame(bucle);

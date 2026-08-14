@@ -27,6 +27,28 @@ import { CONFIG } from './config.js';
 let activa = false;
 let dicho = new Set();   // cada suceso, UNA vez por sesión: contamos jugadores
 
+// EL INTERRUPTOR DEL AUTOR: sus propias pruebas ensuciaban la medición real.
+// `juego.noContarme()` en la consola excluye ESE navegador para siempre (y
+// `juego.contarme()` lo revierte). Va en su clave, fuera del guardado: tiene
+// que sobrevivir a Reiniciar, como todo lo que es del aparato y no de la
+// partida.
+const CLAVE_EXCLUIDO = 'redHidraulica_noContar';
+
+export function noContarme(){
+  try{ localStorage.setItem(CLAVE_EXCLUIDO, '1'); }catch(_){ }
+  activa = false;
+  return 'Hecho: este navegador ya no cuenta en la analítica.';
+}
+
+export function contarme(){
+  try{ localStorage.removeItem(CLAVE_EXCLUIDO); }catch(_){ }
+  return 'Este navegador volverá a contar en la próxima carga.';
+}
+
+function excluido(){
+  try{ return localStorage.getItem(CLAVE_EXCLUIDO) === '1'; }catch(_){ return false; }
+}
+
 /** El día de hoy en formato aaaa-mm-dd, para comparar días de calendario. */
 function hoy(){
   return new Date().toISOString().slice(0, 10);
@@ -42,6 +64,7 @@ export function iniciar(){
   const K = CONFIG.analitica;
   if(!K || !K.codigo) return;                       // sin cuenta, silencio
   if(navigator.doNotTrack === '1' || window.doNotTrack === '1') return;
+  if(excluido()) return;                            // el navegador del autor
   activa = true;
 
   contar('visita');
