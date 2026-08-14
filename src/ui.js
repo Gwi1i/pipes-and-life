@@ -522,7 +522,16 @@ export class UI {
     document.getElementById('guia-titulo').style.display = paso ? '' : 'none';
     panel.querySelector('.guia-saltar').style.display = paso ? '' : 'none';
     if(com){
-      panel.classList.remove('plegada');
+      // En el TELÉFONO los comentarios salen PLEGADOS: el bocadillo tapaba
+      // medio mapa (lo cazó el autor). El avatar da su respingo y quien
+      // quiera leer a Manuel lo toca; la guía de primeros pasos, en cambio,
+      // se despliega siempre — esa no es ambiente, es el manual.
+      if(window.matchMedia('(max-width: 640px)').matches){
+        panel.classList.add('plegada');
+        this.respingoGuia();
+      } else {
+        panel.classList.remove('plegada');
+      }
       const bocadillo = panel.querySelector('.guia-bocadillo');
       if(bocadillo){
         bocadillo.style.animation = 'none';
@@ -1622,6 +1631,17 @@ export class UI {
         || estado.pueblos.some(pb => pb.desbloqueado && servicioActivo(pb, 'saneamiento')),
       'hud-expansion': (estado.descubiertas || 0) >= 3
     };
+    // En el TELÉFONO mandan el mapa y lo esencial (petición del autor: "en
+    // móvil pesa más el componente visual"). Los números de contexto no
+    // entran nunca en la barra: la producción vive en el desglose, el cauce
+    // en su panel y en el color del río, la expansión en los números de las
+    // casillas y la estación en el detalle del pueblo. Están, pero no encima.
+    if(window.matchMedia('(max-width: 640px)').matches){
+      visibles['hud-produccion'] = false;
+      visibles['hud-reloj'] = false;
+      visibles['hud-cauce'] = false;
+      visibles['hud-expansion'] = false;
+    }
     const firma = Object.values(visibles).map(v => v ? 1 : 0).join('');
     if(this.cache.hudFirma === firma) return;
     // Sin firma previa (arranque o caché invalidada) se aplica EN SILENCIO:

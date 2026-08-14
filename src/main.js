@@ -431,7 +431,19 @@ function procesarAcciones(){
         // Clicar una instalación tuya la selecciona para verla de cerca: es la
         // única forma de saber cómo va de lleno un vertedero.
         const obraAqui = estado.construcciones.find(o => o.col === col && o.fila === fila);
-        if(obraAqui){ estado.seleccion = { col, fila }; break; }
+        if(obraAqui){
+          estado.seleccion = { col, fila };
+          // Y el clic hace lo que hay debajo TAMBIÉN aquí: una pieza de
+          // ABASTECIMIENTO conectada y sana es parte de la bomba — darle al
+          // depósito lo llena, igual que darle al pueblo (petición del autor:
+          // en el móvil, con una pieza en la mano, el pueblo quedaba lejos).
+          const redPieza = Object.keys(CONFIG.redes)
+            .find(k => CONFIG.redes[k].piezas.includes(obraAqui.tipo));
+          if(redPieza === 'abastecimiento' && !averiaEn(estado, col, fila)
+             && casillaEnRed(estado, col, fila, 'abastecimiento'))
+            golpeDeBomba(a.x, a.y);
+          break;
+        }
 
         if(celda.oculta){
           const r = clicarCasilla(estado.mapa, col, fila, poderExpansion(estado));
@@ -1296,8 +1308,13 @@ function progresoOffline(){
 // cálculo offline solo corría al cargar la página. Al esconderse se sella el
 // instante; al volver, se liquida la ausencia por el mismo camino que al abrir.
 document.addEventListener('visibilitychange', () => {
-  if(document.hidden) estado.guardar();
-  else progresoOffline();
+  if(document.hidden){
+    estado.guardar();
+    sonido.pestanaOculta();   // el juego se para; la música no puede quedarse sonando
+  } else {
+    sonido.pestanaVisible();
+    progresoOffline();
+  }
 });
 
 /** Rellena y enseña la tarjeta de vuelta. Solo las líneas con algo que decir. */

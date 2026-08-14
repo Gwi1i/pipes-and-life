@@ -524,6 +524,23 @@ export function hablar(texto, id){
 
 export function vozActiva(){ return vozOn; }
 
+/**
+ * EL SUEÑO DE LA PESTAÑA. Con la pantalla apagada o la pestaña escondida el
+ * navegador congela el bucle — el juego está parado de facto — pero el
+ * AudioContext seguía sonando: música con el juego quieto, que hacía creer
+ * que la partida corría (lo cazó el autor apagando la pantalla). Al
+ * esconderse se suspende el contexto entero (música, lluvia, todo) y al
+ * volver se reanuda donde estaba.
+ */
+export function pestanaOculta(){
+  if(ctx && ctx.state === 'running') ctx.suspend();
+}
+export function pestanaVisible(){
+  // (el despertar() interno también reanuda, pero solo al sonar un efecto —
+  // y al volver a la pestaña no suena nada: hace falta reanudar aquí)
+  if(ctx && ctx.state === 'suspended') ctx.resume();
+}
+
 /** ¿Está sonando la voz ahora mismo? Lo pregunta la UI para animar a Manuel. */
 export function estaHablando(){
   if(locucion && !locucion.paused && !locucion.ended) return true;
