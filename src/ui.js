@@ -602,7 +602,12 @@ export class UI {
       const reparar = Math.round(def.coste * H.costeReparar);
       const desmontar = Math.round(def.coste * H.costeDesmontar);
       cont.innerHTML = `
-        <p class="m-desc">Instalación abandonada: <b>${def.nombre}</b>.</p>
+        <p class="red-cuello" style="--tono:${H.color.ruina}">
+          <b>${def.nombre}</b> · abandonada</p>
+        <img class="ficha-dib" src="assets/f_${tipo}_ruina.jpg"
+             onerror="this.hidden=true" alt="">
+        <p class="m-desc">Quien la levantó ya no está; la instalación, sí.
+          Recuperarla siempre sale más barato que hacerla nueva.</p>
         <button class="mejora obra" data-accion="repararRuina" style="--tono:${def.color}">
           <span class="m-cab"><span class="m-nom">Poner en marcha aquí</span></span>
           <span class="m-desc">Se queda donde está, si el terreno le sirve.</span>

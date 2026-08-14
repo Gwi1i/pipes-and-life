@@ -199,6 +199,23 @@ casa. Tres trucos para conseguirlo:
 > izquierda cruzado ahora por un puente y las mismas colinas verdes al fondo
 > con dos depósitos de agua elevados, avenidas y una plaza mayor
 
+### Las RUINAS (opcional): `f_<pieza>_ruina.png`
+
+La ficha de una instalación abandonada del mapa enseña su lámina si existe
+(`f_bomba_ruina`, `f_deposito_ruina`, `f_captacion_ruina`,
+`f_depuradora_ruina` y `f_tanque_ruina` — las cinco que pueden aparecer
+abandonadas). **El truco es partir de la ficha que ya tienes**: adjunta la
+imagen original (`f_bomba.jpg`, etc.) y pide:
+
+> Genera una imagen a partir de esta: la MISMA instalación, décadas después
+> de abandonada — techos hundidos, óxido en los metales, cristales rotos,
+> maleza y arbustos creciendo por dentro y por fuera, el mismo encuadre y el
+> mismo paisaje de fondo pero descuidado, *(+ coletilla)*
+
+Así la ruina de tu bomba se parece a TU bomba, que es lo que hace el clic de
+"esto se puede recuperar". Sin archivo, la ficha sale igual con su texto: se
+pueden ir generando de una en una.
+
 ### Las ÉPOCAS (opcional, para las comarcas)
 
 Con el traslado de concesión, cada comarca nueva puede tener pueblos **más
