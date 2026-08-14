@@ -1422,6 +1422,77 @@ export const CONFIG = {
       'experiencia está el TRASLADO, en Mancomunidad.'
   },
 
+  /* ---------- LOS TAJOS: la carta "AHORA" ----------
+     La tarjeta fija de arriba del lateral: UN solo paso siguiente, mascado y
+     con su botón. Es la respuesta al muro de la media partida (petición del
+     autor: "hay que dárselo mascado"): entre el final de la guía y el primer
+     traslado hay una cadena de tajos, y Manuel siempre marca el que toca.
+
+     Aquí SOLO los textos, en el orden de la cadena; las condiciones de cada
+     uno viven en src/tajos.js (lectura pura, como tutorial.js). Se enseña el
+     PRIMERO pendiente — el orden es la prioridad. Todo desaparece en la
+     comarca 2: quien ya se trasladó no necesita capataz.
+
+     `boton` es opcional: si está, la tarjeta lleva un botón que hace lo
+     obvio (main.js, caso 'irTajo'). */
+  tajos: [
+    { id: 'mejora', titulo: 'Sube la primera mejora',
+      texto: 'En la solapa PUEBLO está la tienda: cada nivel de POTENCIA DE ' +
+             'BOMBA o de DEPÓSITO se nota en el grifo al momento.',
+      boton: 'Abrir la tienda' },
+    { id: 'vecino', titulo: 'Encuentra a tu primer vecino',
+      texto: 'Destapa terreno siguiendo las SEÑALES de camino: los postes ' +
+             'apuntan al pueblo sin descubrir más cercano, con su distancia.' },
+    { id: 'conectar', titulo: 'Llévale el agua',
+      texto: 'Tiende una tubería de agua desde tu red hasta el pueblo nuevo — ' +
+             'tocar una casilla vecina basta para conectarlo.',
+      boton: 'Tender tubería' },
+    { id: 'canon', titulo: 'Incorpóralo a la mancomunidad',
+      texto: 'Clica el pueblo y paga su canon: desde entonces bebe de tu red, ' +
+             'factura en tu caja... y también bombea con tus clics.',
+      boton: 'Ir al pueblo' },
+    { id: 'depuradora', titulo: 'El pueblo ya ensucia: depúralo',
+      texto: 'Coloca una DEPURADORA junto al agua y llévale un COLECTOR desde ' +
+             'el pueblo. Lo que llega crudo al río os frena a todos.',
+      boton: 'Colocar depuradora' },
+    { id: 'calibre', titulo: 'La tubería se queda pequeña',
+      texto: 'El pueblo está tocando el techo de su conducción. Elige un ' +
+             'calibre mayor en «La red» y renueva la línea ENTERA: manda el ' +
+             'tramo más estrecho.',
+      boton: 'Ver la red' },
+    { id: 'tercero', titulo: 'A por el tercer pueblo',
+      texto: 'Con tres núcleos la mancomunidad abre la red de PLUVIALES. ' +
+             'Sigue las señales y ve incorporando.' },
+    { id: 'pluviales', titulo: 'Separa la lluvia',
+      texto: 'Tiende la RED DE PLUVIALES: la tormenta que hoy revienta tu ' +
+             'depuradora pasará de largo por su propio tubo.',
+      boton: 'Tender pluviales' },
+    { id: 'residuos', titulo: 'La basura tiene que salir',
+      texto: 'Tiende una CARRETERA hasta un VERTEDERO lejos del agua. Sin ' +
+             'vía no sale nada, y lo que se pudre en la calle frena el pueblo.',
+      boton: 'Tender carretera' },
+    { id: 'reciclaje', titulo: 'Y que la basura pague',
+      texto: 'Una PLANTA DE RECICLAJE conectada a la carretera separa ' +
+             'fracciones y las VENDE: el primer servicio que ingresa.',
+      boton: 'Colocar la planta' },
+    { id: 'potabilizadora', titulo: 'Esa agua va sin tratar',
+      texto: 'Estás sirviendo agua BRUTA del río. Coloca una POTABILIZADORA ' +
+             'en tu red: sin ella la gente desconfía del grifo y el pueblo ' +
+             'se frena.',
+      boton: 'Colocar la ETAP' },
+    { id: 'fase2', titulo: 'Cinco núcleos abren la fase 2',
+      texto: 'Sigue incorporando pueblos: con cinco, la mancomunidad puede ' +
+             'absorber el siguiente anillo, más lejano.' },
+    { id: 'fase3', titulo: 'Camino de la fase 3',
+      texto: 'Con diez núcleos bien llevados, tu nombre empezará a sonar ' +
+             'fuera de la comarca.' },
+    { id: 'traslado', titulo: 'Te llaman de otra comarca',
+      texto: 'Cuando quieras: TRASLÁDATE desde la solapa Mancomunidad. Los ' +
+             'pueblos se quedan; la veteranía y el expediente viajan contigo ' +
+             'para siempre.',
+      boton: 'Ver el traslado' }
+  ],
+
   /* ---------- LA GUÍA DE LOS PRIMEROS PASOS ----------
      Acompaña hasta que el pueblo bebe por primera vez, y se quita de en medio.
      Cada paso se da por hecho SOLO cuando el jugador lo consigue de verdad (la

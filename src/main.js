@@ -43,6 +43,7 @@ import { formatear } from './util.js';
 import { comprobar as comprobarGuia, saltar as saltarGuia,
          pasoActual } from './tutorial.js';
 import { comentar } from './comentarios.js';
+import { vecinoPendiente } from './tajos.js';
 import * as sonido from './sonido.js';
 import { pedirUbicacion, buscarNombres, guardarNombres,
          quitar as quitarLugares } from './lugares.js';
@@ -780,6 +781,50 @@ function procesarAcciones(){
           if(punteria > 0.7){ sonido.reparada(); ui.caraGuia('bien'); }
           ui.invalidarCache();
         });
+        break;
+      }
+
+      /* --- LA CARTA DEL TAJO: el botón hace lo obvio de cada paso --- */
+
+      case 'irTajo': {
+        const abrirSolapa = (nombre) => {
+          const b = document.querySelector(`.solapa[data-solapa="${nombre}"]`);
+          if(b) b.click();
+        };
+        const tender = (red) => {
+          abrirSolapa('mapa');
+          estado.redActual = red;
+          estado.modo = { tipo: 'tuberia', elemento: null, trazado: [] };
+          ui.invalidarCache();
+          ui.refrescarConstruccion(estado);
+        };
+        const colocar = (pieza) => {
+          abrirSolapa('mapa');
+          estado.modo = { tipo: 'colocar', elemento: pieza, trazado: [] };
+          ui.refrescarConstruccion(estado);
+        };
+        switch(a.clave){
+          case 'mejora':         abrirSolapa('pueblo'); break;
+          case 'conectar':       tender('abastecimiento'); break;
+          case 'pluviales':      tender('pluviales'); break;
+          case 'residuos':       tender('residuos'); break;
+          case 'depuradora':     colocar('depuradora'); break;
+          case 'reciclaje':      colocar('reciclaje'); break;
+          case 'potabilizadora': colocar('potabilizadora'); break;
+          case 'calibre':        abrirSolapa('mapa'); break;
+          case 'traslado':       abrirSolapa('comun'); break;
+          case 'canon': {
+            // Centrar el mapa en el vecino descubierto y dejarlo seleccionado:
+            // su ficha, con el botón de abastecer, sale sola en el lateral
+            const v = vecinoPendiente(estado);
+            if(v){
+              escena.centrarEn(estado, v.col, v.fila);
+              estado.seleccion = { col: v.col, fila: v.fila };
+              ui.invalidarCache();
+            }
+            break;
+          }
+        }
         break;
       }
 

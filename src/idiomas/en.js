@@ -45,6 +45,65 @@ export const EN = {
         'your experience, use TRANSFER, in the District tab.'
     },
 
+    tajos: [
+      { titulo: 'Buy your first upgrade',
+        texto: 'The shop is in the TOWN tab: every level of PUMP POWER or ' +
+               'RESERVE TANK shows at the tap right away.',
+        boton: 'Open the shop' },
+      { titulo: 'Find your first neighbour',
+        texto: 'Uncover land following the WAYMARKS: the posts point to the ' +
+               'nearest undiscovered town, distance included.' },
+      { titulo: 'Bring them the water',
+        texto: 'Lay a water pipe from your network to the new town — ' +
+               'touching a neighbouring tile is enough to connect it.',
+        boton: 'Lay pipe' },
+      { titulo: 'Bring it into the district',
+        texto: 'Click the town and pay its joining fee: from then on it ' +
+               'drinks from your network, bills into your funds... and pumps ' +
+               'with your clicks too.',
+        boton: 'Go to the town' },
+      { titulo: 'The town makes dirty water: treat it',
+        texto: 'Place a SEWAGE PLANT by the water and lay a SEWER to it from ' +
+               'the town. Whatever reaches the river raw slows everyone down.',
+        boton: 'Place sewage plant' },
+      { titulo: 'The pipe is running out of room',
+        texto: 'The town is hitting the ceiling of its main. Pick a bigger ' +
+               'diameter in “The network” and renew the WHOLE line: the ' +
+               'narrowest stretch rules.',
+        boton: 'See the network' },
+      { titulo: 'On to the third town',
+        texto: 'With three towns the district opens the STORM DRAIN network. ' +
+               'Follow the waymarks and keep bringing them in.' },
+      { titulo: 'Separate the rain',
+        texto: 'Lay the STORM DRAIN network: the storm that bursts your ' +
+               'sewage plant today will pass by in its own pipe.',
+        boton: 'Lay storm drains' },
+      { titulo: 'The rubbish has to go',
+        texto: 'Lay a ROAD to a LANDFILL far from water. Without a road ' +
+               'nothing leaves, and what rots in the street slows the town.',
+        boton: 'Lay the road' },
+      { titulo: 'And make the rubbish pay',
+        texto: 'A RECYCLING PLANT connected to the road sorts fractions and ' +
+               'SELLS them: the first service that earns money.',
+        boton: 'Place the plant' },
+      { titulo: 'That water is going out untreated',
+        texto: 'You are serving RAW river water. Place a PURIFICATION PLANT ' +
+               'on your network: without it people distrust the tap and the ' +
+               'town slows down.',
+        boton: 'Place the plant' },
+      { titulo: 'Five towns open phase 2',
+        texto: 'Keep bringing towns in: with five, the district can absorb ' +
+               'the next, more distant ring.' },
+      { titulo: 'On the road to phase 3',
+        texto: 'With ten towns well served, your name will start getting ' +
+               'around beyond the county.' },
+      { titulo: 'Another county is calling',
+        texto: 'Whenever you like: TRANSFER from the District tab. The towns ' +
+               'stay behind; your seniority and your record travel with you ' +
+               'forever.',
+        boton: 'See the transfer' }
+    ],
+
     tutorial: [
       { titulo: 'Uncover the land',
         texto: 'Out there THIRTY-SIX towns are waiting for water, and this ' +
@@ -777,6 +836,7 @@ export const EN = {
       'The sewer copes, but the sewage plant does not: {0} L/h arrive and it only treats {1} L/h. The excess spills raw. The pipe is not the problem now: you need more treatment, or a storm tank to cut the peak.',
 
     /* --- Tarjetas y guía --- */
+    'Manuel marca el tajo': 'Manuel’s next job',
     'Lo has conseguido': 'You did it',
     'Qué ha pasado': 'What just happened',
     'Qué viene ahora': 'What comes next',

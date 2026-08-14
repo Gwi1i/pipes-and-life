@@ -32,6 +32,7 @@ import { celdaEn, piezaDeRuina, diametro, nivelDiametro, costeRenovar,
          lineasEnCasilla, redDe, costeTrazado } from './mapa.js';
 import { lista as listaLugares } from './lugares.js';
 import { pasoActual } from './tutorial.js';
+import { tajoActual } from './tajos.js';
 import { dibujarDiagrama, hayDiagrama } from './diagramas.js';
 // La etiqueta de traducción (se escribe t delante de la plantilla): las
 // frases que este módulo monta en vivo se quedan en castellano AQUÍ (la
@@ -458,6 +459,35 @@ export class UI {
     document.getElementById('hito-pasa').textContent = h.pasa;
     document.getElementById('hito-hacer').textContent = h.hacer;
     document.getElementById('hito-porque').textContent = h.porque;
+  }
+
+  /* ---------------- LA CARTA DEL TAJO ---------------- */
+
+  /**
+   * La respuesta fija a "¿y ahora qué?": el primer tajo pendiente de la
+   * cadena, con su botón. Es UNA tarjeta siempre — la prioridad la pone el
+   * orden de CONFIG.tajos, y src/tajos.js decide cuál toca.
+   */
+  refrescarTajo(estado, resultado){
+    const def = tajoActual(estado, resultado);
+    const firma = def ? def.id : 'nada';
+    if(this.cache.tajoFirma === firma) return;
+    this.cache.tajoFirma = firma;
+
+    const panel = document.getElementById('panel-tajo');
+    if(!def){ panel.style.display = 'none'; return; }
+    panel.style.display = '';
+    document.getElementById('tajo').innerHTML = `
+      <div class="tajo-cab">
+        <img class="tajo-cara" src="assets/guia.jpg" onerror="this.hidden=true" alt="">
+        <div>
+          <div class="tajo-eti">${t`Manuel marca el tajo`}</div>
+          <p class="tajo-tit">${def.titulo}</p>
+        </div>
+      </div>
+      <p class="tajo-txt">${def.texto}</p>
+      ${def.boton ? `<button class="tajo-btn" data-accion="irTajo"
+                             data-clave="${def.id}">${def.boton}</button>` : ''}`;
   }
 
   /* ---------------- LA GUÍA DE LOS PRIMEROS PASOS ---------------- */
@@ -1619,6 +1649,7 @@ export class UI {
 
     this.refrescarHito(estado);
     this.refrescarGuia(estado);
+    this.refrescarTajo(estado, resultado);
     this.refrescarPaletaObra(estado);
     this.refrescarRed(estado, resultado);
     this.refrescarDiagnostico(estado, resultado);

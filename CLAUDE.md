@@ -565,6 +565,19 @@ selecciona si es tuyo, destapa si esta en niebla, bombea si es el pueblo. (La
 tira de ENGRASAR se fue con el desgaste; no queda ningún botón de acción fuera
 del mapa.)
 
+**LA CARTA DEL TAJO: el "¿y ahora qué?" contestado.** La tarjeta fija de
+arriba del lateral (`panel-tajo`) enseña UN solo paso siguiente, mascado y
+con botón — la respuesta al muro de la media partida ("hay que dárselo
+mascado", petición del autor). La cadena va del final de la guía al primer
+traslado: textos en `CONFIG.tajos` (en orden: el orden ES la prioridad),
+condiciones en `src/tajos.js` (lectura pura, como tutorial.js) — se enseña
+el PRIMER tajo pendiente, y si su mecánica aún no ha nacido se salta: la
+carta nunca pide lo que el juego no da todavía. El botón (`irTajo` en
+main.js) hace lo obvio de cada paso: abre la solapa, arma la herramienta de
+tender o colocar, o centra el mapa en el vecino. Dos cierres a propósito:
+nunca sale con la guía en marcha, y DESAPARECE en la comarca 2 — quien ya
+se trasladó no necesita capataz.
+
 **El guía se llama MANUEL y comenta la partida.** `comentarios.js` es el motor
 (lectura pura, como `tutorial.js`): una lista de comentarios con su condición,
 en orden de prioridad — lo que duele antes que lo que luce. La regla que lo
