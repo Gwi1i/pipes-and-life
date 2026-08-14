@@ -4,6 +4,11 @@
 
 ### ▶ [Jugar ahora](https://gwi1i.github.io/pipes-and-life/) — gratis, en el navegador, también en el móvil
 
+> 🇬🇧 **Also in English.** A water management game made by someone from the
+> trade: bring water to 36 towns, lay every pipe by hand, and learn why the
+> narrowest stretch rules. [Play in the browser](https://gwi1i.github.io/pipes-and-life/) —
+> it picks your language automatically, and the title screen has the switch.
+
 ![Pipes and Life](assets/h_portada.jpg)
 
 Capta el agua, guárdala en alto, llévala lejos y devuélvela limpia. **Treinta

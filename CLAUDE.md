@@ -140,6 +140,49 @@ se crea en `config.js` con su nombre y su comentario, y se importa.
 Excepción razonable: constantes matemáticas y de conversión que no son
 ajustables (los 86400 s de un día, etc.). Esas no son parámetros de juego.
 
+## El idioma: castellano fuente, inglés capa
+
+El juego está traducido al inglés SIN mover el castellano de su sitio: los
+textos siguen viviendo donde siempre (config.js, comentarios.js, index.html,
+las plantillas de ui.js/main.js/mapa.js) y el inglés es una CAPA que
+`src/idioma.js` mezcla encima al arrancar — la misma idea que el tinte de
+las regiones. Se elige por `navigator.language`, con botón en la cabecera y
+en la portada; la preferencia (`redHidraulica_idioma`) sobrevive a Reiniciar
+y el contador lleva la etiqueta `/idioma/en`. La regla que hace esto
+sostenible: **lo que falte en el diccionario sale en castellano** — un texto
+sin traducir se enseña, nunca se esconde, así que añadir texto nuevo no
+rompe nada; solo queda como deber.
+
+El diccionario es `src/idiomas/en.js`, con tres capas: `config` (pisa claves
+de CONFIG — solo las que EXISTEN, una errata no puede inventar parámetros),
+`pagina` (selector CSS → innerHTML para el HTML estático) y `frases` (las de
+la etiqueta `t`). Los textos que el código monta en vivo se escriben
+`` t`Renovar a ${x} de ${y}.` `` : el castellano queda ahí como fuente y la
+clave del diccionario es el ESQUELETO (partes fijas con `{0}`,`{1}`, en
+inglés pueden ir en otro orden). Tres reglas aprendidas a golpes:
+
+- **Ninguna variable local puede llamarse `t`** en un módulo que importe la
+  etiqueta: la tapa en silencio, y hubo una que además daba ReferenceError
+  por TDZ. Hay comentarios de aviso donde se renombraron.
+- **`py assets/extraer_frases.py`** compara los esqueletos del código con el
+  diccionario (jugando, `juego.sinTraducir` en consola dice lo mismo). Tras
+  tocar cualquier texto etiquetado, correrlo. Y en los comentarios de los
+  .js, nada de acentos graves alrededor de una t suelta: el extractor se los
+  toma por código.
+- **Lo que es clave de archivo no se traduce.** El `nombre` de los escalones
+  del caserío nombra las imágenes (`f_aldea.jpg`): la pantalla usa su
+  `titulo`, que sí se traduce. El género (`art`) viaja como valor y la frase
+  inglesa lo ignora.
+
+La VOZ de Manuel va en los dos idiomas: `generar_voces.py` genera los dos
+juegos de archivos (es-ES-Alvaro / en-GB-Ryan) leyendo el castellano del
+código y el inglés del diccionario; conviven en assets/voz/ porque el nombre
+lleva la huella del texto, y las huellas PLIEGAN los espacios antes de la
+cuenta (misma regla en sonido.js y en Python — así una plantilla multilínea
+y su texto en una línea son la misma frase). Los textos de Manuel en
+comentarios.js llevan `t` pero SIN interpolación: el generador los lee con
+una expresión sencilla. `--listar` enseña las líneas sin internet.
+
 ## Modelo multi-pueblo (mancomunidad)
 
 Una MANCOMUNIDAD gestiona varios pueblos, y desde el mapa grande los pueblos

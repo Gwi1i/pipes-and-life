@@ -10,7 +10,7 @@ pide al crear el proyecto (**Dashboard → Create new project**).
 | Campo | Qué poner |
 |---|---|
 | **Title** | `Pipes and Life` |
-| **Short description / tagline** | `Abastece a tu mancomunidad, pueblo a pueblo. Un juego sobre el agua hecho por alguien del oficio.` |
+| **Short description / tagline** | `Bring water to 36 towns, one pipe at a time. A water management game made by someone from the trade. / Abastece a tu mancomunidad, pueblo a pueblo.` |
 | **Classification** | Games |
 | **Kind of project** | HTML (para que se juegue en la propia página) |
 | **Release status** | Released *(o "In development" si prefieres avisar de que sigue creciendo)* |
@@ -26,19 +26,69 @@ pide al crear el proyecto (**Dashboard → Create new project**).
 Se ponen sin almohadilla, separados por comas:
 
 ```
-incremental, idle, simulation, management, city-builder, water, educational, spanish, singleplayer, html5
+incremental, idle, simulation, management, city-builder, water, educational, singleplayer, html5
 ```
 
-> Si algún día lo traduces al inglés, quita `spanish` y añade el idioma en
-> **Metadata → Languages**, que es donde la gente filtra de verdad.
+> Ya está traducido: en **Metadata → Languages** marca **English** y
+> **Spanish; Castilian** — es donde la gente filtra de verdad. El juego
+> elige idioma solo por el navegador, y en la portada está el cambio.
 
 ---
 
 ## Descripción de la página
 
-Copiar tal cual (itch admite este formato):
+Copiar tal cual (itch admite este formato): primero el inglés — itch es un
+escaparate anglosajón y el contador ya trajo visitas de EEUU y Países
+Bajos —, la versión castellana debajo.
 
 ---
+
+**Capture the water, store it high, carry it far and return it clean.**
+
+Thirty-six towns are waiting, scattered across a fog-covered land. You start
+with one town, a river nearby and little else: every click on the town is a
+pump stroke, and with what you bill you will uncover land, raise intakes and
+tanks, and lay pipes by hand, tile by tile, until you reach the next town.
+And the next.
+
+It is made by a water supply professional, and it shows in what the game
+makes you learn:
+
+🔧 **The narrowest stretch rules.** Renewing half a pipeline is worth nothing.
+
+💧 **The water you cannot see.** More than half the towns are far from a
+river. Reaching the groundwater takes three steps nobody skips: the
+hydrogeological survey, the borehole — which can come up dry, and that is
+where the money goes — and finally the well. And the aquifer runs out if you
+squeeze it: two wells on the same body end up yielding the same as one.
+
+🌳 **Some places you do not cross.** Special conservation areas are visible
+from the start and are never touched. Routes take enormous detours around
+them, as in real life.
+
+♻️ **Not everything recycles.** On the sorting line, letting through what has
+no container is the right answer.
+
+🕰️ **A year you can feel.** Low flow in summer, storms that burst the sewer
+in autumn, pipes that age and start leaking at forty.
+
+Along the way you are joined by **Manuel**, a veteran of the trade who
+teaches you the first steps, comments on your game and tells the odd war
+story.
+
+**Two optional minigames** — never mandatory, never a gate: repair a pipe by
+turning pieces before the water arrives, and work a shift on the recycling
+plant's sorting belt.
+
+**Plays in the browser, phone included.** Saves on its own. Free, no ads.
+In English and Spanish — switch on the title screen.
+
+*Made with plain JavaScript: no dependencies, no frameworks, no game engine.
+The code is [on GitHub](https://github.com/Gwi1i/pipes-and-life).*
+
+---
+
+🇪🇸 **En castellano:**
 
 **Capta el agua, guárdala en alto, llévala lejos y devuélvela limpia.**
 
@@ -78,10 +128,8 @@ cuenta en voz alta.
 reparar una tubería girando piezas antes de que llegue el agua, y echar un
 turno en la cinta de la planta de reciclaje.
 
----
-
 **Se juega en el navegador, también en el móvil.** Se guarda solo. Gratis y sin
-anuncios.
+anuncios. En castellano y en inglés — el cambio está en la portada.
 
 *Hecho con JavaScript a pelo: sin dependencias, sin frameworks y sin motor de
 juego. El código está [en GitHub](https://github.com/Gwi1i/pipes-and-life).*
