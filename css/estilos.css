@@ -708,6 +708,15 @@ button{touch-action:manipulation;}
   margin-top:16px; text-align:left;
 }
 .portada .hito-btn{margin-top:22px;}
+/* El cambio de idioma: un enlace discreto bajo el botón, no un segundo botón
+   compitiendo con Empezar */
+.portada-idioma{
+  display:block; margin:12px auto 0; background:none; border:none;
+  color:var(--tenue); font-family:var(--mono); font-size:11.5px;
+  text-decoration:underline; cursor:pointer;
+}
+.portada-idioma:hover{color:var(--texto);}
+.portada-idioma[hidden]{display:none;}
 
 /* La tarjeta de VUELTA: un parte de resultados, no un momento del juego.
    Hereda el vestido del hito pero sin imagen: los números son la imagen. */

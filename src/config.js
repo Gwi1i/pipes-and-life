@@ -1371,6 +1371,21 @@ export const CONFIG = {
     tenue:      '#6f8aa1'
   },
 
+  /* ---------- TEXTOS DE LA INTERFAZ ----------
+     Las cadenas que la lógica (main.js, ui.js) necesita escribir en vivo.
+     Viven aquí y no en el código POR EL IDIOMA: el diccionario inglés
+     (src/idiomas/en.js) se mezcla encima de CONFIG al arrancar y solo puede
+     traducir lo que esté en CONFIG. Al mover un literal de ui.js o main.js,
+     dale su clave aquí y su entrada en el diccionario. */
+  textos: {
+    sonidoSi: 'Sonido: sí', sonidoNo: 'Sonido: no',
+    musicaSi: 'Música: sí', musicaNo: 'Música: no',
+    vozSi: 'Voz: sí', vozNo: 'Voz: no',
+    confirmarReinicio: '¿Empezar de cero? Se perderá TODO: la partida, la ' +
+      'veteranía y el expediente. Para cambiar de comarca conservando la ' +
+      'experiencia está el TRASLADO, en Mancomunidad.'
+  },
+
   /* ---------- LA GUÍA DE LOS PRIMEROS PASOS ----------
      Acompaña hasta que el pueblo bebe por primera vez, y se quita de en medio.
      Cada paso se da por hecho SOLO cuando el jugador lo consigue de verdad (la

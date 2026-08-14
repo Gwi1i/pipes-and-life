@@ -74,6 +74,9 @@
       <button id="btn-voz" hidden>Voz: no</button>
       <button id="btn-musica" hidden>Música: sí</button>
       <button id="btn-sonido">Sonido: sí</button>
+      <!-- El rótulo enseña el idioma al que CAMBIAS, en ese idioma: así lo
+           entiende justo quien lo necesita. Lo pone main.js al arrancar. -->
+      <button id="btn-idioma">English</button>
       <button id="btn-reiniciar">Reiniciar</button>
     </div>
   </header>
@@ -414,6 +417,10 @@
          hayan muerto. main.js lo sustituye por el suyo al arrancar bien. -->
     <button class="hito-btn" id="portada-jugar"
             onclick="document.getElementById('portada').hidden = true">Empezar</button>
+    <!-- El cambio de idioma tiene que estar EN la portada: el visitante que
+         no lee castellano decide en esta pantalla si se queda. Nace oculto
+         (main.js lo enseña): si los módulos mueren, no hay botón muerto. -->
+    <button class="portada-idioma" id="portada-idioma" hidden>Play in English</button>
   </div>
 </div>
 

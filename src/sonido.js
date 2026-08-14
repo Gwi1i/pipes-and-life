@@ -14,6 +14,7 @@
  */
 
 import { CONFIG } from './config.js';
+import { idiomaActual } from './idioma.js';
 
 // Las preferencias sobreviven a la partida (y al botón Reiniciar): van en su
 // propia clave, no en el guardado del juego. Efectos y música por separado:
@@ -479,6 +480,11 @@ function sintetizar(texto){
  */
 export function hablar(texto, id){
   if(!vozOn) return;
+  // Manuel solo sabe castellano (de momento): sus archivos son es-ES y el
+  // sintetizador de respaldo también. Si alguien encendió la voz jugando en
+  // castellano y cambió de idioma, callar es mejor que leer inglés con
+  // acento de Valladolid. La preferencia no se toca: al volver, vuelve.
+  if(idiomaActual() !== 'es') return;
   pararLocucion();
   // El TURNO evita el solape que cazó el autor en el tutorial: si el archivo
   // de una frase falla, su respaldo sintetizado llegaba TARDE — cuando ya

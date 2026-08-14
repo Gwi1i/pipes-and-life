@@ -49,12 +49,17 @@ import { pedirUbicacion, buscarNombres, guardarNombres,
 import { MinijuegoTuberias } from './minijuego_tuberias.js';
 import { MinijuegoReciclaje } from './minijuego_reciclaje.js';
 import * as analitica from './analitica.js';
+import { aplicarIdioma, idiomaActual, cambiarIdioma } from './idioma.js';
 
 const lienzo  = document.getElementById('escena');
 // El LEGADO va antes que el estado: el constructor necesita saber la semilla
 // de la comarca actual y con cuántos planos (Cartografía) se llega.
 cargarLegado();
 aplicarRegion();
+// El IDIOMA también va antes que nada: mezcla el diccionario inglés sobre
+// CONFIG y sobre el HTML estático, y todo lo que se construya después
+// (tienda, guía, paneles) nace ya traducido.
+aplicarIdioma(CONFIG);
 const estado  = new Estado();
 const habiaPartida = Estado.cargar(estado);
 const entrada = new Entrada(lienzo);
@@ -1459,8 +1464,7 @@ function bucle(ahora){
    ================================================================== */
 
 document.getElementById('btn-reiniciar').onclick = () => {
-  if(!confirm('¿Empezar de cero? Se perderá TODO: la partida, la veteranía y el expediente. ' +
-              'Para cambiar de comarca conservando la experiencia está el TRASLADO, en Mancomunidad.')) return;
+  if(!confirm(CONFIG.textos.confirmarReinicio)) return;
   // OJO: el sello del adiós (visibilitychange → guardar) RESUCITABA la partida
   // recién borrada al recargar. Se anula el guardado antes de borrar: esta
   // página ya no tiene nada que decir.
@@ -1473,23 +1477,35 @@ document.getElementById('btn-reiniciar').onclick = () => {
 // El interruptor del sonido. La preferencia sobrevive al Reiniciar: va en su
 // propia clave de localStorage, no en el guardado de la partida.
 const btnSonido = document.getElementById('btn-sonido');
-const rotularSonido = () => { btnSonido.textContent = sonido.activo() ? 'Sonido: sí' : 'Sonido: no'; };
+const rotularSonido = () => { btnSonido.textContent = sonido.activo() ? CONFIG.textos.sonidoSi : CONFIG.textos.sonidoNo; };
 btnSonido.onclick = () => { sonido.alternar(); rotularSonido(); };
 rotularSonido();
+
+// EL IDIOMA. El rótulo enseña el idioma al que CAMBIAS, escrito en ese
+// idioma: lo entiende justo quien lo necesita. El de la portada existe
+// porque ahí es donde el visitante decide si se queda; nace oculto para que
+// una muerte de módulos no deje un botón muerto.
+const btnIdioma = document.getElementById('btn-idioma');
+btnIdioma.textContent = idiomaActual() === 'es' ? 'English' : 'Español';
+btnIdioma.onclick = cambiarIdioma;
+const portadaIdioma = document.getElementById('portada-idioma');
+portadaIdioma.textContent = idiomaActual() === 'es' ? 'Play in English' : 'Jugar en español';
+portadaIdioma.onclick = cambiarIdioma;
+portadaIdioma.hidden = false;
 
 // LA MÚSICA. El botón solo existe si hay archivo (assets/musica.*): un mando
 // que no manda nada es peor que ningún mando. Y no puede empezar a sonar hasta
 // el primer gesto — el navegador bloquea el audio antes—, así que el arranque
 // espera al primer toque o tecla, una sola vez.
 const btnMusica = document.getElementById('btn-musica');
-const rotularMusica = () => { btnMusica.textContent = sonido.musicaActiva() ? 'Música: sí' : 'Música: no'; };
+const rotularMusica = () => { btnMusica.textContent = sonido.musicaActiva() ? CONFIG.textos.musicaSi : CONFIG.textos.musicaNo; };
 btnMusica.onclick = () => { sonido.alternarMusica(); rotularMusica(); };
 
 // LA VOZ DE MANUEL. El botón solo existe si hay voz en español en la máquina
 // —un mando que no manda nada es peor que ningún mando— y arranca APAGADA:
 // quien la quiera la enciende una vez y la preferencia se queda.
 const btnVoz = document.getElementById('btn-voz');
-const rotularVoz = () => { btnVoz.textContent = sonido.vozActiva() ? 'Voz: sí' : 'Voz: no'; };
+const rotularVoz = () => { btnVoz.textContent = sonido.vozActiva() ? CONFIG.textos.vozSi : CONFIG.textos.vozNo; };
 btnVoz.onclick = () => {
   const encendida = sonido.alternarVoz();
   rotularVoz();
@@ -1497,7 +1513,10 @@ btnVoz.onclick = () => {
   if(encendida) sonido.hablar(CONFIG.sonido.voz.presentacion, 'presentacion');
 };
 sonido.cargarVoz().then(hay => {
-  if(!hay) return;
+  // En inglés la voz se guarda el botón: los archivos de Manuel son en
+  // castellano y el sintetizador de respaldo leería inglés con acento de
+  // Valladolid. Cuando generar_voces.py aprenda la voz inglesa, se abre.
+  if(!hay || idiomaActual() !== 'es') return;
   btnVoz.hidden = false;
   rotularVoz();
 });
@@ -1516,6 +1535,8 @@ sonido.cargarMusica().then(hay => {
 
 // El contador de visitas y vueltas. Sin cuenta configurada no hace nada.
 analitica.iniciar();
+// Cuántos juegan en inglés: es el dato que decide si la traducción avanza.
+if(idiomaActual() === 'en') analitica.contar('idioma/en');
 
 // Solapas del lateral: enseñar una hoja y esconder las demás. Es DOM puro y no
 // toca el estado, así que vive aquí y no en entrada.js.
