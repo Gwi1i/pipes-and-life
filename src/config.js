@@ -1132,7 +1132,10 @@ export const CONFIG = {
     escalones: [
       // El artículo va con el nombre porque el género cambia ("un pueblo" pero
       // "una aldea"): sin él salía un "ya es una pueblo" de libro.
-      { nombre: 'aldea',  art: 'una', hasta: 400,      iglesia: false,
+      // `titulo` es el rótulo de PANTALLA y `nombre` la clave de las imágenes
+      // (f_aldea.jpg): el diccionario inglés traduce el titulo y el nombre no
+      // se toca — traducirlo dejaría las fichas buscando f_hamlet.jpg.
+      { nombre: 'aldea',  titulo: 'aldea',  art: 'una', hasta: 400,      iglesia: false,
         ficha: 'Menos de 400 habitantes. En abastecimiento son los núcleos más ' +
                'ingratos: la obra cuesta casi lo mismo que en uno grande, pero ' +
                'hay muy pocos recibos para pagarla. Por eso existen las ' +
@@ -1140,7 +1143,7 @@ export const CONFIG = {
                'que solos no.',
         casas: [
         [-0.16,  0.02, 0.62], [ 0.15,  0.04, 0.70], [ 0.00, -0.09, 0.85] ] },
-      { nombre: 'pueblo', art: 'un',  hasta: 1600,     iglesia: false,
+      { nombre: 'pueblo', titulo: 'pueblo', art: 'un',  hasta: 1600,     iglesia: false,
         ficha: 'Hasta 1.600 habitantes. Aquí ya aparece la punta de consumo: ' +
                'a las ocho de la mañana todo el mundo abre el grifo a la vez, y ' +
                'la red tiene que aguantar ese pico, no la media del día. El ' +
@@ -1148,7 +1151,7 @@ export const CONFIG = {
         casas: [
         [-0.16,  0.02, 0.62], [ 0.15,  0.04, 0.70], [ 0.00, -0.09, 0.85],
         [-0.28, -0.05, 0.55], [ 0.28, -0.03, 0.58], [ 0.01,  0.11, 0.66] ] },
-      { nombre: 'villa',  art: 'una', hasta: 6000,     iglesia: true,
+      { nombre: 'villa',  titulo: 'villa',  art: 'una', hasta: 6000,     iglesia: true,
         ficha: 'Hasta 6.000 habitantes. A este tamaño el saneamiento pesa tanto ' +
                'como el abastecimiento: hay que llevar el agua Y llevársela. Y ' +
                'una fuga deja de ser una gotera para convertirse en un ' +
@@ -1157,7 +1160,7 @@ export const CONFIG = {
         [-0.16,  0.03, 0.62], [ 0.16,  0.05, 0.70], [-0.30, -0.04, 0.55],
         [ 0.29, -0.02, 0.58], [ 0.01,  0.12, 0.66], [-0.12, -0.15, 0.52],
         [ 0.17, -0.14, 0.54], [-0.32,  0.09, 0.48], [ 0.31,  0.10, 0.50] ] },
-      { nombre: 'ciudad', art: 'una', hasta: Infinity, iglesia: true,
+      { nombre: 'ciudad', titulo: 'ciudad', art: 'una', hasta: Infinity, iglesia: true,
         ficha: 'Más de 6.000 habitantes. Ya no se abastece con una conducción: ' +
                'hacen falta varias, mallas que se respalden entre sí y ' +
                'depósitos repartidos. Un corte aquí no es una molestia, es una ' +
@@ -1378,6 +1381,7 @@ export const CONFIG = {
      traducir lo que esté en CONFIG. Al mover un literal de ui.js o main.js,
      dale su clave aquí y su entrada en el diccionario. */
   textos: {
+    meses: ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'],
     sonidoSi: 'Sonido: sí', sonidoNo: 'Sonido: no',
     musicaSi: 'Música: sí', musicaNo: 'Música: no',
     vozSi: 'Voz: sí', vozNo: 'Voz: no',

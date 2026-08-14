@@ -34,6 +34,37 @@ export function cambiarIdioma(){
   location.reload();
 }
 
+/**
+ * LA ETIQUETA t: la traducción de los textos que el código monta en vivo.
+ * Se escribe t`Renovar a ${x} de ${y}.` y el castellano SE QUEDA AHÍ, en el
+ * código, como fuente de verdad. La clave del diccionario es el ESQUELETO de
+ * la frase —las partes fijas con {0},{1} en los huecos, los espacios
+ * plegados— y la traducción es otro esqueleto con los mismos huecos, que en
+ * inglés pueden ir en otro orden. Sin entrada en el diccionario, la frase
+ * sale en castellano y su esqueleto queda apuntado en `sinTraducir`:
+ * `juego.sinTraducir` en la consola es la lista de deberes.
+ */
+export const sinTraducir = new Set();
+
+function esqueleto(partes){
+  let s = partes[0];
+  for(let i = 1; i < partes.length; i++) s += '{' + (i - 1) + '}' + partes[i];
+  return s.replace(/\s+/g, ' ').trim();
+}
+
+export function t(partes, ...valores){
+  if(idiomaActual() === 'en'){
+    const clave = esqueleto(partes);
+    const tpl = EN.frases[clave];
+    if(tpl !== undefined)
+      return tpl.replace(/\{(\d+)\}/g, (_, i) => valores[i] ?? '');
+    sinTraducir.add(clave);
+  }
+  let s = partes[0];
+  for(let i = 0; i < valores.length; i++) s += valores[i] + partes[i + 1];
+  return s;
+}
+
 /* Mezcla recursiva: objetos y arrays se recorren, lo demás se sustituye.
    Solo pisa claves que EXISTEN en el destino: una errata en el diccionario
    no puede inventarle a CONFIG un parámetro nuevo. */

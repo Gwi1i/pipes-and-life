@@ -49,7 +49,7 @@ import { pedirUbicacion, buscarNombres, guardarNombres,
 import { MinijuegoTuberias } from './minijuego_tuberias.js';
 import { MinijuegoReciclaje } from './minijuego_reciclaje.js';
 import * as analitica from './analitica.js';
-import { aplicarIdioma, idiomaActual, cambiarIdioma } from './idioma.js';
+import { aplicarIdioma, idiomaActual, cambiarIdioma, sinTraducir } from './idioma.js';
 
 const lienzo  = document.getElementById('escena');
 // El LEGADO va antes que el estado: el constructor necesita saber la semilla
@@ -1555,7 +1555,10 @@ window.juego = {
   agua: n => { estado.activo.agua = n; },
   // Para el autor: excluir su navegador de la analítica (y revertirlo)
   noContarme: analitica.noContarme,
-  contarme: analitica.contarme
+  contarme: analitica.contarme,
+  // Jugando en inglés: las frases que aún salen en castellano por no tener
+  // entrada en el diccionario. La misma lista, sin jugar: py assets/extraer_frases.py
+  sinTraducir
 };
 
 requestAnimationFrame(bucle);

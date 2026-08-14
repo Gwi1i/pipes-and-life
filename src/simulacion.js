@@ -24,6 +24,9 @@ import { inventarioConectado, cuelloDeBotella, construccionesConectadas,
          celdaEn, nombreDeNucleo, tipoYacimiento, claseAcuifero,
          masasDelMapa, fugasDe } from './mapa.js';
 import { nivelVentaja } from './legado.js';
+// Solo para los TEXTOS de los requisitos del auto-bombeo: la etiqueta t los
+// traduce sin sacarlos de aquí. La lógica no depende del idioma para nada.
+import { t } from './idioma.js';
 
 /* ---------------- HELPERS POR PUEBLO ---------------- */
 
@@ -720,9 +723,9 @@ export function requisitosAutobomba(pueblo){
   const r = CONFIG.premium.autobomba.requisitos;
   const hab = Math.floor(pueblo.habitantes);
   const lista = [
-    { txt: `Potencia de bomba Nv ${r.bomba}`, ok: pueblo.mejoras.bomba >= r.bomba },
-    { txt: `Captación Nv ${r.captacion}`,      ok: pueblo.mejoras.captacion >= r.captacion },
-    { txt: `${r.habitantes} habitantes`,        ok: hab >= r.habitantes }
+    { txt: t`Potencia de bomba Nv ${r.bomba}`, ok: pueblo.mejoras.bomba >= r.bomba },
+    { txt: t`Captación Nv ${r.captacion}`,      ok: pueblo.mejoras.captacion >= r.captacion },
+    { txt: t`${r.habitantes} habitantes`,        ok: hab >= r.habitantes }
   ];
   return { cumple: lista.every(f => f.ok), lista };
 }

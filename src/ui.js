@@ -33,8 +33,12 @@ import { celdaEn, piezaDeRuina, diametro, nivelDiametro, costeRenovar,
 import { lista as listaLugares } from './lugares.js';
 import { pasoActual } from './tutorial.js';
 import { dibujarDiagrama, hayDiagrama } from './diagramas.js';
-
-const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+// La etiqueta de traducción (se escribe t delante de la plantilla): las
+// frases que este módulo monta en vivo se quedan en castellano AQUÍ (la
+// fuente) y el diccionario inglés las busca por su esqueleto. Ver idioma.js.
+// OJO al escribir comentarios: sin acentos graves alrededor de la t, que el
+// extractor de esqueletos (assets/extraer_frases.py) se los toma por código.
+import { t } from './idioma.js';
 
 export class UI {
 
@@ -81,10 +85,10 @@ export class UI {
           ${piezas}
           <button class="mejora obra tender" data-accion="elegirRedYTender" data-clave="${clave}"
                   id="tender-${clave}" style="--tono:${r.color}">
-            <span class="m-cab"><span class="m-nom">Colocar ${r.corto}</span>
+            <span class="m-cab"><span class="m-nom">${t`Colocar ${r.corto}`}</span>
               <span class="m-coste" id="tender-coste-${clave}">—</span></span>
-            <span class="m-desc">Marca el recorrido casilla a casilla. Clic en la
-              última para rematar, en la anterior para deshacer.</span>
+            <span class="m-desc">${t`Marca el recorrido casilla a casilla. Clic en la
+              última para rematar, en la anterior para deshacer.`}</span>
           </button>
         </div>`;
     }).join('');
@@ -155,14 +159,14 @@ export class UI {
               data-accion="elegirDiametro" data-clave="${d.id}" style="--tono:${d.color}">
         <b>${d.nombre}</b>
         <em>${d.material}</em>
-        <i>${this.medidaTier(clave, d)} · ${Math.round(d.fugas * 100)} % fugas</i>
+        <i>${t`${this.medidaTier(clave, d)} · ${Math.round(d.fugas * 100)} % fugas`}</i>
       </button>`).join('');
 
     const listado = !lineas.length
       ? `<p class="m-desc">${clave === 'saneamiento'
-          ? `Todavía no hay colector. El pueblo se apaña con la red unitaria vieja:
+          ? t`Todavía no hay colector. El pueblo se apaña con la red unitaria vieja:
              ${D[0].nombre} de ${D[0].material}, y todo lo que no le cabe acaba en el río.`
-          : `Todavía no hay ninguna línea que llegue al pueblo. Mientras tanto bebe
+          : t`Todavía no hay ninguna línea que llegue al pueblo. Mientras tanto bebe
              de la red vieja: ${D[0].nombre} de ${D[0].material}.`}</p>`
       : lineas.map(({ tuberia, indice }) => {
           const d = diametro(tuberia.dn, clave);
@@ -177,32 +181,33 @@ export class UI {
             <button class="mejora obra linea${renovable ? '' : ' hecha'}"
                     ${renovable ? `data-accion="renovarLinea" data-clave="${indice}"` : 'disabled'}
                     style="--tono:${vieja ? '#f0a04a' : d.color}">
-              <span class="m-cab"><span class="m-nom">${tuberia.camino.length} casillas · ${d.nombre}
-                ${d.vidaAños ? `<i class="linea-edad${vieja ? ' vieja' : ''}">${años} años</i>` : ''}
+              <span class="m-cab"><span class="m-nom">${t`${tuberia.camino.length} casillas · ${d.nombre}`}
+                ${d.vidaAños ? `<i class="linea-edad${vieja ? ' vieja' : ''}">${t`${años} años`}</i>` : ''}
               </span></span>
               <span class="m-desc">${sube
-                ? `Renovar a ${objetivo.nombre} de ${objetivo.material}.`
+                ? t`Renovar a ${objetivo.nombre} de ${objetivo.material}.`
                 : vieja
-                  ? `Pasada de vida útil (${d.vidaAños} años del ${d.material}): fuga cada
+                  ? t`Pasada de vida útil (${d.vidaAños} años del ${d.material}): fuga cada
                      vez más. Renovarla la deja nueva.`
-                  : 'Ya está a la altura del diámetro elegido.'}</span>
+                  : t`Ya está a la altura del diámetro elegido.`}</span>
               <span class="m-coste">${renovable ? formatear(coste) + ' €' : '—'}</span>
             </button>`;
         }).join('');
 
     const avisos = this.avisosRed(estado, clave, cuello, resultado)
-      .map(t => `<p class="red-aviso">${t}</p>`).join('');
+      .map(av => `<p class="red-aviso">${av}</p>`).join('');
 
     document.getElementById('red').innerHTML = `
       <div class="red-tabs">${pestanas}</div>
       <p class="m-desc">${R.desc}</p>
       <p class="red-cuello" style="--tono:${cuello.def.color}">
-        Manda el tramo más estrecho: <b>${cuello.def.nombre}</b> de ${cuello.def.material}
-        ${cuello.estrechas > 1 ? `<i>(${cuello.estrechas} líneas así)</i>` : ''}
+        ${t`Manda el tramo más estrecho: <b>${cuello.def.nombre}</b> de ${cuello.def.material}`}
+        ${cuello.estrechas > 1 ? `<i>${t`(${cuello.estrechas} líneas así)`}</i>` : ''}
       </p>
       ${avisos}
-      <p class="m-desc">${R.esVial ? 'Clase de vía' : 'Diámetro'} con que se tiende
-        y a la que se renueva:</p>
+      <p class="m-desc">${R.esVial
+        ? t`Clase de vía con que se tiende y a la que se renueva:`
+        : t`Diámetro con que se tiende y a la que se renueva:`}</p>
       <div class="dn-selector">${selector}</div>
       ${listado}`;
 
@@ -210,7 +215,7 @@ export class UI {
     // trazas allí sin saber si estás poniendo agua limpia o un colector.
     const nombre = document.querySelector('#obra-tuberia .m-nom');
     const etiqueta = document.querySelector('#obra-tuberia .m-coste');
-    if(nombre) nombre.textContent = `Colocar ${R.corto}`;
+    if(nombre) nombre.textContent = t`Colocar ${R.corto}`;
     if(etiqueta) etiqueta.textContent = `${R.nombre} · ${objetivo.nombre}`;
     const boton = document.getElementById('obra-tuberia');
     if(boton) boton.style.setProperty('--tono', R.color);
@@ -222,7 +227,7 @@ export class UI {
       return formatear(d.caudalMax * CONFIG.saneamiento.holguraColector * 3600) + ' L/h';
     if(clave === 'residuos')
       return d.caudalMax.toFixed(2) + ' t/h';
-    return 'hasta ' + formatear(d.habitantesMax) + ' hab';
+    return t`hasta ${formatear(d.habitantesMax)} hab`;
   }
 
   /**
@@ -236,20 +241,20 @@ export class UI {
     if(this.cache.lugaresFirma === firma) return;
     this.cache.lugaresFirma = firma;
     document.getElementById('lugares').innerHTML = nombres
-      ? `<p class="m-desc">Los pueblos por descubrir llevan nombres de tu comarca
+      ? `<p class="m-desc">${t`Los pueblos por descubrir llevan nombres de tu comarca
            (${nombres.length}): <b>${nombres.slice(0, 4).join('</b>, <b>')}</b>…
-           Los ya incorporados conservan el suyo.</p>
+           Los ya incorporados conservan el suyo.`}</p>
          <button class="mejora obra" data-accion="quitarLugares">
-           <span class="m-cab"><span class="m-nom">Volver a los inventados</span></span>
-           <span class="m-desc">La lista de nombres se borra de este navegador.</span>
+           <span class="m-cab"><span class="m-nom">${t`Volver a los inventados`}</span></span>
+           <span class="m-desc">${t`La lista de nombres se borra de este navegador.`}</span>
          </button>`
-      : `<p class="m-desc">Los pueblos del mapa pueden llamarse como los de tu
+      : `<p class="m-desc">${t`Los pueblos del mapa pueden llamarse como los de tu
            comarca: encontrar tu zona en el juego tiene su gracia. Tu ubicación
            se usa UNA sola vez para preguntar a OpenStreetMap por los municipios
-           cercanos, no se guarda, y aquí solo queda la lista de nombres.</p>
+           cercanos, no se guarda, y aquí solo queda la lista de nombres.`}</p>
          <button class="mejora obra" data-accion="usarLugares">
-           <span class="m-cab"><span class="m-nom">Usar pueblos de mi zona</span></span>
-           <span class="m-desc">El navegador te pedirá permiso de ubicación.</span>
+           <span class="m-cab"><span class="m-nom">${t`Usar pueblos de mi zona`}</span></span>
+           <span class="m-desc">${t`El navegador te pedirá permiso de ubicación.`}</span>
          </button>`;
   }
 
@@ -283,50 +288,50 @@ export class UI {
     // Las fuentes
     if(d.rioBruto > 0){
       const nota = estiaje < 0.95
-        ? ` <em class="diag-nota">estiaje: el río viene bajo, −${(d.rioBruto - d.rio).toFixed(2)}</em>`
+        ? ` <em class="diag-nota">${t`estiaje: el río viene bajo, −${(d.rioBruto - d.rio).toFixed(2)}`}</em>`
         : estiaje > 1.05
-          ? ` <em class="diag-nota buena">deshielo: viene crecido, +${(d.rio - d.rioBruto).toFixed(2)}</em>`
+          ? ` <em class="diag-nota buena">${t`deshielo: viene crecido, +${(d.rio - d.rioBruto).toFixed(2)}`}</em>`
           : '';
-      f.push(`<div class="casilla-fila"><span>Del río${nota}</span><b>${L(d.rio)}</b></div>`);
+      f.push(`<div class="casilla-fila"><span>${t`Del río`}${nota}</span><b>${L(d.rio)}</b></div>`);
     }
     if(d.pozos > 0 || pozosMermados){
       const nota = pozosMermados
-        ? ' <em class="diag-nota mala">acuífero bajo: dan menos</em>' : '';
-      f.push(`<div class="casilla-fila"><span>De los pozos${nota}</span><b>${L(d.pozos)}</b></div>`);
+        ? ` <em class="diag-nota mala">${t`acuífero bajo: dan menos`}</em>` : '';
+      f.push(`<div class="casilla-fila"><span>${t`De los pozos`}${nota}</span><b>${L(d.pozos)}</b></div>`);
     }
     if(d.rioBruto <= 0 && d.pozos <= 0)
-      f.push(`<p class="m-desc">Sin captación conectada: toda el agua sale de tus
-        clics. Una captación en el río —o un pozo— produce sola.</p>`);
+      f.push(`<p class="m-desc">${t`Sin captación conectada: toda el agua sale de tus
+        clics. Una captación en el río —o un pozo— produce sola.`}</p>`);
 
     // Las mermas, solo las que están doliendo
     if(d.perdidaTope > 0.005)
-      f.push(`<div class="casilla-fila"><span>No cabe por ${d.red.def.nombre}
-        <em class="diag-nota mala">renovar la línea lo libera</em></span>
+      f.push(`<div class="casilla-fila"><span>${t`No cabe por ${d.red.def.nombre}`}
+        <em class="diag-nota mala">${t`renovar la línea lo libera`}</em></span>
         <b class="diag-perdida">−${L(d.perdidaTope)}</b></div>`);
     if(d.fugas > 0.005){
       // Si la tasa supera la del material es que hay una línea vieja fugando
       const envejecida = tasaFugasRed(estado) > d.red.def.fugas + 0.005;
-      f.push(`<div class="casilla-fila"><span>Fugas del ${d.red.def.material}
-        ${envejecida ? '<em class="diag-nota mala">hay una línea vieja: renovarla lo corta</em>' : ''}</span>
+      f.push(`<div class="casilla-fila"><span>${t`Fugas del ${d.red.def.material}`}
+        ${envejecida ? `<em class="diag-nota mala">${t`hay una línea vieja: renovarla lo corta`}</em>` : ''}</span>
         <b class="diag-perdida">−${L(d.fugas)}</b></div>`);
     }
     if(d.veneno > 0.005)
-      f.push(`<div class="casilla-fila"><span>Agua insalubre
-        <em class="diag-nota mala">lixiviados sobre tu toma</em></span>
+      f.push(`<div class="casilla-fila"><span>${t`Agua insalubre`}
+        <em class="diag-nota mala">${t`lixiviados sobre tu toma`}</em></span>
         <b class="diag-perdida">−${L(d.veneno)}</b></div>`);
     if(d.paradas > 0)
       f.push(`<div class="casilla-fila"><span>${d.paradas === 1
-          ? 'Una pieza parada por avería' : d.paradas + ' piezas paradas por avería'}
-        <em class="diag-nota mala">repárala sobre el mapa</em></span>
-        <b class="diag-perdida">parada</b></div>`);
+          ? t`Una pieza parada por avería` : t`${d.paradas} piezas paradas por avería`}
+        <em class="diag-nota mala">${t`repárala sobre el mapa`}</em></span>
+        <b class="diag-perdida">${t`parada`}</b></div>`);
 
     // El cierre: lo que queda contra lo que pide el pueblo
     const cubre = d.neto >= dem;
-    f.push(`<div class="casilla-fila diag-total"><span>Produce</span><b>${L(d.neto)}</b></div>
-      <div class="casilla-fila"><span>El pueblo pide de media</span><b>${L(dem)}</b></div>
+    f.push(`<div class="casilla-fila diag-total"><span>${t`Produce`}</span><b>${L(d.neto)}</b></div>
+      <div class="casilla-fila"><span>${t`El pueblo pide de media`}</span><b>${L(dem)}</b></div>
       <p class="m-desc">${cubre
-        ? 'La captación cubre la demanda media; el depósito absorbe las puntas y tus clics son propina.'
-        : 'La captación NO cubre la demanda: lo que falte sale de tus clics, o el pueblo pasa sed.'}</p>`);
+        ? t`La captación cubre la demanda media; el depósito absorbe las puntas y tus clics son propina.`
+        : t`La captación NO cubre la demanda: lo que falte sale de tus clics, o el pueblo pasa sed.`}</p>`);
 
     document.getElementById('diagnostico').innerHTML = f.join('');
   }
@@ -347,57 +352,57 @@ export class UI {
         const d = diametro(tuberia.dn, clave);
         const extra = fugasDe(tuberia, estado.horas) - d.fugas;
         if(extra > 0.005){
-          fuera.push(`Una línea de ${Math.floor(edadAños(tuberia, estado.horas))} años
+          fuera.push(t`Una línea de ${Math.floor(edadAños(tuberia, estado.horas))} años
             (${d.material}, vida útil ${d.vidaAños}): fuga un
             ${Math.round((d.fugas + extra) * 100)} % y cada año irá a más.
             Renovarla —aunque sea al mismo calibre— la deja nueva.`);
           break;   // con avisar de la peor basta: el panel ya las lista todas
         }
       }
-      if(redEstrangula(p, estado)) fuera.push(`Tu captación da más agua de la que
+      if(redEstrangula(p, estado)) fuera.push(t`Tu captación da más agua de la que
         cabe por ${cuello.def.nombre}: se está perdiendo lo que sobra. Comprar más
         captación no servirá de nada hasta que ensanches la línea.`);
-      if(p.habitantes >= cuello.def.habitantesMax * 0.95) fuera.push(`El pueblo ha
+      if(p.habitantes >= cuello.def.habitantesMax * 0.95) fuera.push(t`El pueblo ha
         tocado techo: por ${cuello.def.nombre} no cabe agua para más de
         ${formatear(cuello.def.habitantesMax)} habitantes. Hasta que no renueves la
         línea entera, no crece.`);
       // AGUA SIN POTABILIZAR: el freno silencioso. Si no se cuenta aquí, el
       // jugador ve el pueblo estancado y no sabe por qué.
       if(resultado && (resultado.aguaBrutaLh || 0) > (resultado.aguaTrataLh || 0) + 1e-6)
-        fuera.push(`Estás sirviendo ${formatear(resultado.aguaBrutaLh - resultado.aguaTrataLh)}
+        fuera.push(t`Estás sirviendo ${formatear(resultado.aguaBrutaLh - resultado.aguaTrataLh)}
           L/h de agua BRUTA sin potabilizar (del río, o de pozos exprimidos), y eso
           frena el crecimiento: nadie se fía de un grifo sin garantía. Una
           POTABILIZADORA conectada lo resuelve.`);
     } else if(clave === 'pluviales'){
-      if(!cuello.lineas.length) fuera.push(`No hay red de pluviales: la lluvia y las
+      if(!cuello.lineas.length) fuera.push(t`No hay red de pluviales: la lluvia y las
         aguas fecales van juntas por el mismo colector, y en tormenta eso es lo que
         revienta a la depuradora. Tender una línea aparte saca del colector todo lo
         que le quepa.`);
-      else if(resultado.lluviaLh > 0) fuera.push(`Ahora mismo caen
+      else if(resultado.lluviaLh > 0) fuera.push(t`Ahora mismo caen
         ${formatear(resultado.lluviaLh)} L/h sobre el pueblo y tu red se lleva
         ${formatear(resultado.separadaLh)} L/h. El resto baja por el colector.`);
     } else if(clave === 'residuos'){
       const piezas = (estado._conectadoRed || {}).residuos || {};
-      if(!cuello.lineas.length) fuera.push(`No hay carretera: el camión no tiene por
+      if(!cuello.lineas.length) fuera.push(t`No hay carretera: el camión no tiene por
         dónde salir y la basura se queda en el pueblo. Aquí no hay ninguna vía vieja
         que valga, hay que tenderla.`);
-      else if(!piezas.vertedero) fuera.push(`Recoges la basura pero no tienes dónde
+      else if(!piezas.vertedero) fuera.push(t`Recoges la basura pero no tienes dónde
         dejarla: hace falta un VERTEDERO enganchado a la carretera, y lejos del agua.`);
-      else if(resultado.basuraTh > resultado.recogidaTh + 1e-6) fuera.push(`Se genera
+      else if(resultado.basuraTh > resultado.recogidaTh + 1e-6) fuera.push(t`Se genera
         más basura de la que puede sacar la vía: ${(resultado.basuraTh || 0).toFixed(3)}
         t/h contra ${(resultado.recogidaTh || 0).toFixed(3)}. Lo que no sale se pudre
         en la calle —ya va por el ${Math.round((resultado.basuraCalle || 0) * 100)} %—
         y frena el crecimiento.`);
-      if(!nivelReciclaje(p, estado)) fuera.push(`Todo va al vertedero, y enterrar solo
+      if(!nivelReciclaje(p, estado)) fuera.push(t`Todo va al vertedero, y enterrar solo
         cuesta dinero. Con una PLANTA DE RECICLAJE conectada empiezas a separar
         fracciones y a venderlas: es la única parte del juego que ingresa aparte
         del agua.`);
     } else {
       if(servicioActivo(p, 'saneamiento') && !(estado._conectadoSan || {}).depuradora)
-        fuera.push(`El pueblo ya genera aguas residuales y no hay ninguna depuradora
+        fuera.push(t`El pueblo ya genera aguas residuales y no hay ninguna depuradora
           enganchada al colector. Todo lo que sale va crudo al cauce: constrúyela
           junto al agua y llévale una línea de saneamiento.`);
-      if(resultado.rebosando) fuera.push(`El colector está REBOSANDO: entra más agua
+      if(resultado.rebosando) fuera.push(t`El colector está REBOSANDO: entra más agua
         de la que cabe por ${cuello.def.nombre} y se sale antes de llegar a la
         depuradora. Eso va al río sin tratar. Ensancha el colector o separa las
         pluviales.`);
@@ -406,7 +411,7 @@ export class UI {
       // renueva la línea, ve el río igual de sucio y cree que no ha servido.
       const trata = capacidadTratamiento(p, estado);
       if(!resultado.rebosando && resultado.aliviando && servicioActivo(p, 'saneamiento'))
-        fuera.push(`El colector da de sí, pero la depuradora no: le llegan
+        fuera.push(t`El colector da de sí, pero la depuradora no: le llegan
           ${formatear(resultado.cargaLh || 0)} L/h y solo trata
           ${formatear(trata)} L/h. Lo que sobra se alivia crudo. Ahora el problema
           no es la tubería: hace falta más depuración, o un tanque de tormentas
@@ -446,9 +451,9 @@ export class UI {
     // regañina antes de haber leído una sola palabra.
     document.getElementById('hito').classList.toggle('es-logro', !!h.logro);
     document.getElementById('hito-eti-pasa').textContent =
-      h.logro ? 'Lo has conseguido' : 'Qué ha pasado';
+      h.logro ? t`Lo has conseguido` : t`Qué ha pasado`;
     document.getElementById('hito-eti-hacer').textContent =
-      h.logro ? 'Qué viene ahora' : 'Qué tienes que hacer';
+      h.logro ? t`Qué viene ahora` : t`Qué tienes que hacer`;
     document.getElementById('hito-titulo').textContent = h.titulo;
     document.getElementById('hito-pasa').textContent = h.pasa;
     document.getElementById('hito-hacer').textContent = h.hacer;
@@ -483,7 +488,7 @@ export class UI {
     panel.style.display = '';
 
     // Dos modos, un bocadillo: la guía enseña pasos; Manuel suelto, comenta
-    document.getElementById('guia-rotulo').textContent = paso ? 'Primeros pasos' : 'dice';
+    document.getElementById('guia-rotulo').textContent = paso ? t`Primeros pasos` : t`dice`;
     document.getElementById('guia-titulo').style.display = paso ? '' : 'none';
     panel.querySelector('.guia-saltar').style.display = paso ? '' : 'none';
     if(com){
@@ -548,20 +553,20 @@ export class UI {
       const img = `<img class="ficha-dib" src="assets/a_${tipoY.id}.jpg"
                      onerror="this.hidden=true" alt="">`;
       cont.innerHTML = celda.excavado
-        ? `<p class="red-cuello" style="--tono:${A.color}"><b>${tipoY.nombre}</b> · en valor</p>
+        ? `<p class="red-cuello" style="--tono:${A.color}"><b>${tipoY.nombre}</b> · ${t`en valor`}</p>
            ${img}
            <p class="m-desc">${tipoY.desc}</p>
-           <p class="m-desc">Renta <b>${formatear(tipoY.renta)} €/h</b> y seguirá
-             haciéndolo. La casilla queda para siempre fuera de obra.</p>`
+           <p class="m-desc">${t`Renta <b>${formatear(tipoY.renta)} €/h</b> y seguirá
+             haciéndolo. La casilla queda para siempre fuera de obra.`}</p>`
         : `<p class="red-cuello" style="--tono:${A.color}"><b>${tipoY.nombre}</b></p>
            ${img}
            <p class="m-desc">${tipoY.desc}</p>
-           <p class="m-desc">Ha salido al picar. No se puede quitar ni construir
+           <p class="m-desc">${t`Ha salido al picar. No se puede quitar ni construir
              encima: hay que rodearlo. Excavarlo cuesta, pero lo pone en valor y
-             pasa a rentar todos los meses.</p>
+             pasa a rentar todos los meses.`}</p>
            <button class="mejora obra" data-accion="excavarYacimiento" style="--tono:${A.color}">
-             <span class="m-cab"><span class="m-nom">Excavar y poner en valor</span></span>
-             <span class="m-desc">+${formatear(tipoY.renta)} €/h para siempre.</span>
+             <span class="m-cab"><span class="m-nom">${t`Excavar y poner en valor`}</span></span>
+             <span class="m-desc">${t`+${formatear(tipoY.renta)} €/h para siempre.`}</span>
              <span class="m-coste">${formatear(A.costeExcavar)} €</span>
            </button>`;
       return;
@@ -581,15 +586,15 @@ export class UI {
       panel.style.display = '';
       const obj = nucleoMasCercano(estado.mapa, sel.col, sel.fila);
       cont.innerHTML = obj
-        ? `<p class="red-cuello" style="--tono:${H.color.senal}"><b>Señal de camino</b></p>
-           <p class="m-desc">«${nombreDeNucleo(obj.celda.nombreIdx || 0)} ·
-             a ${Math.round(obj.d)} casillas»</p>
-           <p class="m-desc">Los camineros las plantaban donde el viajero dudaba.
+        ? `<p class="red-cuello" style="--tono:${H.color.senal}"><b>${t`Señal de camino`}</b></p>
+           <p class="m-desc">${t`«${nombreDeNucleo(obj.celda.nombreIdx || 0)} ·
+             a ${Math.round(obj.d)} casillas»`}</p>
+           <p class="m-desc">${t`Los camineros las plantaban donde el viajero dudaba.
              Apunta siempre al pueblo por descubrir más cercano: cuando lo
-             incorpores, señalará al siguiente.</p>`
-        : `<p class="red-cuello" style="--tono:${H.color.senal}"><b>Señal de camino</b></p>
-           <p class="m-desc">Ya no señala a nadie: no queda ningún pueblo por
-             descubrir en la comarca. Buen trabajo.</p>`;
+             incorpores, señalará al siguiente.`}</p>`
+        : `<p class="red-cuello" style="--tono:${H.color.senal}"><b>${t`Señal de camino`}</b></p>
+           <p class="m-desc">${t`Ya no señala a nadie: no queda ningún pueblo por
+             descubrir en la comarca. Buen trabajo.`}</p>`;
       return;
     }
 
@@ -603,19 +608,19 @@ export class UI {
       const desmontar = Math.round(def.coste * H.costeDesmontar);
       cont.innerHTML = `
         <p class="red-cuello" style="--tono:${H.color.ruina}">
-          <b>${def.nombre}</b> · abandonada</p>
+          <b>${def.nombre}</b> · ${t`abandonada`}</p>
         <img class="ficha-dib" src="assets/f_${tipo}_ruina.jpg"
              onerror="this.hidden=true" alt="">
-        <p class="m-desc">Quien la levantó ya no está; la instalación, sí.
-          Recuperarla siempre sale más barato que hacerla nueva.</p>
+        <p class="m-desc">${t`Quien la levantó ya no está; la instalación, sí.
+          Recuperarla siempre sale más barato que hacerla nueva.`}</p>
         <button class="mejora obra" data-accion="repararRuina" style="--tono:${def.color}">
-          <span class="m-cab"><span class="m-nom">Poner en marcha aquí</span></span>
-          <span class="m-desc">Se queda donde está, si el terreno le sirve.</span>
+          <span class="m-cab"><span class="m-nom">${t`Poner en marcha aquí`}</span></span>
+          <span class="m-desc">${t`Se queda donde está, si el terreno le sirve.`}</span>
           <span class="m-coste">${formatear(reparar)} €</span>
         </button>
         <button class="mejora obra" data-accion="desmontarRuina" style="--tono:${H.color.ruina}">
-          <span class="m-cab"><span class="m-nom">Desmontar y guardar</span></span>
-          <span class="m-desc">Va al almacén para levantarla donde te convenga.</span>
+          <span class="m-cab"><span class="m-nom">${t`Desmontar y guardar`}</span></span>
+          <span class="m-desc">${t`Va al almacén para levantarla donde te convenga.`}</span>
           <span class="m-coste">${formatear(desmontar)} €</span>
         </button>`;
     }
@@ -648,12 +653,12 @@ export class UI {
                    onerror="if(this.src.indexOf('_e')>-1){this.src='${base}';}else{this.hidden=true}"
                    alt="">`;
     const cab = `<p class="red-cuello" style="--tono:${H.color.pueblo}">
-        <b>${nombre}</b> · ${esc.nombre}</p>${img}`;
+        <b>${nombre}</b> · ${esc.titulo}</p>${img}`;
 
     // Lo que significa ese tamaño en el oficio. Mismo bloque que las fichas de
     // las instalaciones: si el jugador ya sabe leer uno, sabe leer este.
     const leccion = `<div class="ficha" style="--tono:${H.color.pueblo}">
-        <p class="ficha-tit ficha-dato-tit">Un núcleo de este tamaño</p>
+        <p class="ficha-tit ficha-dato-tit">${t`Un núcleo de este tamaño`}</p>
         <p class="ficha-txt ficha-dato">${esc.ficha}</p>
       </div>`;
 
@@ -661,20 +666,20 @@ export class UI {
       // Aún por incorporar: lo que se sabe de lejos y qué hace falta para traerlo
       const bloqueado = (celda.anillo || 1) > faseActual(estado);
       return cab + `
-        <div class="casilla-fila"><span>Habitantes</span>
+        <div class="casilla-fila"><span>${t`Habitantes`}</span>
           <b>${formatear(Math.round(habitantes))}</b></div>
-        <div class="casilla-fila"><span>Distancia</span>
-          <b>anillo ${celda.anillo || 1}</b></div>
+        <div class="casilla-fila"><span>${t`Distancia`}</span>
+          <b>${t`anillo ${celda.anillo || 1}`}</b></div>
         ${leccion}
         ${bloqueado
-          ? `<p class="red-aviso">Demasiado lejos para la mancomunidad de hoy:
+          ? `<p class="red-aviso">${t`Demasiado lejos para la mancomunidad de hoy:
                incorpora ${faltanParaFase(estado)} núcleos más cercanos y se abrirá
-               este anillo.</p>`
+               este anillo.`}</p>`
           : `<button class="mejora obra" data-accion="abastecerPueblo" style="--tono:${H.color.pueblo}">
-               <span class="m-cab"><span class="m-nom">Abastecer este pueblo</span></span>
-               <span class="m-desc">Hay que haberle llevado antes una tubería. Al
-                 hacerlo entra en la mancomunidad.</span>
-               <span class="m-coste">canon: ${formatear(canonIncorporacion(estado))} €</span>
+               <span class="m-cab"><span class="m-nom">${t`Abastecer este pueblo`}</span></span>
+               <span class="m-desc">${t`Hay que haberle llevado antes una tubería. Al
+                 hacerlo entra en la mancomunidad.`}</span>
+               <span class="m-coste">${t`canon: ${formatear(canonIncorporacion(estado))} €`}</span>
              </button>`}`;
     }
 
@@ -684,16 +689,16 @@ export class UI {
     const clase = serv >= 95 ? 'ok' : serv >= 70 ? 'alarma' : 'critico';
     const activo = estado.pueblos.indexOf(p) === estado.puebloActivo;
     return cab + `
-      <div class="casilla-fila"><span>Habitantes</span>
+      <div class="casilla-fila"><span>${t`Habitantes`}</span>
         <b>${formatear(Math.round(p.habitantes))}</b></div>
-      <div class="casilla-fila"><span>Pide de media</span>
+      <div class="casilla-fila"><span>${t`Pide de media`}</span>
         <b>${dem.toFixed(2)} L/s</b></div>
-      <div class="casilla-fila"><span>Servicio</span>
+      <div class="casilla-fila"><span>${t`Servicio`}</span>
         <b class="v ${clase}">${serv} %</b></div>
       ${leccion}
       <p class="m-desc">${activo
-        ? 'Es el pueblo que estás mirando. Cada clic encima es una bombada.'
-        : 'Clícalo en el mapa para ponerlo al frente y bombear aquí.'}</p>`;
+        ? t`Es el pueblo que estás mirando. Cada clic encima es una bombada.`
+        : t`Clícalo en el mapa para ponerlo al frente y bombear aquí.`}</p>`;
   }
 
   /**
@@ -722,24 +727,24 @@ export class UI {
         <span class="m-cab"><span class="m-nom">${def.nombre}
           · ${nivel}/${def.nivelMax}</span></span>
         <span class="m-desc">${def.desc}</span>
-        <span class="m-coste">${coste == null ? 'al máximo' : coste + ' veteranía'}</span>
+        <span class="m-coste">${coste == null ? t`al máximo` : t`${coste} veteranía`}</span>
       </button>`;
     }).join('');
 
     cont.innerHTML = `
-      <p class="m-desc"><b>Comarca ${legado.comarca}</b> · ${regionActual().nombre}
-        · veteranía disponible: <b>${legado.veterania}</b></p>
+      <p class="m-desc">${t`<b>Comarca ${legado.comarca}</b> · ${regionActual().nombre}
+        · veteranía disponible: <b>${legado.veterania}</b>`}</p>
       ${ventajas}
       ${puede
         ? `<button class="mejora obra" data-accion="trasladarse" style="--tono:#f0a04a">
-             <span class="m-cab"><span class="m-nom">Trasladarse a otra comarca</span></span>
-             <span class="m-desc">La red, la caja y los pueblos se quedan; tú te llevas
-               la experiencia. Territorio nuevo de verdad: otro río, otros acuíferos.</span>
-             <span class="m-coste">+${ganada} veteranía</span>
+             <span class="m-cab"><span class="m-nom">${t`Trasladarse a otra comarca`}</span></span>
+             <span class="m-desc">${t`La red, la caja y los pueblos se quedan; tú te llevas
+               la experiencia. Territorio nuevo de verdad: otro río, otros acuíferos.`}</span>
+             <span class="m-coste">${t`+${ganada} veteranía`}</span>
            </button>`
-        : `<p class="m-desc">El traslado se ofrecerá al alcanzar la
+        : `<p class="m-desc">${t`El traslado se ofrecerá al alcanzar la
              fase ${K.faseParaTrasladarse}: las comarcas grandes solo llaman
-             a quien ya ha demostrado lo que sabe.</p>`}`;
+             a quien ya ha demostrado lo que sabe.`}</p>`}`;
   }
 
   /**
@@ -779,9 +784,9 @@ export class UI {
     // Averiada o suelta, la pieza no aporta NADA — y si el panel no lo dice,
     // el jugador cree que la ampliación que acaba de pagar no funciona.
     const situacion = estadoObra === 'averiada'
-      ? '<p class="red-aviso">AVERIADA: no cuenta en la red hasta que la repares clicándola en el mapa.</p>'
+      ? `<p class="red-aviso">${t`AVERIADA: no cuenta en la red hasta que la repares clicándola en el mapa.`}</p>`
       : estadoObra === 'suelta'
-        ? '<p class="red-aviso">SIN CONECTAR: no aporta nada hasta que le llegue su red.</p>'
+        ? `<p class="red-aviso">${t`SIN CONECTAR: no aporta nada hasta que le llegue su red.`}</p>`
         : '';
 
     // EL POZO: aquí es donde hace falta ver el acuífero, no en la ficha de
@@ -807,32 +812,34 @@ export class UI {
       // LA PLANTA DE RECICLAJE tiene su turno jugable: el minijuego con premio
       let turno = '';
       if(obra.tipo === 'reciclaje'){
-        const t = estado.turnoReciclaje;
-        const activo = t && estado.horas < t.hasta;
+        // OJO: nada de variables llamadas t aquí — taparían la etiqueta de
+        // traducción importada, y el fallo sería silencioso.
+        const turnoVivo = estado.turnoReciclaje;
+        const activo = turnoVivo && estado.horas < turnoVivo.hasta;
         turno = activo
-          ? `<p class="m-desc">Turno echado: la venta va al
-               <b>+${Math.round((t.factor - 1) * 100)} %</b> todavía
-               ${Math.ceil(t.hasta - estado.horas)} horas más.</p>`
+          ? `<p class="m-desc">${t`Turno echado: la venta va al
+               <b>+${Math.round((estado.turnoReciclaje.factor - 1) * 100)} %</b> todavía
+               ${Math.ceil(estado.turnoReciclaje.hasta - estado.horas)} horas más.`}</p>`
           : `<button class="mejora obra" data-accion="turnoReciclaje" style="--tono:#facc15">
-               <span class="m-cab"><span class="m-nom">Echar un turno en la línea</span></span>
-               <span class="m-desc">Separa bien en la cinta y la venta de reciclado
+               <span class="m-cab"><span class="m-nom">${t`Echar un turno en la línea`}</span></span>
+               <span class="m-desc">${t`Separa bien en la cinta y la venta de reciclado
                  sube hasta un ${Math.round(CONFIG.minijuegos.reciclaje.bonusMax * 100)} %
-                 una temporada.</span>
-               <span class="m-coste">jugar</span>
+                 una temporada.`}</span>
+               <span class="m-coste">${t`jugar`}</span>
              </button>`;
       }
       cont.innerHTML = `
         <p class="red-cuello" style="--tono:${def.color}"><b>${titulo}</b>
-          ${ampliable ? `· nivel ${nivel}` : ''}</p>
+          ${ampliable ? `· ${t`nivel ${nivel}`}` : ''}</p>
         ${situacion}
         ${lineasAqui}
         ${turno}
         <p class="m-desc">${this.queAporta(obra.tipo, nivel) || def.desc}</p>
         ${!ampliable ? '' : nivel >= A.nivelMax
-          ? '<p class="m-desc">Ampliada al máximo: si hace falta más, toca construir otra.</p>'
+          ? `<p class="m-desc">${t`Ampliada al máximo: si hace falta más, toca construir otra.`}</p>`
           : `<button class="mejora obra" data-accion="ampliarPieza" style="--tono:${def.color}">
-               <span class="m-cab"><span class="m-nom">Ampliar a nivel ${nivel + 1}</span></span>
-               <span class="m-desc">Pasará a aportar como ${nivel + 1} piezas iguales.</span>
+               <span class="m-cab"><span class="m-nom">${t`Ampliar a nivel ${nivel + 1}`}</span></span>
+               <span class="m-desc">${t`Pasará a aportar como ${nivel + 1} piezas iguales.`}</span>
                <span class="m-coste">${formatear(costeAmpliarPieza(obra))} €</span>
              </button>`}
         ${this.fichaHTML(def, obra.tipo)}
@@ -847,22 +854,22 @@ export class UI {
     const coste = costeAmpliarVertedero(obra);
     cont.innerHTML = `
       <p class="red-cuello" style="--tono:${def.color}">
-        <b>${titulo}</b> · vaso nivel ${nivel}
+        <b>${titulo}</b> · ${t`vaso nivel ${nivel}`}
       </p>
       ${situacion}
       <div class="vaso"><i style="width:${pct}%"></i></div>
-      <p class="m-desc">${formatear(obra.lleno || 0)} de ${formatear(capacidadVaso(obra))} t
-        (${pct} %).${pct >= 100
-          ? ' <b class="critico">LLENO: ya no admite nada.</b>'
+      <p class="m-desc">${t`${formatear(obra.lleno || 0)} de ${formatear(capacidadVaso(obra))} t
+        (${pct} %).`}${pct >= 100
+          ? ` <b class="critico">${t`LLENO: ya no admite nada.`}</b>`
           : ''}</p>
-      <p class="m-desc">Gotea sobre el agua que tiene alrededor, y cuanto más
-        lleno, más. Un agua insalubre da menos caudal.</p>
+      <p class="m-desc">${t`Gotea sobre el agua que tiene alrededor, y cuanto más
+        lleno, más. Un agua insalubre da menos caudal.`}</p>
       ${this.fichaHTML(def, 'vertedero')}
       ${tope
-        ? '<p class="m-desc">No se puede ampliar más: abre otro vertedero en otra parte.</p>'
+        ? `<p class="m-desc">${t`No se puede ampliar más: abre otro vertedero en otra parte.`}</p>`
         : `<button class="mejora obra" data-accion="ampliarVertedero" style="--tono:${def.color}">
-             <span class="m-cab"><span class="m-nom">Ampliar el vaso</span></span>
-             <span class="m-desc">+${formatear(V.capacidadPorNivel)} t de capacidad.</span>
+             <span class="m-cab"><span class="m-nom">${t`Ampliar el vaso`}</span></span>
+             <span class="m-desc">${t`+${formatear(V.capacidadPorNivel)} t de capacidad.`}</span>
              <span class="m-coste">${formatear(coste)} €</span>
            </button>`}
       ${lineasAqui}
@@ -885,10 +892,10 @@ export class UI {
       const recupera = Math.round(costeTrazado(estado.mapa, tuberia.camino, tuberia.dn, clave)
                                   * CONFIG.tuberia.valorRecuperado);
       return `<div class="linea-aqui" style="--tono:${red.color}">
-        <span class="linea-aqui-txt">Por aquí pasa <b>${red.nombre.toLowerCase()}</b>:
-          ${d.nombre} de ${tuberia.camino.length} casillas.</span>
+        <span class="linea-aqui-txt">${t`Por aquí pasa <b>${red.nombre.toLowerCase()}</b>:
+          ${d.nombre} de ${tuberia.camino.length} casillas.`}</span>
         <button class="linea-aqui-btn" data-accion="quitarLinea" data-clave="${indice}">
-          Levantarla (+${formatear(recupera)} €)</button>
+          ${t`Levantarla (+${formatear(recupera)} €)`}</button>
       </div>`;
     }).join('');
   }
@@ -899,9 +906,9 @@ export class UI {
     const recupera = Math.round(def.coste * (obra.nivel || 1)
                                 * CONFIG.derribo.fraccionRecuperada);
     return `<button class="mejora obra derribo" data-accion="derribarObra" style="--tono:#f05a4a">
-      <span class="m-cab"><span class="m-nom">Derribar</span></span>
-      <span class="m-desc">La casilla queda libre y del derribo se recuperan
-        ${formatear(recupera)} €.</span>
+      <span class="m-cab"><span class="m-nom">${t`Derribar`}</span></span>
+      <span class="m-desc">${t`La casilla queda libre y del derribo se recuperan
+        ${formatear(recupera)} €.`}</span>
     </button>`;
   }
 
@@ -975,21 +982,21 @@ export class UI {
     const P = CONFIG.aportePorPieza;
     switch(tipo){
       case 'captacion':
-        return `Aporta <b>${(nivel * P.captacion).toFixed(2)} L/s</b> de producción
+        return t`Aporta <b>${(nivel * P.captacion).toFixed(2)} L/s</b> de producción
                 continua al pueblo, sin clicar.`;
       case 'bomba':
-        return `Suma <b>${formatear(nivel * P.bomba)} L</b> a cada clic de bombeo.`;
+        return t`Suma <b>${formatear(nivel * P.bomba)} L</b> a cada clic de bombeo.`;
       case 'deposito':
-        return `Añade <b>${formatear(nivel * P.deposito)} L</b> de capacidad de reserva.`;
+        return t`Añade <b>${formatear(nivel * P.deposito)} L</b> de capacidad de reserva.`;
       case 'potabilizadora':
-        return `Potabiliza <b>${formatear(nivel * P.potabilizadora)} L/h</b> de agua
+        return t`Potabiliza <b>${formatear(nivel * P.potabilizadora)} L/h</b> de agua
                 bruta del río o de pozos exprimidos. Sin tratar, esa agua frena
                 el crecimiento.`;
       case 'depuradora':
-        return `Trata <b>${formatear(nivel * P.depuradora)} L/h</b> de aguas residuales
+        return t`Trata <b>${formatear(nivel * P.depuradora)} L/h</b> de aguas residuales
                 y mejora la limpieza un <b>${Math.round(nivel * P.depuradoraCalidad * 100)} %</b>.`;
       case 'tanque':
-        return `Retiene <b>${formatear(nivel * P.tanque)} L</b> de punta de tormenta
+        return t`Retiene <b>${formatear(nivel * P.tanque)} L</b> de punta de tormenta
                 para tratarlos cuando la depuradora respire.`;
       default: return '';
     }
@@ -1030,11 +1037,11 @@ export class UI {
     return `
       <div class="ficha" style="--tono:${def.color}">
         ${dib}
-        <p class="ficha-tit">¿Qué es?</p>
+        <p class="ficha-tit">${t`¿Qué es?`}</p>
         <p class="ficha-txt">${f.que}</p>
-        <p class="ficha-tit">¿Para qué sirve?</p>
+        <p class="ficha-tit">${t`¿Para qué sirve?`}</p>
         <p class="ficha-txt">${f.para}</p>
-        <p class="ficha-tit ficha-dato-tit">Del oficio</p>
+        <p class="ficha-tit ficha-dato-tit">${t`Del oficio`}</p>
         <p class="ficha-txt ficha-dato">${f.dato}</p>
       </div>`;
   }
@@ -1095,24 +1102,24 @@ export class UI {
       const Z = CONFIG.proteccion;
       document.getElementById('casilla').innerHTML = `
         <p class="red-cuello" style="--tono:${Z.color}">
-          <b>Zona de especial conservación</b> ·
-          ${celda.protegida === 'fauna' ? 'hábitat de fauna' : 'flora protegida'}
+          <b>${t`Zona de especial conservación`}</b> ·
+          ${celda.protegida === 'fauna' ? t`hábitat de fauna` : t`flora protegida`}
         </p>
-        <p class="m-desc">Entorno protegido por el Estado. No se puede construir
+        <p class="m-desc">${t`Entorno protegido por el Estado. No se puede construir
           ni tender redes: hay que rodearla. Y si tus lixiviados la alcanzan,
           multa de ${formatear(Z.multaPorHoraCelda)} €/h por casilla dañada
-          mientras dure el daño.</p>`;
+          mientras dure el daño.`}</p>`;
       return;
     }
-    const FAM = { llano: 'Terreno llano', arbolado: 'Arbolado',
-                  relieve: 'Relieve', agua: 'Masa de agua' };
+    const FAM = { llano: t`Terreno llano`, arbolado: t`Arbolado`,
+                  relieve: t`Relieve`, agua: t`Masa de agua` };
 
     // Lo que cuesta meter cada red por aquí, con el calibre que tengas elegido
     const redes = Object.entries(CONFIG.redes)
       .filter(([, r]) => !r.requiere || servicioActivo(estado.activo, r.requiere))
       .map(([k, r]) => {
         const c = costeCasillaTuberia(celda, estado.dnActual[k], k);
-        const obra = CONFIG.tuberia.nombreObra[celda.tipo] || 'obra';
+        const obra = CONFIG.tuberia.nombreObra[celda.tipo] || t`obra`;
         return `<div class="casilla-fila"><span>${r.nombre} · ${obra}</span>
                   <b style="color:${r.color}">${formatear(c)} €</b></div>`;
       }).join('');
@@ -1131,14 +1138,14 @@ export class UI {
         </div>
       </div>
       <div class="casilla-datos">
-        <div class="casilla-fila"><span>Destapar</span><b>×${def.costeExtra}</b></div>
+        <div class="casilla-fila"><span>${t`Destapar`}</span><b>×${def.costeExtra}</b></div>
         ${redes}
       </div>
       ${this.bloqueLineas(estado, sel)}
       ${this.bloqueSubsuelo(estado, celda, sel)}
       <p class="casilla-cabe">${cabe.length
-        ? 'Aquí cabe: <b>' + cabe.join('</b>, <b>') + '</b>.'
-        : 'Aquí no cabe ninguna instalación.'}</p>`;
+        ? t`Aquí cabe: <b>${cabe.join('</b>, <b>')}</b>.`
+        : t`Aquí no cabe ninguna instalación.`}</p>`;
 
     this.pintarMiniCasilla(estado, escena, celda, sel);
   }
@@ -1171,71 +1178,71 @@ export class UI {
       const sacando = pozos * caudalPozo(clase, nivel, 1);
       const pasado = pidiendo > sostenible + 1e-6;
       return `<div class="subsuelo" style="--tono:${clase.color}">
-        <div class="subsuelo-cab">Sondeo con agua · ${clase.nombre}</div>
+        <div class="subsuelo-cab">${t`Sondeo con agua · ${clase.nombre}`}</div>
         <p class="m-desc">${clase.desc}</p>
         <div class="nivel-acuifero">
           <div class="nivel-barra"><i style="width:${Math.round(nivel * 100)}%;
             background:${nivel < CONFIG.acuiferos.umbralMerma ? '#f0a04a' : clase.color}"></i></div>
           <span>${Math.round(nivel * 100)}%</span>
         </div>
-        <div class="casilla-fila"><span>Caudal sostenible</span>
+        <div class="casilla-fila"><span>${t`Caudal sostenible`}</span>
           <b>${sostenible.toFixed(2)} L/s</b></div>
-        <div class="casilla-fila"><span>${pozos === 1 ? 'Pide el pozo' : 'Piden los pozos'}</span>
+        <div class="casilla-fila"><span>${pozos === 1 ? t`Pide el pozo` : t`Piden los pozos`}</span>
           <b style="color:${pasado ? '#f0a04a' : 'inherit'}">${pidiendo.toFixed(2)} L/s</b></div>
         ${nivel < CONFIG.acuiferos.umbralMerma ? `<div class="casilla-fila">
-          <span>Está dando</span><b style="color:#f0a04a">${sacando.toFixed(2)} L/s</b></div>` : ''}
+          <span>${t`Está dando`}</span><b style="color:#f0a04a">${sacando.toFixed(2)} L/s</b></div>` : ''}
         <p class="m-desc">${pozos === 0
-          ? 'Construye aquí el pozo y engánchalo a la red para que cuente.'
+          ? t`Construye aquí el pozo y engánchalo a la red para que cuente.`
           : pasado
-            ? 'Sacas más de lo que entra: el nivel baja y el pozo da cada vez ' +
-              'menos. Y no lo arregla otro pozo — el acuífero acaba entregando ' +
-              'lo que le devuelve la lluvia y nada más; lo único que consigues ' +
-              'perforando otra vez es tener el nivel por los suelos.'
-            : 'Extracción sostenible: entra tanto como sale y el nivel aguanta.'}</p>
+            ? t`Sacas más de lo que entra: el nivel baja y el pozo da cada vez
+              menos. Y no lo arregla otro pozo — el acuífero acaba entregando
+              lo que le devuelve la lluvia y nada más; lo único que consigues
+              perforando otra vez es tener el nivel por los suelos.`
+            : t`Extracción sostenible: entra tanto como sale y el nivel aguanta.`}</p>
       </div>`;
     }
     if(celda.sondeo === 'seco'){
       return `<div class="subsuelo seco">
-        <div class="subsuelo-cab">Sondeo seco</div>
-        <p class="m-desc">Aquí se perforó y no había nada. Un punto descartado
-          también es información: el acuífero, si lo hay, está en otro sitio.</p></div>`;
+        <div class="subsuelo-cab">${t`Sondeo seco`}</div>
+        <p class="m-desc">${t`Aquí se perforó y no había nada. Un punto descartado
+          también es información: el acuífero, si lo hay, está en otro sitio.`}</p></div>`;
     }
 
     const puedeS = puedeSondear(estado.mapa, sel.col, sel.fila);
     const botonSondeo = puedeS.ok
       ? `<button class="mejora obra" data-accion="sondear" style="--tono:${A.color}">
-           <span class="m-cab"><span class="m-nom">Perforar un sondeo</span></span>
+           <span class="m-cab"><span class="m-nom">${t`Perforar un sondeo`}</span></span>
            <span class="m-desc">${celda.indicios && celda.estudiada
-             ? 'Con indicios favorables: aquí es donde hay que probar.'
-             : 'Sin indicios, es una apuesta cara: casi siempre sale seco.'}</span>
+             ? t`Con indicios favorables: aquí es donde hay que probar.`
+             : t`Sin indicios, es una apuesta cara: casi siempre sale seco.`}</span>
            <span class="m-coste">${formatear(costeSondeo(celda))} €</span>
          </button>`
       : '';
 
     if(!celda.estudiada){
       return `<div class="subsuelo" style="--tono:${A.color}">
-        <div class="subsuelo-cab">Subsuelo sin estudiar</div>
-        <p class="m-desc">Nadie ha mirado qué hay debajo. El estudio cubre
+        <div class="subsuelo-cab">${t`Subsuelo sin estudiar`}</div>
+        <p class="m-desc">${t`Nadie ha mirado qué hay debajo. El estudio cubre
           ${A.estudio.radio * 2 + 1}×${A.estudio.radio * 2 + 1} casillas y dice
-          dónde hay indicios de agua — que no es lo mismo que encontrarla.</p>
+          dónde hay indicios de agua — que no es lo mismo que encontrarla.`}</p>
         <button class="mejora obra" data-accion="estudiarZona" style="--tono:${A.color}">
-          <span class="m-cab"><span class="m-nom">Estudio hidrogeológico</span></span>
-          <span class="m-desc">Cartografía y geofísica de la zona.</span>
+          <span class="m-cab"><span class="m-nom">${t`Estudio hidrogeológico`}</span></span>
+          <span class="m-desc">${t`Cartografía y geofísica de la zona.`}</span>
           <span class="m-coste">${formatear(costeEstudio())} €</span>
         </button>
         ${botonSondeo}</div>`;
     }
     return celda.indicios
       ? `<div class="subsuelo" style="--tono:${A.color}">
-           <div class="subsuelo-cab">Indicios de agua</div>
-           <p class="m-desc">La geología promete: formación permeable y
+           <div class="subsuelo-cab">${t`Indicios de agua`}</div>
+           <p class="m-desc">${t`La geología promete: formación permeable y
              estructura favorable. No garantiza nada — hay que perforar para
-             saberlo.</p>
+             saberlo.`}</p>
            ${botonSondeo}</div>`
       : `<div class="subsuelo esteril">
-           <div class="subsuelo-cab">Estudiado · sin indicios</div>
-           <p class="m-desc">Terreno impermeable. Perforar aquí sería tirar el
-             dinero.</p>
+           <div class="subsuelo-cab">${t`Estudiado · sin indicios`}</div>
+           <p class="m-desc">${t`Terreno impermeable. Perforar aquí sería tirar el
+             dinero.`}</p>
            ${botonSondeo}</div>`;
   }
 
@@ -1278,8 +1285,8 @@ export class UI {
         <button class="mejora obra" data-accion="colocarDeInventario" data-clave="${i}"
                 style="--tono:${def.color}">
           <span class="m-cab"><span class="m-nom">${def.nombre}</span></span>
-          <span class="m-desc">Rescatada. Colócala donde quieras.</span>
-          <span class="m-coste">gratis</span>
+          <span class="m-desc">${t`Rescatada. Colócala donde quieras.`}</span>
+          <span class="m-coste">${t`gratis`}</span>
         </button>`;
     }).join('');
   }
@@ -1312,7 +1319,7 @@ export class UI {
       return `<button class="pestana${activa}${conAveria && i === estado.puebloActivo ? ' con-averia' : ''}"
         data-accion="cambiarPueblo" data-clave="${i}">${p.nombre}</button>`;
     }).join('') + (faltan != null
-      ? `<span class="pestana bloqueada" title="Incorpora ${faltan} núcleos más para abrir el siguiente anillo">fase ${faseActual(estado)} · faltan ${faltan}</span>`
+      ? `<span class="pestana bloqueada" title="${t`Incorpora ${faltan} núcleos más para abrir el siguiente anillo`}">${t`fase ${faseActual(estado)} · faltan ${faltan}`}</span>`
       : '');
   }
 
@@ -1335,7 +1342,7 @@ export class UI {
     const asignadas = new Set(servicios.flatMap(([, sv]) => sv.mejoras || []));
     const huerfanas = Object.keys(CONFIG.mejoras).filter(k => !asignadas.has(k));
     if(huerfanas.length){
-      servicios.push(['otras', { nombre: 'Otras mejoras', siempre: true,
+      servicios.push(['otras', { nombre: t`Otras mejoras`, siempre: true,
         desc: 'Sin servicio asignado en CONFIG.servicios.', mejoras: huerfanas }]);
     }
 
@@ -1378,13 +1385,13 @@ export class UI {
       const etq = document.getElementById('sv-estado-' + sc);
       if(!caja) continue;
       const activo = servicioActivo(p, sc);
-      let texto = 'de serie';
+      let texto = t`de serie`;
       if(!sv.siempre){
-        if(activo) texto = 'en marcha';
-        else if(sv.requiere === 'pluviales') texto = 'con el tercer pueblo';
-        else if(sv.requiere === 'residuos') texto = `desde ${formatear(CONFIG.residuos.activaEnHabitantes)} hab`;
-        else if(sv.activaEnHabitantes) texto = `desde ${formatear(sv.activaEnHabitantes)} hab`;
-        else texto = 'cerrado';
+        if(activo) texto = t`en marcha`;
+        else if(sv.requiere === 'pluviales') texto = t`con el tercer pueblo`;
+        else if(sv.requiere === 'residuos') texto = t`desde ${formatear(CONFIG.residuos.activaEnHabitantes)} hab`;
+        else if(sv.activaEnHabitantes) texto = t`desde ${formatear(sv.activaEnHabitantes)} hab`;
+        else texto = t`cerrado`;
       }
       etq.textContent = texto;
       caja.classList.toggle('dormido', !activo);
@@ -1404,10 +1411,10 @@ export class UI {
       }
       bt.style.display = '';
 
-      elN.textContent = nivel > 0 ? 'Nv ' + nivel : '';
+      elN.textContent = nivel > 0 ? t`Nv ${nivel}` : '';
 
       if(nivel >= m.nivelMax){
-        elC.textContent = 'AL MÁXIMO';
+        elC.textContent = t`AL MÁXIMO`;
         bt.classList.add('comprada'); bt.classList.remove('inalcanzable');
         bt.disabled = true;
         continue;
@@ -1446,9 +1453,9 @@ export class UI {
     if(!bt) return;
 
     if(p.autobombaActivo){
-      etq.textContent = 'ACTIVO';
+      etq.textContent = t`ACTIVO`;
       reqs.innerHTML = '';
-      coste.textContent = 'La bomba trabaja sola ✓';
+      coste.textContent = t`La bomba trabaja sola ✓`;
       bt.classList.add('activa'); bt.classList.remove('lista', 'bloqueada');
       bt.disabled = true;
       return;
@@ -1456,11 +1463,11 @@ export class UI {
 
     const req = requisitosAutobomba(p);
     const puede = req.cumple && estado.puedePagar(P.coste);
-    etq.textContent = req.cumple ? 'DISPONIBLE' : 'BLOQUEADO';
+    etq.textContent = req.cumple ? t`DISPONIBLE` : t`BLOQUEADO`;
     reqs.innerHTML = req.lista.map(f =>
       `<span class="p-req ${f.ok ? 'ok' : ''}">${f.ok ? '✓' : '○'} ${f.txt}</span>`).join('');
-    coste.textContent = req.cumple ? `Activar · ${formatear(P.coste)} €`
-                                   : 'Cumple los requisitos para activarlo';
+    coste.textContent = req.cumple ? t`Activar · ${formatear(P.coste)} €`
+                                   : t`Cumple los requisitos para activarlo`;
     bt.classList.remove('activa');
     bt.classList.toggle('lista', puede);
     bt.classList.toggle('bloqueada', !req.cumple);
@@ -1492,21 +1499,21 @@ export class UI {
       return `
         <button class="mejora obra averia" data-accion="irAAveria" data-clave="${i}"
                 style="--tono:${CONFIG.color.critico}">
-          <span class="m-cab"><span class="m-nom">${def ? def.nombre : 'Instalación'} · fuera de servicio</span></span>
-          <span class="m-desc">Está fuera de servicio y no cuenta en la red.
+          <span class="m-cab"><span class="m-nom">${t`${def ? def.nombre : t`Instalación`} · fuera de servicio`}</span></span>
+          <span class="m-desc">${t`Está fuera de servicio y no cuenta en la red.
             Ve hasta ella y clica encima: ${av.clics === 1
-              ? 'le falta <b>1</b> golpe de llave'
-              : `le faltan <b>${av.clics}</b> golpes de llave`},
-            a ${formatear(coste)} € cada uno.</span>
-          <span class="m-coste">ir ahí →</span>
+              ? t`le falta <b>1</b> golpe de llave`
+              : t`le faltan <b>${av.clics}</b> golpes de llave`},
+            a ${formatear(coste)} € cada uno.`}</span>
+          <span class="m-coste">${t`ir ahí →`}</span>
         </button>
         ${av.aManoJugada ? '' : `
         <button class="mejora obra" data-accion="repararAMano" data-clave="${i}"
                 style="--tono:${CONFIG.color.agua || '#38bdf8'}">
-          <span class="m-cab"><span class="m-nom">Repararla a mano</span></span>
-          <span class="m-desc">Monta el tramo antes de que llegue el agua y queda
-            arreglada GRATIS. Un solo intento: si se derrama, a golpe de llave.</span>
-          <span class="m-coste">jugar</span>
+          <span class="m-cab"><span class="m-nom">${t`Repararla a mano`}</span></span>
+          <span class="m-desc">${t`Monta el tramo antes de que llegue el agua y queda
+            arreglada GRATIS. Un solo intento: si se derrama, a golpe de llave.`}</span>
+          <span class="m-coste">${t`jugar`}</span>
         </button>`}`;
     }).join('');
   }
@@ -1528,7 +1535,7 @@ export class UI {
       barra.className = 'barra-cauce-relleno ' +
         (pct >= 66 ? 'critico' : pct >= 33 ? 'alarma' : 'ok');
     }
-    this.fijar('cauce-pct', pct + '% sucio',
+    this.fijar('cauce-pct', t`${pct}% sucio`,
       pct >= 66 ? 'critico' : pct >= 33 ? 'alarma' : 'ok');
     this.fijar('cauce-multa',
       (resultado.multaHora !== undefined ? resultado.multaHora : 0).toFixed(0));
@@ -1563,7 +1570,7 @@ export class UI {
     this.fijar('hud-dinero', formatear(estado.dinero) + ' €',
       estado.dinero < 0 ? 'critico' : 'dinero');
     this.fijar('hud-poblacion',
-      Math.floor(p.habitantes).toLocaleString('es-ES') + ' hab', 'neutro');
+      t`${Math.floor(p.habitantes).toLocaleString('es-ES')} hab`, 'neutro');
 
     const serv = Math.round(resultado.servicio * 100);
     this.fijar('hud-servicio', serv + ' %',
@@ -1580,6 +1587,7 @@ export class UI {
 
     const h = Math.floor(estado.horas % 24);
     const horasAño = CONFIG.tiempo.horasPorAño;
+    const MESES = CONFIG.textos.meses;
     const mes = MESES[Math.floor(((estado.horas % horasAño) / horasAño) * MESES.length)];
     this.fijar('hud-reloj', `${String(h).padStart(2,'0')}:00 · ${mes}`,
       (resultado.punta || 1) > 1.4 ? 'alarma' : 'neutro');
@@ -1627,46 +1635,46 @@ export class UI {
     const prodAhora = caudalCaptacion(p, estado, resultado.estiaje || 1) * 3600 / 1000;
 
     let tendencia, claseT;
-    if((estado.averias || []).length){ tendencia = 'Avería sin reparar'; claseT = 'critico'; }
+    if((estado.averias || []).length){ tendencia = t`Avería sin reparar`; claseT = 'critico'; }
     else if(resultado.servicio >= P.servicioBueno){
       const listo = p.racha >= P.horasBuenServicioParaCrecer;
-      tendencia = listo ? 'Creciendo ▲' : 'Ganándose la confianza…';
+      tendencia = listo ? t`Creciendo ▲` : t`Ganándose la confianza…`;
       claseT = listo ? 'ok' : 'neutro';
     } else if(resultado.servicio < P.servicioMalo){
-      tendencia = 'Despoblándose ▼'; claseT = 'critico';
-    } else { tendencia = 'Estable'; claseT = 'alarma'; }
+      tendencia = t`Despoblándose ▼`; claseT = 'critico';
+    } else { tendencia = t`Estable`; claseT = 'alarma'; }
 
     // El nombre sale de la MISMA tabla que pinta la escena; el paréntesis
     // describe cómo va el caudal, para que nunca se contradigan.
     const est = resultado.estiaje || 1;
     const estacion = nombreEstacion(estado.horas) +
-      (est < 0.7 ? ' · estiaje' : est > 1.1 ? ' · deshielo' : '');
+      (est < 0.7 ? t` · estiaje` : est > 1.1 ? t` · deshielo` : '');
     const nivelDep = p.mejoras.deposito;
-    const reserva = nivelDep === 0 ? 'Sin depósito' : `Nivel ${nivelDep} · ${formatear(capacidad(p, estado))} L`;
+    const reserva = nivelDep === 0 ? t`Sin depósito` : t`Nivel ${nivelDep} · ${formatear(capacidad(p, estado))} L`;
     const sane = servicioActivo(p, 'saneamiento')
-      ? (p.mejoras.depuradora > 0 ? `Depuradora Nv ${p.mejoras.depuradora}` : 'SIN depurar ⚠')
-      : 'Aún no genera';
+      ? (p.mejoras.depuradora > 0 ? t`Depuradora Nv ${p.mejoras.depuradora}` : t`SIN depurar ⚠`)
+      : t`Aún no genera`;
 
     // Lluvia y tormentas (solo cuando la mancomunidad ya gestiona pluviales)
     const lluviaPct = Math.round((resultado.lluvia || 0) * 100);
     const tanquePct = Math.round((resultado.tanqueFrac || 0) * 100);
     const filaLluvia = estado.pluvialesActivas ? `
-      <div class="d-fila"><span>Lluvia</span><b class="${lluviaPct > 50 ? 'agua' : ''}">${lluviaPct} %</b></div>
-      <div class="d-fila"><span>Pluviales</span><b>${p.mejoras.pluviales > 0 ? 'Nivel ' + p.mejoras.pluviales : 'Sin separar ⚠'}</b></div>
-      <div class="d-fila"><span>Tanque tormentas</span><b class="${resultado.aliviando ? 'critico' : ''}">${
-        capacidadTanque(p, estado) > 0 ? tanquePct + ' % lleno' : '—'}${resultado.aliviando ? ' · ALIVIANDO' : ''}</b></div>
-      <div class="d-fila"><span>Calidad</span><b class="${(resultado.calidad || 1) > 1.05 ? 'ok' : ''}">×${(resultado.calidad || 1).toFixed(2)}</b></div>` : '';
+      <div class="d-fila"><span>${t`Lluvia`}</span><b class="${lluviaPct > 50 ? 'agua' : ''}">${lluviaPct} %</b></div>
+      <div class="d-fila"><span>${t`Pluviales`}</span><b>${p.mejoras.pluviales > 0 ? t`Nivel ${p.mejoras.pluviales}` : t`Sin separar ⚠`}</b></div>
+      <div class="d-fila"><span>${t`Tanque tormentas`}</span><b class="${resultado.aliviando ? 'critico' : ''}">${
+        capacidadTanque(p, estado) > 0 ? t`${tanquePct} % lleno` : '—'}${resultado.aliviando ? t` · ALIVIANDO` : ''}</b></div>
+      <div class="d-fila"><span>${t`Calidad`}</span><b class="${(resultado.calidad || 1) > 1.05 ? 'ok' : ''}">×${(resultado.calidad || 1).toFixed(2)}</b></div>` : '';
 
     // Residuos: cuánto se recicla, cuánto deja y cuánta basura hay tirada
     const basuraPct = Math.round((resultado.basuraCalle || 0) * 100);
     const recicPct = resultado.basuraTh > 0
       ? Math.round((resultado.recicladaTh || 0) / resultado.basuraTh * 100) : 0;
     const filaResiduos = servicioActivo(p, 'residuos') ? `
-      <div class="d-fila"><span>Basura</span><b>${(resultado.basuraTh || 0).toFixed(3)} t/h</b></div>
-      <div class="d-fila"><span>Se recicla</span><b class="${recicPct > 0 ? 'ok' : 'alarma'}">${recicPct} %</b></div>
-      <div class="d-fila"><span>Venta de material</span><b class="${(resultado.ingresoResiduosHora || 0) > 0 ? 'dinero' : 'critico'}">${
+      <div class="d-fila"><span>${t`Basura`}</span><b>${(resultado.basuraTh || 0).toFixed(3)} t/h</b></div>
+      <div class="d-fila"><span>${t`Se recicla`}</span><b class="${recicPct > 0 ? 'ok' : 'alarma'}">${recicPct} %</b></div>
+      <div class="d-fila"><span>${t`Venta de material`}</span><b class="${(resultado.ingresoResiduosHora || 0) > 0 ? 'dinero' : 'critico'}">${
         formatear(resultado.ingresoResiduosHora || 0)} €/h</b></div>
-      <div class="d-fila"><span>Sin recoger</span><b class="${basuraPct > 20 ? 'critico' : ''}">${basuraPct} %</b></div>` : '';
+      <div class="d-fila"><span>${t`Sin recoger`}</span><b class="${basuraPct > 20 ? 'critico' : ''}">${basuraPct} %</b></div>` : '';
 
     const firma = [p.nombre, tendencia, Math.floor(p.habitantes),
                    nivelDep, p.mejoras.captacion, estacion, sane, basuraPct, recicPct,
@@ -1676,14 +1684,14 @@ export class UI {
     this.cache.panelFirma = firma;
 
     document.getElementById('detalle').innerHTML = `
-      <div class="d-fila"><span>Pueblo</span><b>${p.nombre}</b></div>
-      <div class="d-fila"><span>Tendencia</span><b class="${claseT}">${tendencia}</b></div>
-      <div class="d-fila"><span>Habitantes</span><b>${Math.floor(p.habitantes).toLocaleString('es-ES')}</b></div>
-      <div class="d-fila"><span>Consumo ahora</span><b>${consumoAhora.toFixed(2)} m³/h</b></div>
-      <div class="d-fila"><span>Captación</span><b>${prodAhora > 0 ? prodAhora.toFixed(2) + ' m³/h' : '—'}</b></div>
-      <div class="d-fila"><span>Estación</span><b>${estacion}</b></div>
-      <div class="d-fila"><span>Reserva</span><b>${reserva}</b></div>
-      <div class="d-fila"><span>Saneamiento</span><b class="${servicioActivo(p, 'saneamiento') && p.mejoras.depuradora === 0 ? 'alarma' : ''}">${sane}</b></div>
+      <div class="d-fila"><span>${t`Pueblo`}</span><b>${p.nombre}</b></div>
+      <div class="d-fila"><span>${t`Tendencia`}</span><b class="${claseT}">${tendencia}</b></div>
+      <div class="d-fila"><span>${t`Habitantes`}</span><b>${Math.floor(p.habitantes).toLocaleString('es-ES')}</b></div>
+      <div class="d-fila"><span>${t`Consumo ahora`}</span><b>${consumoAhora.toFixed(2)} m³/h</b></div>
+      <div class="d-fila"><span>${t`Captación`}</span><b>${prodAhora > 0 ? prodAhora.toFixed(2) + ' m³/h' : '—'}</b></div>
+      <div class="d-fila"><span>${t`Estación`}</span><b>${estacion}</b></div>
+      <div class="d-fila"><span>${t`Reserva`}</span><b>${reserva}</b></div>
+      <div class="d-fila"><span>${t`Saneamiento`}</span><b class="${servicioActivo(p, 'saneamiento') && p.mejoras.depuradora === 0 ? 'alarma' : ''}">${sane}</b></div>
       ${filaLluvia}
       ${filaResiduos}`;
   }
@@ -1694,11 +1702,11 @@ export class UI {
     this.cache.regFirma = firma;
     const cont = document.getElementById('registro');
     if(!estado.registro.length){
-      cont.innerHTML = '<div class="reg vacio">Sin novedades.</div>';
+      cont.innerHTML = `<div class="reg vacio">${t`Sin novedades.`}</div>`;
       return;
     }
     cont.innerHTML = estado.registro.slice(0, 8).map(r =>
-      `<div class="reg ${r.nivel}"><em>${r.h} h</em> ${r.texto}</div>`).join('');
+      `<div class="reg ${r.nivel}"><em>${t`${r.h} h`}</em> ${r.texto}</div>`).join('');
   }
 }
 
