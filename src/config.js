@@ -1103,8 +1103,11 @@ export const CONFIG = {
     senalDistMin: 4,        // a cuántas casillas del pueblo se planta
     senalDistMax: 7,
 
-    // Qué pieza puede salir de una instalación abandonada, y con qué peso
-    piezasRuina: ['bomba', 'bomba', 'deposito', 'captacion', 'depuradora', 'tanque'],
+    // Qué pieza puede salir de una instalación abandonada, y con qué peso.
+    // La potabilizadora entró cuando el autor generó su ruina: una ETAP
+    // abandonada es de lo más real, y encontrarla es un premio gordo (1200€).
+    piezasRuina: ['bomba', 'bomba', 'deposito', 'captacion', 'depuradora',
+                  'tanque', 'potabilizadora'],
     // Reparar en el sitio sale a cuenta; desmontarla para llevártela, también,
     // pero cuesta más porque hay que trasladarla.
     costeReparar: 0.35,      // fracción del precio de la pieza
