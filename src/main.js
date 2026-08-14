@@ -1518,10 +1518,10 @@ btnVoz.onclick = () => {
   if(encendida) sonido.hablar(CONFIG.sonido.voz.presentacion, 'presentacion');
 };
 sonido.cargarVoz().then(hay => {
-  // En inglés la voz se guarda el botón: los archivos de Manuel son en
-  // castellano y el sintetizador de respaldo leería inglés con acento de
-  // Valladolid. Cuando generar_voces.py aprenda la voz inglesa, se abre.
-  if(!hay || idiomaActual() !== 'es') return;
+  // `hay` ya es del idioma de la partida: cargarVoz sondea el archivo de la
+  // presentación TRADUCIDA y busca respaldo en esa lengua. Sin voces
+  // inglesas generadas ni sintetizador inglés, el botón no existe.
+  if(!hay) return;
   btnVoz.hidden = false;
   rotularVoz();
 });

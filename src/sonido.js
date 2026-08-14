@@ -417,7 +417,10 @@ let turnoLocucion = 0;      // para que un respaldo tardío no pise a la siguien
  * así un texto cambiado nunca reproduce el audio de ayer.
  */
 export function huellaVoz(texto){
-  const datos = new TextEncoder().encode(texto);
+  // Los espacios se pliegan ANTES de la huella: un texto escrito en varias
+  // líneas (las plantillas t) y el mismo texto en una sola son la misma
+  // frase, y deben abrir el mismo archivo. Python hace la misma cuenta.
+  const datos = new TextEncoder().encode(texto.replace(/\s+/g, ' ').trim());
   let h = 5381;
   for(const b of datos) h = ((h * 33) ^ b) >>> 0;
   return h.toString(16).padStart(8, '0');
@@ -438,13 +441,17 @@ export function cargarVoz(){
   });
   const sintesis = new Promise(listo => {
     if(!('speechSynthesis' in window)){ listo(false); return; }
+    // El respaldo habla EL IDIOMA de la partida: leer inglés con voz es-ES
+    // (o al revés) es peor que callar.
+    const lengua = idiomaActual() === 'es' ? /^es/i : /^en/i;
     const buscar = () => {
       const voces = speechSynthesis.getVoices();
       if(!voces.length) return false;
-      const es = voces.filter(v => /^es/i.test(v.lang));
-      // Un hombre para Manuel, si el sistema lo trae (Pablo, en Windows)
-      vozElegida = es.find(v => /pablo|jorge|diego|alvaro|male/i.test(v.name))
-                || es[0] || null;
+      const delIdioma = voces.filter(v => lengua.test(v.lang));
+      // Un hombre para Manuel, si el sistema lo trae (Pablo en Windows es-ES;
+      // Ryan/Guy/David en las voces inglesas)
+      vozElegida = delIdioma.find(v => /pablo|jorge|diego|alvaro|ryan|guy|david|mark|male/i.test(v.name))
+                || delIdioma[0] || null;
       listo(!!vozElegida);
       return true;
     };
@@ -480,11 +487,11 @@ function sintetizar(texto){
  */
 export function hablar(texto, id){
   if(!vozOn) return;
-  // Manuel solo sabe castellano (de momento): sus archivos son es-ES y el
-  // sintetizador de respaldo también. Si alguien encendió la voz jugando en
-  // castellano y cambió de idioma, callar es mejor que leer inglés con
-  // acento de Valladolid. La preferencia no se toca: al volver, vuelve.
-  if(idiomaActual() !== 'es') return;
+  // Manuel es bilingüe por el mismo camino en ambos idiomas: el texto llega
+  // YA traducido (la etiqueta t y la capa de CONFIG), su huella abre el
+  // archivo de ESA lengua (generar_voces.py genera los dos juegos) y el
+  // respaldo sintetizado usa una voz del idioma (cargarVoz). Sin archivos
+  // ingleses generados, cargarVoz esconde el botón y aquí no se llega.
   pararLocucion();
   // El TURNO evita el solape que cazó el autor en el tutorial: si el archivo
   // de una frase falla, su respaldo sintetizado llegaba TARDE — cuando ya

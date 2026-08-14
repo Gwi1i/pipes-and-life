@@ -28,6 +28,13 @@ export const EN = {
      Solo puede pisar claves que EXISTEN en CONFIG (lo garantiza mezclar()). */
   config: {
 
+    sonido: {
+      voz: {
+        presentacion: 'Hello. Manuel here, from the waterworks. If anything ' +
+          'goes sideways in your network, I will keep you posted.'
+      }
+    },
+
     textos: {
       meses: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
       sonidoSi: 'Sound: on', sonidoNo: 'Sound: off',
@@ -1238,6 +1245,49 @@ export const EN = {
     'Yacimiento arqueológico: no se puede atravesar. Rodéalo.':
       'Archaeological site: it cannot be crossed. Go around it.',
     'La tubería ya pasa por ahí.': 'The pipe already runs through there.',
-    'Tiene que ser una casilla contigua.': 'It has to be an adjacent tile.'
+    'Tiene que ser una casilla contigua.': 'It has to be an adjacent tile.',
+
+    /* ================= comentarios.js: Manuel ================= */
+
+    'Esa avería lleva días esperando... Lo roto no bombea y no cobra: ir con la llave sale más barato que dejarlo estar.':
+      'That breakdown has been waiting for days... What is broken pumps nothing and bills nothing: going out with the wrench is cheaper than letting it sit.',
+    'La depuradora no da abasto y está aliviando crudo al río. O más tratamiento, o un tanque que aguante la punta.':
+      'The sewage plant cannot keep up and is spilling raw into the river. Either more treatment, or a tank to take the peak.',
+    'El río baja sucio, y un río sucio frena a todos los pueblos. En mis tiempos eso costaba disgustos con el Estado... y sigue.':
+      'The river is running dirty, and a dirty river holds every town back. In my day that meant trouble with the State... it still does.',
+    'Se está acumulando la basura en la calle. La gente aguanta poco eso: o sale en camión, o se te va el pueblo.':
+      'Rubbish is piling up in the street. People do not put up with that for long: either it leaves by truck, or the town leaves you.',
+    'Ese acuífero anda por los suelos: sacáis más de lo que llueve. El agua de abajo también se acaba, aunque no se vea.':
+      'That aquifer is scraping bottom: you are drawing more than the rain puts back. The water down below runs out too, even if you cannot see it.',
+    'Hay una conducción pasada de sus años por ahí. Fuga cada vez más: yo la renovaría antes de que dé un disgusto.':
+      'There is a pipeline out there past its years. It leaks more every season: I would renew it before it gives you a bad day.',
+    'Captáis más agua de la que cabe por la tubería, y lo que sobra se queda en el río. Más captación no: más calibre.':
+      'You are capturing more water than the pipe can carry, and the surplus stays in the river. Not more intake: more diameter.',
+    'El río viene flojo... es el estiaje, en verano siempre pasa. Los pozos ni lo notan, por si algún día quieres dormir tranquilo.':
+      'The river is running low... that is the summer drought, it happens every year. The wells never notice it — in case you ever want to sleep easy.',
+    'El depósito lleva un rato lleno: cada clic de más se pierde por el aliviadero. O más depósito, o más pueblo que lo beba.':
+      'The tank has been full for a while: every extra click goes down the overflow. Either a bigger tank, or a bigger town to drink it.',
+    'Buena caja llevas. El dinero parado no trae agua: yo estaría mirando el mapa, que ahí fuera hay pueblos esperando.':
+      'Healthy funds you have there. Idle money brings no water: I would be looking at the map — there are towns out there waiting.',
+    'Estás sirviendo el agua tal y como baja del río. Un río limpio no es un río potable: ponle una POTABILIZADORA antes de que la gente le pierda la confianza al grifo.':
+      'You are serving the water just as it comes down the river. A clean river is not a drinkable river: build a PURIFICATION PLANT before people lose faith in the tap.',
+    'El pueblo crece, ¿eh? Buen servicio sostenido: así se hace. La demanda subirá con él, no te me duermas.':
+      'The town is growing, eh? Good steady service: that is how it is done. Demand will grow with it — do not fall asleep on me.',
+    'Mira cómo está el pueblo: eso ya no es una aldea de cuatro casas. Con ese tamaño, échale un ojo al calibre de la conducción.':
+      'Look at the town now: that is no four-house hamlet anymore. At that size, keep an eye on the diameter of the main.',
+    'Menuda tromba... Esto me recuerda al 96: tres días así y la depuradora pidió la baja. Los tanques de tormenta se inventaron por algo, te lo digo yo.':
+      'Some downpour... Reminds me of ’96: three days of this and the sewage plant called in sick. Storm tanks were invented for a reason, I am telling you.',
+    'El río baja crecido con el deshielo. Disfrútalo mientras dure: el verano nunca manda aviso.':
+      'The river is running high with the snowmelt. Enjoy it while it lasts: summer never sends a warning.',
+    '¿Oyes? Agua del cielo. La única que llega sin bombear... y aun así nos las apañamos para que acabe donde no debe.':
+      'Hear that? Water from the sky. The only kind that arrives without pumping... and we still manage to send it where it should not go.',
+    'Turno de noche, ¿eh? Yo de guardia nocturna arreglé más reventones que en diez años de mañanas. El agua no libra.':
+      'Night shift, eh? On night duty I fixed more burst mains than in ten years of mornings. Water takes no days off.',
+    'Mi abuelo buscaba agua con dos varillas de avellano. Tú con estudio hidrogeológico: no sé si es mejor, pero falla menos.':
+      'My grandfather looked for water with two hazel twigs. You do it with a hydrogeological survey: I am not sure it is better, but it misses less.',
+    'Menuda red vas tejiendo ya... En la cuadrilla a esto lo llamábamos encaje de bolillos, pero con zanja.':
+      'Quite a network you are weaving... In the crew we used to call this lacework, only with trenches.',
+    'Hora punta: medio pueblo duchándose a la vez. Para esto está el depósito, que el río no entiende de prisas.':
+      'Peak hour: half the town in the shower at once. This is what the tank is for — the river does not do hurry.'
   }
 };
