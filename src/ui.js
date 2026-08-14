@@ -1642,11 +1642,52 @@ export class UI {
     }
   }
 
+  /**
+   * LAS SOLAPAS QUE SE GANAN (frente 3 del plan): Mancomunidad no dice nada
+   * con un solo pueblo — taller, expediente, lugares... — así que no existe
+   * hasta el segundo (o hasta que el cauce necesite su panel: ESA es la
+   * salvaguarda — nada útil puede quedar detrás de una solapa escondida).
+   * Y «La red» espera a la primera tubería: sin líneas no hay nada que
+   * renovar. Mismo guiño de estreno que las métricas, y misma regla: las
+   * condiciones salen del estado, una partida cargada no nota nada.
+   */
+  refrescarSolapas(estado){
+    const verComun = estado.pueblos.length >= 2
+      || estado.contaminacion > 0.5
+      || estado.pueblos.some(pb => pb.desbloqueado && servicioActivo(pb, 'saneamiento'));
+    const verRed = (estado.tuberias || []).length > 0;
+    const firma = `${verComun ? 1 : 0}${verRed ? 1 : 0}`;
+    if(this.cache.solapasFirma === firma) return;
+    const estreno = this.cache.solapasFirma !== undefined;
+    this.cache.solapasFirma = firma;
+
+    const solapaComun = document.querySelector('.solapa[data-solapa="comun"]');
+    const panelRed = document.getElementById('panel-red');
+    const poner = (el, ver) => {
+      if(!el) return;
+      const estaba = el.style.display !== 'none';
+      el.style.display = ver ? '' : 'none';
+      if(ver && !estaba && estreno){
+        el.classList.remove('estreno');
+        void el.offsetWidth;
+        el.classList.add('estreno');
+      }
+    };
+    poner(solapaComun, verComun);
+    poner(panelRed, verRed);
+    // Por si acaso: nunca dejar activa una solapa que ya no existe
+    if(!verComun && solapaComun && solapaComun.classList.contains('activa')){
+      const mapa = document.querySelector('.solapa[data-solapa="mapa"]');
+      if(mapa) mapa.click();
+    }
+  }
+
   actualizar(estado, resultado){
     const p = estado.activo;
     const cap = capacidad(p, estado);
     const pct = Math.round((p.agua / cap) * 100);
     this.refrescarMetricas(estado);
+    this.refrescarSolapas(estado);
 
     this.fijar('hud-agua', `${formatear(p.agua)} / ${formatear(cap)} L`,
       p.agua < cap * 0.08 ? 'critico' : 'agua');

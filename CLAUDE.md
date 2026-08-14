@@ -578,6 +578,19 @@ tender o colocar, o centra el mapa en el vecino. Dos cierres a propósito:
 nunca sale con la guía en marcha, y DESAPARECE en la comarca 2 — quien ya
 se trasladó no necesita capataz.
 
+**LA INTERFAZ SE GANA, como los pueblos.** Los otros dos frentes del mismo
+plan: el HUD arranca con TRES métricas (Agua, Caja, Servicio) y las demás
+se incorporan cuando nace su mecánica (`ui.refrescarMetricas`: Población
+con la guía hecha, Producción y reloj con la primera captación, Cauce al
+verter, Expansión al destapar); y las solapas igual
+(`ui.refrescarSolapas`): Mancomunidad no existe hasta el segundo pueblo —
+con una SALVAGUARDA: si el cauce necesita su panel, la solapa aparece
+antes, porque nada útil puede quedar detrás de una solapa escondida — y
+«La red» espera a la primera tubería. Todo estreno lleva el mismo guiño
+(`.estreno`, una vez y sin latido) y la misma regla innegociable: las
+condiciones salen del ESTADO — a una partida cargada no se le quita nada,
+solo se retrasa lo que el jugador nuevo aún no necesita.
+
 **El guía se llama MANUEL y comenta la partida.** `comentarios.js` es el motor
 (lectura pura, como `tutorial.js`): una lista de comentarios con su condición,
 en orden de prioridad — lo que duele antes que lo que luce. La regla que lo
