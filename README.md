@@ -64,3 +64,7 @@ abre el navegador. Por consola: `py servidor.py`.
 
 Hecho con cariño por alguien que lleva el agua de verdad. Si encuentras un
 fallo o tienes una idea, [abre un issue](https://github.com/Gwi1i/pipes-and-life/issues).
+
+© 2026 Gwi1i — **todos los derechos reservados**. El código se puede leer y
+el juego se puede jugar; nada de esto se puede redistribuir ni reutilizar sin
+permiso. Detalles en [LICENSE.md](LICENSE.md).
