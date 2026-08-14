@@ -20,7 +20,23 @@ import { avanzar, bombear, costeMejora, requisitosAutobomba,
          poderExpansion, servicioActivo, costeAmpliarVertedero,
          capacidadVaso, faseActual, faltanParaFase,
          incorporarPueblo, canonIncorporacion, costeAmpliarPieza,
-         nivelCaserio } from './simulacion.js';
+         nivelCaserio, costeEstudio, veteraniaAlTrasladarse } from './simulacion.js';
+import { legado, cargarLegado, guardarLegado, borrarLegado,
+         comprarVentaja, nivelVentaja, regionActual } from './legado.js';
+import { mezclarColor } from './escena.js';
+
+/**
+ * Tiñe los colores del terreno con la región de la comarca actual. UNA sola
+ * vez al arrancar, ANTES de crear nada: así todo lo que pinte terreno —el
+ * mapa, la miniatura de la ficha de casilla— cuenta la misma región. La
+ * comarca 1 no lleva tinte: es la de siempre, píxel por píxel.
+ */
+function aplicarRegion(){
+  const r = regionActual();
+  if(!r || !r.tinte) return;
+  for(const def of Object.values(CONFIG.terrenos))
+    def.color = mezclarColor(def.color, r.tinte, r.fuerza);
+}
 import { formatear } from './util.js';
 import { comprobar as comprobarGuia, saltar as saltarGuia,
          pasoActual } from './tutorial.js';
@@ -33,6 +49,10 @@ import { MinijuegoReciclaje } from './minijuego_reciclaje.js';
 import * as analitica from './analitica.js';
 
 const lienzo  = document.getElementById('escena');
+// El LEGADO va antes que el estado: el constructor necesita saber la semilla
+// de la comarca actual y con cuántos planos (Cartografía) se llega.
+cargarLegado();
+aplicarRegion();
 const estado  = new Estado();
 const habiaPartida = Estado.cargar(estado);
 const entrada = new Entrada(lienzo);
@@ -418,14 +438,14 @@ function procesarAcciones(){
       case 'estudiarZona': {
         const sel = estado.seleccion;
         if(!sel) break;
-        const A = CONFIG.acuiferos;
         const puede = puedeEstudiar(estado.mapa, sel.col, sel.fila);
         if(!puede.ok){ avisar(puede.motivo); break; }
-        if(!estado.puedePagar(A.estudio.coste)){
-          avisar(`El estudio cuesta ${formatear(A.estudio.coste)} € y no hay fondos.`);
+        const precioEstudio = costeEstudio();   // con el Ojo clínico del legado
+        if(!estado.puedePagar(precioEstudio)){
+          avisar(`El estudio cuesta ${formatear(precioEstudio)} € y no hay fondos.`);
           break;
         }
-        estado.pagar(A.estudio.coste);
+        estado.pagar(precioEstudio);
         const conIndicios = estudiarZona(estado.mapa, sel.col, sel.fila);
         // Un estudio sin indicios NO es dinero tirado y hay que decirlo así:
         // descartar una zona es la mitad del trabajo de un hidrogeólogo.
@@ -503,6 +523,11 @@ function procesarAcciones(){
                         `los núcleos del siguiente anillo, más lejanos.`, 'ok');
           avisar(`¡Fase ${faseActual(estado)}! Se abre el siguiente anillo de núcleos.`);
         }
+        // La llamada de otra comarca: tarjeta UNA vez, y solo en la primera —
+        // quien ya se ha trasladado no necesita que se lo cuenten otra vez.
+        if(legado.comarca === 1
+           && faseActual(estado) >= CONFIG.comarcas.faseParaTrasladarse)
+          contarHito('traslado');
         estado.seleccion = null;
         break;
       }
@@ -627,6 +652,41 @@ function procesarAcciones(){
         } else {
           avisar('Ese texto no parece una partida de Pipes and Life.');
         }
+        break;
+      }
+
+      /* --- EL EXPEDIENTE Y EL TRASLADO DE CONCESIÓN --- */
+
+      case 'comprarVentaja': {
+        const def = CONFIG.comarcas.ventajas[a.clave];
+        if(!def) break;
+        if(comprarVentaja(a.clave)){
+          estado.anotar(`Expediente: ${def.nombre} a nivel ${nivelVentaja(a.clave)}.`, 'ok');
+          avisar(`${def.nombre}: comprada. Es tuya para siempre, en todas las comarcas.`);
+          sonido.compra();
+        } else {
+          avisar('No hay veteranía suficiente. Se gana al trasladarse.');
+        }
+        ui.invalidarCache();
+        break;
+      }
+
+      case 'trasladarse': {
+        if(faseActual(estado) < CONFIG.comarcas.faseParaTrasladarse) break;
+        const ganada = veteraniaAlTrasladarse(estado);
+        if(!confirm(`¿Trasladarse a otra comarca? La red, la caja y los pueblos SE QUEDAN. ` +
+                    `Te llevas ${ganada} de veteranía y el expediente completo.`)) break;
+        legado.comarca += 1;
+        legado.veterania += ganada;
+        // La semilla nueva, echada AHORA y guardada en el legado: el próximo
+        // arranque construye la comarca nueva con ella.
+        legado.semillaActual = 1 + Math.floor(Math.random() * 2147483646);
+        guardarLegado();
+        analitica.contar('traslado/comarca-' + legado.comarca);
+        // Como en Reiniciar: se anula el sello del adiós y se borra la partida
+        estado.guardar = () => {};
+        Estado.borrar();
+        location.reload();
         break;
       }
 
@@ -1308,12 +1368,14 @@ function bucle(ahora){
    ================================================================== */
 
 document.getElementById('btn-reiniciar').onclick = () => {
-  if(!confirm('¿Empezar de cero? Se perderá el progreso.')) return;
+  if(!confirm('¿Empezar de cero? Se perderá TODO: la partida, la veteranía y el expediente. ' +
+              'Para cambiar de comarca conservando la experiencia está el TRASLADO, en Mancomunidad.')) return;
   // OJO: el sello del adiós (visibilitychange → guardar) RESUCITABA la partida
   // recién borrada al recargar. Se anula el guardado antes de borrar: esta
   // página ya no tiene nada que decir.
   estado.guardar = () => {};
   Estado.borrar();
+  borrarLegado();   // empezar de cero significa DE CERO; trasladarse es lo otro
   location.reload();
 };
 

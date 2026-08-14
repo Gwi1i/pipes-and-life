@@ -1345,6 +1345,18 @@ export const CONFIG = {
 
      `img` es `assets/h_<id>.jpg`; si no está, la tarjeta sale igual sin imagen. */
   hitos: {
+    traslado: {
+      titulo: 'Te llaman de otra comarca',
+      pasa: 'Tu mancomunidad ya camina sola, y tu nombre empieza a sonar: otra ' +
+            'comarca busca quien levante su abastecimiento desde cero.',
+      hacer: 'Cuando quieras, TRASLÁDATE desde la solapa Mancomunidad. La red se ' +
+             'queda; tú te llevas la VETERANÍA de cada pueblo bien servido, y se ' +
+             'gasta en ventajas que valen para siempre.',
+      porque: 'Así funciona el oficio: las obras son de quien las paga, pero la ' +
+              'experiencia es tuya. Cada comarca es un territorio nuevo — otro ' +
+              'río, otros acuíferos, otros pueblos — y cada traslado te hace ' +
+              'mejor en lo difícil: empezar.'
+    },
     saneamiento: {
       titulo: 'El pueblo ya ensucia',
       pasa: 'Ha crecido lo bastante como para generar aguas residuales. Todo lo ' +
@@ -1466,6 +1478,60 @@ export const CONFIG = {
   /* ---------- GUARDADO ----------
      v3: mapa grande y pueblos dinámicos; el formato v2 no es convertible. */
   guardado: { clave: 'redHidraulica_clicker_v3', intervaloSegundos: 10 },
+
+  /* ---------- COMARCAS: la estructura de partidas ----------
+     El TRASLADO DE CONCESIÓN: cuando la mancomunidad madura, empezar en otra
+     comarca (otra semilla) llevándose la VETERANÍA. La regla sana: las
+     ventajas del expediente quitan FRICCIÓN, nunca multiplican ingresos — la
+     primera partida queda intacta y las siguientes van más ligeras.
+     Objetivo de calibrado (petición del autor): que una partida "rinda" unas
+     8 horas de juego — la veteranía por pueblo la fija el escalón, así que
+     quedarse más allá de los pueblos que ya sirves bien rinde cada vez menos
+     frente a trasladarse y empezar con ventajas. Se mide con el bot. */
+  comarcas: {
+    faseParaTrasladarse: 3,      // desde aquí se ofrece (≈2h30 medido)
+    /* Veteranía por pueblo BIEN atendido al trasladarse, según su escalón
+       (aldea, pueblo, villa, ciudad). Solo cuentan los que reciben servicio
+       digno: llevarse mérito de un pueblo sediento sería un timo. */
+    veteraniaPorEscalon: [1, 2, 4, 7],
+    servicioMinimo: 0.6,
+    /* El EXPEDIENTE: ventajas permanentes. Coste geométrico en veteranía. */
+    ventajas: {
+      cartografia: {
+        nombre: 'Cartografía', costeBase: 3, factorCoste: 2, nivelMax: 3,
+        radioExtra: 2,        // casillas más de radio destapado al llegar
+        desc: 'Llegas con los planos: +2 casillas de terreno destapado ' +
+              'alrededor del pueblo de origen, por nivel.'
+      },
+      manosCurtidas: {
+        nombre: 'Manos curtidas', costeBase: 4, factorCoste: 2, nivelMax: 2,
+        clicsMenos: 1,        // clics menos por casilla al destapar
+        desc: 'Un clic menos por casilla al destapar terreno, por nivel. ' +
+              'La cuadrilla ya sabe dónde picar.'
+      },
+      ojoClinico: {
+        nombre: 'Ojo clínico', costeBase: 3, factorCoste: 2, nivelMax: 3,
+        descuento: 0.15,      // por nivel, sobre el estudio hidrogeológico
+        desc: 'Estudios hidrogeológicos un 15% más baratos por nivel: ya ' +
+              'sabes leer un terreno antes de pagarlo.'
+      },
+      fama: {
+        nombre: 'Fama', costeBase: 5, factorCoste: 2, nivelMax: 2,
+        descuentoPrimerCanon: 0.25,   // por nivel, SOLO el primer canon
+        desc: 'Tu nombre te precede: el PRIMER canon de cada comarca, un ' +
+              '25% más barato por nivel. Los demás, a precio de mercado.'
+      }
+    },
+    /* Las REGIONES: cada comarca tiene su cara. El tinte se mezcla sobre los
+       colores del terreno al arrancar; la primera va sin tinte (es la de
+       siempre). Cíclicas a partir de la última. */
+    regiones: [
+      { nombre: 'la comarca de origen', tinte: null,      fuerza: 0 },
+      { nombre: 'las tierras húmedas',  tinte: '#2f7a62', fuerza: 0.16 },
+      { nombre: 'la meseta',            tinte: '#b9a24e', fuerza: 0.18 },
+      { nombre: 'el levante',           tinte: '#c9824b', fuerza: 0.15 }
+    ]
+  },
 
   /* ---------- ANALÍTICA ----------
      Para saber si el juego GUSTA hacen falta números, no cumplidos: cuánta

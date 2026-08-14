@@ -23,6 +23,7 @@ import { limitar } from './util.js';
 import { inventarioConectado, cuelloDeBotella, construccionesConectadas,
          celdaEn, nombreDeNucleo, tipoYacimiento, claseAcuifero,
          masasDelMapa, fugasDe } from './mapa.js';
+import { nivelVentaja } from './legado.js';
 
 /* ---------------- HELPERS POR PUEBLO ---------------- */
 
@@ -123,10 +124,42 @@ export function faltanParaFase(estado){
   return u == null ? null : u - n;
 }
 
-/** Lo que cuesta absorber el SIGUIENTE núcleo: geométrico con el tamaño. */
+/** Lo que cuesta absorber el SIGUIENTE núcleo: geométrico con el tamaño.
+ *  La Fama del legado rebaja SOLO el primero de cada comarca: abre la puerta
+ *  antes, pero no toca la palanca que hace la dificultad exponencial. */
 export function canonIncorporacion(estado){
   const N = CONFIG.nucleos;
-  return Math.round(N.canonBase * Math.pow(N.canonFactor, estado.pueblos.length - 1));
+  const base = Math.round(N.canonBase * Math.pow(N.canonFactor, estado.pueblos.length - 1));
+  if(estado.pueblos.length === 1){
+    const V = CONFIG.comarcas.ventajas.fama;
+    const rebaja = Math.min(0.9, nivelVentaja('fama') * V.descuentoPrimerCanon);
+    return Math.round(base * (1 - rebaja));
+  }
+  return base;
+}
+
+/** El estudio hidrogeológico, con el Ojo clínico del legado aplicado.
+ *  ÚNICA cuenta del precio: la UI y la acción beben de aquí. */
+export function costeEstudio(){
+  const V = CONFIG.comarcas.ventajas.ojoClinico;
+  const rebaja = Math.min(0.9, nivelVentaja('ojoClinico') * V.descuento);
+  return Math.round(CONFIG.acuiferos.estudio.coste * (1 - rebaja));
+}
+
+/**
+ * La veteranía que darían los pueblos de HOY al trasladarse: cada uno según
+ * su escalón, y solo si está razonablemente atendido — llevarse mérito de un
+ * pueblo sediento sería un timo. Es la cuenta ÚNICA: la usan el panel (para
+ * enseñar qué ganarías) y el traslado (para pagarlo de verdad).
+ */
+export function veteraniaAlTrasladarse(estado){
+  const K = CONFIG.comarcas;
+  let total = 0;
+  for(const p of estado.pueblos){
+    if(!p.desbloqueado || (p.servicio || 0) < K.servicioMinimo) continue;
+    total += K.veteraniaPorEscalon[nivelCaserio(p.habitantes)];
+  }
+  return total;
 }
 
 /**

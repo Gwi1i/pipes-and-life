@@ -8,6 +8,12 @@
 
 import { CONFIG } from './config.js';
 import { generarMapa, comprimir, aplicarGuardado } from './mapa.js';
+import { legado, nivelVentaja, guardarLegado } from './legado.js';
+
+/** Radio extra de arranque por la ventaja Cartografía del legado. */
+function radioCartografia(){
+  return nivelVentaja('cartografia') * CONFIG.comarcas.ventajas.cartografia.radioExtra;
+}
 
 /** Niveles de mejora a cero: una clave por cada entrada de CONFIG.mejoras. */
 function mejorasACero(){
@@ -70,8 +76,11 @@ export class Estado {
       col: CONFIG.mapaMundo.origen.col, fila: CONFIG.mapaMundo.origen.fila })];
     this.puebloActivo = 0;
 
-    // El territorio: mapa de exploración, cámara e inventario de piezas
-    this.mapa = generarMapa();
+    // El territorio: mapa de exploración, cámara e inventario de piezas.
+    // La SEMILLA es de la partida (cada comarca tiene la suya y viaja con el
+    // guardado); el legado dice cuál toca y con cuántos planos se llega.
+    this.semilla = legado.semillaActual || CONFIG.mapaMundo.semilla;
+    this.mapa = generarMapa(this.semilla, radioCartografia());
     this.camara = { x: 0, y: 0 };   // píxeles; lo centra la escena al arrancar
     this.inventario = [];           // instalaciones recuperadas de las ruinas
     this.descubiertas = 0;          // casillas abiertas, para el HUD
@@ -118,6 +127,7 @@ export class Estado {
   guardar(){
     this.ultimoInstante = Date.now();
     const datos = {
+      semilla: this.semilla,
       dinero: this.dinero, horas: this.horas, m3Servidos: this.m3Servidos,
       contaminacion: this.contaminacion, puebloActivo: this.puebloActivo,
       pluvialesActivas: this.pluvialesActivas, acuiferos: this.acuiferos,
@@ -210,6 +220,17 @@ export class Estado {
       }
       if(estado.puebloActivo >= estado.pueblos.length) estado.puebloActivo = 0;
 
+      // La partida manda sobre la semilla: si llega de OTRO navegador (una
+      // copia de seguridad pegada), el mapa del constructor puede ser de otra
+      // comarca y hay que regenerarlo antes de volcarle lo tocado. Y el
+      // legado local se pone de acuerdo, para que la próxima carga ya nazca
+      // con la semilla buena.
+      if(d.semilla && d.semilla !== estado.semilla){
+        estado.semilla = d.semilla;
+        estado.mapa = generarMapa(estado.semilla, radioCartografia());
+        legado.semillaActual = d.semilla;
+        guardarLegado();
+      }
       aplicarGuardado(estado.mapa, d.mapa);
       estado.inventario = d.inventario || [];
       estado.construcciones = d.construcciones || [];

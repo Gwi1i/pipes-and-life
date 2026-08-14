@@ -775,6 +775,31 @@ nivel. Se activa con `requisitosAutobomba(pueblo)` + pago alto. El campo
 `desbloqueoExterno` es el gancho para una futura vía de anuncio/pago: NO hay pago
 ni anuncio real implementado, y no se debe simular uno falso.
 
+**COMARCAS: la estructura de partidas.** El TRASLADO DE CONCESIÓN (desde fase
+`comarcas.faseParaTrasladarse`, en Mancomunidad): la partida se borra, el
+LEGADO (`src/legado.js`, clave `redHidraulica_legado`) sobrevive con la
+VETERANÍA ganada — por pueblo BIEN servido según su escalón
+(`veteraniaAlTrasladarse()` en simulacion.js, cuenta única para panel y
+traslado). Se gasta en el EXPEDIENTE: ventajas permanentes que quitan
+FRICCIÓN, nunca multiplican ingresos (cartografía = radio inicial, manos
+curtidas = clics de destapar, ojo clínico = coste del estudio, fama = SOLO el
+primer canon de cada comarca) — así la primera partida queda intacta y el bot
+con legado vacío tiene que dar la curva de siempre. La SEMILLA es de la
+partida (`estado.semilla`, viaja en el guardado y en la copia de seguridad;
+`cargar()` regenera el mapa si difiere); el río también sale de ella, CON
+GUARDIA: con la semilla de siempre se usan las constantes de siempre, exactas
+— mover el río a las partidas existentes las dejaría con las tuberías sobre
+otro mundo (verificado regenerando idéntica). Cada comarca tiene REGIÓN
+(`comarcas.regiones`, cíclicas): nombre y tinte que `aplicarRegion()` mezcla
+sobre `CONFIG.terrenos` UNA vez al arrancar — la comarca 1 va sin tinte. Las
+estampas de la ficha del pueblo prueban `f_<escalón>_e2/_e3.jpg` según
+`epocaActual()` (pueblos más modernos, si el autor los genera) y caen a la
+base. Reiniciar borra TODO, legado incluido: para conservar la experiencia
+está el traslado, y el confirm lo dice. El hito `traslado` solo salta en la
+comarca 1. CALIBRADO PENDIENTE: el objetivo del autor es que una partida
+rinda ~8 h; se medirá con el bot y se ajustará `veteraniaPorEscalon` y los
+costes del expediente.
+
 **Offline.** `progresoOffline()` en `main.js` simula el tiempo ausente a pasos
 (la curva diaria y el estiaje cambian por el camino) con tope `offline.maxHoras`
 (8 h: la noche entera cabe, decidido al empezar a medir retención) y al
@@ -831,8 +856,8 @@ fondo, no un fastidio continuo.
   contenedores — la lista ÚNICA y verdadera es la del bucle `for(const id of
   [...])` en `entrada.js`; hoy: `tienda`, `premium`, `panel-averias`,
   `pestanas`, `panel-cauce`, `construir`, `hallazgo`, `almacen`, `panel-guia`,
-  `red`, `obra`, `hito`, `casilla`, `vuelta`, `lugares`, `taller` y
-  `respaldo`. Añadir un botón dentro de uno de ellos no obliga a tocar el
+  `red`, `obra`, `hito`, `casilla`, `vuelta`, `lugares`, `taller`,
+  `respaldo` y `expediente`. Añadir un botón dentro de uno de ellos no obliga a tocar el
   listener; añadir un contenedor NUEVO sí, y es un fallo silencioso: el botón
   se pinta y no hace nada.
 - La COPIA DE SEGURIDAD (bloque `respaldo`, Mancomunidad): `estado.exportar()`

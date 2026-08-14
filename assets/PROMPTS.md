@@ -191,6 +191,17 @@ casa. Tres trucos para conseguirlo:
 > izquierda cruzado ahora por un puente y las mismas colinas verdes al fondo
 > con dos depósitos de agua elevados, avenidas y una plaza mayor
 
+### Las ÉPOCAS (opcional, para las comarcas)
+
+Con el traslado de concesión, cada comarca nueva puede tener pueblos **más
+modernos**: la ficha prueba primero `f_<escalón>_e2.jpg` (comarca 2) y
+`f_<escalón>_e3.jpg` (comarca 3 en adelante), y si no existen cae a la base.
+Son las mismas cuatro estampas con otro año encima — pide *"el mismo pueblo,
+décadas después: casas renovadas, alguna placa solar, coches, el depósito
+modernizado"* para la época 2, y una versión aún más contemporánea para la 3.
+Ocho imágenes en total si haces las dos épocas; se pueden ir soltando de una
+en una, como todo.
+
 ## Si alguna sale rara
 
 - **Demasiado detalle o demasiado realista**: añade *"formas simples y limpias,

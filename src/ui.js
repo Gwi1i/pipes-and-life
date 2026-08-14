@@ -18,7 +18,9 @@ import { capacidad, demandaMedia, caudalCaptacion, costeMejora,
          llenadoVaso, capacidadVaso, costeAmpliarVertedero,
          nivelMasa, pozosPorMasa, caudalPozo, caudalSostenible,
          desgloseProduccion, tasaFugasRed, costeAmpliarPieza,
-         escalonCaserio } from './simulacion.js';
+         escalonCaserio, costeEstudio, veteraniaAlTrasladarse } from './simulacion.js';
+import { legado, nivelVentaja, costeVentaja, regionActual,
+         epocaActual } from './legado.js';
 import { formatear } from './util.js';
 import { celdaEn, piezaDeRuina, diametro, nivelDiametro, costeRenovar,
          nombreDeNucleo, tipoYacimiento,
@@ -607,8 +609,15 @@ export class UI {
     const esc = escalonCaserio(habitantes);
     const nombre = p ? p.nombre : nombreDeNucleo(celda.nombreIdx || 0);
 
-    const img = `<img class="ficha-dib" src="assets/f_${esc.nombre}.jpg"
-                   onerror="this.hidden=true" alt="">`;
+    // La estampa de la ÉPOCA: en comarcas posteriores se prueba primero
+    // f_<escalón>_e2.jpg / _e3.jpg (pueblos más modernos, si el autor los ha
+    // generado); si no existe cae a la base, y sin base se esconde.
+    const ep = epocaActual();
+    const base = `assets/f_${esc.nombre}.jpg`;
+    const src = ep > 1 ? `assets/f_${esc.nombre}_e${ep}.jpg` : base;
+    const img = `<img class="ficha-dib" src="${src}"
+                   onerror="if(this.src.indexOf('_e')>-1){this.src='${base}';}else{this.hidden=true}"
+                   alt="">`;
     const cab = `<p class="red-cuello" style="--tono:${H.color.pueblo}">
         <b>${nombre}</b> · ${esc.nombre}</p>${img}`;
 
@@ -656,6 +665,51 @@ export class UI {
       <p class="m-desc">${activo
         ? 'Es el pueblo que estás mirando. Cada clic encima es una bombada.'
         : 'Clícalo en el mapa para ponerlo al frente y bombear aquí.'}</p>`;
+  }
+
+  /**
+   * El EXPEDIENTE: la carrera del jugador por encima de las partidas. Comarca
+   * y región, la veteranía disponible, las ventajas compradas y el botón de
+   * trasladarse cuando la mancomunidad da la talla. Vive en Mancomunidad.
+   */
+  refrescarExpediente(estado){
+    const cont = document.getElementById('expediente');
+    if(!cont) return;
+    const K = CONFIG.comarcas;
+    const puede = faseActual(estado) >= K.faseParaTrasladarse;
+    const ganada = veteraniaAlTrasladarse(estado);
+    const firma = `${legado.comarca},${legado.veterania},` +
+      `${JSON.stringify(legado.ventajas)},${puede},${ganada}`;
+    if(this.cache.expedienteFirma === firma) return;
+    this.cache.expedienteFirma = firma;
+
+    const ventajas = Object.entries(K.ventajas).map(([k, def]) => {
+      const nivel = nivelVentaja(k);
+      const coste = costeVentaja(k);
+      const sinFondos = coste == null || legado.veterania < coste;
+      return `<button class="mejora obra" data-accion="comprarVentaja" data-clave="${k}"
+          style="--tono:#c084fc" ${sinFondos ? 'disabled' : ''}>
+        <span class="m-cab"><span class="m-nom">${def.nombre}
+          · ${nivel}/${def.nivelMax}</span></span>
+        <span class="m-desc">${def.desc}</span>
+        <span class="m-coste">${coste == null ? 'al máximo' : coste + ' veteranía'}</span>
+      </button>`;
+    }).join('');
+
+    cont.innerHTML = `
+      <p class="m-desc"><b>Comarca ${legado.comarca}</b> · ${regionActual().nombre}
+        · veteranía disponible: <b>${legado.veterania}</b></p>
+      ${ventajas}
+      ${puede
+        ? `<button class="mejora obra" data-accion="trasladarse" style="--tono:#f0a04a">
+             <span class="m-cab"><span class="m-nom">Trasladarse a otra comarca</span></span>
+             <span class="m-desc">La red, la caja y los pueblos se quedan; tú te llevas
+               la experiencia. Territorio nuevo de verdad: otro río, otros acuíferos.</span>
+             <span class="m-coste">+${ganada} veteranía</span>
+           </button>`
+        : `<p class="m-desc">El traslado se ofrecerá al alcanzar la
+             fase ${K.faseParaTrasladarse}: las comarcas grandes solo llaman
+             a quien ya ha demostrado lo que sabe.</p>`}`;
   }
 
   /**
@@ -1133,7 +1187,7 @@ export class UI {
         <button class="mejora obra" data-accion="estudiarZona" style="--tono:${A.color}">
           <span class="m-cab"><span class="m-nom">Estudio hidrogeológico</span></span>
           <span class="m-desc">Cartografía y geofísica de la zona.</span>
-          <span class="m-coste">${formatear(A.estudio.coste)} €</span>
+          <span class="m-coste">${formatear(costeEstudio())} €</span>
         </button>
         ${botonSondeo}</div>`;
     }
@@ -1516,6 +1570,7 @@ export class UI {
     this.refrescarTienda(estado);
     this.refrescarPremium(estado);
     this.refrescarAverias(estado);
+    this.refrescarExpediente(estado);
     this.refrescarCauce(estado, resultado);
     this.marcarPestanaAveria(estado);
     this.actualizarPanel(estado, resultado);

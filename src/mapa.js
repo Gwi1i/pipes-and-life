@@ -18,6 +18,7 @@
 
 import { CONFIG } from './config.js';
 import { generadorAleatorio } from './util.js';
+import { nivelVentaja } from './legado.js';
 // La única concesión de este módulo "puro": el semillero de nombres puede
 // venir de los lugares del jugador. Es leer una lista, no tocar el mundo.
 import { lista as listaLugares } from './lugares.js';
@@ -48,28 +49,43 @@ function ruidoSuave(semilla, x, y, escala){
  *   { tipo, hallazgo, oculta, progreso, resuelto }
  * `tipo` es el terreno; `hallazgo` es lo que esconde (o null).
  */
-export function generarMapa(){
+export function generarMapa(semilla = CONFIG.mapaMundo.semilla, radioExtra = 0){
   const M = CONFIG.mapaMundo;
   const celdas = new Array(M.cols * M.filas);
-  const azar = generadorAleatorio(M.semilla);
+  const azar = generadorAleatorio(semilla);
+
+  // El RÍO también sale de la semilla: cada comarca tiene el suyo. OJO a la
+  // guardia: con la semilla de siempre se usan las constantes de siempre,
+  // EXACTAS — el terreno de las partidas existentes se regenera al cargar, y
+  // moverles el río dejaría sus tuberías tendidas sobre otro mundo.
+  let rio;
+  if(semilla === M.semilla){
+    rio = { centro: 0.5, a1: 0.16, f1: 0.28, p1: 0, a2: 0.08, f2: 0.11, p2: 0 };
+  } else {
+    const az = generadorAleatorio(semilla + 999);
+    rio = { centro: 0.38 + az() * 0.24,
+            a1: 0.12 + az() * 0.08, f1: 0.22 + az() * 0.12, p1: az() * 6.28,
+            a2: 0.05 + az() * 0.06, f2: 0.08 + az() * 0.06, p2: az() * 6.28 };
+  }
 
   for(let f = 0; f < M.filas; f++){
     for(let c = 0; c < M.cols; c++){
       // Dos capas de ruido: uno grande para los biomas y otro fino para el detalle
-      const grande = ruidoSuave(M.semilla, c, f, 9);
-      const fino   = ruidoSuave(M.semilla + 77, c, f, 3.5);
+      const grande = ruidoSuave(semilla, c, f, 9);
+      const fino   = ruidoSuave(semilla + 77, c, f, 3.5);
       const h = grande * 0.72 + fino * 0.28;
 
       // Un río que serpentea de norte a sur, para que siempre haya de dónde captar
-      const cauce = M.cols * 0.5 + Math.sin(f * 0.28) * M.cols * 0.16
-                                 + Math.sin(f * 0.11) * M.cols * 0.08;
+      const cauce = M.cols * rio.centro
+                  + Math.sin(f * rio.f1 + rio.p1) * M.cols * rio.a1
+                  + Math.sin(f * rio.f2 + rio.p2) * M.cols * rio.a2;
       const enCauce = Math.abs(c - cauce) < 1.1;
 
       // Primero la FAMILIA con la altura, como siempre. La variante dentro de
       // cada familia la decide una tercera capa de ruido, más fina y con otra
       // semilla: así el pinar y el bosque cerrado se agrupan en manchas en vez
       // de salpicarse al azar casilla por casilla, que se vería como ruido.
-      const veta = ruidoSuave(M.semilla + 313, c, f, 5);
+      const veta = ruidoSuave(semilla + 313, c, f, 5);
 
       let tipo;
       if(enCauce)        tipo = 'agua';
@@ -93,7 +109,7 @@ export function generarMapa(){
   sembrarAcuiferos(celdas, azar);
   sembrarHallazgos(celdas, azar);
   sembrarArqueologia(celdas, azar);
-  abrirZonaInicial(celdas);
+  abrirZonaInicial(celdas, radioExtra);
   return celdas;
 }
 
@@ -423,11 +439,12 @@ function sembrarHallazgos(celdas, azar){
   }
 }
 
-/** Deja descubierto un círculo alrededor del origen: por algo hay que empezar. */
-function abrirZonaInicial(celdas){
+/** Deja descubierto un círculo alrededor del origen: por algo hay que empezar.
+ *  `radioExtra` es la ventaja de Cartografía del legado: llegar con planos. */
+function abrirZonaInicial(celdas, radioExtra = 0){
   const M = CONFIG.mapaMundo;
   recorrer(celdas, (celda, c, f) => {
-    if(Math.hypot(c - M.origen.col, f - M.origen.fila) <= M.radioInicial){
+    if(Math.hypot(c - M.origen.col, f - M.origen.fila) <= M.radioInicial + radioExtra){
       celda.oculta = false;
     }
   });
@@ -467,9 +484,13 @@ export function clicsParaDestapar(col, fila, tipo, poder = 1){
   const d = distanciaAlOrigen(col, fila);
   const base = M.clicsBase + Math.pow(d, M.exponenteDistancia) * M.factorDistancia;
   const extra = CONFIG.terrenos[tipo]?.costeExtra ?? 1;
+  // Manos curtidas (legado): la cuadrilla veterana pica menos veces. Se resta
+  // AL FINAL y con suelo en 1: quitar fricción, no regalar el mapa.
+  const V = CONFIG.comarcas.ventajas.manosCurtidas;
+  const menos = nivelVentaja('manosCurtidas') * V.clicsMenos;
   // El poder de expansión (lo bien que llevas el abastecimiento) DIVIDE el
   // coste: es lo que hace que cuidar la red abra territorio.
-  return Math.max(1, Math.round(base * extra / Math.max(0.2, poder)));
+  return Math.max(1, Math.round(base * extra / Math.max(0.2, poder)) - menos);
 }
 
 /** ¿Es alcanzable? Solo se puede destapar lo que toca terreno ya descubierto. */
