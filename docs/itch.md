@@ -10,7 +10,7 @@ pide al crear el proyecto (**Dashboard → Create new project**).
 | Campo | Qué poner |
 |---|---|
 | **Title** | `Pipes and Life` |
-| **Short description / tagline** | `Bring water to 36 towns, one pipe at a time. A water management game made by someone from the trade. / Abastece a tu mancomunidad, pueblo a pueblo.` |
+| **Short description / tagline** | `Bring water to 36 towns, one pipe at a time. Made by someone from the trade. En castellano y en inglés.` *(itch corta a 120 caracteres: este mide 104)* |
 | **Classification** | Games |
 | **Kind of project** | HTML (para que se juegue en la propia página) |
 | **Release status** | Released *(o "In development" si prefieres avisar de que sigue creciendo)* |
