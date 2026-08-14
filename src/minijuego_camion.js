@@ -50,6 +50,15 @@ export class MinijuegoCamion {
     this.ctx = this.lienzo.getContext('2d');
     this.alTerminar = null;
 
+    // El TELÓN del amanecer (assets/mini_camion.jpg, del autor): el cielo y
+    // los tejados del pueblo. Si existe manda — en mosaico con paralaje — y
+    // si no, el caserío de código. La calzada, las farolas y todo lo jugable
+    // siguen siendo SIEMPRE de código: cambian con la partida.
+    this.cieloImg = new Image();
+    this.hayCielo = false;
+    this.cieloImg.onload = () => { this.hayCielo = true; };
+    this.cieloImg.src = 'assets/mini_camion.jpg';
+
     // Teclado: flechas o A/D. Se escucha en window solo con el telón abierto.
     this.teclas = {};
     window.addEventListener('keydown', e => {
@@ -353,34 +362,46 @@ export class MinijuegoCamion {
 
   /** La calle de madrugada: cielo, caserío dormido, farolas y calzada. */
   dibujarCalle(ctx, W, H, cam){
-    // cielo de antes del amanecer
-    const g = ctx.createLinearGradient(0, 0, 0, 300);
-    g.addColorStop(0, '#0b1420'); g.addColorStop(1, '#1c2b3d');
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, W, 300);
-    // luna y estrellas fijas al cielo (no viajan con la cámara)
-    ctx.fillStyle = 'rgba(255,255,240,0.9)';
-    ctx.beginPath(); ctx.arc(W - 90, 64, 16, 0, 7); ctx.fill();
-    ctx.fillStyle = '#16222e';
-    ctx.beginPath(); ctx.arc(W - 84, 58, 13, 0, 7); ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,0.5)';
-    for(let i = 0; i < 22; i++){
-      const sx = (i * 137.5) % W, sy = 20 + (i * 73) % 180;
-      ctx.fillRect(sx, sy, 2, 2);
-    }
-    // el caserío del fondo, con alguna ventana madrugadora encendida
-    for(let i = Math.floor(cam / 150) - 1; i < (cam + W) / 150 + 1; i++){
-      const x = i * 150 - cam;
-      const alto = 90 + ((i * 37) % 60);
-      ctx.fillStyle = '#131e2a';
-      ctx.fillRect(x, 300 - alto, 132, alto);
-      ctx.fillStyle = '#0d151f';
-      ctx.beginPath();
-      ctx.moveTo(x - 6, 300 - alto); ctx.lineTo(x + 66, 300 - alto - 26);
-      ctx.lineTo(x + 138, 300 - alto); ctx.fill();
-      if((i * 7) % 3 === 0){
-        ctx.fillStyle = 'rgba(240,200,90,0.75)';
-        ctx.fillRect(x + 18 + (i * 11) % 60, 300 - alto + 18, 14, 18);
+    if(this.hayCielo){
+      // La lámina del autor, en mosaico y con paralaje suave: el fondo anda
+      // más despacio que la calle, como los tejados de verdad. El velo la
+      // hunde un punto para que lo jugable mande.
+      const esc = 300 / this.cieloImg.height;
+      const w = this.cieloImg.width * esc;
+      for(let x = -((cam * 0.3) % w); x < W; x += w)
+        ctx.drawImage(this.cieloImg, x, 0, w, 300);
+      ctx.fillStyle = 'rgba(8,14,22,0.35)';
+      ctx.fillRect(0, 0, W, 300);
+    } else {
+      // cielo de antes del amanecer
+      const g = ctx.createLinearGradient(0, 0, 0, 300);
+      g.addColorStop(0, '#0b1420'); g.addColorStop(1, '#1c2b3d');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, W, 300);
+      // luna y estrellas fijas al cielo (no viajan con la cámara)
+      ctx.fillStyle = 'rgba(255,255,240,0.9)';
+      ctx.beginPath(); ctx.arc(W - 90, 64, 16, 0, 7); ctx.fill();
+      ctx.fillStyle = '#16222e';
+      ctx.beginPath(); ctx.arc(W - 84, 58, 13, 0, 7); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      for(let i = 0; i < 22; i++){
+        const sx = (i * 137.5) % W, sy = 20 + (i * 73) % 180;
+        ctx.fillRect(sx, sy, 2, 2);
+      }
+      // el caserío del fondo, con alguna ventana madrugadora encendida
+      for(let i = Math.floor(cam / 150) - 1; i < (cam + W) / 150 + 1; i++){
+        const x = i * 150 - cam;
+        const alto = 90 + ((i * 37) % 60);
+        ctx.fillStyle = '#131e2a';
+        ctx.fillRect(x, 300 - alto, 132, alto);
+        ctx.fillStyle = '#0d151f';
+        ctx.beginPath();
+        ctx.moveTo(x - 6, 300 - alto); ctx.lineTo(x + 66, 300 - alto - 26);
+        ctx.lineTo(x + 138, 300 - alto); ctx.fill();
+        if((i * 7) % 3 === 0){
+          ctx.fillStyle = 'rgba(240,200,90,0.75)';
+          ctx.fillRect(x + 18 + (i * 11) % 60, 300 - alto + 18, 14, 18);
+        }
       }
     }
     // acera y calzada

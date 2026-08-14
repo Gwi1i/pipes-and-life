@@ -329,6 +329,31 @@ se pelearían.
 
 ---
 
+# EL CIELO DE LA RUTA DEL CAMIÓN (`mini_camion.jpg`)
+
+El telón del minijuego del camión: el cielo de antes del amanecer con los
+tejados del pueblo dormido. El juego lo pone EN MOSAICO con paralaje (los
+tejados andan más despacio que la calle) y le echa un velo oscuro encima,
+así que interesa silueta y ambiente más que detalle. **Sin calle, sin
+calzada y sin contenedores** — la mitad inferior la pinta el juego, que es
+donde vive lo jugable; la imagen es solo cielo y tejados. Muy apaisada
+(3:1 o más) para que el mosaico repita poco, y con los bordes izquierdo y
+derecho sencillos (cielo y tejado bajo) para que la costura no cante. El
+camión, los contenedores y las farolas se quedan en código a propósito: el
+camión se pinta con las fracciones del día y los contenedores cambian de
+estado — esa ES la mecánica.
+
+### `mini_camion.jpg`
+> Genera una imagen muy apaisada, formato panorámico 3:1: el cielo de
+> madrugada antes del amanecer sobre los tejados de un pueblo español
+> dormido, silueta de tejados a dos aguas con alguna chimenea y un
+> campanario, dos o tres ventanas encendidas de madrugadores, cielo azul
+> muy oscuro con estrellas y una luna fina, la franja de tejados ocupando
+> solo el tercio inferior de la imagen, sin calle ni personas ni vehículos,
+> *(+ coletilla)*
+
+---
+
 # LOS CONTENEDORES DE LA LÍNEA (`contenedores_hoja.png`)
 
 Los cuatro contenedores de calle del minijuego, ilustrados para que casen con
