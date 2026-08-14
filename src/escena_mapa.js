@@ -123,6 +123,8 @@ export class EscenaMapa extends Escena {
     this.paletaAño = this.colorDeEstacion(estado.horas);
     // Cuánto de invierno hay ahora mismo (0..1): lo usa la nieve de los árboles.
     this.invierno = this.gradoInvierno(estado.horas);
+    // Y cuánto de primavera: lo usan las florecillas del prado.
+    this.primavera = this.gradoEstacion(estado.horas, 'Primavera');
 
     // LO QUE ESTÁ PASANDO AHORA, para que las piezas lo enseñen. Se cachea aquí
     // porque lo consulta cada construcción visible y son datos que ya calcula la
@@ -302,12 +304,16 @@ export class EscenaMapa extends Escena {
    * 0 fuera del invierno y 1 en su centro, con subida y bajada suaves. Sirve
    * para lo que solo debe verse cuando de verdad hace frío.
    */
-  gradoInvierno(horas){
+  gradoInvierno(horas){ return this.gradoEstacion(horas, 'Invierno'); }
+
+  /** 0 fuera de la estación pedida y 1 en su centro, con subida y bajada
+   *  suaves. La nieve y las flores comparten esta cuenta. */
+  gradoEstacion(horas, nombre){
     const E = CONFIG.estaciones;
     const frac = ((horas % CONFIG.tiempo.horasPorAño) / CONFIG.tiempo.horasPorAño + 1) % 1;
     const pos = frac * E.length;
     const i = Math.floor(pos) % E.length;
-    if(E[i].nombre !== 'Invierno') return 0;
+    if(E[i].nombre !== nombre) return 0;
     return Math.sin((pos - Math.floor(pos)) * Math.PI);
   }
 
@@ -383,6 +389,36 @@ export class EscenaMapa extends Escena {
       }
     }
 
+    // LA OTRA MITAD DE LA ORILLA. La tierra ya pinta su franja de arena; el
+    // agua pone los BAJÍOS (una banda clara: cerca de la orilla cubre menos)
+    // y la ESPUMA lamiendo, animada. Es lo que convierte el borde del río de
+    // un corte a tijera en una orilla de verdad.
+    if(mapa){
+      const esTierraVec = (dc, df) => {
+        const vec = celdaEn(mapa, c + dc, f + df);
+        return !!vec && !vec.oculta && vec.tipo !== 'agua' && vec.tipo !== 'lago';
+      };
+      const bordes = [
+        [0, -1, x, y, t, t * 0.11, x, y + t * 0.045, x + t, y + t * 0.045],
+        [0, 1, x, y + t - t * 0.11, t, t * 0.11, x, y + t - t * 0.045, x + t, y + t - t * 0.045],
+        [-1, 0, x, y, t * 0.11, t, x + t * 0.045, y, x + t * 0.045, y + t],
+        [1, 0, x + t - t * 0.11, y, t * 0.11, t, x + t - t * 0.045, y, x + t - t * 0.045, y + t]
+      ];
+      for(const b of bordes){
+        if(!esTierraVec(b[0], b[1])) continue;
+        ctx.fillStyle = 'rgba(180,225,240,0.30)';       // el bajío
+        ctx.fillRect(b[2], b[3], b[4], b[5]);
+        ctx.strokeStyle = 'rgba(255,255,255,0.55)';     // la espuma, lamiendo
+        ctx.lineWidth = Math.max(1, t * 0.022);
+        ctx.setLineDash([t * 0.10, t * 0.14]);
+        ctx.lineDashOffset = -this.tiempo * t * 0.35;
+        ctx.beginPath();
+        ctx.moveTo(b[6], b[7]); ctx.lineTo(b[8], b[9]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+    }
+
     // ONDAS, no líneas. Antes eran senos a lo ancho de la casilla, y una celda
     // con corriente horizontal no se parecía en nada a una vertical: el río
     // cambiaba de textura en cada codo. Ahora son arcos cortos repartidos por la
@@ -453,6 +489,22 @@ export class EscenaMapa extends Escena {
           ctx.beginPath(); ctx.ellipse(px, py - r * 0.3, r, r * 0.72, 0, 0, 7); ctx.fill();
           ctx.fillStyle = oscurecer(base, 0.20);
           ctx.beginPath(); ctx.ellipse(px + r * 0.3, py - r * 0.15, r * 0.55, r * 0.42, 0, 0, 7); ctx.fill();
+        }
+      }
+      // FLORECILLAS de primavera en el prado: llegan con la estación y se van
+      // con ella. La paleta del año ya existía; esto es aprovecharla.
+      const flor = this.primavera || 0;
+      if(flor > 0.05 && celda.tipo === 'prado'){
+        const colores = ['#f6f3e7', '#f2d24d', '#e88bb1'];
+        for(let k = 0; k < 4; k++){
+          const px = x + t * (0.12 + ((v * 19 + k * 0.43) % 1) * 0.76);
+          const py = y + t * (0.20 + ((v * 23 + k * 0.71) % 1) * 0.66);
+          ctx.globalAlpha = flor * 0.9;
+          ctx.fillStyle = colores[k % colores.length];
+          ctx.beginPath(); ctx.arc(px, py, t * 0.022, 0, 7); ctx.fill();
+          ctx.fillStyle = 'rgba(0,0,0,0.25)';
+          ctx.beginPath(); ctx.arc(px, py, t * 0.008, 0, 7); ctx.fill();
+          ctx.globalAlpha = 1;
         }
       }
       return;
@@ -1063,18 +1115,58 @@ export class EscenaMapa extends Escena {
 
   /** Instalación abandonada: muros derruidos y cascotes. */
   ruina(cx, suelo, t, color){
+    // Era dos cajitas y tres piedras. Una ruina se lee por la LÍNEA DE
+    // ROTURA: la esquina de un edificio sin techo, con el remate dentado,
+    // un hueco de ventana y la maleza comiéndosela.
     const ctx = this.ctx;
     const piedra = mezclarColor(color, '#6b7280', 0.55);
-    this.isoCaja(cx - t * 0.10, suelo, t * 0.11, t * 0.055, t * 0.20, piedra);
-    this.isoCaja(cx + t * 0.12, suelo + t * 0.02, t * 0.08, t * 0.04, t * 0.11,
-                 oscurecer(piedra, 0.18));
-    // cascotes sueltos alrededor
-    ctx.fillStyle = oscurecer(piedra, 0.35);
-    for(const p of [[-0.02, 0.06, 0.030], [0.05, 0.09, 0.022], [-0.18, 0.08, 0.025]]){
-      ctx.beginPath();
-      ctx.ellipse(cx + t * p[0], suelo + t * p[1], t * p[2], t * p[2] * 0.55, 0, 0, 7);
-      ctx.fill();
+    const tinta = `rgba(14,21,29,${CONFIG.estiloMapa.tinta * 0.9})`;
+    const h = t * 0.27;
+    this.sombraPieza(cx, suelo + t * 0.035, t * 0.24, t * 0.075, 0.22);
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = Math.max(1, t * 0.015);
+
+    // muro izquierdo, a la luz, con la rotura en dientes
+    ctx.fillStyle = aclarar(piedra, 0.08);
+    ctx.beginPath();
+    ctx.moveTo(cx - t * 0.21, suelo + t * 0.005);
+    ctx.lineTo(cx, suelo + t * 0.05);
+    ctx.lineTo(cx, suelo + t * 0.05 - h * 0.55);
+    ctx.lineTo(cx - t * 0.055, suelo + t * 0.02 - h * 0.74);
+    ctx.lineTo(cx - t * 0.115, suelo - h * 0.50);
+    ctx.lineTo(cx - t * 0.21, suelo - h * 0.92);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = tinta; ctx.stroke();
+    // el hueco de la ventana, al vacío
+    ctx.fillStyle = 'rgba(10,16,24,0.8)';
+    ctx.fillRect(cx - t * 0.165, suelo - h * 0.46, t * 0.055, t * 0.08);
+
+    // muro derecho, en sombra y más caído
+    ctx.fillStyle = oscurecer(piedra, 0.30);
+    ctx.beginPath();
+    ctx.moveTo(cx, suelo + t * 0.05);
+    ctx.lineTo(cx + t * 0.165, suelo + t * 0.002);
+    ctx.lineTo(cx + t * 0.165, suelo - h * 0.38);
+    ctx.lineTo(cx + t * 0.09, suelo - h * 0.30);
+    ctx.lineTo(cx + t * 0.04, suelo - h * 0.56);
+    ctx.lineTo(cx, suelo + t * 0.05 - h * 0.55);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = tinta; ctx.stroke();
+
+    // cascotes al pie, con su media sombra
+    for(const p of [[-0.26, 0.055, 0.032], [0.06, 0.085, 0.026],
+                    [0.23, 0.045, 0.024], [-0.05, 0.10, 0.020]]){
+      const px = cx + t * p[0], py = suelo + t * p[1], r = t * p[2];
+      ctx.fillStyle = oscurecer(piedra, 0.38);
+      ctx.beginPath(); ctx.ellipse(px + r * 0.2, py + r * 0.2, r, r * 0.55, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = mezclarColor(piedra, '#ffffff', 0.10);
+      ctx.beginPath(); ctx.ellipse(px, py, r * 0.85, r * 0.5, 0, 0, 7); ctx.fill();
     }
+    // y la maleza que se la come: dos matojos verdes contra los muros
+    ctx.fillStyle = '#4e7a3a';
+    ctx.beginPath(); ctx.arc(cx - t * 0.19, suelo + t * 0.005, t * 0.045, 0, 7); ctx.fill();
+    ctx.fillStyle = '#5e8c46';
+    ctx.beginPath(); ctx.arc(cx + t * 0.15, suelo + t * 0.02, t * 0.038, 0, 7); ctx.fill();
   }
 
   /** Yacimiento: cristales asomando de la roca. */
