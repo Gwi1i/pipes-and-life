@@ -777,7 +777,8 @@ ni anuncio real implementado, y no se debe simular uno falso.
 
 **Offline.** `progresoOffline()` en `main.js` simula el tiempo ausente a pasos
 (la curva diaria y el estiaje cambian por el camino) con tope `offline.maxHoras`
-(3 h) y al `offline.rendimiento` (50%): de la GANANCIA solo se cobra la mitad —
+(8 h: la noche entera cabe, decidido al empezar a medir retención) y al
+`offline.rendimiento` (50%): de la GANANCIA solo se cobra la mitad —
 las pérdidas se pagan enteras, la ausencia no es un escudo—. Ampliar horas o
 rendimiento es el gancho de monetización (`offline.desbloqueoExterno`): NO hay
 pago implementado y no se simula ninguno falso. Usa `estado.ultimoInstante`,
@@ -827,10 +828,18 @@ fondo, no un fastidio continuo.
   pueblo no rompe una partida vieja.
 - Los botones van por delegación (`data-accion`, y `data-clave` para la mejora,
   el índice de pueblo, el diámetro o la red). `entrada.js` escucha varios
-  contenedores: `tienda`, `premium`, `panel-averias`, `pestanas`, `panel-cauce`,
-  `construir`, `hallazgo`, `almacen`, `panel-guia`, `casilla` y `red`. Añadir un botón
-  dentro de uno de ellos no obliga a tocar el listener; añadir un contenedor
-  NUEVO sí, y es un fallo silencioso: el botón se pinta y no hace nada.
+  contenedores — la lista ÚNICA y verdadera es la del bucle `for(const id of
+  [...])` en `entrada.js`; hoy: `tienda`, `premium`, `panel-averias`,
+  `pestanas`, `panel-cauce`, `construir`, `hallazgo`, `almacen`, `panel-guia`,
+  `red`, `obra`, `hito`, `casilla`, `vuelta`, `lugares`, `taller` y
+  `respaldo`. Añadir un botón dentro de uno de ellos no obliga a tocar el
+  listener; añadir un contenedor NUEVO sí, y es un fallo silencioso: el botón
+  se pinta y no hace nada.
+- La COPIA DE SEGURIDAD (bloque `respaldo`, Mancomunidad): `estado.exportar()`
+  vuelca el guardado a un texto `PIPES1:<base64>` y `Estado.importar(texto)`
+  lo valida y lo repone. Importar recarga la página anulando antes
+  `estado.guardar` — el sello del adiós resucitaría la partida vieja, el mismo
+  fantasma que mordió a Reiniciar.
 
 ## Depuración
 

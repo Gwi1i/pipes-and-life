@@ -520,13 +520,15 @@ export const CONFIG = {
   /* ---------- PROGRESO OFFLINE ---------- */
   offline: {
     minSegundos: 60,
-    /* Tres horas y a MEDIO rendimiento: la explotación sin nadie al mando rinde
-       menos, y el juego es estar. Además deja hueco para la monetización
-       futura: pagar por más horas o por el rendimiento completo sería la
-       ventaja natural a vender. Como el auto-bombeo y los aceleradores:
-       `desbloqueoExterno` es el GANCHO — NO hay pago ni anuncio implementado y
-       no se debe simular ninguno falso. */
-    maxHoras: 3,
+    /* Ocho horas y a MEDIO rendimiento: la explotación sin nadie al mando
+       rinde menos, y el juego es estar. Empezó en 3 h, pero justo midiendo la
+       RETENCIÓN eso era un tiro en el pie: quien juega por la noche y vuelve
+       por la mañana tiene que encontrarse algo — la noche entera cabe en 8.
+       El medio rendimiento se queda: deja hueco para la monetización futura
+       (pagar por el rendimiento completo sería la ventaja natural a vender).
+       Como el auto-bombeo y los aceleradores: `desbloqueoExterno` es el
+       GANCHO — NO hay pago ni anuncio implementado y no se simula ninguno. */
+    maxHoras: 8,
     rendimiento: 0.5,          // fracción de la ganancia que se cobra offline
     desbloqueoExterno: null,
     /* La TARJETA de vuelta solo desde ausencias de verdad: por debajo, la línea

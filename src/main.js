@@ -600,6 +600,36 @@ function procesarAcciones(){
         break;
       }
 
+      /* --- COPIA DE SEGURIDAD: la partida como texto --- */
+
+      case 'exportarPartida': {
+        const texto = estado.exportar();
+        if(!texto){ avisar('Todavía no hay nada que copiar.'); break; }
+        if(navigator.clipboard && navigator.clipboard.writeText){
+          navigator.clipboard.writeText(texto)
+            .then(() => avisar('Partida copiada al portapapeles. Pégala en un sitio seguro.'))
+            // Sin permiso de portapapeles, el prompt de siempre: feo pero infalible
+            .catch(() => prompt('Copia este texto y guárdalo:', texto));
+        } else {
+          prompt('Copia este texto y guárdalo:', texto);
+        }
+        break;
+      }
+
+      case 'importarPartida': {
+        const texto = prompt('Pega aquí la partida copiada:');
+        if(texto === null || texto.trim() === '') break;
+        if(!confirm('Esto SUSTITUYE la partida actual por la del texto. ¿Seguimos?')) break;
+        if(Estado.importar(texto)){
+          // Como en Reiniciar: el sello del adiós resucitaría la partida vieja
+          estado.guardar = () => {};
+          location.reload();
+        } else {
+          avisar('Ese texto no parece una partida de Pipes and Life.');
+        }
+        break;
+      }
+
       /* --- EL TALLER: los minijuegos de ensayo, sin premio ni castigo --- */
 
       case 'practicarTuberias':

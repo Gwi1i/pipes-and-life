@@ -139,6 +139,45 @@ export class Estado {
     }
   }
 
+  /* ---- COPIA DE SEGURIDAD: la partida cabe en un texto ----
+     Todo el progreso vive en el localStorage de UN navegador: se pierde
+     limpiando datos, cambiando de aparato o en modo incógnito — y ese es el
+     único fallo que un jugador no perdona. El texto lleva prefijo (para
+     reconocerlo al pegar) y va en base64: sobrevive a correos y mensajerías
+     sin que nada le retoque las comillas. */
+
+  exportar(){
+    this.guardar();                       // sellar el estado de este instante
+    const bruto = localStorage.getItem(CONFIG.guardado.clave);
+    if(!bruto) return null;
+    // A base64 pasando por bytes: btoa a pelo revienta con acentos, y el
+    // spread de golpe revienta la pila con partidas grandes — a trozos.
+    const bytes = new TextEncoder().encode(bruto);
+    let bin = '';
+    for(let i = 0; i < bytes.length; i += 8192)
+      bin += String.fromCharCode(...bytes.subarray(i, i + 8192));
+    return 'PIPES1:' + btoa(bin);
+  }
+
+  /** Deja la partida pegada lista en localStorage. NO recarga: eso es cosa de
+   *  quien llama, que además debe anular el guardado antes (el sello del
+   *  adiós resucitaría la partida vieja, como pasó con Reiniciar). */
+  static importar(texto){
+    try{
+      const limpio = (texto || '').trim();
+      if(!limpio.startsWith('PIPES1:')) return false;
+      const bin = atob(limpio.slice(7));
+      const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+      const bruto = new TextDecoder().decode(bytes);
+      const d = JSON.parse(bruto);
+      if(!Array.isArray(d.pueblos)) return false;   // no parece una partida
+      localStorage.setItem(CONFIG.guardado.clave, bruto);
+      return true;
+    }catch(e){
+      return false;
+    }
+  }
+
   /** Restaura la partida sobre `estado`. Devuelve true si había algo guardado. */
   static cargar(estado){
     try{
