@@ -16,10 +16,10 @@ import { celdaEn, clicarCasilla, clicsParaDestapar, puedeColocar,
          averiaEn, aflorarArqueologia, tipoYacimiento,
          puedeEstudiar, estudiarZona, puedeSondear, sondear,
          costeSondeo, claseAcuifero, edadAños, bautizarObra,
-         nombreDeNucleo } from './mapa.js';
+         nombreDeNucleo, conjuntoDeRed } from './mapa.js';
 import { avanzar, bombear, costeMejora, requisitosAutobomba,
          poderExpansion, servicioActivo, costeAmpliarVertedero,
-         capacidadVaso, faseActual, faltanParaFase,
+         capacidadVaso, faseActual, faltanParaFase, capacidad,
          incorporarPueblo, canonIncorporacion, costeAmpliarPieza,
          nivelCaserio, escalonCaserio, costeEstudio,
          veteraniaAlTrasladarse } from './simulacion.js';
@@ -134,13 +134,30 @@ let multaZECAvisada = false;   // para anunciar la multa solo al empezar
  */
 let clicsBombeo = [];
 let desbordeAvisado = false;
-function golpeDeBomba(px, py){
+function golpeDeBomba(px, py, col, fila){
   const ahora = performance.now();
   clicsBombeo = clicsBombeo.filter(x => ahora - x < 1000);
   if(clicsBombeo.length >= CONFIG.bombeo.maxClicsPorSegundo) return;
   clicsBombeo.push(ahora);
 
-  const entro = bombear(estado.activo, estado);
+  // EL CONJUNTO (petición del autor): dos pueblos colgados del mismo
+  // depósito funcionan como uno. El golpe se da donde clicas, pero el agua
+  // va al pueblo MÁS SEDIENTO de los que comparten red con esa casilla —
+  // mismos litros por clic, repartidos con cabeza, como hace el oficio.
+  let candidatos = col != null ? conjuntoDeRed(estado, col, fila, 'abastecimiento') : [];
+  if(!candidatos.length) candidatos = [estado.activo];
+  candidatos.sort((a, b) =>
+    a.agua / capacidad(a, estado) - b.agua / capacidad(b, estado));
+  const objetivo = candidatos.find(pb => pb.agua < capacidad(pb, estado) - 0.001);
+
+  const entro = bombear(objetivo || estado.activo, estado);
+  // Si el agua fue a OTRO pueblo del conjunto, se ve allí también: sin ese
+  // destello, tu depósito no sube y parece que el clic se perdió
+  if(entro > 0.001 && objetivo && objetivo !== estado.activo){
+    const tam2 = escena.tam;
+    escena.destello(objetivo.col * tam2 - estado.camara.x + tam2 / 2,
+                    objetivo.fila * tam2 - estado.camara.y + tam2 / 2);
+  }
   if(entro <= 0.001){
     if(!desbordeAvisado){
       desbordeAvisado = true;
@@ -167,7 +184,7 @@ function procesarAcciones(){
         const O = CONFIG.mapaMundo, tam = escena.tam;
         const px = a.x != null ? a.x : O.origen.col * tam - estado.camara.x + tam / 2;
         const py = a.y != null ? a.y : O.origen.fila * tam - estado.camara.y + tam / 2;
-        golpeDeBomba(px, py);
+        golpeDeBomba(px, py, estado.activo.col, estado.activo.fila);
         break;
       }
 
@@ -424,7 +441,7 @@ function procesarAcciones(){
           // enseñaba nada. Ahora tiene ficha (nombre, estampa, datos) y
           // esconderla era el fallo que el autor encontró jugando.
           estado.seleccion = { col, fila };
-          golpeDeBomba(a.x, a.y);
+          golpeDeBomba(a.x, a.y, col, fila);
           break;
         }
 
@@ -441,7 +458,7 @@ function procesarAcciones(){
             .find(k => CONFIG.redes[k].piezas.includes(obraAqui.tipo));
           if(redPieza === 'abastecimiento' && !averiaEn(estado, col, fila)
              && casillaEnRed(estado, col, fila, 'abastecimiento'))
-            golpeDeBomba(a.x, a.y);
+            golpeDeBomba(a.x, a.y, col, fila);
           break;
         }
 
@@ -1280,12 +1297,26 @@ function progresoOffline(){
     m3: estado.m3Servidos,
     cont: estado.contaminacion
   };
+  // La foto de los habitantes, pueblo a pueblo: ver abajo — la noche no puede
+  // despoblar.
+  const habAntes = estado.pueblos.map(p => p.habitantes);
   let restante = aSimular;
   const paso = 30;
   while(restante > 0){
     avanzar(estado, Math.min(paso, restante));   // sin averías nuevas offline
     restante -= paso;
   }
+  /* LA NOCHE NO DESPUEBLA (lo cazó el autor: jugabas un rato, volvías al día
+     siguiente y habías perdido casi todos los habitantes — 8 horas reales son
+     AÑOS de juego, y con el servicio a medias de una partida recién empezada
+     la simulación vaciaba los pueblos). La regla: en tu ausencia los pueblos
+     pueden CRECER si los dejaste bien servidos, pero nunca menguar — los
+     vecinos no se van mientras duermes, aunque tampoco llega nadie nuevo si
+     el grifo no daba. Las pérdidas de DINERO (multas, cauce) sí se pagan:
+     la ausencia no es un escudo, pero tampoco un castigo por vivir. */
+  estado.pueblos.forEach((p, i) => {
+    if(p.habitantes < habAntes[i]) p.habitantes = habAntes[i];
+  });
   // Sin nadie al mando, la explotación rinde MENOS: de la ganancia solo se
   // cobra una fracción. Las pérdidas (multas, cauce) se pagan enteras — la
   // ausencia no puede ser un escudo contra las consecuencias.

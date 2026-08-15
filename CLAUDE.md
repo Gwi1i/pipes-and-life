@@ -752,6 +752,16 @@ estancado sin saber por qué. En el mapa, la ETAP son balsas RECTANGULARES
 temprana retrasa fase 2 de 58 a 69 min — es el precio de la decisión, no un
 error de calibrado.
 
+**El clic sirve AL CONJUNTO.** Los pueblos que comparten red de
+abastecimiento funcionan como uno (petición del autor): el golpe de bomba
+se da donde clicas —el pueblo, el depósito, cualquier pieza conectada—
+pero el agua va al pueblo MÁS SEDIENTO del conjunto
+(`conjuntoDeRed()` en mapa.js recorre la mancha de tubería desde la
+casilla clicada). Mismos litros por clic: repartir con cabeza no
+multiplica el caudal, así no hay que topar cuántos pueblos comparten red.
+Si el agua fue a otro pueblo, allí también destella — sin eso, tu depósito
+no sube y el clic parece perdido.
+
 **El clic tiene dos límites** (`CONFIG.bombeo`): con el depósito LLENO cada
 golpe se DERRAMA y ensucia el cauce un poco (`contaminacionPorDesborde`, lo
 aplica `bombear()` en simulacion; main le pone cara: sin destello, sonido
@@ -968,7 +978,12 @@ muy por debajo de la real.
 (la curva diaria y el estiaje cambian por el camino) con tope `offline.maxHoras`
 (8 h: la noche entera cabe, decidido al empezar a medir retención) y al
 `offline.rendimiento` (50%): de la GANANCIA solo se cobra la mitad —
-las pérdidas se pagan enteras, la ausencia no es un escudo—. Ampliar horas o
+las pérdidas se pagan enteras, la ausencia no es un escudo—. Y LA NOCHE NO
+DESPUEBLA (petición del autor: 8 h reales son AÑOS de juego, y volver al día
+siguiente con los pueblos vacíos obligaba a conectarse cada poco): en tu
+ausencia los pueblos pueden CRECER si quedaron bien servidos, pero nunca
+menguar — el clamp por pueblo va al final de `progresoOffline()`. Las
+multas y el cauce sí corren. Ampliar horas o
 rendimiento es el gancho de monetización (`offline.desbloqueoExterno`): NO hay
 pago implementado y no se simula ninguno falso. Usa `estado.ultimoInstante`,
 que `guardar()` sella en cada guardado Y al esconderse la pestaña

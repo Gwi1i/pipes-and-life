@@ -697,6 +697,44 @@ export function sondear(celdas, col, fila){
   return celda.sondeo === 'positivo' ? claseAcuifero(celda) : null;
 }
 
+/**
+ * EL CONJUNTO de una casilla: los pueblos que comparten red con ella. Se
+ * recorre la mancha de tubería de esa red desde la casilla (con la
+ * adyacencia de siempre: tocar una casilla vecina conecta) y se devuelven
+ * los pueblos que están SOBRE la mancha o PEGADOS a ella. Es la cuenta del
+ * bombeo compartido: un golpe en cualquier pieza del conjunto sirve al
+ * pueblo del conjunto que más lo necesita (petición del autor: dos pueblos
+ * colgados del mismo depósito deben funcionar como uno).
+ */
+export function conjuntoDeRed(estado, col, fila, red){
+  const M = CONFIG.mapaMundo;
+  const clave = (c, f) => f * M.cols + c;
+  const cobertura = new Set();
+  for(const tb of estado.tuberias || []){
+    if((tb.red || 'abastecimiento') !== red) continue;
+    for(const p of tb.camino) cobertura.add(clave(p.col, p.fila));
+  }
+  const dentro = new Set([clave(col, fila)]);
+  const cola = [[col, fila]];
+  while(cola.length){
+    const [c, f] = cola.pop();
+    for(const [dc, df] of [[1, 0], [-1, 0], [0, 1], [0, -1]]){
+      const nc = c + dc, nf = f + df;
+      if(nc < 0 || nf < 0 || nc >= M.cols || nf >= M.filas) continue;
+      const k = clave(nc, nf);
+      if(dentro.has(k) || !cobertura.has(k)) continue;
+      dentro.add(k);
+      cola.push([nc, nf]);
+    }
+  }
+  return (estado.pueblos || []).filter(p => {
+    if(!p.desbloqueado) return false;
+    if(dentro.has(clave(p.col, p.fila))) return true;
+    return [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dc, df]) =>
+      dentro.has(clave(p.col + dc, p.fila + df)));
+  });
+}
+
 export function puedeColocar(celdas, construcciones, tipo, col, fila){
   const def = CONFIG.construibles[tipo];
   if(!def) return { ok: false, motivo: t`Eso no se puede construir.` };

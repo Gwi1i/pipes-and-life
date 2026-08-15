@@ -624,107 +624,163 @@ export class EscenaMapa extends Escena {
     }
 
     if(fam === 'relieve'){
-      // Lo que cambia entre colina, sierra y roca viva es la ALTURA, las aristas
-      // y si tiene nevero: una colina es un lomo bajo y pelado, la roca viva un
-      // pico agudo y nevado. El depósito cabe en las tres, pero cruzarlas cuesta
-      // muy distinto.
-      const perfil = {
-        colina: { alto: 0.26, nevero: false, aristas: 1 },
-        sierra: { alto: 0.46, nevero: true,  aristas: 3 },
-        roca:   { alto: 0.58, nevero: true,  aristas: 4 }
-      }[celda.tipo] || { alto: 0.46, nevero: true, aristas: 3 };
-
+      /* REHECHO ENTERO (el autor, dos veces: "las montañas no parecen
+         reales"). El fallo era de raíz: un triángulo de dos caras no es una
+         montaña — al ojo lo convence la SILUETA DENTADA, no el volumen. La
+         colina pasa a ser un lomo redondeado con el hueso de piedra
+         asomando; la sierra y la roca viva, un MACIZO de cresta irregular
+         con caras low-poly (los tramos que bajan a la derecha, en sombra) y
+         el nevero siguiendo la cresta. Todo determinista por celda: la
+         misma montaña sale igual en cada fotograma y en la ficha. */
+      const az = n => (Math.sin(v * 91.7 + n * 47.3) + 1) / 2;
       const roca = def.color;
-      const cx = x + t * (0.46 + v * 0.08), base = y + t * 0.80;
-      const W = t * (0.32 + v * 0.05), H = W * 0.5;
-      const alto = t * (perfil.alto + v * 0.10);
-      const cumbre = base - alto;
-      const cima = cx + (v - 0.5) * W * 0.35;
+      const base = y + t * 0.80;
 
-      // la sombra de contacto: sin ella la montaña flotaba sobre la ficha
-      this.sombraPieza(cx + W * 0.12, base + t * 0.015, W * 0.85, H * 0.5, 0.20);
-
-      if(v > 0.55 && perfil.alto > 0.3){
-        const px2 = cx - W * 0.62, alto2 = alto * 0.62;
+      if(celda.tipo === 'colina'){
+        const cx = x + t * (0.5 + (v - 0.5) * 0.10);
+        const R = t * (0.28 + v * 0.08);
+        // el lomo es ASIMÉTRICO y cada colina carga el peso a un lado: tres
+        // lomas simétricas en fila cantaban a sello de goma
+        const sesgo = (az(1) - 0.5) * 0.5;
+        const lomaPath = (lx, r) => {
+          const cima = lx + r * sesgo;
+          ctx.beginPath();
+          ctx.moveTo(lx - r, base);
+          ctx.quadraticCurveTo(cima - r * 0.6, base - r * (0.9 + az(2) * 0.2),
+                               cima, base - r * (0.92 + az(2) * 0.16));
+          ctx.quadraticCurveTo(cima + r * 0.55, base - r * 0.85, lx + r, base);
+          ctx.closePath();
+        };
+        this.sombraPieza(cx + R * 0.2, base + t * 0.015, R * 1.5, R * 0.5, 0.18);
+        // la loma de atrás, apagada; la grande, delante y con su luz
+        ctx.fillStyle = oscurecer(roca, 0.16);
+        lomaPath(cx + R * 0.62, R * 0.70); ctx.fill();
+        ctx.fillStyle = roca;
+        lomaPath(cx - R * 0.10, R); ctx.fill();
+        ctx.save();
+        lomaPath(cx - R * 0.10, R); ctx.clip();
+        // el cel-shading parte de la CIMA (que va sesgada), no del centro:
+        // con el pliegue en el centro fijo, la colina inclinada quedaba rara
+        const cimaX = cx - R * 0.10 + R * sesgo;
+        ctx.fillStyle = 'rgba(0,0,0,0.14)';
+        ctx.fillRect(cimaX, base - R * 1.2, R * 1.4, R * 1.3);
+        ctx.fillStyle = 'rgba(255,255,255,0.15)';
+        ctx.fillRect(cx - R * 0.10 - R, base - R * 1.2, (cimaX - (cx - R * 0.10 - R)) * 0.45, R * 1.3);
+        // el hueso de PIEDRA asomando por la ladera: eso la hace colina y no
+        // un montículo de hierba
         ctx.fillStyle = oscurecer(roca, 0.34);
-        ctx.beginPath();
-        ctx.moveTo(px2, base - alto2);
-        ctx.lineTo(px2 - W * 0.5, base - H * 0.4);
-        ctx.lineTo(px2 + W * 0.5, base - H * 0.4);
-        ctx.closePath(); ctx.fill();
+        for(let k = 0; k < 3; k++){
+          const rr = R * (0.10 + az(k + 4) * 0.08);
+          ctx.beginPath();
+          ctx.ellipse(cx - R * 0.5 + R * az(k) * 1.0,
+                      base - R * (0.25 + az(k + 8) * 0.35),
+                      rr, rr * 0.55, (az(k) - 0.5) * 0.6, 0, 7);
+          ctx.fill();
+        }
+        ctx.restore();
+        ctx.strokeStyle = `rgba(14,21,29,${CONFIG.estiloMapa.tinta * 0.7})`;
+        ctx.lineWidth = Math.max(1, t * 0.016);
+        lomaPath(cx - R * 0.10, R); ctx.stroke();
+        return;
       }
 
-      ctx.fillStyle = aclarar(roca, 0.28);
-      ctx.beginPath();
-      ctx.moveTo(cima, cumbre); ctx.lineTo(cx - W, base - H);
-      ctx.lineTo(cx, base); ctx.closePath(); ctx.fill();
-      ctx.fillStyle = oscurecer(roca, 0.32);
-      ctx.beginPath();
-      ctx.moveTo(cima, cumbre); ctx.lineTo(cx + W, base - H);
-      ctx.lineTo(cx, base); ctx.closePath(); ctx.fill();
+      // SIERRA y ROCA VIVA: el macizo de cresta dentada
+      const esRoca = celda.tipo === 'roca';
+      const cx = x + t * 0.5;
+      const W = t * (0.40 + v * 0.04);
+      const altoMax = t * (esRoca ? 0.60 : 0.46) * (0.92 + v * 0.16);
+      const nP = esRoca ? 7 : 6;
+
+      const pts = [[cx - W, base]];
+      let iCumbre = 1;
+      for(let k = 1; k < nP; k++){
+        const q = k / nP;
+        const h = altoMax * Math.pow(Math.sin(q * Math.PI), 0.7)
+                          * (0.55 + az(k) * 0.5);
+        pts.push([cx - W + 2 * W * q + (az(k + 9) - 0.5) * W * 0.10, base - h]);
+        if(pts[k][1] < pts[iCumbre][1]) iCumbre = k;
+      }
+      pts.push([cx + W, base]);
+      // la cumbre principal, a tope: sin protagonista salía un lomo cualquiera
+      pts[iCumbre][1] = base - altoMax;
+
+      const silueta = () => {
+        ctx.beginPath();
+        ctx.moveTo(pts[0][0], pts[0][1]);
+        for(let k = 1; k < pts.length; k++) ctx.lineTo(pts[k][0], pts[k][1]);
+        ctx.closePath();
+      };
+
+      this.sombraPieza(cx + W * 0.1, base + t * 0.015, W * 1.7, W * 0.5, 0.20);
+
+      ctx.fillStyle = aclarar(roca, 0.14);
+      silueta(); ctx.fill();
 
       ctx.save();
-      ctx.beginPath();
-      ctx.moveTo(cima, cumbre); ctx.lineTo(cx - W, base - H);
-      ctx.lineTo(cx, base); ctx.lineTo(cx + W, base - H);
-      ctx.closePath(); ctx.clip();
-      for(let k = 1; k <= perfil.aristas; k++){
-        const q = k / (perfil.aristas + 1);
-        ctx.strokeStyle = 'rgba(0,0,0,' + (0.13 - k * 0.02) + ')';
-        ctx.lineWidth = Math.max(1, t * 0.018);
+      silueta(); ctx.clip();
+      // el low-poly honesto: la luz del juego viene de la izquierda, así que
+      // cada tramo de cresta que BAJA hacia la derecha es una cara en sombra
+      ctx.fillStyle = 'rgba(0,0,0,0.24)';
+      for(let k = 0; k < pts.length - 1; k++){
+        if(pts[k + 1][1] <= pts[k][1]) continue;
         ctx.beginPath();
-        ctx.moveTo(cx - W * q * 1.05, base - H + (cumbre - base + H) * (1 - q));
-        ctx.lineTo(cima, cumbre + alto * q * 0.85);
-        ctx.lineTo(cx + W * q * 1.05, base - H + (cumbre - base + H) * (1 - q));
-        ctx.stroke();
-      }
-      ctx.restore();
-
-      if(perfil.nevero){
-        ctx.fillStyle = '#f4f8fc';
-        ctx.beginPath();
-        ctx.moveTo(cima, cumbre);
-        ctx.lineTo(cima - W * 0.40, cumbre + alto * 0.30);
-        ctx.lineTo(cima - W * 0.16, cumbre + alto * 0.19);
-        ctx.lineTo(cima - W * 0.02, cumbre + alto * 0.34);
-        ctx.lineTo(cima + W * 0.16, cumbre + alto * 0.17);
-        ctx.lineTo(cima + W * 0.38, cumbre + alto * 0.28);
+        ctx.moveTo(pts[k][0], pts[k][1]);
+        ctx.lineTo(pts[k + 1][0], pts[k + 1][1]);
+        ctx.lineTo(pts[k + 1][0], base);
+        ctx.lineTo(pts[k][0], base);
         ctx.closePath(); ctx.fill();
       }
-
-      ctx.fillStyle = oscurecer(roca, 0.42);
-      for(let k = 0; k < 3; k++){
-        const rr = t * (0.020 + ((v * 7 + k * 0.4) % 1) * 0.018);
+      // GRIETAS quebradas cayendo de las cumbres
+      ctx.strokeStyle = 'rgba(0,0,0,0.20)';
+      ctx.lineWidth = Math.max(1, t * 0.014);
+      for(const k of [iCumbre, Math.min(pts.length - 2, iCumbre + 2)]){
         ctx.beginPath();
-        ctx.ellipse(cx + W * (0.35 + k * 0.22), base - H * 0.1 + t * 0.02 * k,
+        ctx.moveTo(pts[k][0], pts[k][1] + t * 0.02);
+        ctx.lineTo(pts[k][0] + (az(k + 3) - 0.5) * t * 0.10,
+                   pts[k][1] + (base - pts[k][1]) * 0.5);
+        ctx.lineTo(pts[k][0] + (az(k + 5) - 0.5) * t * 0.16, base - t * 0.02);
+        ctx.stroke();
+      }
+      // el NEVERO siguiendo la cresta, con el borde bajo en dientes; la roca
+      // viva va más vestida de blanco que la sierra
+      const nieveY = base - altoMax * (esRoca ? 0.52 : 0.70);
+      ctx.fillStyle = 'rgba(244,248,252,0.95)';
+      ctx.beginPath();
+      ctx.moveTo(pts[0][0], Math.max(pts[0][1], nieveY));
+      for(let k = 0; k < pts.length; k++) ctx.lineTo(pts[k][0], pts[k][1]);
+      for(let k = pts.length - 1; k >= 0; k--)
+        ctx.lineTo(pts[k][0],
+                   Math.max(pts[k][1] + t * 0.02, nieveY + (az(k) - 0.5) * t * 0.07));
+      ctx.closePath(); ctx.fill();
+      ctx.restore();
+
+      // el filo de LUZ en los tramos que suben: es lo que hace arista
+      ctx.strokeStyle = 'rgba(255,255,255,0.30)';
+      ctx.lineWidth = Math.max(1, t * 0.014);
+      ctx.beginPath();
+      for(let k = 0; k < pts.length - 1; k++){
+        if(pts[k + 1][1] < pts[k][1]){
+          ctx.moveTo(pts[k][0], pts[k][1]);
+          ctx.lineTo(pts[k + 1][0], pts[k + 1][1]);
+        }
+      }
+      ctx.stroke();
+
+      // la pedrera al pie
+      ctx.fillStyle = oscurecer(roca, 0.42);
+      for(let k = 0; k < 4; k++){
+        const rr = t * (0.018 + az(k + 20) * 0.02);
+        ctx.beginPath();
+        ctx.ellipse(cx - W * 0.8 + W * 1.6 * az(k + 30), base + t * 0.012,
                     rr, rr * 0.6, 0, 0, 7);
         ctx.fill();
       }
-
-      ctx.strokeStyle = oscurecer(roca, 0.50);
-      ctx.lineWidth = Math.max(0.8, t * 0.012);
-      ctx.beginPath();
-      ctx.moveTo(cima, cumbre); ctx.lineTo(cx, base);
-      ctx.stroke();
-
-      // el filo de LUZ de la arista izquierda: es lo que hace pico y no mancha
-      ctx.strokeStyle = 'rgba(255,255,255,0.30)';
-      ctx.lineWidth = Math.max(1, t * 0.016);
-      ctx.beginPath();
-      ctx.moveTo(cima, cumbre); ctx.lineTo(cx - W, base - H);
-      ctx.stroke();
 
       // y la SILUETA a tinta, como todo lo que se levanta del suelo
       ctx.strokeStyle = `rgba(14,21,29,${CONFIG.estiloMapa.tinta * 0.9})`;
       ctx.lineWidth = Math.max(1, t * 0.018);
       ctx.lineJoin = 'round';
-      ctx.beginPath();
-      ctx.moveTo(cx - W, base - H);
-      ctx.lineTo(cima, cumbre);
-      ctx.lineTo(cx + W, base - H);
-      ctx.lineTo(cx, base);
-      ctx.closePath();
-      ctx.stroke();
+      silueta(); ctx.stroke();
     }
   }
 
