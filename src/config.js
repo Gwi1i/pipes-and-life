@@ -952,6 +952,38 @@ export const CONFIG = {
      pueblo activo (su red municipal de siempre); cada pieza del MAPA se
      selecciona y se amplía individualmente. Ampliar multiplica su aporte:
      una pieza de nivel 3 cuenta como tres. */
+  /* ---------- CUPOS DE OBRA ----------
+     La mancomunidad justifica obras según los pueblos que sirve (petición del
+     autor: sin tope se podía empapelar el mapa de captaciones y trampear el
+     discurso normal del juego). Tope por tipo = base + porPueblo × pueblos
+     incorporados, redondeando hacia abajo. La válvula de escape legítima es
+     AMPLIAR lo construido: una pieza a nivel 4 rinde por cuatro sin gastar
+     cupo. Un tipo sin entrada aquí no tiene tope. */
+  cupos: {
+    captacion:      { base: 1, porPueblo: 0.5 },
+    acuifero:       { base: 1, porPueblo: 0.5 },
+    bomba:          { base: 1, porPueblo: 0.5 },
+    deposito:       { base: 1, porPueblo: 1 },
+    potabilizadora: { base: 1, porPueblo: 0.25 },
+    depuradora:     { base: 1, porPueblo: 0.5 },
+    tanque:         { base: 1, porPueblo: 0.5 },
+    vertedero:      { base: 1, porPueblo: 0.25 },
+    reciclaje:      { base: 1, porPueblo: 0.25 }
+  },
+
+  /* ---------- ENERGÍA ----------
+     La ficha del bombeo lo dice desde el primer día ("la energía eléctrica es
+     casi siempre la mayor partida del coste de explotación")... y hasta ahora
+     era gratis. €/h por NIVEL de pieza CONECTADA: lo desconectado o averiado
+     no consume, igual que no aporta. El pozo es el más caro —bombear desde
+     abajo cuesta— y depósito, tanque y vertedero van a gravedad: cero. */
+  energia: {
+    porHora: {
+      bomba: 3, captacion: 2, acuifero: 4,
+      potabilizadora: 5, depuradora: 6, reciclaje: 4
+    }
+  },
+
   ampliacion: {
     // La potabilizadora faltaba: llegó después y nadie la apuntó aquí, así
     // que su ficha salía sin botón AMPLIAR y parecía que "no tenía niveles".

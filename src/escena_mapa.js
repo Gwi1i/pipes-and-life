@@ -2309,7 +2309,8 @@ export class EscenaMapa extends Escena {
     const x = r.col * t - estado.camara.x, y = r.fila * t - estado.camara.y;
 
     if(estado.modo.tipo === 'colocar'){
-      const v = puedeColocar(estado.mapa, estado.construcciones, estado.modo.elemento, r.col, r.fila);
+      const v = puedeColocar(estado.mapa, estado.construcciones, estado.modo.elemento, r.col, r.fila,
+                             estado.pueblos.length);
       ctx.fillStyle = v.ok ? 'rgba(74,222,128,0.30)' : 'rgba(239,68,68,0.30)';
       ctx.fillRect(x, y, t, t);
       ctx.strokeStyle = v.ok ? CONFIG.color.ok : CONFIG.color.critico;

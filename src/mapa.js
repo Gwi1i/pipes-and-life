@@ -735,7 +735,7 @@ export function conjuntoDeRed(estado, col, fila, red){
   });
 }
 
-export function puedeColocar(celdas, construcciones, tipo, col, fila){
+export function puedeColocar(celdas, construcciones, tipo, col, fila, nPueblos){
   const def = CONFIG.construibles[tipo];
   if(!def) return { ok: false, motivo: t`Eso no se puede construir.` };
 
@@ -750,6 +750,20 @@ export function puedeColocar(celdas, construcciones, tipo, col, fila){
     return { ok: false, motivo: t`Ya hay algo construido ahí.` };
   if(celda.hallazgo === 'pueblo')
     return { ok: false, motivo: t`Ahí está el pueblo.` };
+
+  // EL CUPO: la mancomunidad justifica obras según los pueblos que sirve.
+  // Va antes que las pegas de terreno — "aquí no cabe" con cupo agotado
+  // haría creer que en otra casilla sí se podría. Sin nPueblos (llamada
+  // vieja) no se comprueba: mejor manga ancha que un tope fantasma.
+  const cupo = CONFIG.cupos[tipo];
+  if(cupo && nPueblos != null){
+    const tope = cupo.base + Math.floor(cupo.porPueblo * nPueblos);
+    const yaHay = construcciones.filter(o => o.tipo === tipo).length;
+    if(yaHay >= tope)
+      return { ok: false, motivo: t`Cupo de obra: la mancomunidad (${nPueblos} ${
+        nPueblos === 1 ? t`pueblo` : t`pueblos`}) justifica ${tope} de ${
+        def.nombre.toLowerCase()}. Amplía las construidas o incorpora otro pueblo.` };
+  }
 
   // El pozo no va "en un terreno": va donde el sondeo ha dado agua. Por eso su
   // definición no lleva `terreno` y la comprobación es esta.

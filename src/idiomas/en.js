@@ -905,6 +905,12 @@ export const EN = {
       'NOT CONNECTED: it contributes nothing until its network reaches it.',
     '{0} SIN CONECTAR: llévale la {1} para que trabaje.':
       '{0} NOT CONNECTED: bring its {1} over to put it to work.',
+    'Consume <b>{0} €/h</b> de energía mientras esté conectada.':
+      'Uses <b>€{0}/h</b> of energy while connected.',
+    'Cupo de obra: la mancomunidad ({0} {1}) justifica {2} de {3}. Amplía las construidas o incorpora otro pueblo.':
+      'Works quota: the district ({0} {1}) justifies {2} {3}. Upgrade the ones you have or bring in another town.',
+    'pueblo': 'town',
+    'pueblos': 'towns',
     '¿Qué es esto?': 'What is this?',
     'Turno echado: la venta va al <b>+{0} %</b> todavía {1} horas más.':
       'Shift worked: sales are at <b>+{0} %</b> for {1} more hours.',

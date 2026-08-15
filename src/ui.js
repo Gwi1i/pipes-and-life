@@ -892,7 +892,7 @@ export class UI {
         ${situacion}
         ${lineasAqui}
         ${turno}
-        <p class="m-desc">${this.queAporta(obra.tipo, nivel) || def.desc}</p>
+        <p class="m-desc">${this.queAporta(obra.tipo, nivel, def.desc) || def.desc}</p>
         ${!ampliable ? '' : nivel >= A.nivelMax
           ? `<p class="m-desc">${t`Ampliada al máximo: si hace falta más, toca construir otra.`}</p>`
           : `<button class="mejora obra" data-accion="ampliarPieza" style="--tono:${def.color}">
@@ -1052,8 +1052,17 @@ export class UI {
    * números. Es la respuesta a "¿cuál de mis dos depósitos es este?": el que
    * dice lo que dice esta ficha.
    */
-  queAporta(tipo, nivel){
+  queAporta(tipo, nivel, desc = ''){
     const P = CONFIG.aportePorPieza;
+    // La luz se dice junto al aporte: pagar sin saberlo parecería un robo.
+    // `desc` es el respaldo para piezas sin línea de aporte (reciclaje,
+    // pozo...): así la luz no les borra la descripción.
+    const kwh = CONFIG.energia.porHora[tipo];
+    const luz = kwh ? ' ' + t`Consume <b>${kwh * nivel} €/h</b> de energía mientras esté conectada.` : '';
+    return (this.aporteBase(tipo, nivel, P) || desc) + luz;
+  }
+
+  aporteBase(tipo, nivel, P){
     switch(tipo){
       case 'captacion':
         return t`Aporta <b>${(nivel * P.captacion).toFixed(2)} L/s</b> de producción
@@ -1204,6 +1213,8 @@ export class UI {
       }).join('');
 
     // Y qué piezas admite. Es la pregunta que de verdad se hace uno al mirar.
+    // Sin nPueblos A PROPÓSITO: aquí se habla del TERRENO, y el cupo agotado
+    // haría decir "esta casilla no admite depósito" cuando la casilla sí puede.
     const cabe = Object.entries(CONFIG.construibles)
       .filter(([k]) => puedeColocar(estado.mapa, estado.construcciones, k, sel.col, sel.fila).ok)
       .map(([, d]) => d.nombre);

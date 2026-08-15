@@ -37,7 +37,8 @@ function buscarSitio(estado, tipo, radio = 8){
         if(!celda) continue;
         celda.oculta = false;   // el bot no paga la exploración
         if(estado.construcciones.some(o => o.col === c && o.fila === f)) continue;
-        if(puedeColocar(estado.mapa, estado.construcciones, tipo, c, f).ok)
+        // Con nPueblos: el bot respeta los cupos como cualquier jugador
+        if(puedeColocar(estado.mapa, estado.construcciones, tipo, c, f, estado.pueblos.length).ok)
           return { c, f };
       }
   return null;

@@ -431,6 +431,24 @@ MAPA se amplía seleccionándola. El vertedero queda FUERA de la ampliación
 genérica: su `nivel` es el vaso y tiene su propio botón. Las partidas viejas
 bautizan sus obras al cargar.
 
+**El CUPO de obra: la mancomunidad justifica lo que sirve.** Tope por tipo
+de pieza = `base + porPueblo × pueblos` (`CONFIG.cupos`; un tipo sin entrada
+no tiene tope), comprobado en `puedeColocar()` — que ahora recibe `nPueblos`
+al final; sin él NO comprueba cupo, a propósito: la ficha de casilla lo
+omite porque ahí se habla del terreno, no del expediente. Petición del
+autor: sin tope se empapelaba el mapa de captaciones y se trampeaba el
+juego. La válvula legítima es AMPLIAR (nivel 4 rinde por cuatro sin gastar
+cupo). El bot pasa por el mismo cupo.
+
+**LA LUZ: las piezas con motor pagan energía.** `CONFIG.energia.porHora`
+(€/h por NIVEL conectado; depósito, tanque y vertedero a gravedad no
+figuran) se descuenta en `avanzar()` y sale en `resultado.luzHora`. Lo
+suelto o averiado no consume, igual que no aporta. La ficha de cada pieza
+dice su consumo (`queAporta`, que ahora recibe `desc` de respaldo para que
+la luz no borre la descripción de las piezas sin línea de aporte). La ficha
+del bombeo siempre presumió de que la energía era la mayor partida del
+coste de explotación: ahora es verdad.
+
 **Equivocarse tiene salida, pero no gratis.** Toda obra lleva DERRIBAR al final
 de su ficha (recupera `CONFIG.derribo.fraccionRecuperada` de lo invertido,
 pieza y ampliaciones; la avería de la casilla se va con el escombro) y toda

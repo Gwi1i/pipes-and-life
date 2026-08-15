@@ -1026,6 +1026,16 @@ export function avanzar(estado, dt){
   const multa = (estado.contaminacion / K.contaminacionMax) * K.multaMaxPorHora * dtHoras;
   estado.dinero -= multa;
 
+  // LA LUZ. Cada pieza CONECTADA con motor paga su energía por nivel y hora
+  // (la ficha del bombeo siempre dijo que era la mayor partida del coste de
+  // explotación, y hasta ahora era gratis). Lo suelto o averiado no consume,
+  // igual que no aporta: parada la planta, parado el contador.
+  let luzHora = 0;
+  for(const inv of Object.values(estado._conectadoRed))
+    for(const [tipoPieza, niveles] of Object.entries(inv))
+      luzHora += (CONFIG.energia.porHora[tipoPieza] || 0) * niveles;
+  estado.dinero -= luzHora * dtHoras;
+
   estado.horas += dtHoras;
 
   return {
@@ -1038,6 +1048,7 @@ export function avanzar(estado, dt){
     avisosAcuifero,
     suciedad,
     multa,
+    luzHora,
     frenoCrec,
     // El agua bruta contra lo potabilizado: el panel y los avisos beben de
     // aquí, no recalculan su propia versión.

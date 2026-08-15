@@ -968,7 +968,8 @@ function colocarElemento(col, fila){
   if(tropiezoArqueologico(col, fila)) return;
   const clave = estado.modo.elemento;
   const def = CONFIG.construibles[clave];
-  const veredicto = puedeColocar(estado.mapa, estado.construcciones, clave, col, fila);
+  const veredicto = puedeColocar(estado.mapa, estado.construcciones, clave, col, fila,
+                                 estado.pueblos.length);
   if(!veredicto.ok){ avisar(veredicto.motivo); return; }
 
   // Si viene del inventario ya está pagada: se rescató de una ruina
@@ -1026,8 +1027,11 @@ function accionRuina(desmontar){
   if(!estado.puedePagar(coste)){ avisar(t`Hacen falta ${formatear(coste)} €.`); return; }
 
   if(!desmontar){
-    // Reparar en el sitio exige que el terreno le sirva a esa pieza
-    const v = puedeColocar(estado.mapa, estado.construcciones, tipo, sel.col, sel.fila);
+    // Reparar en el sitio exige que el terreno le sirva a esa pieza — y cupo
+    // libre: una obra rescatada también es una obra. Si no hay cupo, al
+    // almacén: guardada no gasta y espera al siguiente pueblo.
+    const v = puedeColocar(estado.mapa, estado.construcciones, tipo, sel.col, sel.fila,
+                           estado.pueblos.length);
     if(!v.ok){
       avisar(t`No se puede poner en marcha aquí: ${v.motivo} Prueba a desmontarla.`);
       return;
