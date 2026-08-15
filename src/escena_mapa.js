@@ -14,6 +14,7 @@ import { CONFIG } from './config.js';
 import { celdaEn, clicsParaDestapar, esAlcanzable, puedeColocar,
          puedeSeguirTrazado, costeTrazado, costeCasillaTuberia,
          diametro, nivelDiametro, redDe, casillaEnRed,
+         construccionesConectadas, averiaEn,
          nucleoMasCercano, nombreDeNucleo } from './mapa.js';
 import { poderExpansion, llenadoVaso, factorEstiaje,
          capacidad, escalonCaserio } from './simulacion.js';
@@ -1467,8 +1468,53 @@ export class EscenaMapa extends Escena {
    * Todas comparten la misma luz —clara arriba, oscura al lado derecho— y su
    * sombra en el suelo, que es lo que las asienta sobre el terreno.
    */
+  /**
+   * Qué piezas están SIN CONECTAR a su red. El autor colocó una potabilizadora
+   * y nada en el mapa le decía si había quedado enganchada: la ficha lo cuenta,
+   * pero solo si la seleccionas — la duda hay que resolverla mirando el mapa.
+   * El recorrido de red es caro, así que se cachea y solo se rehace cuando
+   * cambia lo construido o lo tendido.
+   */
+  piezasSueltas(estado){
+    // Las averías entran en la firma: el recuento de conectadas las excluye,
+    // y reparar una cambia la conectividad sin cambiar ningún otro número.
+    const firma = estado.tuberias.length + ':' + estado.construcciones.length
+                + ':' + estado.averias.length;
+    if(this._sueltasFirma === firma) return this._sueltas;
+    this._sueltasFirma = firma;
+    this._sueltas = new Set();
+    for(const [clave, r] of Object.entries(CONFIG.redes)){
+      if(!r.piezas.length) continue;
+      const enredadas = new Set(construccionesConectadas(estado, clave));
+      for(const o of estado.construcciones)
+        if(r.piezas.includes(o.tipo) && !enredadas.has(o)) this._sueltas.add(o);
+    }
+    return this._sueltas;
+  }
+
+  /** El cartel de SIN CONECTAR: un empalme abierto — dos cabos de tubo que
+   *  no llegan a tocarse — en ámbar, el color de "esto pide una decisión". */
+  marcaSinRed(x, y, t){
+    const ctx = this.ctx;
+    const r = Math.max(6, t * 0.16);
+    const cx = x + t * 0.82, cy = y + t * 0.16;
+    ctx.save();
+    ctx.fillStyle = 'rgba(8,15,23,0.92)';
+    ctx.strokeStyle = '#f5b544';
+    ctx.lineWidth = Math.max(1, t * 0.02);
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.lineWidth = Math.max(1.5, t * 0.035);
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(cx - r * 0.62, cy + r * 0.30); ctx.lineTo(cx - r * 0.12, cy + r * 0.06);
+    ctx.moveTo(cx + r * 0.62, cy - r * 0.30); ctx.lineTo(cx + r * 0.12, cy - r * 0.06);
+    ctx.stroke();
+    ctx.restore();
+  }
+
   dibujarConstrucciones(estado){
     const ctx = this.ctx, t = this.tam;
+    const sueltas = this.piezasSueltas(estado);
     for(const obra of estado.construcciones){
       const x = obra.col * t - estado.camara.x, y = obra.fila * t - estado.camara.y;
       if(x < -t || y < -t || x > this._W || y > this._H) continue;
@@ -1513,11 +1559,17 @@ export class EscenaMapa extends Escena {
 
       // La silueta se dibuja siempre en su caja de t x t y se ESCALA aquí, así
       // ningún dibujo de pieza tiene que saber nada del tamaño final.
+      // Una pieza SIN CONECTAR se pinta apagada y con su cartel: sin red no
+      // trabaja, y eso tiene que verse desde el mapa, no solo en la ficha.
+      // (La averiada ya lleva su propia marca: no se le suma esta.)
+      const suelta = sueltas.has(obra) && !averiaEn(estado, obra.col, obra.fila);
       ctx.save();
+      if(suelta) ctx.globalAlpha = 0.55;
       ctx.translate(ox, oy);
       ctx.scale(lado / t, lado / t);
       this.silueta(obra.tipo, 0, 0, t, def.color, obra);
       ctx.restore();
+      if(suelta) this.marcaSinRed(x, y, t);
 
       // El vertedero enseña cuánto vaso le queda: cuando se llena deja de
       // tragar, y eso hay que verlo venir sin abrir ningún panel.

@@ -1099,7 +1099,7 @@ export class UI {
    * propósito para que se pueda leer sin ruido y para que sea evidente, al
    * añadir una pieza nueva, que también hay que explicarla.
    */
-  fichaHTML(def, clave){
+  fichaHTML(def, clave, abierta = false){
     if(!def || !def.ficha) return '';
     const f = def.ficha;
     // El DIAGRAMA va primero y es lo que hace que se lea lo de abajo. Un muro de
@@ -1108,8 +1108,13 @@ export class UI {
     const dib = clave && hayDiagrama(clave)
       ? `<canvas class="ficha-dib" data-diagrama="${clave}" width="440" height="240"></canvas>`
       : '';
+    // PLEGADA en la pieza ya construida (petición del autor: la ficha es
+    // bonita la primera vez y un estorbo la décima — empujaba el resto del
+    // lateral media pantalla abajo). ABIERTA al elegir pieza para construir,
+    // que es cuando apetece leerla. <details> nativo: cero cableado.
     return `
-      <div class="ficha" style="--tono:${def.color}">
+      <details class="ficha" style="--tono:${def.color}" ${abierta ? 'open' : ''}>
+        <summary class="ficha-resumen">${t`¿Qué es esto?`}</summary>
         ${dib}
         <p class="ficha-tit">${t`¿Qué es?`}</p>
         <p class="ficha-txt">${f.que}</p>
@@ -1117,7 +1122,7 @@ export class UI {
         <p class="ficha-txt">${f.para}</p>
         <p class="ficha-tit ficha-dato-tit">${t`Del oficio`}</p>
         <p class="ficha-txt ficha-dato">${f.dato}</p>
-      </div>`;
+      </details>`;
   }
 
   /**
@@ -1136,7 +1141,7 @@ export class UI {
     panel.style.display = '';
     document.getElementById('ficha').innerHTML = `
       <p class="red-cuello" style="--tono:${def.color}"><b>${def.nombre}</b></p>
-      ${this.fichaHTML(def, clave)}`;
+      ${this.fichaHTML(def, clave, true)}`;
   }
 
   /**

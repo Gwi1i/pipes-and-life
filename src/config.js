@@ -365,7 +365,9 @@ export const CONFIG = {
     dineroInicial: 260,
     // Alta a propósito: el esfuerzo de clicar se paga en DINERO, no en agua
     // regalada. Es lo que evita la desesperación de los primeros minutos.
-    tarifa: 14.00,
+    // Bajada de 14 (sensación del autor: el dinero se acumulaba demasiado
+    // rápido a media partida; medido con el bot, fase 2 sigue en la banda).
+    tarifa: 12.00,
     horasPorSegundo: 0.4
   },
 
@@ -547,7 +549,10 @@ export const CONFIG = {
     
   /* ---------- AVERÍAS (por pueblo) ---------- */
   averias: {
-    probBasePorHora: 0.006,
+    // Bajado de 0.006: al autor, con la instalación mediana, le caía una
+    // avería cada dos-tres minutos y arreglar dejaba de ser un suceso para
+    // ser un fondo. Una avería tiene que ser una VISITA, no un goteo.
+    probBasePorHora: 0.0025,
     factorDesgaste: 0.10,
     riesgoAutobomba: 4,
     // Una avería CAE SOBRE UNA PIEZA del mapa y la deja fuera de servicio: se
@@ -948,7 +953,9 @@ export const CONFIG = {
      selecciona y se amplía individualmente. Ampliar multiplica su aporte:
      una pieza de nivel 3 cuenta como tres. */
   ampliacion: {
-    tipos: ['captacion', 'bomba', 'deposito', 'depuradora', 'tanque'],
+    // La potabilizadora faltaba: llegó después y nadie la apuntó aquí, así
+    // que su ficha salía sin botón AMPLIAR y parecía que "no tenía niveles".
+    tipos: ['captacion', 'bomba', 'deposito', 'depuradora', 'tanque', 'potabilizadora'],
     nivelMax: 4,
     factorCoste: 1.7       // ampliar a nivel n cuesta coste × factor^(n-1)
   },

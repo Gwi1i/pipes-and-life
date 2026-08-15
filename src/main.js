@@ -987,6 +987,13 @@ function colocarElemento(col, fila){
   }
   estado.construcciones.push({ tipo: clave, col, fila, nivel: 1,
                                nombre: bautizarObra(estado.construcciones, clave) });
+  // Si queda SIN CONECTAR se dice en el acto (el autor colocó una
+  // potabilizadora y nada le decía si había quedado enganchada): el mapa
+  // además la pinta apagada y con su cartel hasta que le llegue la red.
+  const redPieza = Object.keys(CONFIG.redes)
+    .find(k => CONFIG.redes[k].piezas.includes(clave));
+  if(redPieza && !casillaEnRed(estado, col, fila, redPieza))
+    avisar(t`${def.nombre} SIN CONECTAR: llévale la ${CONFIG.redes[redPieza].corto} para que trabaje.`);
   sonido.colocar();
   // Se queda la herramienta puesta: normalmente se colocan varias seguidas
   ui.refrescarConstruccion(estado);

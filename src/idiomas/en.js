@@ -903,6 +903,9 @@ export const EN = {
       'BROKEN DOWN: it does not count in the network until you repair it by clicking it on the map.',
     'SIN CONECTAR: no aporta nada hasta que le llegue su red.':
       'NOT CONNECTED: it contributes nothing until its network reaches it.',
+    '{0} SIN CONECTAR: llévale la {1} para que trabaje.':
+      '{0} NOT CONNECTED: bring its {1} over to put it to work.',
+    '¿Qué es esto?': 'What is this?',
     'Turno echado: la venta va al <b>+{0} %</b> todavía {1} horas más.':
       'Shift worked: sales are at <b>+{0} %</b> for {1} more hours.',
     'Echar un turno en la línea': 'Work a shift on the line',

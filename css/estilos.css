@@ -159,6 +159,14 @@ button{touch-action:manipulation;}
   border-left:3px solid var(--tono);
   background:rgba(255,255,255,.025);
 }
+/* Plegada por defecto en la pieza construida: una línea que invita, no un
+   panel que empuja. El triángulo nativo de <summary> ya dice que se abre. */
+.ficha-resumen{
+  cursor:pointer; font-family:var(--mono); font-size:9px; font-weight:700;
+  letter-spacing:.13em; text-transform:uppercase; color:var(--tono);
+}
+.ficha[open] .ficha-resumen{margin-bottom:8px;}
+.ficha-resumen:hover{filter:brightness(1.25);}
 .ficha-dib{
   display:block; width:100%; height:auto; border-radius:4px;
   border:1px solid var(--linea-viva); margin-bottom:9px; background:#0d1a26;

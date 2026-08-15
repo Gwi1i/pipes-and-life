@@ -555,7 +555,9 @@ verdad, para qué sirve y un dato del oficio. El autor trabaja en abastecimiento
 quiere que quien juegue acabe sabiendo algo, así que esto NO es texto de juego —
 no habla de costes ni de niveles— y va en su propio bloque con otro aire. Se lee
 al elegir la pieza para construir (antes de pagarla, que es cuando apetece) y al
-clicar una ya construida. **Si añades una pieza, escríbele su ficha**: una
+clicar una ya construida — ahí va PLEGADA en un `<details>` (una línea "¿Qué es
+esto?"): abierta empujaba el lateral media pantalla y el autor pidió poder
+quitarla de en medio; al elegir pieza nueva sigue abierta. **Si añades una pieza, escríbele su ficha**: una
 instalación sin explicar rompe justo lo que el juego quiere hacer.
 
 **El clic vive EN EL MAPA.** Bombear es clicar EL PUEBLO, y solo el pueblo.
