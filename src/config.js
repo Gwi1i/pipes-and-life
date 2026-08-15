@@ -1017,7 +1017,13 @@ export const CONFIG = {
        inútiles, que es mejor que prohibirlos. */
   bombeo: {
     maxClicsPorSegundo: 10,
-    contaminacionPorDesborde: 0.06   // puntos de cauce por clic desbordado
+    contaminacionPorDesborde: 0.06,  // puntos de cauce por clic desbordado
+    /* El derrame ensucia HASTA AQUÍ y no más: es agua limpia. Lo encontró el
+       bot caótico — a 10 clics/s de tope, tres minutos de aporrear con el
+       depósito lleno ponían el cauce a 100 y una partida joven quedaba
+       condenada a la espiral de multas sin poder pagar la limpieza. El
+       castigo por aporrear es un cauce turbio que frena, nunca la ruina. */
+    desbordeTope: 30
   },
 
   aportePorPieza: {
@@ -1268,7 +1274,11 @@ export const CONFIG = {
      Excavarlo cuesta, pero luego renta todos los meses: el premio a haber
      tropezado con él y haberlo tratado bien. */
   arqueologia: {
-    cantidad: 40,            // cuántos esconde el mapa entero
+    // Subido de 40: eran el 0,6% de las 6.528 casillas y el autor jugó una
+    // partida entera sin tropezar con NINGUNO — una mecánica con ficha,
+    // rentas y premios gordos que casi nadie llegaba a ver. Al 1,4%, una
+    // zanja temprana de ~60 casillas ya da más de un 50% de encontronazo.
+    cantidad: 90,            // cuántos esconde el mapa entero
     distanciaMinima: 3,      // ninguno pegado al pueblo de origen
     costeExcavar: 2600,
     color: '#d9a441',

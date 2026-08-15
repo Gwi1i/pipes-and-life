@@ -1075,6 +1075,19 @@ equilibrio, re-medir cuesta segundos:
 `(await import('/medir_partida.mjs')).medir(0.25, 120)` desde la consola.
 Se salta el coste de explorar, así que sus tiempos son un suelo.
 
+**Romper la partida sin jugarla**: `probar_caos.mjs` es el bot CAÓTICO
+(petición del autor: los fallos viven en los caminos que nadie planeó). Hace
+acciones legales pero desordenadas con semilla reproducible —construir sin
+conectar, tender redes desde ninguna parte, derribar lo recién pagado,
+incorporar el pueblo más lejano, guardar/cargar a mitad— y vigila
+INVARIANTES: nada a NaN, nada negativo, ninguna excepción, y el desglose y
+el guardado tienen que tragarse cualquier estado alcanzable.
+`(await import('/probar_caos.mjs')).caos(123, 90)` desde la consola; aparta
+el guardado real y lo repone pase lo que pase. Su primera presa fue real: a
+10 clics/s, tres minutos de aporrear a depósito lleno ponían el cauce a 100
+y la partida joven moría en espiral de multas — de ahí
+`bombeo.desbordeTope` (el derrame ensucia hasta un tope: es agua limpia).
+
 
 `main.js` expone `window.juego` con `estado`, `entrada`, `escena` y `CONFIG`.
 Desde la consola del navegador:

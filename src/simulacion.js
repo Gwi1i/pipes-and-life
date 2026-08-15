@@ -743,9 +743,14 @@ export function bombear(pueblo, estado){
   const antes = pueblo.agua;
   pueblo.agua = Math.min(cap, pueblo.agua + litrosPorClic(pueblo, estado));
   const entro = pueblo.agua - antes;
-  if(entro <= 0.001)
-    estado.contaminacion = Math.min(CONFIG.cauce.contaminacionMax,
-      estado.contaminacion + CONFIG.bombeo.contaminacionPorDesborde);
+  if(entro <= 0.001){
+    // Solo ensucia por debajo del tope del derrame: agua limpia no arruina
+    // un río (ver el comentario en CONFIG.bombeo.desbordeTope).
+    const B = CONFIG.bombeo;
+    if(estado.contaminacion < B.desbordeTope)
+      estado.contaminacion = Math.min(B.desbordeTope,
+        estado.contaminacion + B.contaminacionPorDesborde);
+  }
   return entro;
 }
 
