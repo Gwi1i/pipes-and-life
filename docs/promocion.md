@@ -1,5 +1,10 @@
 # Kit de promoción — todo listo para copiar, pegar y firmar
 
+**El remitente de TODO lo público es el correo del juego:
+`pipesandlifegame@gmail.com`** — es la frontera entre el proyecto y la vida
+privada del autor: también es el correo de la cuenta de Reddit y el contacto
+a poner en la ficha de itch.
+
 Ningún texto de aquí se publica solo: cada uno es un correo que envías tú o
 un post que pegas tú. Orden recomendado: Reddit primero (es la cohorte de
 prueba y el contador medirá si vuelven), la prensa cuando la retención
