@@ -408,14 +408,23 @@ export class EscenaMapa extends Escena {
         if(!esTierraVec(b[0], b[1])) continue;
         ctx.fillStyle = 'rgba(180,225,240,0.30)';       // el bajío
         ctx.fillRect(b[2], b[3], b[4], b[5]);
-        ctx.strokeStyle = 'rgba(255,255,255,0.55)';     // la espuma, lamiendo
-        ctx.lineWidth = Math.max(1, t * 0.022);
-        ctx.setLineDash([t * 0.10, t * 0.14]);
-        ctx.lineDashOffset = -this.tiempo * t * 0.35;
-        ctx.beginPath();
-        ctx.moveTo(b[6], b[7]); ctx.lineTo(b[8], b[9]);
-        ctx.stroke();
-        ctx.setLineDash([]);
+        // La ESPUMA: lametones quietos que RESPIRAN, no una línea discontinua
+        // en marcha — aquello parecía el marcador de una zona y el autor
+        // preguntó qué significaba. La espuma no desfila: lame y se retira.
+        const largo = Math.hypot(b[8] - b[6], b[9] - b[7]);
+        const ux = (b[8] - b[6]) / largo, uy = (b[9] - b[7]) / largo;
+        // hacia dónde bomba el lametón: del lado de tierra hacia el agua
+        const angAgua = Math.atan2(-b[1], -b[0]);
+        ctx.lineWidth = Math.max(1, t * 0.02);
+        for(let e = 0; e < 3; e++){
+          const q = 0.16 + e * 0.32 + ((c * 7 + f * 13 + e * 5) % 10) * 0.012;
+          const px2 = b[6] + ux * largo * q, py2 = b[7] + uy * largo * q;
+          const resp = 0.5 + 0.5 * Math.sin(this.tiempo * 1.2 + c * 1.7 + f * 2.3 + e * 2.1);
+          ctx.strokeStyle = `rgba(255,255,255,${(0.12 + 0.34 * resp).toFixed(3)})`;
+          ctx.beginPath();
+          ctx.arc(px2, py2, t * (0.045 + 0.02 * resp), angAgua - 1.25, angAgua + 1.25);
+          ctx.stroke();
+        }
       }
     }
 
