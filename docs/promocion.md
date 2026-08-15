@@ -172,3 +172,52 @@ I've attached a couple of screenshots. Thanks for reading!
 - **Newgrounds** — clásico de juegos HTML5, público generalista.
 - **Mediavida › foro de desarrollo** — los indies españoles; un hilo
   contando el proyecto funciona bien si respondes a los comentarios.
+
+---
+
+## La estrategia, por fases (y su seguimiento)
+
+La regla que ordena todo: **cada ola de visitas cae sobre un juego que ya
+sabemos que retiene, o se desperdicia**. El contador (`/vuelve/dia-2`) es el
+semáforo entre fases.
+
+### Fase 1 — esta semana (coste: minutos)
+- [x] Devlog 1 publicado en itch
+- [ ] Correos a Free Game Planet y Alpha Beta Gamer (sección 4: copia-pega)
+- [ ] Calentar la cuenta de Reddit: LUNES, Claude prueba juegos del hilo
+      Feedback Friday y redacta 2-3 comentarios honestos; el autor los
+      revisa y los pega. Nada de enlaces propios todavía.
+
+### Fase 2 — viernes 21/08
+- [ ] Post en el hilo Feedback Friday de r/incremental_games (sección 1)
+- [ ] El mismo día: hilo en el foro de itch (Release Announcements), que
+      con la cuenta de itch ya existente no cuesta nada
+
+### Fase 3 — cuando el contador confirme retención (día 2 decente)
+- [ ] Correo a iAgua (sección 2)
+- [ ] Correo a prensa local (sección 3)
+- [ ] Hilo en Mediavida › desarrollo de juegos (cuenta nueva, español)
+- [ ] galaxy.click (cuenta nueva; el escaparate exacto del género)
+- [ ] La carta fuerte técnica: "Show HN" en Hacker News — el ángulo
+      "juego sin dependencias, sin framework y sin motor, hecho por un
+      técnico de aguas" es justo lo que allí funciona. Guardarla para
+      cuando el juego esté fino: HN solo da una oportunidad.
+
+### Fase 4 — goteo permanente
+- Un devlog en itch cada 1-2 semanas (Claude los deja escritos aquí)
+- Responder TODOS los comentarios (itch y Reddit): el algoritmo de itch
+  premia la actividad y la comunidad incremental premia al dev que escucha
+
+### El seguimiento
+
+Dos fuentes, una revisión por semana (Claude la hace y apunta aquí):
+- **GoatCounter**: visitas, `/vuelve/dia-2` y — clave para atribuir — los
+  REFERRERS: dicen qué canal trae gente de verdad. Si el panel se pone
+  público (Settings → "Allow anyone to view this site's stats"), Claude
+  puede consultarlo solo; si no, el autor pega el panel cuando toque.
+- **itch Analytics**: views, browser plays y de dónde llegan.
+
+| Fecha | Acción | Canal | Resultado (visitas/plays/comentarios) |
+|---|---|---|---|
+| 15/08 | Devlog 1 | itch | *(pendiente de medir)* |
+| | | | |
