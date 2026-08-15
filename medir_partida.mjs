@@ -44,28 +44,38 @@ function buscarSitio(estado, tipo, radio = 8){
   return null;
 }
 
-/** Tubería recta en L desde el pueblo incorporado más cercano hasta (c,f). */
+/** Tubería recta en L desde el pueblo incorporado más cercano hasta (c,f).
+ *  Prueba LAS DOS orientaciones de la L: con una sola, las ZEC del arranque
+ *  (mundo 2) dejaban al bot reintentando el mismo núcleo para siempre —
+ *  un humano rodea, así que el bot al menos dobla por el otro lado. */
 function tender(estado, red, c, f){
-  const M = O();
-  const camino = [];
   let base = estado.pueblos[0];
   for(const p of estado.pueblos)
     if(Math.hypot(p.col - c, p.fila - f) < Math.hypot(base.col - c, base.fila - f)) base = p;
-  let x = base.col, y = base.fila;
-  camino.push({ col: x, fila: y });
-  while(x !== c){ x += Math.sign(c - x); camino.push({ col: x, fila: y }); }
-  while(Math.abs(y - f) > 1){ y += Math.sign(f - y); camino.push({ col: x, fila: y }); }
-  for(const p of camino){ const cel = celdaEn(estado.mapa, p.col, p.fila); if(cel) cel.oculta = false; }
-  // El bot respeta las zonas protegidas igual que el jugador: si el camino en L
-  // cruza una, ese núcleo no se puede alcanzar así y se probará otro.
-  if(camino.some(q => { const cel = celdaEn(estado.mapa, q.col, q.fila);
-                        return cel && cel.protegida; })) return false;
-  const dn = escalaDeRed(red)[0].id;
-  const coste = costeTrazado(estado.mapa, camino, dn, red);
-  if(estado.dinero < coste) return false;
-  estado.pagar(coste);
-  estado.tuberias.push({ camino, coste, dn, red });
-  return true;
+
+  for(const primero of ['col', 'fila']){
+    const camino = [];
+    let x = base.col, y = base.fila;
+    camino.push({ col: x, fila: y });
+    if(primero === 'col'){
+      while(x !== c){ x += Math.sign(c - x); camino.push({ col: x, fila: y }); }
+      while(Math.abs(y - f) > 1){ y += Math.sign(f - y); camino.push({ col: x, fila: y }); }
+    } else {
+      while(y !== f){ y += Math.sign(f - y); camino.push({ col: x, fila: y }); }
+      while(Math.abs(x - c) > 1){ x += Math.sign(c - x); camino.push({ col: x, fila: y }); }
+    }
+    for(const p of camino){ const cel = celdaEn(estado.mapa, p.col, p.fila); if(cel) cel.oculta = false; }
+    // El bot respeta las zonas protegidas igual que el jugador
+    if(camino.some(q => { const cel = celdaEn(estado.mapa, q.col, q.fila);
+                          return cel && cel.protegida; })) continue;
+    const dn = escalaDeRed(red)[0].id;
+    const coste = costeTrazado(estado.mapa, camino, dn, red);
+    if(estado.dinero < coste) return false;
+    estado.pagar(coste);
+    estado.tuberias.push({ camino, coste, dn, red });
+    return true;
+  }
+  return false;
 }
 
 function construir(estado, tipo, red){
@@ -102,6 +112,9 @@ export async function medir(pasoSeg = 0.25, maxMin = 240, informar = () => {}){
   let seg = 0, res = null;
   const PRIORIDAD = ['deposito', 'bomba', 'captacion', 'depuradora', 'mantenimiento',
                      'pluviales', 'tanque', 'reciclaje'];
+  // Núcleos a los que las dos L no llegan (ZEC en medio): se apartan para no
+  // reintentar el mismo eternamente. Un humano rodearía; el bot pasa al otro.
+  const inalcanzables = new Set();
 
   while(seg < maxMin * 60){
     // --- el pueblo peor servido pasa a activo (cambiar de pestaña es gratis) ---
@@ -192,20 +205,26 @@ export async function medir(pasoSeg = 0.25, maxMin = 240, informar = () => {}){
       for(let f = 0; f < M.filas; f++) for(let c = 0; c < M.cols; c++){
         const celda = celdaEn(estado.mapa, c, f);
         if(!celda || celda.hallazgo !== 'pueblo' || celda.resuelto) continue;
+        if(inalcanzables.has(f * M.cols + c)) continue;
         if((celda.anillo || 1) > fase) continue;
         for(const q of estado.pueblos){
           const d = Math.hypot(q.col - c, q.fila - f);
           if(d < mejorD){ mejorD = d; mejor = { c, f, celda }; }
         }
       }
-      if(mejor && estado.dinero >= canonIncorporacion(estado)
-         && tender(estado, 'abastecimiento', mejor.c, mejor.f)){
-        estado.pagar(canonIncorporacion(estado));
-        const faseAntes = faseActual(estado);
-        const nuevo = incorporarPueblo(estado, mejor.c, mejor.f, mejor.celda);
-        marca('nucleo ' + estado.pueblos.length + ' (' + nuevo.nombre + ')');
-        if(faseActual(estado) > faseAntes) marca('FASE ' + faseActual(estado));
-        if(estado.pluvialesActivas) marca('pluviales activas');
+      if(mejor && estado.dinero >= canonIncorporacion(estado)){
+        if(tender(estado, 'abastecimiento', mejor.c, mejor.f)){
+          estado.pagar(canonIncorporacion(estado));
+          const faseAntes = faseActual(estado);
+          const nuevo = incorporarPueblo(estado, mejor.c, mejor.f, mejor.celda);
+          marca('nucleo ' + estado.pueblos.length + ' (' + nuevo.nombre + ')');
+          if(faseActual(estado) > faseAntes) marca('FASE ' + faseActual(estado));
+          if(estado.pluvialesActivas) marca('pluviales activas');
+        } else if(estado.dinero > canonIncorporacion(estado) + 8000){
+          // Con dinero de sobra y las dos L cerradas, lo que estorba es una
+          // ZEC: se aparta ese núcleo para no reintentarlo eternamente
+          inalcanzables.add(mejor.f * M.cols + mejor.c);
+        }
       }
     }
 

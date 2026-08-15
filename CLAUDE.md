@@ -273,6 +273,26 @@ como "extracción sostenible", que es justo lo que no hay que creerse. Y va en l
 ficha de OBRA además de en la de casilla, porque al construir el pozo la de
 casilla deja de salir — justo cuando el nivel importa.
 
+**LA VERSIÓN DEL MUNDO (`mapaMundo.mundo`) es la guardia de la siembra.** El
+terreno se REGENERA de la semilla en cada carga, así que cambiar cualquier
+`sembrar*` movería el mundo bajo las tuberías de las partidas vivas (la
+misma guardia que el río). El número viaja en el guardado: una partida vieja
+(sin campo = 1) regenera SU siembra exacta — por eso existe
+`arqueologia.cantidadV1` y por eso `crecerZona`/`elegirYacimiento` se
+extrajeron SIN cambiar un sorteo. Si tocas la siembra: sube el número, deja
+el camino viejo intacto, y añade lo nuevo AL FINAL de `generarMapa` (todo lo
+anterior consume el azar en su orden de siempre).
+
+**Y EL ARRANQUE SE SIEMBRA (`CONFIG.arranque`, mundo >= 2).** La primera
+media hora se juega en un radio corto, y con siembra uniforme lo
+interesante caía donde el jugador nuevo no llega (dixit el autor: "si en la
+primera media hora se aburre, no habrá descubierto nada de lo que hemos
+preparado"). Medido en el mundo 1: 1 yacimiento y CERO zonas protegidas en
+el radio 12. `sembrarArranque()` cuenta lo que la siembra normal dejó ahí y
+COMPLETA hasta los mínimos (ruinas, yacimientos, ZEC) — con una semilla
+generosa no añade nada — y re-corre `garantizarAcceso()` por si una ZEC
+nueva encajona un núcleo.
+
 **`garantizarAcceso()` en `mapa.js` es una garantía, no un adorno**: recorre el
 mapa desde el origen y, si una zona protegida ha dejado un núcleo incomunicado,
 le abre el pasillo mínimo. Que llegar cueste una fortuna es dificultad; que no

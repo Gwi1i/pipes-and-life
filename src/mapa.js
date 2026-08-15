@@ -52,7 +52,8 @@ function ruidoSuave(semilla, x, y, escala){
  *   { tipo, hallazgo, oculta, progreso, resuelto }
  * `tipo` es el terreno; `hallazgo` es lo que esconde (o null).
  */
-export function generarMapa(semilla = CONFIG.mapaMundo.semilla, radioExtra = 0){
+export function generarMapa(semilla = CONFIG.mapaMundo.semilla, radioExtra = 0,
+                            mundo = CONFIG.mapaMundo.mundo){
   const M = CONFIG.mapaMundo;
   const celdas = new Array(M.cols * M.filas);
   const azar = generadorAleatorio(semilla);
@@ -112,7 +113,12 @@ export function generarMapa(semilla = CONFIG.mapaMundo.semilla, radioExtra = 0){
   garantizarAcceso(celdas);
   sembrarAcuiferos(celdas, azar);
   sembrarHallazgos(celdas, azar);
-  sembrarArqueologia(celdas, azar);
+  sembrarArqueologia(celdas, azar, mundo);
+  // La GUARDIA DEL MUNDO: el terreno se regenera de la semilla en cada carga,
+  // así que la siembra nueva solo corre en mundo >= 2 — las partidas viejas
+  // (mundo 1, viaja en el guardado) regeneran su mundo EXACTO. Va al final a
+  // propósito: todo lo anterior consume el azar en el mismo orden de siempre.
+  if(mundo >= 2) sembrarArranque(celdas, azar);
   abrirZonaInicial(celdas, radioExtra);
   return celdas;
 }
@@ -187,27 +193,37 @@ function sembrarProteccion(celdas, azar){
   let zonas = 0, intentos = 0;
   while(zonas < Z.zonas && intentos++ < Z.zonas * 300){
     const c0 = Math.floor(azar() * M.cols), f0 = Math.floor(azar() * M.filas);
-    const semilla = celdaEn(celdas, c0, f0);
-    if(!semilla || semilla.hallazgo || semilla.protegida) continue;
-    if(distanciaAlOrigen(c0, f0) < Z.distanciaMinima) continue;
-    const tipo = azar() < 0.5 ? 'fauna' : 'flora';
-    const objetivo = Z.tamMin + Math.floor(azar() * (Z.tamMax - Z.tamMin + 1));
-    const mancha = [{ c: c0, f: f0 }];
-    semilla.protegida = tipo;
-    // El tope de vueltas no es adorno: una mancha encajonada entre hallazgos no
-    // puede crecer más y sin él este bucle se queda dando vueltas para siempre.
-    let vueltas = 0;
-    while(mancha.length < objetivo && vueltas++ < objetivo * 60){
-      const base = mancha[Math.floor(azar() * mancha.length)];
-      const [dc, df] = [[1,0],[-1,0],[0,1],[0,-1]][Math.floor(azar() * 4)];
-      const cel = celdaEn(celdas, base.c + dc, base.f + df);
-      if(!cel || cel.protegida || cel.hallazgo) continue;
-      if(distanciaAlOrigen(base.c + dc, base.f + df) < Z.distanciaMinima) continue;
-      cel.protegida = tipo;
-      mancha.push({ c: base.c + dc, f: base.f + df });
-    }
-    zonas++;
+    if(crecerZona(celdas, azar, c0, f0)) zonas++;
   }
+}
+
+/**
+ * Hace crecer UNA mancha protegida desde (c0,f0). Extraída de
+ * sembrarProteccion SIN cambiar ni un sorteo — el orden del azar es la
+ * identidad del mundo 1 — para que la siembra del arranque la reutilice.
+ */
+function crecerZona(celdas, azar, c0, f0){
+  const Z = CONFIG.proteccion;
+  const semilla = celdaEn(celdas, c0, f0);
+  if(!semilla || semilla.hallazgo || semilla.protegida) return false;
+  if(distanciaAlOrigen(c0, f0) < Z.distanciaMinima) return false;
+  const tipo = azar() < 0.5 ? 'fauna' : 'flora';
+  const objetivo = Z.tamMin + Math.floor(azar() * (Z.tamMax - Z.tamMin + 1));
+  const mancha = [{ c: c0, f: f0 }];
+  semilla.protegida = tipo;
+  // El tope de vueltas no es adorno: una mancha encajonada entre hallazgos no
+  // puede crecer más y sin él este bucle se queda dando vueltas para siempre.
+  let vueltas = 0;
+  while(mancha.length < objetivo && vueltas++ < objetivo * 60){
+    const base = mancha[Math.floor(azar() * mancha.length)];
+    const [dc, df] = [[1,0],[-1,0],[0,1],[0,-1]][Math.floor(azar() * 4)];
+    const cel = celdaEn(celdas, base.c + dc, base.f + df);
+    if(!cel || cel.protegida || cel.hallazgo) continue;
+    if(distanciaAlOrigen(base.c + dc, base.f + df) < Z.distanciaMinima) continue;
+    cel.protegida = tipo;
+    mancha.push({ c: base.c + dc, f: base.f + df });
+  }
+  return true;
 }
 
 /**
@@ -376,10 +392,13 @@ export function masasDelMapa(celdas){
  * son algo que se encuentre mirando: `celda.arqueologia` no se dibuja ni se
  * anuncia hasta que alguien pica ahí (`aflorado`).
  */
-function sembrarArqueologia(celdas, azar){
+function sembrarArqueologia(celdas, azar, mundo = 1){
   const A = CONFIG.arqueologia, M = CONFIG.mapaMundo;
+  // El mundo 1 sembraba 40 y así se queda (guardia): los 40 primeros del
+  // mundo 2 caen en las mismas casillas, los demás usan el azar que sigue.
+  const cantidad = mundo >= 2 ? A.cantidad : A.cantidadV1;
   let puestos = 0, intentos = 0;
-  while(puestos < A.cantidad && intentos < A.cantidad * 200){
+  while(puestos < cantidad && intentos < cantidad * 200){
     intentos++;
     const c = Math.floor(azar() * M.cols), f = Math.floor(azar() * M.filas);
     const celda = celdaEn(celdas, c, f);
@@ -388,12 +407,17 @@ function sembrarArqueologia(celdas, azar){
     if(distanciaAlOrigen(c, f) < A.distanciaMinima) continue;
     // Cada yacimiento nace siendo algo concreto (con la semilla, para que la
     // misma partida encuentre siempre lo mismo en el mismo sitio)
-    const T = A.tipos;
-    const pesoTotal = T.reduce((a, t) => a + t.peso, 0);
-    let bola = azar() * pesoTotal;
-    celda.arqueologia = T.find(t => (bola -= t.peso) <= 0)?.id || T[0].id;
+    celda.arqueologia = elegirYacimiento(azar);
     puestos++;
   }
+}
+
+/** El tipo de un yacimiento nuevo, por peso de rareza (un sorteo). */
+function elegirYacimiento(azar){
+  const T = CONFIG.arqueologia.tipos;
+  const pesoTotal = T.reduce((a, t) => a + t.peso, 0);
+  let bola = azar() * pesoTotal;
+  return T.find(t => (bola -= t.peso) <= 0)?.id || T[0].id;
 }
 
 /**
@@ -484,6 +508,87 @@ function sembrarHallazgos(celdas, azar){
       puestosDeEste++;
     }
   }
+}
+
+/**
+ * MUNDO >= 2: garantiza descubrimientos en el radio de la primera media hora
+ * (petición del autor: con siembra uniforme, quien se aburría a los veinte
+ * minutos no había visto NADA de lo preparado). Cuenta lo que la siembra
+ * normal dejó en el radio y COMPLETA hasta los mínimos de CONFIG.arranque:
+ * con una semilla generosa no añade nada.
+ */
+function sembrarArranque(celdas, azar){
+  const M = CONFIG.mapaMundo, AR = CONFIG.arranque;
+  const A = CONFIG.arqueologia, H = CONFIG.hallazgos;
+  const dentro = (c, f) => distanciaAlOrigen(c, f) <= AR.radio;
+  const puntoEnRadio = () => ({
+    c: M.origen.col + Math.round((azar() * 2 - 1) * AR.radio),
+    f: M.origen.fila + Math.round((azar() * 2 - 1) * AR.radio)
+  });
+
+  // Lo que ya cayó ahí; las ZEC se cuentan por MANCHA (contiguas = una)
+  let ruinas = 0, yacimientos = 0, zonas = 0;
+  const vistas = new Set();
+  recorrer(celdas, (celda, c, f) => {
+    if(!dentro(c, f)) return;
+    if(celda.hallazgo === 'ruina') ruinas++;
+    if(celda.arqueologia) yacimientos++;
+    const idx = f * M.cols + c;
+    if(celda.protegida && !vistas.has(idx)){
+      zonas++;
+      const cola = [idx];
+      vistas.add(idx);
+      while(cola.length){
+        const q = cola.pop(), qc = q % M.cols, qf = Math.floor(q / M.cols);
+        for(const [dc, df] of [[1,0],[-1,0],[0,1],[0,-1]]){
+          const v = celdaEn(celdas, qc + dc, qf + df);
+          const vi = (qf + df) * M.cols + (qc + dc);
+          if(v && v.protegida && !vistas.has(vi)){ vistas.add(vi); cola.push(vi); }
+        }
+      }
+    }
+  });
+
+  let intentos = 0;
+  while(ruinas < AR.ruinas && intentos++ < 2000){
+    const { c, f } = puntoEnRadio();
+    const celda = celdaEn(celdas, c, f);
+    if(!celda || !dentro(c, f)) continue;
+    if(celda.tipo === 'agua' || celda.tipo === 'lago') continue;
+    if(celda.hallazgo || celda.protegida || celda.arqueologia) continue;
+    if(distanciaAlOrigen(c, f) < H.distanciaMinima) continue;
+    // La separación de siempre entre ruinas, mirada en el vecindario
+    let pegada = false;
+    for(let df = -4; df <= 4 && !pegada; df++)
+      for(let dc = -4; dc <= 4; dc++){
+        const v = celdaEn(celdas, c + dc, f + df);
+        if(v && v.hallazgo === 'ruina' && Math.hypot(dc, df) < 4){ pegada = true; break; }
+      }
+    if(pegada) continue;
+    celda.hallazgo = 'ruina';
+    celda.pieza = H.piezasRuina[Math.floor(azar() * H.piezasRuina.length)];
+    ruinas++;
+  }
+
+  intentos = 0;
+  while(yacimientos < AR.yacimientos && intentos++ < 2000){
+    const { c, f } = puntoEnRadio();
+    const celda = celdaEn(celdas, c, f);
+    if(!celda || !dentro(c, f) || celda.arqueologia || celda.hallazgo) continue;
+    if(celda.tipo === 'agua' || celda.tipo === 'lago') continue;
+    if(distanciaAlOrigen(c, f) < A.distanciaMinima) continue;
+    celda.arqueologia = elegirYacimiento(azar);
+    yacimientos++;
+  }
+
+  intentos = 0;
+  while(zonas < AR.zonas && intentos++ < 2000){
+    const { c, f } = puntoEnRadio();
+    if(!dentro(c, f)) continue;
+    if(crecerZona(celdas, azar, c, f)) zonas++;
+  }
+  // Una zona nueva puede haber encajonado un núcleo: la garantía, otra vez
+  garantizarAcceso(celdas);
 }
 
 /** Deja descubierto un círculo alrededor del origen: por algo hay que empezar.

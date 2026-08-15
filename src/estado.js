@@ -85,7 +85,10 @@ export class Estado {
     // La SEMILLA es de la partida (cada comarca tiene la suya y viaja con el
     // guardado); el legado dice cuál toca y con cuántos planos se llega.
     this.semilla = legado.semillaActual || CONFIG.mapaMundo.semilla;
-    this.mapa = generarMapa(this.semilla, radioCartografia());
+    // La VERSIÓN DEL MUNDO viaja en el guardado: una partida vieja regenera
+    // su mundo exacto (ver el comentario en CONFIG.mapaMundo.mundo).
+    this.mundo = CONFIG.mapaMundo.mundo;
+    this.mapa = generarMapa(this.semilla, radioCartografia(), this.mundo);
     this.camara = { x: 0, y: 0 };   // píxeles; lo centra la escena al arrancar
     this.inventario = [];           // instalaciones recuperadas de las ruinas
     this.descubiertas = 0;          // casillas abiertas, para el HUD
@@ -133,6 +136,7 @@ export class Estado {
     this.ultimoInstante = Date.now();
     const datos = {
       semilla: this.semilla,
+      mundo: this.mundo,   // la versión del mundo generado (ver mapaMundo.mundo)
       dinero: this.dinero, horas: this.horas, m3Servidos: this.m3Servidos,
       contaminacion: this.contaminacion, puebloActivo: this.puebloActivo,
       pluvialesActivas: this.pluvialesActivas, acuiferos: this.acuiferos,
@@ -233,11 +237,18 @@ export class Estado {
       // comarca y hay que regenerarlo antes de volcarle lo tocado. Y el
       // legado local se pone de acuerdo, para que la próxima carga ya nazca
       // con la semilla buena.
-      if(d.semilla && d.semilla !== estado.semilla){
+      const semillaCambia = d.semilla && d.semilla !== estado.semilla;
+      if(semillaCambia){
         estado.semilla = d.semilla;
-        estado.mapa = generarMapa(estado.semilla, radioCartografia());
         legado.semillaActual = d.semilla;
         guardarLegado();
+      }
+      // Y manda también sobre la VERSIÓN DEL MUNDO: una partida vieja (sin
+      // el campo = 1) regenera SU siembra exacta, no la del código de hoy.
+      const mundoGuardado = d.mundo ?? 1;
+      if(semillaCambia || mundoGuardado !== estado.mundo){
+        estado.mundo = mundoGuardado;
+        estado.mapa = generarMapa(estado.semilla, radioCartografia(), estado.mundo);
       }
       aplicarGuardado(estado.mapa, d.mapa);
       estado.inventario = d.inventario || [];

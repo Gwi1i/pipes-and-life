@@ -596,6 +596,13 @@ export const CONFIG = {
     // tamaño no cuesta rendimiento: cuesta exploración, que es lo que debe.
     cols: 96, filas: 68,
     semilla: 20260809,
+    /* VERSIÓN DEL MUNDO. El terreno se REGENERA de la semilla en cada carga,
+       así que cambiar la siembra movería el mundo bajo las tuberías de las
+       partidas vivas (la misma guardia que el río). El número viaja en el
+       guardado: una partida vieja (sin él = 1) regenera SU mundo exacto y
+       solo las nuevas estrenan la siembra. Si tocas cualquier sembrar*, sube
+       este número y deja el camino viejo intacto bajo su guardia. */
+    mundo: 2,
     origen: { col: 48, fila: 34 },   // aquí está tu pueblo inicial
     radioInicial: 3,                // casillas ya abiertas al empezar
     // Alrededor del pueblo, el terreno se rebaja a su variante barata: empezar
@@ -1278,7 +1285,8 @@ export const CONFIG = {
     // partida entera sin tropezar con NINGUNO — una mecánica con ficha,
     // rentas y premios gordos que casi nadie llegaba a ver. Al 1,4%, una
     // zanja temprana de ~60 casillas ya da más de un 50% de encontronazo.
-    cantidad: 90,            // cuántos esconde el mapa entero
+    cantidad: 90,            // cuántos esconde el mapa entero (mundo >= 2)
+    cantidadV1: 40,          // lo que sembraba el mundo 1: NO tocar (guardia)
     distanciaMinima: 3,      // ninguno pegado al pueblo de origen
     costeExcavar: 2600,
     color: '#d9a441',
@@ -1309,6 +1317,19 @@ export const CONFIG = {
 
      Son la otra restricción real de trazado: las conducciones de verdad dan
      rodeos enormes para no tocar espacios protegidos. */
+  /* ---------- EL ARRANQUE SE SIEMBRA (mundo >= 2) ----------
+     La primera media hora se juega en un radio corto alrededor del origen, y
+     con siembra uniforme lo interesante caía donde el jugador nuevo no llega:
+     se aburría ANTES de descubrir nada de lo preparado (dixit el autor). Tras
+     la siembra normal se CUENTA lo que cayó en este radio y se completa hasta
+     el mínimo — si la semilla ya fue generosa, no se añade nada. */
+  arranque: {
+    radio: 12,               // el alcance realista de la primera media hora
+    ruinas: 3,               // instalaciones abandonadas garantizadas ahí
+    yacimientos: 7,          // yacimientos escondidos ahí (afloran al picar)
+    zonas: 2                 // ZEC a la vista en ese radio
+  },
+
   proteccion: {
     zonas: 9,                // cuántas ZEC siembra el mapa
     tamMin: 4, tamMax: 9,    // casillas por zona (manchas orgánicas)
