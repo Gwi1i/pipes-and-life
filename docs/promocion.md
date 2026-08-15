@@ -106,19 +106,64 @@ Un saludo,
 
 ---
 
-## 4. Blogs de juegos gratuitos (formulario/correo, en inglés)
+## 4. Blogs de juegos gratuitos (POR CORREO, en inglés)
 
-- **Free Game Planet** — freegameplanet.com (formulario de submit)
-- **Alpha Beta Gamer** — alphabetagamer.com (formulario de submit)
+Comprobado en sus páginas: los dos reciben juegos por email, no por
+formulario. Dos copia-pega y listo.
 
-Blurb corto para ambos:
+### Free Game Planet
 
-> Pipes and Life is a free browser incremental about running a real water
-> utility, made by a water-industry professional: pump by clicking, lay
-> every pipe by hand across a fog-covered map, supply 36 towns, treat
-> their sewage and collect their garbage. Every facility teaches something
-> true about the trade. English/Spanish.
-> https://gwi1i.github.io/pipes-and-life/
+**A:** admin@freegameplanet.com
+**Asunto:** Game suggestion: Pipes and Life (free browser incremental)
+
+Hi!
+
+I'd like to suggest my game for Free Game Planet: **Pipes and Life**, a
+free browser incremental about running a real water utility — made by
+someone who actually works at one (a water district in northern Spain).
+
+You pump by clicking, store water high, lay every pipe by hand across a
+fog-covered map, supply up to 36 towns, then treat their sewage and
+collect their garbage. Every facility card teaches something true about
+the trade: why water towers sit on hills, why the narrowest pipe rules
+the network, why one well is sustainable and two aren't.
+
+Free, no ads, plays in the browser (mobile too), English and Spanish:
+https://gwi1i.github.io/pipes-and-life/
+Also on itch: https://gwiii.itch.io/pipes-and-life
+
+Thanks for the site — happy to answer anything.
+
+[nombre o firma "Gwiii"]
+
+### Alpha Beta Gamer
+
+**A:** Admin@alphabetagamer.com
+**Asunto:** Submission: Pipes and Life — free browser incremental, in
+active development
+
+Hi!
+
+Submitting my game for your consideration: **Pipes and Life**, a free
+browser incremental in active development (updated almost daily from
+player feedback), made by a water-industry professional.
+
+You run a small water district: pump by clicking, lay every pipe by hand
+across a fog-covered map, supply up to 36 towns, treat their sewage,
+collect their garbage — with the real constraints of the trade baked in
+(protected zones you must route around, aquifers that deplete, pipes that
+age and leak). Every facility teaches something true about how water
+actually reaches a tap.
+
+Play free in the browser, no sign-up, English and Spanish:
+https://gwi1i.github.io/pipes-and-life/
+itch page (screenshots there): https://gwiii.itch.io/pipes-and-life
+
+I've attached a couple of screenshots. Thanks for reading!
+
+[nombre o firma "Gwiii"]
+
+*(Adjunta 2-3 capturas de `docs/capturas/` — lo piden expresamente.)*
 
 ## 5. Otros escaparates (piden cuenta)
 
