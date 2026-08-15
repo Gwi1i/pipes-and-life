@@ -1003,6 +1003,11 @@ export const EN = {
     '⚠ 1 avería': '⚠ 1 breakdown',
     '⚠ {0} averías': '⚠ {0} breakdowns',
     '💧 +{0} más': '💧 +{0} more',
+    'Y {0} averías más esperando: al reparar estas, entran aquí.':
+      'And {0} more breakdowns waiting: repair these and they move in.',
+    'Y {0} líneas más ({1} por renovar): al atender estas, van entrando.':
+      'And {0} more lines ({1} due for renewal): deal with these and they move in.',
+    'Y {0} líneas más, todas al día.': 'And {0} more lines, all up to date.',
 
     /* --- Tienda --- */
     'Otras mejoras': 'Other upgrades',

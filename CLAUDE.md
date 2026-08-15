@@ -602,6 +602,17 @@ DE ALERTA: un pueblo con servicio por debajo de `servicioMalo` o una
 avería sacan su botón rojo que lleva al problema (`irProblema`,
 `irAAveria`). Con veinte pueblos: cero pestañas, salvo problemas.
 
+**LA REGLA DE ESCALA: nada que crezca con la partida se pinta entero.**
+Doctrina del autor tras lo de las pestañas, y vale para TODO el juego: lo
+que la partida multiplica (pueblos, averías, líneas, piezas rescatadas,
+chips de alerta) se enseña ACOTADO — los peores o los más antiguos con
+nombre y botón, y el resto agrupado con su cuenta y una línea que dice que
+al atender estos van entrando. Los topes viven en `CONFIG.interfaz`
+(chipsDeSed, averiasEnPanel, lineasEnPanel); el registro ya nació cortado a
+8 y el almacén agrupa por tipo ("Bombeo ×3"). Al añadir CUALQUIER lista
+nueva que dependa del tamaño de la partida, pregúntate qué pasa con veinte
+antes de pintarla.
+
 **El guía se llama MANUEL y comenta la partida.** `comentarios.js` es el motor
 (lectura pura, como `tutorial.js`): una lista de comentarios con su condición,
 en orden de prioridad — lo que duele antes que lo que luce. La regla que lo

@@ -163,20 +163,31 @@ export class UI {
         <i>${t`${this.medidaTier(clave, d)} · ${Math.round(d.fugas * 100)} % fugas`}</i>
       </button>`).join('');
 
+    // La regla de escala: a final de partida hay DOCENAS de líneas, y aquí se
+    // pintaban todas. Las que piden obra van primero; el listado se corta en
+    // CONFIG.interfaz.lineasEnPanel y el resto se resume en una línea.
+    const valoradas = lineas.map(({ tuberia, indice }) => {
+      const d = diametro(tuberia.dn, clave);
+      const años = Math.floor(edadAños(tuberia, estado.horas));
+      const vieja = d.vidaAños && años > d.vidaAños;
+      const sube = nivelDiametro(tuberia.dn, clave) < nivelDiametro(objetivo.id, clave);
+      // Al mismo calibre solo se renueva lo VIEJO: lo demás sería tirar dinero
+      const renovable = sube
+        || (vieja && nivelDiametro(objetivo.id, clave) === nivelDiametro(tuberia.dn, clave));
+      return { tuberia, indice, d, años, vieja, sube, renovable };
+    }).sort((a, b) => (b.renovable ? 1 : 0) - (a.renovable ? 1 : 0));
+    const enPanel = valoradas.slice(0, CONFIG.interfaz.lineasEnPanel);
+    const resto = valoradas.length - enPanel.length;
+    const restoRenovables = valoradas.slice(CONFIG.interfaz.lineasEnPanel)
+      .filter(v => v.renovable).length;
+
     const listado = !lineas.length
       ? `<p class="m-desc">${clave === 'saneamiento'
           ? t`Todavía no hay colector. El pueblo se apaña con la red unitaria vieja:
              ${D[0].nombre} de ${D[0].material}, y todo lo que no le cabe acaba en el río.`
           : t`Todavía no hay ninguna línea que llegue al pueblo. Mientras tanto bebe
              de la red vieja: ${D[0].nombre} de ${D[0].material}.`}</p>`
-      : lineas.map(({ tuberia, indice }) => {
-          const d = diametro(tuberia.dn, clave);
-          const años = Math.floor(edadAños(tuberia, estado.horas));
-          const vieja = d.vidaAños && años > d.vidaAños;
-          const sube = nivelDiametro(tuberia.dn, clave) < nivelDiametro(objetivo.id, clave);
-          // Al mismo calibre solo se renueva lo VIEJO: lo demás sería tirar dinero
-          const renovable = sube
-            || (vieja && nivelDiametro(objetivo.id, clave) === nivelDiametro(tuberia.dn, clave));
+      : enPanel.map(({ tuberia, indice, d, años, vieja, sube, renovable }) => {
           const coste = renovable ? costeRenovar(estado.mapa, tuberia, objetivo.id, clave) : 0;
           return `
             <button class="mejora obra linea${renovable ? '' : ' hecha'}"
@@ -193,7 +204,12 @@ export class UI {
                   : t`Ya está a la altura del diámetro elegido.`}</span>
               <span class="m-coste">${renovable ? formatear(coste) + ' €' : '—'}</span>
             </button>`;
-        }).join('');
+        }).join('') + (resto > 0
+          ? `<p class="m-desc">${restoRenovables > 0
+              ? t`Y ${resto} líneas más (${restoRenovables} por renovar): al
+                 atender estas, van entrando.`
+              : t`Y ${resto} líneas más, todas al día.`}</p>`
+          : '');
 
     const avisos = this.avisosRed(estado, clave, cuello, resultado)
       .map(av => `<p class="red-aviso">${av}</p>`).join('');
@@ -1329,24 +1345,32 @@ export class UI {
     }
   }
 
-  /** El almacén: piezas rescatadas, listas para colocar sin volver a pagarlas. */
+  /** El almacén: piezas rescatadas, listas para colocar sin volver a pagarlas.
+   *  AGRUPADAS por tipo (la regla de escala): tres bombas rescatadas son un
+   *  botón "Bombeo ×3", no tres botones iguales. */
   refrescarAlmacen(estado){
-    const firma = estado.inventario.map(p => p.tipo).join(',');
+    const firma = estado.inventario.map(p => p.tipo).sort().join(',');
     if(this.cache.almacenFirma === firma) return;
     this.cache.almacenFirma = firma;
     const panel = document.getElementById('panel-almacen');
     panel.style.display = estado.inventario.length ? '' : 'none';
     if(!estado.inventario.length) return;
-    document.getElementById('almacen').innerHTML = estado.inventario.map((p, i) => {
-      const def = CONFIG.construibles[p.tipo];
-      return `
-        <button class="mejora obra" data-accion="colocarDeInventario" data-clave="${i}"
-                style="--tono:${def.color}">
-          <span class="m-cab"><span class="m-nom">${def.nombre}</span></span>
-          <span class="m-desc">${t`Rescatada. Colócala donde quieras.`}</span>
-          <span class="m-coste">${t`gratis`}</span>
-        </button>`;
-    }).join('');
+    const grupos = {};
+    estado.inventario.forEach((p, i) => {
+      if(!grupos[p.tipo]) grupos[p.tipo] = { n: 0, primero: i };
+      grupos[p.tipo].n++;
+    });
+    document.getElementById('almacen').innerHTML = Object.entries(grupos)
+      .map(([tipo, g]) => {
+        const def = CONFIG.construibles[tipo];
+        return `
+          <button class="mejora obra" data-accion="colocarDeInventario" data-clave="${g.primero}"
+                  style="--tono:${def.color}">
+            <span class="m-cab"><span class="m-nom">${def.nombre}${g.n > 1 ? ` ×${g.n}` : ''}</span></span>
+            <span class="m-desc">${t`Rescatada. Colócala donde quieras.`}</span>
+            <span class="m-coste">${t`gratis`}</span>
+          </button>`;
+      }).join('');
   }
 
   /** Marca qué herramienta está activa. */
@@ -1580,8 +1604,12 @@ export class UI {
     panel.style.display = lista.length ? '' : 'none';
     if(!lista.length) return;
 
+    // La regla de escala: las más antiguas con sus botones, el resto en una
+    // línea. Diez averías eran veinte botonazos tapando el lateral entero.
+    const enPanel = lista.slice(0, CONFIG.interfaz.averiasEnPanel);
+    const resto = lista.length - enPanel.length;
     const coste = CONFIG.averias.costePorClic;
-    document.getElementById('averias-lista').innerHTML = lista.map((av, i) => {
+    document.getElementById('averias-lista').innerHTML = enPanel.map((av, i) => {
       const obra = estado.construcciones.find(o => o.col === av.col && o.fila === av.fila);
       const def = obra ? CONFIG.construibles[obra.tipo] : null;
       return `
@@ -1603,7 +1631,10 @@ export class UI {
             arreglada GRATIS. Un solo intento: si se derrama, a golpe de llave.`}</span>
           <span class="m-coste">${t`jugar`}</span>
         </button>`}`;
-    }).join('');
+    }).join('') + (resto > 0
+      ? `<p class="m-desc">${t`Y ${resto} averías más esperando: al reparar
+           estas, entran aquí.`}</p>`
+      : '');
   }
 
   /* ---------------- CAUCE (común) ---------------- */

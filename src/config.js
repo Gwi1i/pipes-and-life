@@ -1411,12 +1411,22 @@ export const CONFIG = {
     tenue:      '#6f8aa1'
   },
 
-  /* ---------- INTERFAZ ---------- */
+  /* ---------- INTERFAZ ----------
+     LA REGLA DE ESCALA (del autor, tras lo de las pestañas): NADA que
+     crezca con la partida se pinta entero. Lo que la partida multiplica
+     —pueblos, averías, líneas, piezas rescatadas— se enseña acotado: los
+     peores o los primeros con nombre, y el resto agrupado con su cuenta. */
   interfaz: {
     /* La barra de alertas enseña los PEORES con nombre y agrupa el resto:
        veinte chips serían las pestañas otra vez, que es justo lo que se
        quitó. El chip del grupo lleva al peor de los que no salen. */
-    chipsDeSed: 3
+    chipsDeSed: 3,
+    /* El panel de averías: cada una son DOS botones (ir + a mano); con
+       diez averías eran veinte botonazos tapando el lateral entero. */
+    averiasEnPanel: 3,
+    /* El listado de "La red": a final de partida hay docenas de líneas.
+       Las renovables van primero; el resto, en una línea de resumen. */
+    lineasEnPanel: 6
   },
 
   /* ---------- TEXTOS DE LA INTERFAZ ----------
