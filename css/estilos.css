@@ -98,7 +98,11 @@ button{touch-action:manipulation;}
 .lienzo-caja{position:relative; flex:1; min-height:0;}
 
 /* ---------- PESTAÑAS DE PUEBLOS ---------- */
-.pestanas{display:flex; flex-wrap:wrap; gap:2px; padding:6px 8px 0; background:#040a10; flex:none;}
+/* La BARRA DEL MAPA: las alertas a la izquierda y el engranaje a la derecha,
+   en una sola línea — así la cabecera queda solo para la marca y el HUD. */
+.barra-mapa{display:flex; align-items:flex-start; background:#040a10; flex:none;}
+.barra-mapa .acciones{padding:5px 8px 0;}
+.pestanas{display:flex; flex-wrap:wrap; gap:2px; padding:6px 8px 0; flex:1; min-width:0;}
 .pestana{
   cursor:pointer; font-family:var(--mono); font-size:11px; font-weight:600;
   letter-spacing:.06em; padding:7px 14px; color:var(--tenue);
@@ -124,17 +128,6 @@ button{touch-action:manipulation;}
    arrastre a mitad con un pointercancel. */
 #escena{display:block; width:100%; height:100%; cursor:pointer; touch-action:none;}
 
-/* Barra de agua superpuesta abajo del lienzo */
-.barra-agua-caja{position:absolute; left:16px; right:16px; bottom:12px; pointer-events:none;}
-.barra-agua-fondo{
-  height:8px; background:rgba(8,18,28,.8); border:1px solid var(--linea-viva);
-  border-radius:5px; overflow:hidden;
-}
-.barra-agua-relleno{
-  height:100%; width:0%;
-  background:linear-gradient(90deg,#0e5a86,#38bdf8);
-  transition:width .12s linear;
-}
 
 /* ---------- SOLAPAS DEL LATERAL ----------
    Doce bloques apilados obligaban a bajar media pantalla para llegar al
@@ -604,7 +597,6 @@ button{touch-action:manipulation;}
    la franja que quedaba sin cubrir entre este corte y el de 900px. Ojo al
    tocar los botones de la barra: si añades uno, este número sube. */
 @media(max-width:1400px){
-  .acciones{order:2; margin-left:auto;}
   .hud{
     order:3; flex:1 1 100%; min-width:0;
     /* auto-fit y no un 8 fijo: con el HUD progresivo el número de métricas
@@ -645,7 +637,7 @@ button{touch-action:manipulation;}
 
   /* La MARCA no cabe en un teléfono: la portada ya presenta el juego, y esa
      fila entera es mapa que se gana (petición del autor: "la parte de
-     arriba ocupa mucho"). El engranaje se queda, pequeño y a la derecha. */
+     arriba ocupa mucho"). El engranaje vive en la barra del mapa. */
   .marca{display:none;}
   .superior{padding:6px 8px; gap:4px 8px;}
 

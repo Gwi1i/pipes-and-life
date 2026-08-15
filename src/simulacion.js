@@ -184,8 +184,8 @@ export function incorporarPueblo(estado, col, fila, celda){
   };
   celda.resuelto = true;
   estado.pueblos.push(pueblo);
-  // El tercer núcleo trae la competencia de pluviales, como siempre
-  if(estado.pueblos.length >= 3) estado.pluvialesActivas = true;
+  // La competencia de pluviales llega con la mancomunidad ya rodada
+  if(estado.pueblos.length >= CONFIG.pluviales.abreConPueblos) estado.pluvialesActivas = true;
   return pueblo;
 }
 

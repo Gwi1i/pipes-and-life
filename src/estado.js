@@ -63,7 +63,7 @@ export class Estado {
     this.horas = 0;
     this.m3Servidos = 0;
     this.contaminacion = 0;     // del cauce, 0..CONFIG.cauce.contaminacionMax
-    this.pluvialesActivas = false;   // se abre al desbloquear el tercer pueblo
+    this.pluvialesActivas = false;   // se abre al desbloquear el cuarto pueblo (pluviales.abreConPueblos)
     // Nivel de cada masa de acuífero (número de masa → 0..1). Lo que no está
     // aquí está lleno: solo se anota lo que has empezado a bombear.
     this.acuiferos = {};

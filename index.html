@@ -70,21 +70,6 @@
       <div class="hud-item"><span class="e">Hora · mes</span><span class="v" id="hud-reloj">—</span></div>
     </div>
 
-    <!-- LAS OPCIONES, bajo UN solo engranaje (petición del autor probando en
-         el móvil: cinco botones a la vista ocupaban media cabecera). El menú
-         guarda los botones de siempre con sus ids: todo el cableado igual. -->
-    <div class="acciones">
-      <button id="btn-ajustes" title="Opciones">⚙</button>
-      <div class="ajustes-menu" id="menu-ajustes" hidden>
-        <button id="btn-voz" hidden>Voz: no</button>
-        <button id="btn-musica" hidden>Música: sí</button>
-        <button id="btn-sonido">Sonido: sí</button>
-        <!-- El rótulo enseña el idioma al que CAMBIAS, en ese idioma: así lo
-             entiende justo quien lo necesita. Lo pone main.js al arrancar. -->
-        <button id="btn-idioma">English</button>
-        <button id="btn-reiniciar">Reiniciar</button>
-      </div>
-    </div>
   </header>
 
   <!-- ============ CUERPO ============ -->
@@ -92,7 +77,25 @@
 
     <!-- Escena central -->
     <main class="mapa">
-      <div id="pestanas" class="pestanas"></div>
+      <!-- La barra del mapa: las alertas y, a la derecha, el ENGRANAJE de
+           opciones (petición del autor: en la cabecera quedaba abandonado, y
+           aquí comparte línea con los datos y la cabecera se encoge). El menú
+           guarda los botones de siempre con sus ids: todo el cableado igual. -->
+      <div class="barra-mapa">
+        <div id="pestanas" class="pestanas"></div>
+        <div class="acciones">
+          <button id="btn-ajustes" title="Opciones">⚙</button>
+          <div class="ajustes-menu" id="menu-ajustes" hidden>
+            <button id="btn-voz" hidden>Voz: no</button>
+            <button id="btn-musica" hidden>Música: sí</button>
+            <button id="btn-sonido">Sonido: sí</button>
+            <!-- El rótulo enseña el idioma al que CAMBIAS, en ese idioma: así lo
+                 entiende justo quien lo necesita. Lo pone main.js al arrancar. -->
+            <button id="btn-idioma">English</button>
+            <button id="btn-reiniciar">Reiniciar</button>
+          </div>
+        </div>
+      </div>
       <div class="lienzo-caja">
         <canvas id="escena"></canvas>
         <div id="aviso" class="aviso-flotante"></div>
@@ -101,9 +104,6 @@
              la mano no bombeaba: intentaba colocar (lo cazó el autor). Sale
              solo cuando hay modo activo; lo enseña ui.actualizar. -->
         <button class="cancelar-modo" id="btn-cancelar-modo" hidden>✕ Cancelar</button>
-        <div class="barra-agua-caja">
-          <div class="barra-agua-fondo"><div class="barra-agua-relleno" id="barra-agua"></div></div>
-        </div>
 
         <!-- LA GUÍA FLOTANTE. Vivía en la barra lateral y no la veía nadie:
              ahora es un bocadillo sobre el mapa, con la cara del guía al lado
@@ -316,7 +316,7 @@
             <p><b>8. Depura antes de verter.</b> Al crecer, el pueblo genera aguas
                residuales y necesitan su PROPIA red: un colector hasta una
                depuradora junto al agua. La tubería de beber no sirve para esto.</p>
-            <p><b>9. Gestiona la lluvia.</b> Con el tercer pueblo se abre la red
+            <p><b>9. Gestiona la lluvia.</b> Con el cuarto pueblo se abre la red
                de PLUVIALES. Sin ella la lluvia y las fecales bajan juntas y en
                otoño revientan la depuradora.</p>
             <p><b>10. Recoge la basura, y véndela.</b> Su red no es una tubería:

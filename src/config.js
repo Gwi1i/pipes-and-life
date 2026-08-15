@@ -126,9 +126,10 @@ export const CONFIG = {
       nombre: 'Saneamiento', orden: 2, red: 'saneamiento',
       desc: 'Llevarse lo que el pueblo devuelve sucio, y tratarlo antes del río.',
       // Se abre solo al crecer: hasta cierto tamaño un pueblo se apaña sin nada
-      // Subido de 500: el bot midió que a 500 llegaba a los SEIS minutos de
-      // partida, con el jugador aún aprendiendo a clicar.
-      activaEnHabitantes: 800,
+      // Subido de 500 a 800 (el bot midió que a 500 llegaba a los SEIS minutos
+      // de partida) y de 800 a 1200: al autor le seguía llegando demasiado
+      // pronto, con dos pueblos y el abastecimiento aún a medio armar.
+      activaEnHabitantes: 1200,
       mejoras: ['depuradora']
     },
     pluviales: {
@@ -254,6 +255,10 @@ export const CONFIG = {
     litrosPorHabHora: 6      // escorrentía urbana por habitante y hora, a lluvia máxima
   },
   pluviales: {
+    // Cuántos pueblos incorporados abren el servicio. Era 3, y al autor los
+    // servicios se le amontonaban: saneamiento con dos pueblos y pluviales
+    // con el tercero, todo en la primera hora.
+    abreConPueblos: 4,
     fraccionAprovechada: 0.35,  // de lo separado, cuánto se recoge para el depósito
     // Un pluvial va sobradísimo respecto a la línea de agua potable: lo suyo son
     // puntas cortas y bestiales, no un caudal sostenido.
@@ -1483,8 +1488,8 @@ export const CONFIG = {
              'calibre mayor en «La red» y renueva la línea ENTERA: manda el ' +
              'tramo más estrecho.',
       boton: 'Ver la red' },
-    { id: 'tercero', titulo: 'A por el tercer pueblo',
-      texto: 'Con tres núcleos la mancomunidad abre la red de PLUVIALES. ' +
+    { id: 'tercero', titulo: 'A por el cuarto pueblo',
+      texto: 'Con cuatro núcleos la mancomunidad abre la red de PLUVIALES. ' +
              'Sigue las señales y ve incorporando.' },
     { id: 'pluviales', titulo: 'Separa la lluvia',
       texto: 'Tiende la RED DE PLUVIALES: la tormenta que hoy revienta tu ' +

@@ -123,7 +123,7 @@ export class UI {
     const lineas = lineasConectadas(estado, clave);
     const p = estado.activo;
     const objetivo = diametro(estado.dnActual[clave], clave);
-    // Las pluviales no existen hasta que se abre el tercer pueblo
+    // Las pluviales no existen hasta que se abre el cuarto pueblo
     // Una red solo se ofrece cuando su servicio está en marcha
     const disponibles = Object.entries(CONFIG.redes)
       .filter(([, r]) => !r.requiere || servicioActivo(p, r.requiere));
@@ -1500,7 +1500,7 @@ export class UI {
       let texto = t`de serie`;
       if(!sv.siempre){
         if(activo) texto = t`en marcha`;
-        else if(sv.requiere === 'pluviales') texto = t`con el tercer pueblo`;
+        else if(sv.requiere === 'pluviales') texto = t`con el cuarto pueblo`;
         else if(sv.requiere === 'residuos') texto = t`desde ${formatear(CONFIG.residuos.activaEnHabitantes)} hab`;
         else if(sv.activaEnHabitantes) texto = t`desde ${formatear(sv.activaEnHabitantes)} hab`;
         else texto = t`cerrado`;
@@ -1811,9 +1811,6 @@ export class UI {
     const mes = MESES[Math.floor(((estado.horas % horasAño) / horasAño) * MESES.length)];
     this.fijar('hud-reloj', `${String(h).padStart(2,'0')}:00 · ${mes}`,
       (resultado.punta || 1) > 1.4 ? 'alarma' : 'neutro');
-
-    const barra = document.getElementById('barra-agua');
-    if(barra) barra.style.width = limitarPct(pct) + '%';
 
     // Multa por hora, para el panel de cauce
     resultado.multaHora = (resultado.suciedad || 0) * CONFIG.cauce.multaMaxPorHora;

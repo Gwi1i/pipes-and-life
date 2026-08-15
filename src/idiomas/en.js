@@ -71,8 +71,8 @@ export const EN = {
                'diameter in “The network” and renew the WHOLE line: the ' +
                'narrowest stretch rules.',
         boton: 'See the network' },
-      { titulo: 'On to the third town',
-        texto: 'With three towns the district opens the STORM DRAIN network. ' +
+      { titulo: 'On to the fourth town',
+        texto: 'With four towns the district opens the STORM DRAIN network. ' +
                'Follow the waymarks and keep bringing them in.' },
       { titulo: 'Separate the rain',
         texto: 'Lay the STORM DRAIN network: the storm that bursts your ' +
@@ -680,7 +680,7 @@ export const EN = {
       '<p><b>8. Treat before you dump.</b> As it grows, the town produces ' +
       'wastewater, and it needs its OWN network: a sewer down to a sewage ' +
       'plant by the water. The drinking pipe will not do.</p>' +
-      '<p><b>9. Manage the rain.</b> With the third town, the STORM DRAIN ' +
+      '<p><b>9. Manage the rain.</b> With the fourth town, the STORM DRAIN ' +
       'network opens. Without it, rain and sewage run down together, and ' +
       'in autumn they burst the sewage plant.</p>' +
       '<p><b>10. Collect the rubbish, and sell it.</b> Its network is not a ' +
@@ -1013,7 +1013,7 @@ export const EN = {
     'Otras mejoras': 'Other upgrades',
     'de serie': 'built in',
     'en marcha': 'running',
-    'con el tercer pueblo': 'with the third town',
+    'con el cuarto pueblo': 'with the fourth town',
     'desde {0} hab': 'from {0} people',
     'cerrado': 'closed',
     'Nv {0}': 'Lv {0}',

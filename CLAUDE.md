@@ -292,7 +292,8 @@ La UI muestra SIEMPRE el pueblo activo (`estado.activo`, índice en
 detalle, las averías y el premium se refieren al activo. El cauce y la caja son
 comunes. `ui.invalidarCache()` fuerza redibujar todo al cambiar de pueblo.
 
-El TERCER pueblo incorporado activa `estado.pluvialesActivas`, que desbloquea
+El CUARTO pueblo incorporado (`pluviales.abreConPueblos`) activa
+`estado.pluvialesActivas`, que desbloquea
 las mejoras marcadas con `requiere: 'pluviales'` (la UI las oculta hasta
 entonces). Ya no existe `comprobarDesbloqueo()` ni la lista fija
 `CONFIG.poblaciones`: incorporar pasa por `incorporarPueblo()` de

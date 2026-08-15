@@ -64,7 +64,7 @@ const PENDIENTE = {
       && p.habitantes >= cuello.def.habitantesMax * 0.9);
   },
 
-  tercero: (e) => e.pueblos.length < 3,
+  tercero: (e) => e.pueblos.length < CONFIG.pluviales.abreConPueblos,
 
   pluviales: (e) => e.pluvialesActivas
     && !e.pueblos.some(p => p.mejoras.pluviales > 0)
