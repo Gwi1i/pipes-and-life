@@ -1642,7 +1642,7 @@ export class UI {
             a ${formatear(coste)} € cada uno.`}</span>
           <span class="m-coste">${t`ir ahí →`}</span>
         </button>
-        ${av.aManoJugada ? '' : this.botonRepararJugando(obra, i)}`;
+        ${av.aManoJugada ? '' : this.botonRepararJugando(estado, obra, i)}`;
     }).join('') + (resto > 0
       ? `<p class="m-desc">${t`Y ${resto} averías más esperando: al reparar
            estas, entran aquí.`}</p>`
@@ -1655,9 +1655,13 @@ export class UI {
    * para la planta de reciclaje, la ruta para el vertedero. El premio es el
    * arreglo gratis; un solo intento, como siempre.
    */
-  botonRepararJugando(obra, i){
+  botonRepararJugando(estado, obra, i){
     const tipo = obra ? obra.tipo : null;
-    const pct = Math.round(CONFIG.minijuegos.averia.punteriaMinima * 100);
+    // El listón del momento: rodaje o veteranía, según lo jugado (por juego)
+    const K = CONFIG.minijuegos.averia;
+    const juego = tipo === 'reciclaje' ? 'reciclaje' : tipo === 'vertedero' ? 'camion' : null;
+    const veces = juego ? ((estado.reparacionesJugadas || {})[juego] || 0) : 0;
+    const pct = Math.round((veces < K.partidasFaciles ? K.punteriaMinima : K.punteriaVeterana) * 100);
     let titulo, desc;
     if(tipo === 'reciclaje'){
       titulo = t`Arreglarla echando un turno`;

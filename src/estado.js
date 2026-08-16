@@ -116,6 +116,9 @@ export class Estado {
     this.guias = { saneamiento: { paso: 0, terminada: false },
                    pluviales:   { paso: 0, terminada: false },
                    residuos:    { paso: 0, terminada: false } };
+    // Cuántas veces se ha jugado cada minijuego ARREGLANDO averías: las
+    // primeras piden menos puntería (minijuegos.averia). Por juego.
+    this.reparacionesJugadas = { reciclaje: 0, camion: 0 };
     // Hitos ya contados. Cada uno se enseña UNA vez en toda la partida: si se
     // repitiera dejaría de ser un momento y pasaría a ser un estorbo.
     this.hitosVistos = [];
@@ -154,6 +157,7 @@ export class Estado {
       construcciones: this.construcciones, tuberias: this.tuberias,
       dnActual: this.dnActual, redActual: this.redActual,
       averias: this.averias, tutorial: this.tutorial, guias: this.guias,
+      reparacionesJugadas: this.reparacionesJugadas,
       hitosVistos: this.hitosVistos
     };
     try{
@@ -236,6 +240,8 @@ export class Estado {
         });
       }
       if(estado.puebloActivo >= estado.pueblos.length) estado.puebloActivo = 0;
+
+      estado.reparacionesJugadas = d.reparacionesJugadas ?? { reciclaje: 0, camion: 0 };
 
       // Los capítulos por servicio: una partida vieja con el servicio YA
       // abierto no ve el suyo — un veterano no necesita que le enseñen lo

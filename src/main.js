@@ -715,8 +715,13 @@ function procesarAcciones(){
               fallada(t`El agua llegó antes que tú: esa avería ya solo se arregla con la llave.`);
           });
         } else {
-          // La cinta o la ruta: se arregla gratis con puntería suficiente
-          const minimo = CONFIG.minijuegos.averia.punteriaMinima;
+          // La cinta o la ruta: se arregla gratis con puntería suficiente.
+          // El listón sube con la práctica: rodaje primero, veteranía después.
+          const K = CONFIG.minijuegos.averia;
+          const veces = (estado.reparacionesJugadas || {})[juego] || 0;
+          const minimo = veces < K.partidasFaciles ? K.punteriaMinima : K.punteriaVeterana;
+          if(!estado.reparacionesJugadas) estado.reparacionesJugadas = { reciclaje: 0, camion: 0 };
+          estado.reparacionesJugadas[juego] = veces + 1;   // se cuenta al entrar
           const mini = juego === 'reciclaje' ? miniReciclaje : miniCamion;
           mini.jugar((aciertos, total, razon) => {
             if(razon === 'abandonado') return;

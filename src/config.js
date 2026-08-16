@@ -444,7 +444,13 @@ export const CONFIG = {
        cinta para la planta, la ruta para el vertedero. En modo avería el
        premio es solo el arreglo gratis (sin bonos) y hace falta puntería. */
     averia: {
-      punteriaMinima: 0.5      // aciertos/total para que el arreglo salga gratis
+      // El listón sube con la práctica (petición del autor): las primeras
+      // partidas de cada juego piden el 50%; a partir de ahí, nivel
+      // veterano. La cuenta va POR JUEGO (cinta y ruta por separado) y se
+      // guarda con la partida.
+      punteriaMinima: 0.5,     // aciertos/total durante el rodaje
+      punteriaVeterana: 0.75,  // ...y después
+      partidasFaciles: 10      // cuántas partidas dura el rodaje
     },
     tuberias: {
       columnas: 7, filas: 5,
