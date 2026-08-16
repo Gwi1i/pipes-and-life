@@ -1282,6 +1282,11 @@ export const EN = {
       'Not enough: back to the wrench, the old way.',
     'El turno salió flojo ({0} de {1}): esa avería ya solo se arregla con la llave.':
       'A weak shift ({0} of {1}): that breakdown can only be fixed with the wrench now.',
+    'el tablero de tuberías': 'the pipe board',
+    'un turno en la cinta': 'a shift on the sorting line',
+    'una ruta con el camión': 'a route with the truck',
+    '¿Te juegas el arreglo GRATIS con {0}? Un solo intento. (Cancelar = a golpe de llave: {1} golpes a {2} € cada uno)':
+      'Play {0} to fix it for FREE? One try only.\n\n(Cancel = the wrench: {1} blows at {2} € each)',
     'Arreglarla echando un turno': 'Fix it by working a shift',
     'Arreglarla sacando la ruta': 'Fix it by running the route',
     'Un turno de urgencia en la cinta: separa bien al menos el {0} % y la avería queda arreglada GRATIS. Un solo intento.':

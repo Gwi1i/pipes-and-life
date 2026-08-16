@@ -915,11 +915,17 @@ los ofrece en modo ensayo, sin premio ni castigo — nació para que el autor
 probara sin esperar una avería y se queda para que el jugador ensaye gratis.
 
 **Cada avería ofrece pagar la llave O el minijuego de SU servicio**
-(`minijuegoDeAveria()` en main, `minijuegos.averia.punteriaMinima`): las
-piezas de tubo van al tablero de tuberías; la planta de reciclaje, a la
-cinta; el vertedero, a la ruta del camión. En modo avería el premio es SOLO
-el arreglo gratis — nada de bonos, que tienen su propia puerta — y en cinta
-y ruta hace falta puntería mínima. Un intento por avería, como siempre.
+(`minijuegoDeAveria()` y `jugarAveria()` en main,
+`minijuegos.averia`): las piezas de tubo van al tablero de tuberías; la
+planta de reciclaje, a la cinta; el vertedero, a la ruta del camión. En
+modo avería el premio es SOLO el arreglo gratis — nada de bonos, que
+tienen su propia puerta — y en cinta y ruta hace falta puntería: 50%
+durante el rodaje (10 primeras partidas de cada juego,
+`estado.reparacionesJugadas`) y 75% después. Un intento por avería. Y LA
+ELECCIÓN SALE AL PINCHAR la avería en el mapa (petición del autor): el
+primer clic pregunta con `confirm()` si te la juegas gratis o vas a la
+llave; elegir llave se recuerda en la propia avería (`elegidoLlave`) y no
+vuelve a preguntar. El panel lateral mantiene su botón.
 
 1. REPARACIÓN A MANO (`minijuego_tuberias.js`): desde el panel de averías, un
 tablero de tuberías contrarreloj — el tablero nace LLENO de piezas giradas al

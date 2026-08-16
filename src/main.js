@@ -684,52 +684,7 @@ function procesarAcciones(){
       case 'repararAMano': {
         const av = estado.averias[parseInt(a.clave, 10)];
         if(!av || av.aManoJugada) break;
-        av.aManoJugada = true;
-        const juego = minijuegoDeAveria(av);
-        analitica.contar('minijuego/' + juego + (juego === 'tuberias' ? '' : '-averia'));
-        ui.invalidarCache();
-
-        const arreglada = () => {
-          const i = estado.averias.indexOf(av);
-          if(i >= 0) estado.averias.splice(i, 1);
-          const obra = estado.construcciones.find(o => o.col === av.col && o.fila === av.fila);
-          const nombre = obra ? CONFIG.construibles[obra.tipo].nombre : t`La instalación`;
-          estado.anotar(t`${nombre}: reparación a mano impecable. Ni un euro en llaves.`, 'ok');
-          avisar(t`¡En servicio! Reparada a mano, gratis.`);
-          sonido.reparada();
-          ui.caraGuia('bien');
-          escena.destelloMantenimiento();
-          ui.invalidarCache();
-        };
-        const fallada = (texto) => {
-          estado.anotar(texto, 'alarma');
-          avisar(t`No ha bastado: a golpe de llave, como toda la vida.`);
-          sonido.seco();
-          ui.caraGuia('mal');
-        };
-
-        if(juego === 'tuberias'){
-          miniTuberias.jugar((exito, razon) => {
-            if(exito) arreglada();
-            else if(razon === 'derrame')
-              fallada(t`El agua llegó antes que tú: esa avería ya solo se arregla con la llave.`);
-          });
-        } else {
-          // La cinta o la ruta: se arregla gratis con puntería suficiente.
-          // El listón sube con la práctica: rodaje primero, veteranía después.
-          const K = CONFIG.minijuegos.averia;
-          const veces = (estado.reparacionesJugadas || {})[juego] || 0;
-          const minimo = veces < K.partidasFaciles ? K.punteriaMinima : K.punteriaVeterana;
-          if(!estado.reparacionesJugadas) estado.reparacionesJugadas = { reciclaje: 0, camion: 0 };
-          estado.reparacionesJugadas[juego] = veces + 1;   // se cuenta al entrar
-          const mini = juego === 'reciclaje' ? miniReciclaje : miniCamion;
-          mini.jugar((aciertos, total, razon) => {
-            if(razon === 'abandonado') return;
-            const punteria = total ? aciertos / total : 0;
-            if(punteria >= minimo) arreglada();
-            else fallada(t`El turno salió flojo (${aciertos} de ${total}): esa avería ya solo se arregla con la llave.`);
-          });
-        }
+        jugarAveria(av);
         break;
       }
 
@@ -1243,6 +1198,60 @@ function minijuegoDeAveria(av){
   return 'tuberias';
 }
 
+/**
+ * Jugarse el arreglo de una avería al minijuego de su servicio. El intento se
+ * gasta al ENTRAR — abandonar también cuenta, que mirar ya es ventaja — y el
+ * premio es SOLO el arreglo gratis: nada de bonos, que tienen su puerta.
+ */
+function jugarAveria(av){
+  av.aManoJugada = true;
+  const juego = minijuegoDeAveria(av);
+  analitica.contar('minijuego/' + juego + (juego === 'tuberias' ? '' : '-averia'));
+  ui.invalidarCache();
+
+  const arreglada = () => {
+    const i = estado.averias.indexOf(av);
+    if(i >= 0) estado.averias.splice(i, 1);
+    const obra = estado.construcciones.find(o => o.col === av.col && o.fila === av.fila);
+    const nombre = obra ? CONFIG.construibles[obra.tipo].nombre : t`La instalación`;
+    estado.anotar(t`${nombre}: reparación a mano impecable. Ni un euro en llaves.`, 'ok');
+    avisar(t`¡En servicio! Reparada a mano, gratis.`);
+    sonido.reparada();
+    ui.caraGuia('bien');
+    escena.destelloMantenimiento();
+    ui.invalidarCache();
+  };
+  const fallada = (texto) => {
+    estado.anotar(texto, 'alarma');
+    avisar(t`No ha bastado: a golpe de llave, como toda la vida.`);
+    sonido.seco();
+    ui.caraGuia('mal');
+  };
+
+  if(juego === 'tuberias'){
+    miniTuberias.jugar((exito, razon) => {
+      if(exito) arreglada();
+      else if(razon === 'derrame')
+        fallada(t`El agua llegó antes que tú: esa avería ya solo se arregla con la llave.`);
+    });
+  } else {
+    // La cinta o la ruta: se arregla gratis con puntería suficiente.
+    // El listón sube con la práctica: rodaje primero, veteranía después.
+    const K = CONFIG.minijuegos.averia;
+    const veces = (estado.reparacionesJugadas || {})[juego] || 0;
+    const minimo = veces < K.partidasFaciles ? K.punteriaMinima : K.punteriaVeterana;
+    if(!estado.reparacionesJugadas) estado.reparacionesJugadas = { reciclaje: 0, camion: 0 };
+    estado.reparacionesJugadas[juego] = veces + 1;   // se cuenta al entrar
+    const mini = juego === 'reciclaje' ? miniReciclaje : miniCamion;
+    mini.jugar((aciertos, total, razon) => {
+      if(razon === 'abandonado') return;
+      const punteria = total ? aciertos / total : 0;
+      if(punteria >= minimo) arreglada();
+      else fallada(t`El turno salió flojo (${aciertos} de ${total}): esa avería ya solo se arregla con la llave.`);
+    });
+  }
+}
+
 /** Golpes de llave que pide una avería. El personal contratado deja menos faena. */
 function clicsDeReparacion(){
   const A = CONFIG.averias;
@@ -1259,6 +1268,26 @@ function clicAveria(col, fila){
   const av = averiaEn(estado, col, fila);
   if(!av) return false;
   const coste = CONFIG.averias.costePorClic;
+
+  // LA ELECCIÓN EN EL SITIO (petición del autor): el PRIMER clic sobre la
+  // avería pregunta si prefieres jugarte el arreglo gratis, antes de empezar
+  // a pagar llaves. Una sola vez: elegir la llave se recuerda en la propia
+  // avería (elegidoLlave viaja en el guardado con ella) y no vuelve a
+  // preguntar. Con el intento ya gastado, tampoco.
+  if(!av.aManoJugada && !av.elegidoLlave){
+    const juego = minijuegoDeAveria(av);
+    const nombreJuego = juego === 'reciclaje' ? t`un turno en la cinta`
+                      : juego === 'camion' ? t`una ruta con el camión`
+                      : t`el tablero de tuberías`;
+    if(confirm(t`¿Te juegas el arreglo GRATIS con ${nombreJuego}? Un solo intento.
+
+(Cancelar = a golpe de llave: ${av.clics} golpes a ${formatear(coste)} € cada uno)`)){
+      jugarAveria(av);
+      return true;
+    }
+    av.elegidoLlave = true;
+    ui.invalidarCache();
+  }
   if(!estado.puedePagar(coste)){
     avisar(t`Cada golpe de llave cuesta ${formatear(coste)} € y no hay fondos.`);
     return true;
