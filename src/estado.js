@@ -7,7 +7,7 @@
  */
 
 import { CONFIG } from './config.js';
-import { generarMapa, comprimir, aplicarGuardado } from './mapa.js';
+import { generarMapa, comprimir, aplicarGuardado, aflorarDescubiertas } from './mapa.js';
 import { legado, nivelVentaja, guardarLegado } from './legado.js';
 // La etiqueta de traducción (OJO: ninguna variable local puede llamarse t)
 import { t } from './idioma.js';
@@ -309,6 +309,9 @@ export class Estado {
         estado.mapa = generarMapa(estado.semilla, radioCartografia(), estado.mundo);
       }
       aplicarGuardado(estado.mapa, d.mapa);
+      // Los yacimientos de zonas YA exploradas afloran (regla nueva: se ven
+      // al destapar). En silencio: sin tarjeta al cargar.
+      aflorarDescubiertas(estado.mapa);
       estado.inventario = d.inventario || [];
       estado.construcciones = d.construcciones || [];
       // Las obras de antes de tener nombre y nivel los reciben al cargar, en

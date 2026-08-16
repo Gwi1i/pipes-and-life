@@ -206,10 +206,12 @@ que aceleren). Como el auto-bombeo: NO hay pago ni anuncio implementado y no se
 debe simular ninguno falso.
 
 **Dos obstáculos de trazado, y son distintos a propósito.** Los YACIMIENTOS
-(`CONFIG.arqueologia`) están escondidos y afloran al picar: cada uno ES algo
-concreto (`tipos`, con peso de rareza y renta propia — de poblado antiguo a
-fósiles de dinosaurio, el más raro y el que más renta) y se puede excavar y
-poner en valor. Las ZONAS DE ESPECIAL CONSERVACIÓN (`CONFIG.proteccion`) se ven
+(`CONFIG.arqueologia`) AFLORAN AL DESTAPAR la casilla
+(`aflorarDescubiertas()`; petición del autor — cuando solo afloraban al
+picar para construir, el 95% no se veía jamás): cada uno ES algo concreto
+(`tipos`, con peso de rareza y renta propia — de poblado antiguo a fósiles
+de dinosaurio, el más raro y el que más renta) y se puede excavar y poner
+en valor. Las ZONAS DE ESPECIAL CONSERVACIÓN (`CONFIG.proteccion`) se ven
 desde el principio, son manchas orgánicas de fauna o flora, y NO tienen premio:
 no se construye ni se traza dentro nunca, y `puedeColocar`/`puedeSeguirTrazado`
 dan la pega de protección ANTES que ninguna otra. Si los lixiviados de un

@@ -1113,6 +1113,17 @@ function rematarTuberia(){
  */
 function anunciarHallazgo(celda, col, fila){
   estado.descubiertas++;
+  // LOS YACIMIENTOS AFLORAN AL DESTAPAR (petición del autor: cuando solo
+  // afloraban al picar para construir, el 95% no se veía jamás — en la
+  // mayoría de las casillas nunca se coloca nada encima).
+  if(celda.arqueologia && !celda.aflorado){
+    aflorarArqueologia(estado.mapa, col, fila);
+    contarHito('arqueologia');
+    const tipoA = tipoYacimiento(celda);
+    estado.anotar(t`¡${tipoA.nombre} bajo la tesela! Excávalo y ponlo en valor, o rodéalo.`, 'ok');
+    avisar(t`¡Ha aflorado: ${tipoA.nombre}!`);
+    sonido.hallazgo();
+  }
   if(!celda.hallazgo) return;
   // Un PUEBLO no es un aviso más: es EL premio del mapa. Tarjeta con su
   // estampa, sus vecinos pidiendo el agua, y fanfarria propia (petición del

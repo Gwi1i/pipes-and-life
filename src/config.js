@@ -1725,8 +1725,8 @@ export const CONFIG = {
        qué está pasando. Una vez cada una, como todos los hitos. --- */
     arqueologia: {
       titulo: 'Ha aflorado un yacimiento',
-      pasa: 'La zanja ha tropezado con restos enterrados: ahí abajo hay ' +
-            'historia, y las obras paran en el acto.',
+      pasa: 'Al destapar el terreno han aparecido restos enterrados: ahí ' +
+            'abajo hay historia, y encima no se puede construir.',
       hacer: 'Rodéalo... o EXCÁVALO desde su ficha y ponlo en valor: cada ' +
              'yacimiento a la vista deja una renta.',
       porque: 'Es ley y es rutina del oficio: toda obra con movimiento de ' +

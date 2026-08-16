@@ -476,8 +476,8 @@ export const EN = {
     hitos: {
       arqueologia: {
         titulo: 'A dig site has surfaced',
-        pasa: 'The trench has struck buried remains: there is history down ' +
-              'there, and the works stop on the spot.',
+        pasa: 'Clearing the land has revealed buried remains: there is ' +
+              'history down there, and nothing can be built on top.',
         hacer: 'Route around it... or EXCAVATE it from its card and put it ' +
                'on display: every unearthed site pays a steady rent.',
         porque: 'It is the law and the daily routine of the trade: every ' +
@@ -1286,6 +1286,9 @@ export const EN = {
     'el tablero de tuberías': 'the pipe board',
     'un turno en la cinta': 'a shift on the sorting line',
     'una ruta con el camión': 'a route with the truck',
+    '¡Ha aflorado: {0}!': 'Surfaced: {0}!',
+    '¡{0} bajo la tesela! Excávalo y ponlo en valor, o rodéalo.':
+      '{0} under the tile! Excavate it and put it on display, or route around it.',
     '¿Cómo la arreglamos?': 'How do we fix it?',
     'Puedes jugarte el arreglo GRATIS con {0} — un solo intento — o ir a golpe de llave: {1} golpes a {2} € cada uno.':
       'You can play {0} to fix it for FREE — one try only — or go with the wrench: {1} blows at {2} € each.',
