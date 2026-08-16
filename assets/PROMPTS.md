@@ -566,11 +566,18 @@ lo roto deja de aportar y se arregla YENDO ALLÍ con la llave. Debe transmitir
 oficio y arreglo, no catástrofe — una avería es rutina del abastecimiento:
 
 ### `h_averia.png`
-> Genera una imagen: una fuga en una tubería enterrada vista en una zanja
-> recién abierta en un camino rural, el agua brotando a borbotones entre la
-> tierra, y un operario con mono de trabajo arrodillado apretando la brida
-> con una llave grande, caja de herramientas al lado y un pueblo pequeño al
-> fondo, *(+ coletilla)*
+
+**Corrección del autor (del oficio): NADIE actúa sobre una tubería en
+presión — está prohibidísimo.** Primero se corta el agua; la reparación
+viene después, con la línea despresurizada. Los operarios se dibujan AL
+BORDE de la zanja, evaluando, nunca con la llave sobre el tubo en carga.
+
+> Genera una imagen: una tubería enterrada fisurada vista en una zanja
+> recién abierta en un camino rural, un chorro de agua saliendo con fuerza
+> por la fisura, y dos operarios con casco al borde de la zanja evaluando
+> la avería con palas y herramienta, la camioneta de la cuadrilla aparcada
+> al lado y un pueblo pequeño con su depósito elevado al fondo,
+> *(+ coletilla)*
 
 ## La zona protegida (`h_proteccion.png`)
 
