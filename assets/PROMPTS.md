@@ -559,6 +559,19 @@ alegre: el agua que no se veía, saliendo donde no hay río.
 > chorro de agua clara saliendo por la boca del entubado, con dos operarios
 > celebrándolo y un pueblo pequeño al fondo entre lomas, *(+ coletilla)*
 
+## La primera avería (`h_averia.png`)
+
+La tarjeta sale con la primera avería de la partida y explica la mecánica:
+lo roto deja de aportar y se arregla YENDO ALLÍ con la llave. Debe transmitir
+oficio y arreglo, no catástrofe — una avería es rutina del abastecimiento:
+
+### `h_averia.png`
+> Genera una imagen: una fuga en una tubería enterrada vista en una zanja
+> recién abierta en un camino rural, el agua brotando a borbotones entre la
+> tierra, y un operario con mono de trabajo arrodillado apretando la brida
+> con una llave grande, caja de herramientas al lado y un pueblo pequeño al
+> fondo, *(+ coletilla)*
+
 ## La zona protegida (`h_proteccion.png`)
 
 La tarjeta sale la primera vez que una obra tropieza con una zona de especial

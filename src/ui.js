@@ -459,8 +459,12 @@ export class UI {
     img.hidden = true;
     img.onload = () => { img.hidden = false; };
     img.onerror = () => { img.hidden = true; };
-    // Los logros llevan su propia imagen, amable: `l_` en vez de `h_`.
-    img.src = `assets/${h.logro ? 'l' : 'h'}_${id}.jpg`;
+    // Los logros llevan su propia imagen, amable: `l_` en vez de `h_`. Y las
+    // tarjetas de PRIMERA VEZ (yacimiento, ruina, crecimiento) enseñan la
+    // lámina del hallazgo CONCRETO que las disparó (estado.hitoImagen, lo
+    // deja contarHito): ese arte ya existe en las fichas y es mejor tarjeta
+    // que una ilustración genérica.
+    img.src = estado.hitoImagen || `assets/${h.logro ? 'l' : 'h'}_${id}.jpg`;
 
     // La tarjeta cambia de tono: un problema entra en ámbar y un logro en verde.
     // Con el mismo color, la de "el río vuelve a estar vivo" se leía como otra

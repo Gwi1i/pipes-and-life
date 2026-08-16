@@ -950,10 +950,11 @@ function procesarAcciones(){
  */
 function tropiezoArqueologico(col, fila){
   if(!aflorarArqueologia(estado.mapa, col, fila)) return false;
-  contarHito('arqueologia');   // la primera vez, tarjeta: qué es y qué se hace
+  const tipoA = tipoYacimiento(celdaEn(estado.mapa, col, fila));
+  // La primera vez, tarjeta: qué es y qué se hace — con la lámina del tipo
+  contarHito('arqueologia', `assets/a_${tipoA.id}.jpg`);
   estado.seleccion = { col, fila };
   estado.modo.trazado = [];
-  const tipoA = tipoYacimiento(celdaEn(estado.mapa, col, fila));
   estado.anotar(t`¡${tipoA.nombre} al excavar! No se puede construir ahí: hay que rodearlo.`, 'alarma');
   avisar(t`¡${tipoA.nombre}! Rodéalo... o excávalo y ponlo en valor.`);
   ui.invalidarCache();
@@ -1118,8 +1119,8 @@ function anunciarHallazgo(celda, col, fila){
   // mayoría de las casillas nunca se coloca nada encima).
   if(celda.arqueologia && !celda.aflorado){
     aflorarArqueologia(estado.mapa, col, fila);
-    contarHito('arqueologia');
     const tipoA = tipoYacimiento(celda);
+    contarHito('arqueologia', `assets/a_${tipoA.id}.jpg`);
     estado.anotar(t`¡${tipoA.nombre} bajo la tesela! Excávalo y ponlo en valor, o rodéalo.`, 'ok');
     avisar(t`¡Ha aflorado: ${tipoA.nombre}!`);
     sonido.hallazgo();
@@ -1132,8 +1133,10 @@ function anunciarHallazgo(celda, col, fila){
     mostrarDescubierto(celda, col, fila);
     return;
   }
-  // La primera ruina merece su tarjeta: qué es y qué decisión trae
-  if(celda.hallazgo === 'ruina') contarHito('ruina');
+  // La primera ruina merece su tarjeta: qué es y qué decisión trae — con la
+  // lámina de la instalación abandonada concreta que acaba de aparecer
+  if(celda.hallazgo === 'ruina')
+    contarHito('ruina', `assets/f_${piezaDeRuina(celda)}_ruina.jpg`);
   const textos = {
     ruina:      t`Instalación abandonada. Se podrá reparar o llevar al inventario.`,
     senal:      t`Una señal de camino: apunta al pueblo más cercano por descubrir.`,
@@ -1382,8 +1385,10 @@ function anotarCrecimiento(){
     // El PRIMER crecimiento de la partida lleva tarjeta (petición del autor:
     // que la primera vez que pasa algo nuevo se explique qué está pasando).
     // contarHito ya garantiza que es una sola vez en toda la partida.
-    if(ahora > antes) contarHito('crecimiento');
     const nivelAhora = nivelCaserio(ahora), nivelAntes = nivelCaserio(antes);
+    if(ahora > antes)
+      contarHito('crecimiento',
+        `assets/f_${CONFIG.caserio.escalones[nivelAhora].nombre}.jpg`);
     // La línea de cada centena se calla si en este mismo paso hay cambio de
     // escalón: el aviso de escalón ya dice el número, y dos líneas seguidas
     // contando lo mismo ensucian el registro.
@@ -1563,11 +1568,16 @@ function avisar(texto){
  * Encola un hito para que se cuente. Solo la primera vez: un hito repetido deja
  * de ser un momento y pasa a ser un estorbo.
  */
-function contarHito(id){
+function contarHito(id, imagen){
   if(!CONFIG.hitos[id]) return;
   if(estado.hitosVistos.includes(id)) return;
   estado.hitosVistos.push(id);
   estado.hitoPendiente = id;
+  // La lámina del hallazgo CONCRETO que dispara la tarjeta (el yacimiento
+  // aflorado, la ruina encontrada, el caserío que crece): sin ella se busca
+  // la genérica h_<id>.jpg. Transitoria a propósito — hitoPendiente tampoco
+  // sobrevive a una recarga.
+  estado.hitoImagen = imagen || null;
   // Único embudo de hitos Y logros: el sonido de tarjeta va aquí y en ningún
   // otro sitio, así ningún momento suena dos veces.
   sonido.hito();
