@@ -1058,7 +1058,10 @@ muy por debajo de la real.
 **Offline.** `progresoOffline()` en `main.js` simula el tiempo ausente a pasos
 (la curva diaria y el estiaje cambian por el camino) con tope `offline.maxHoras`
 (8 h: la noche entera cabe, decidido al empezar a medir retención) y al
-`offline.rendimiento` (50%): de la GANANCIA solo se cobra la mitad —
+`offline.rendimiento` (20% desde la cirugía: con la autonomía nueva, al 50%
+la ausencia era una imprenta de billetes — 51 min fuera reventaban la caja,
+y el principio del autor es que jugar se premia): de la GANANCIA solo se
+cobra esa fracción —
 las pérdidas se pagan enteras, la ausencia no es un escudo—. Y LA NOCHE NO
 DESPUEBLA (petición del autor: 8 h reales son AÑOS de juego, y volver al día
 siguiente con los pueblos vacíos obligaba a conectarse cada poco): en tu

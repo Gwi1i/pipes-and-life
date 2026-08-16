@@ -380,6 +380,23 @@
   </div>
 </div>
 
+<!-- LA ELECCIÓN de la avería: jugarse el arreglo o ir a la llave. Era un
+     confirm() nativo del navegador — "localhost dice", blanco nuclear — y el
+     autor lo vio y dijo "no me gusta nada". Con razón: nada del navegador
+     debe asomar dentro del juego. Mismo vestido que las tarjetas. -->
+<div class="hito-fondo" id="eleccion-fondo" hidden>
+  <div class="hito eleccion" id="eleccion">
+    <div class="hito-cuerpo">
+      <p class="hito-titulo" id="eleccion-titulo">—</p>
+      <p class="hito-txt" id="eleccion-texto">—</p>
+      <div class="eleccion-botones">
+        <button class="hito-btn" data-accion="eleccionJugar" id="eleccion-jugar">—</button>
+        <button class="hito-btn eleccion-secundario" data-accion="eleccionLlave" id="eleccion-llave">—</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- LA VUELTA. En un incremental, el momento de volver ES el juego: la razón
      de reabrirlo es ver qué ha pasado. Antes era una línea perdida en el
      registro; esto lo cuenta de frente, con el vestido de las tarjetas. -->

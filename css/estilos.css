@@ -150,6 +150,17 @@ button{touch-action:manipulation;}
 .hoja{display:flex; flex-direction:column; gap:11px;}
 .hoja[hidden]{display:none;}
 
+/* La tarjeta de ELECCIÓN (avería: jugar o llave): compacta, sin imagen,
+   con las dos salidas a la vista. El botón secundario va apagado — la
+   llave es el camino de siempre, no el premio. */
+.eleccion{max-width:420px;}
+.eleccion-botones{display:flex; gap:8px; margin-top:12px;}
+.eleccion-botones .hito-btn{flex:1; margin-top:0;}
+.hito-btn.eleccion-secundario{
+  background:none; border:1px solid var(--linea-viva); color:var(--tenue);
+}
+.hito-btn.eleccion-secundario:hover{border-color:var(--critico); color:var(--critico);}
+
 /* ---------- FICHA DIVULGATIVA DE UNA PIEZA ----------
    Va con otro aire que el resto de la interfaz —más texto, más aire entre
    líneas— porque no es un panel de juego: es lo que el jugador se lleva

@@ -542,16 +542,19 @@ export const CONFIG = {
   /* ---------- PROGRESO OFFLINE ---------- */
   offline: {
     minSegundos: 60,
-    /* Ocho horas y a MEDIO rendimiento: la explotación sin nadie al mando
-       rinde menos, y el juego es estar. Empezó en 3 h, pero justo midiendo la
-       RETENCIÓN eso era un tiro en el pie: quien juega por la noche y vuelve
-       por la mañana tiene que encontrarse algo — la noche entera cabe en 8.
-       El medio rendimiento se queda: deja hueco para la monetización futura
-       (pagar por el rendimiento completo sería la ventaja natural a vender).
-       Como el auto-bombeo y los aceleradores: `desbloqueoExterno` es el
-       GANCHO — NO hay pago ni anuncio implementado y no se simula ninguno. */
+    /* Ocho horas de tope: quien juega por la noche y vuelve por la mañana
+       tiene que encontrarse algo — la noche entera cabe en 8 (empezó en 3,
+       y midiendo RETENCIÓN aquello era un tiro en el pie).
+       El rendimiento bajó de 0.5 a 0.2 con la cirugía: la autonomía nueva
+       (captación que cubre la base) convertía la ausencia en una imprenta
+       de billetes — el autor volvió tras 51 minutos con la caja reventada.
+       El principio es suyo: jugar se premia, no jugar se nota. Volver debe
+       dar una alegría, no una paga.
+       El rendimiento pleno queda como hueco de monetización futura:
+       `desbloqueoExterno` es el GANCHO — NO hay pago ni anuncio
+       implementado y no se simula ninguno. */
     maxHoras: 8,
-    rendimiento: 0.5,          // fracción de la ganancia que se cobra offline
+    rendimiento: 0.2,          // fracción de la ganancia que se cobra offline
     desbloqueoExterno: null,
     /* La TARJETA de vuelta solo desde ausencias de verdad: por debajo, la línea
        del registro basta. Con el umbral en cero, cada recarga rápida taparía el

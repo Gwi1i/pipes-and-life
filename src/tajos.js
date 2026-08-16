@@ -46,7 +46,10 @@ const PENDIENTE = {
   // progresión vive en el mapa)
   mejora: (e) => !e.construcciones.some(o => (o.nivel || 1) > 1),
 
-  vecino: (e) => !vecinoPendiente(e),
+  // Solo ANTES del segundo pueblo: sin este corte, la carta se re-armaba
+  // para cada vecino nuevo y pedía "encuentra a tu PRIMER vecino" a quien
+  // ya llevaba dos incorporados (lo cazó el autor jugando).
+  vecino: (e) => e.pueblos.length < 2 && !vecinoPendiente(e),
 
   conectar: (e) => {
     const v = vecinoPendiente(e);

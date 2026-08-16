@@ -1284,8 +1284,11 @@ export const EN = {
     'el tablero de tuberías': 'the pipe board',
     'un turno en la cinta': 'a shift on the sorting line',
     'una ruta con el camión': 'a route with the truck',
-    '¿Te juegas el arreglo GRATIS con {0}? Un solo intento. (Cancelar = a golpe de llave: {1} golpes a {2} € cada uno)':
-      'Play {0} to fix it for FREE? One try only.\n\n(Cancel = the wrench: {1} blows at {2} € each)',
+    '¿Cómo la arreglamos?': 'How do we fix it?',
+    'Puedes jugarte el arreglo GRATIS con {0} — un solo intento — o ir a golpe de llave: {1} golpes a {2} € cada uno.':
+      'You can play {0} to fix it for FREE — one try only — or go with the wrench: {1} blows at {2} € each.',
+    'Me la juego': 'I’ll play for it',
+    'A golpe de llave': 'The wrench it is',
     'Arreglarla echando un turno': 'Fix it by working a shift',
     'Arreglarla sacando la ruta': 'Fix it by running the route',
     'Un turno de urgencia en la cinta: separa bien al menos el {0} % y la avería queda arreglada GRATIS. Un solo intento.':
