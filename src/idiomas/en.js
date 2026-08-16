@@ -1398,8 +1398,8 @@ export const EN = {
     '{0} encoge: vuelve a ser {1} {2}.': '{0} is shrinking: it is a {2} again.',
     'Mientras no estabas ({0} min): {1}{2} €.': 'While you were away ({0} min): {1}{2} €.',
     'La caja': 'The funds',
-    'Al {0} %: sin nadie al mando, la explotación rinde la mitad.':
-      'At {0} %: with nobody in charge, the operation yields half.',
+    'Al {0} %: sin nadie al mando, la explotación rinde lo justo.':
+      'At {0} %: with nobody in charge, the operation only yields so much.',
     'La población': 'Population',
     '{0}{1} habitantes': '{0}{1} people',
     'Agua servida': 'Water served',
