@@ -87,7 +87,7 @@ red-hidraulica/
     ├── tutorial.js     La guía de los primeros pasos (solo lee estado)
     ├── diagramas.js    Los esquemas animados de cada instalación (módulo puro)
     ├── entrada.js      Ratón, tacto, teclado → acciones
-    ├── ui.js           DOM fuera de la escena: HUD, tienda, paneles
+    ├── ui.js           DOM fuera de la escena: HUD, servicios, paneles
     ├── analitica.js    Contador anónimo de visitas y vueltas (solo reacciona)
     └── main.js         Ensamblado y bucle principal
 ```
@@ -308,9 +308,10 @@ Lo que es de cada pueblo y lo que es común está separado a propósito:
   `contaminacion` (un solo cauce) y `averias` (lo que está roto sobre el mapa).
 
 La UI muestra SIEMPRE el pueblo activo (`estado.activo`, índice en
-`estado.puebloActivo`); las pestañas cambian cuál. La tienda, el panel de
-detalle, las averías y el premium se refieren al activo. El cauce y la caja son
-comunes. `ui.invalidarCache()` fuerza redibujar todo al cambiar de pueblo.
+`estado.puebloActivo`); tocar un pueblo en el mapa cambia cuál. Los
+servicios, el panel de detalle y el premium se refieren al activo. El
+cauce, la caja y la cuadrilla son comunes. `ui.invalidarCache()` fuerza
+redibujar todo al cambiar de pueblo.
 
 El CUARTO pueblo incorporado (`pluviales.abreConPueblos`) activa
 `estado.pluvialesActivas`, que desbloquea
@@ -409,9 +410,9 @@ enciende y devuelve los recién abiertos para poder anunciarlos.
 (el personal) no tiene tubería, y los RESIDUOS que vienen tampoco —se recogen en
 camión, con rutas—. Fundirlas ahora dejaría fuera la mitad de lo que falta. Las
 `piezas` construibles NO se repiten en `servicios`: viven solo en
-`CONFIG.redes[red].piezas`. La tienda se genera agrupada por servicio, y una
-mejora que no figure en ninguno cae en un grupo "Otras" en vez de desaparecer sin
-avisar, que sería un fallo mudo.
+`CONFIG.redes[red].piezas`. El panel de servicios enseña el estado de cada
+uno (de serie / en marcha / desde X hab), sin botones: la cirugía se llevó
+las compras al mapa.
 
 **Cada servicio tiene SU red.** `CONFIG.redes` define `abastecimiento` (trae agua
 limpia), `saneamiento` (se lleva la sucia), `pluviales` (saca la lluvia del
@@ -445,9 +446,9 @@ aporta nada y callárselo parece un timo) y su botón AMPLIAR
 (`CONFIG.ampliacion`, coste geométrico). La clave del encaje:
 `inventarioConectado()` suma NIVELES, no unidades — una pieza a nivel 3 cuenta
 como tres — y así todas las fórmulas de aporte recogen la ampliación sin
-tocarlas. El reparto de papeles, que confundía de verdad: la TIENDA ("Mejoras
-del pueblo") sube la instalación municipal del pueblo activo; cada pieza del
-MAPA se amplía seleccionándola. El vertedero queda FUERA de la ampliación
+tocarlas. Cada pieza del MAPA se amplía seleccionándola (tras la cirugía es
+LA progresión: tope y factor por tipo en `ampliacion.porTipo`, helper
+`nivelMaxPieza()`). El vertedero queda FUERA de la ampliación
 genérica: su `nivel` es el vaso y tiene su propio botón. Las partidas viejas
 bautizan sus obras al cargar.
 
@@ -853,12 +854,21 @@ más no da nada. Por eso el crecimiento de población es agresivo
 siga teniendo sentido. Si algún día bajas el crecimiento, el juego se queda sin
 tensión a los pocos minutos.
 
-**Mejoras.** La tienda se genera sola desde `CONFIG.mejoras`: cada entrada tiene
-`costeBase`, `factorCoste`, `nivelMax` y sus parámetros de efecto. El nivel vive
-en `pueblo.mejoras[clave]` (por pueblo); el coste del siguiente nivel es
-`costeBase · factorCoste^nivel` (`costeMejora()`). Añadir una vía nueva es añadir
-una entrada en config y, si necesita efecto, leerlo en `simulacion.js`. No hace
-falta tocar la UI ni `entrada.js`.
+**LA CIRUGÍA: la tienda no existe (docs/cirugia.md).** La infraestructura
+vive SOLO en el mapa: todas las fórmulas multiplican NIVELES CONECTADOS de
+piezas por su `aportePorPieza`, y la progresión profunda son las
+AMPLIACIONES (`ampliacion.porTipo`: tope y factor por tipo — captación a 20
+niveles, bombeo a 20, depósito a 15...). Las pluviales se separan POR
+LÍNEAS tendidas (`pluviales.fraccionPorLinea`); en la planta de reciclaje
+el nivel ES las fracciones abiertas. El mantenimiento sobrevive como LA
+CUADRILLA (`CONFIG.cuadrilla`, `estado.cuadrilla`, común, se compra en
+Mancomunidad). El auto-bombeo pide niveles de pieza conectados. MIGRACIÓN:
+una partida vieja con niveles municipales cobra al cargar el reembolso
+íntegro (tabla congelada `PRECIOS_TIENDA_VIEJA` en estado.js — NO tocar:
+es historia) y su mantenimiento se convierte en cuadrilla gratis. El canon
+subió a 700/1.42 con la cirugía: el dinero que absorbía la tienda se iba
+entero a cánones. El panel "Servicios del pueblo" (id `tienda`, solo
+nombre de contenedor) enseña el estado de cada servicio, sin botones.
 
 **Crecimiento.** En `crecer()`: la población crece solo tras una *racha* de buen
 servicio sostenido (un corte la resetea), mengua si va mal servida, y se queda
@@ -1104,7 +1114,7 @@ fondo, no un fastidio continuo.
 - Los botones van por delegación (`data-accion`, y `data-clave` para la mejora,
   el índice de pueblo, el diámetro o la red). `entrada.js` escucha varios
   contenedores — la lista ÚNICA y verdadera es la del bucle `for(const id of
-  [...])` en `entrada.js`; hoy: `tienda`, `premium`, `panel-averias`,
+  [...])` en `entrada.js`; hoy: `cuadrilla`, `premium`, `panel-averias`,
   `pestanas`, `panel-cauce`, `construir`, `hallazgo`, `almacen`, `panel-guia`,
   `red`, `obra`, `hito`, `casilla`, `vuelta`, `lugares`, `taller`,
   `respaldo` y `expediente`. Añadir un botón dentro de uno de ellos no obliga a tocar el
