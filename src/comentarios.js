@@ -22,7 +22,8 @@
 import { CONFIG } from './config.js';
 import { pasoActual } from './tutorial.js';
 import { capacidad, tasaFugasRed, redDelPueblo, redEstrangula,
-         nivelMasa, pozosPorMasa, nivelCaserio } from './simulacion.js';
+         nivelMasa, pozosPorMasa, nivelCaserio,
+         caudalCaptacion, demandaMedia } from './simulacion.js';
 // La etiqueta de traducción: los textos de Manuel se quedan aquí en
 // castellano (una sola fuente, generar_voces.py los lee) y el diccionario
 // inglés los busca por su esqueleto. OJO: SIN interpolación (${}) en estos
@@ -64,6 +65,17 @@ const COMENTARIOS = [
     id: 'estrangula', animo: 'mal',
     cuando: (e) => redEstrangula(e.activo, e),
     texto: t`Captáis más agua de la que cabe por la tubería, y lo que sobra se queda en el río. Más captación no: más calibre.`},
+  {
+    // El muro del clic (lo vivió el autor): con el pueblo crecido, el dedo
+    // no da abasto — el depósito se vacía al instante y parece que hay que
+    // clicar más fuerte, cuando la respuesta es caudal BASE. La lección más
+    // importante del juego medio, dicha en el momento en que duele.
+    id: 'clicNoBasta', animo: 'mal',
+    cuando: (e, res) => e.activo.habitantes > 500
+      && (res.servicio || 1) < 0.7
+      && caudalCaptacion(e.activo, e, res.estiaje || 1)
+         < demandaMedia(e.activo.habitantes) * 0.6,
+    texto: t`El dedo ya no puede con tanta sed: eso no se arregla clicando más fuerte. Amplía la captación hasta que la producción se acerque al gasto, y deja el clic para las puntas.`},
   {
     id: 'estiaje', animo: null,
     cuando: (e, res) => (res.estiaje || 1) < 0.5,
