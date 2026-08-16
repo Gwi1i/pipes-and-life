@@ -120,6 +120,7 @@ export function generarMapa(semilla = CONFIG.mapaMundo.semilla, radioExtra = 0,
   // propósito: todo lo anterior consume el azar en el mismo orden de siempre.
   if(mundo >= 2) sembrarArranque(celdas, azar);
   abrirZonaInicial(celdas, radioExtra);
+  aflorarDescubiertas(celdas);   // lo que nace a la vista, aflorado
   return celdas;
 }
 
@@ -716,6 +717,18 @@ export function arqueologiaBloquea(celda){
  * previsualización, bastaría con barrer el mapa con el cursor para descubrirlos
  * todos sin pagar ni una zanja.
  */
+/**
+ * AFLORA todo yacimiento cuya casilla ya esté destapada (petición del autor:
+ * cuando solo afloraban al picar para construir, el 95% no se veía JAMÁS —
+ * en la mayoría de las casillas nunca se coloca nada). Se pasa al generar el
+ * mapa (por el círculo inicial) y al cargar (por lo ya explorado). En
+ * silencio: la tarjeta del hito es para el afloramiento en vivo.
+ */
+export function aflorarDescubiertas(celdas){
+  for(const celda of celdas)
+    if(celda && !celda.oculta && celda.arqueologia) celda.aflorado = true;
+}
+
 export function aflorarArqueologia(celdas, col, fila){
   const celda = celdaEn(celdas, col, fila);
   if(!celda || !celda.arqueologia || celda.aflorado) return false;

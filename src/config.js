@@ -606,7 +606,11 @@ export const CONFIG = {
        Como el auto-bombeo y los aceleradores: `desbloqueoExterno` es el
        GANCHO — NO hay pago ni anuncio implementado y no se simula ninguno. */
     maxHoras: 8,
-    rendimiento: 0.5,          // fracción de la ganancia que se cobra offline
+    /* Bajado de 0.5: con la captación cundiendo (autonomía comprable), la
+       ausencia era una imprenta de billetes — el autor volvió tras 51 min
+       con la caja reventada. Su principio: jugar se premia, no jugar se
+       nota — volver debe dar una alegría, no una paga. */
+    rendimiento: 0.2,          // fracción de la ganancia que se cobra offline
     desbloqueoExterno: null,
     /* La TARJETA de vuelta solo desde ausencias de verdad: por debajo, la línea
        del registro basta. Con el umbral en cero, cada recarga rápida taparía el
@@ -1752,8 +1756,8 @@ export const CONFIG = {
        qué está pasando. Una vez cada una, como todos los hitos. --- */
     arqueologia: {
       titulo: 'Ha aflorado un yacimiento',
-      pasa: 'La zanja ha tropezado con restos enterrados: ahí abajo hay ' +
-            'historia, y las obras paran en el acto.',
+      pasa: 'Al destapar el terreno han aparecido restos enterrados: ahí ' +
+            'abajo hay historia, y encima no se puede construir.',
       hacer: 'Rodéalo... o EXCÁVALO desde su ficha y ponlo en valor: cada ' +
              'yacimiento a la vista deja una renta.',
       porque: 'Es ley y es rutina del oficio: toda obra con movimiento de ' +

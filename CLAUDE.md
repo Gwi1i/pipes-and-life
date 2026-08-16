@@ -206,7 +206,9 @@ que aceleren). Como el auto-bombeo: NO hay pago ni anuncio implementado y no se
 debe simular ninguno falso.
 
 **Dos obstáculos de trazado, y son distintos a propósito.** Los YACIMIENTOS
-(`CONFIG.arqueologia`) están escondidos y afloran al picar: cada uno ES algo
+(`CONFIG.arqueologia`) AFLORAN AL DESTAPAR la casilla
+(`aflorarDescubiertas()`; petición del autor — cuando solo afloraban al
+picar para construir, el 95% no se veía jamás): cada uno ES algo
 concreto (`tipos`, con peso de rareza y renta propia — de poblado antiguo a
 fósiles de dinosaurio, el más raro y el que más renta) y se puede excavar y
 poner en valor. Las ZONAS DE ESPECIAL CONSERVACIÓN (`CONFIG.proteccion`) se ven
@@ -923,8 +925,8 @@ tienen su propia puerta — y en cinta y ruta hace falta puntería: 50%
 durante el rodaje (10 primeras partidas de cada juego,
 `estado.reparacionesJugadas`) y 75% después. Un intento por avería. Y LA
 ELECCIÓN SALE AL PINCHAR la avería en el mapa (petición del autor): el
-primer clic pregunta con `confirm()` si te la juegas gratis o vas a la
-llave; elegir llave se recuerda en la propia avería (`elegidoLlave`) y no
+primer clic pregunta con TARJETA del juego (overlay eleccion-fondo; el
+confirm() nativo rompía la estética y el autor lo vetó) si te la juegas gratis o vas a la llave; elegir llave se recuerda (`elegidoLlave`) y no
 vuelve a preguntar. El panel lateral mantiene su botón.
 
 1. REPARACIÓN A MANO (`minijuego_tuberias.js`): desde el panel de averías, un
@@ -1048,7 +1050,9 @@ muy por debajo de la real.
 **Offline.** `progresoOffline()` en `main.js` simula el tiempo ausente a pasos
 (la curva diaria y el estiaje cambian por el camino) con tope `offline.maxHoras`
 (8 h: la noche entera cabe, decidido al empezar a medir retención) y al
-`offline.rendimiento` (50%): de la GANANCIA solo se cobra la mitad —
+`offline.rendimiento` (20%; con el 50% la ausencia era una imprenta de
+billetes y el principio del autor es que jugar se premia): de la GANANCIA
+solo se cobra esa fracción —
 las pérdidas se pagan enteras, la ausencia no es un escudo—. Y LA NOCHE NO
 DESPUEBLA (petición del autor: 8 h reales son AÑOS de juego, y volver al día
 siguiente con los pueblos vacíos obligaba a conectarse cada poco): en tu

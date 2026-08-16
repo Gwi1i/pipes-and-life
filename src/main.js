@@ -407,6 +407,7 @@ function procesarAcciones(){
         break;
 
       case 'cancelarModo':
+        cerrarEleccion();   // Escape también cierra la tarjeta de elección
         estado.modo = { tipo: null, elemento: null, trazado: [] };
         ui.refrescarConstruccion(estado);
         break;
@@ -685,6 +686,20 @@ function procesarAcciones(){
         const av = estado.averias[parseInt(a.clave, 10)];
         if(!av || av.aManoJugada) break;
         jugarAveria(av);
+        break;
+      }
+
+      /* --- La tarjeta de elección de la avería (jugar o llave) --- */
+      case 'eleccionJugar': {
+        const av = averiaEnEleccion;
+        cerrarEleccion();
+        if(av && !av.aManoJugada) jugarAveria(av);
+        break;
+      }
+      case 'eleccionLlave': {
+        const av = averiaEnEleccion;
+        cerrarEleccion();
+        if(av){ av.elegidoLlave = true; ui.invalidarCache(); }
         break;
       }
 
@@ -1091,6 +1106,17 @@ function rematarTuberia(){
  */
 function anunciarHallazgo(celda, col, fila){
   estado.descubiertas++;
+  // LOS YACIMIENTOS AFLORAN AL DESTAPAR (petición del autor: cuando solo
+  // afloraban al picar para construir, el 95% no se veía jamás — en la
+  // mayoría de las casillas nunca se coloca nada encima).
+  if(celda.arqueologia && !celda.aflorado){
+    aflorarArqueologia(estado.mapa, col, fila);
+    contarHito('arqueologia');
+    const tipoA = tipoYacimiento(celda);
+    estado.anotar(t`¡${tipoA.nombre} bajo la tesela! Excávalo y ponlo en valor, o rodéalo.`, 'ok');
+    avisar(t`¡Ha aflorado: ${tipoA.nombre}!`);
+    sonido.hallazgo();
+  }
   if(!celda.hallazgo) return;
   // Un PUEBLO no es un aviso más: es EL premio del mapa. Tarjeta con su
   // estampa, sus vecinos pidiendo el agua, y fanfarria propia (petición del
@@ -1190,6 +1216,37 @@ function tickAverias(dtHoras){
 /** Qué minijuego arregla cada avería: EL DE SU SERVICIO. Las piezas de las
  *  redes de tubo van al tablero de tuberías; las de residuos, a lo suyo — la
  *  planta a la cinta y el vertedero a la ruta del camión. */
+/* La avería cuya elección está en pantalla ahora mismo (tarjeta) */
+let averiaEnEleccion = null;
+
+/** La tarjeta de elección: jugarse el arreglo gratis o ir a la llave. */
+function mostrarEleccionAveria(av, coste){
+  // Cerrar tocando el fondo: sin elegir no se recuerda nada y el siguiente
+  // clic vuelve a preguntar. Se engancha una sola vez, perezoso.
+  const fondo = document.getElementById('eleccion-fondo');
+  if(!fondo.dataset.conCierre){
+    fondo.dataset.conCierre = '1';
+    fondo.addEventListener('click', e => { if(e.target === fondo) cerrarEleccion(); });
+  }
+  averiaEnEleccion = av;
+  const juego = minijuegoDeAveria(av);
+  const nombreJuego = juego === 'reciclaje' ? t`un turno en la cinta`
+                    : juego === 'camion' ? t`una ruta con el camión`
+                    : t`el tablero de tuberías`;
+  document.getElementById('eleccion-titulo').textContent = t`¿Cómo la arreglamos?`;
+  document.getElementById('eleccion-texto').textContent =
+    t`Puedes jugarte el arreglo GRATIS con ${nombreJuego} — un solo intento — o
+      ir a golpe de llave: ${av.clics} golpes a ${formatear(coste)} € cada uno.`;
+  document.getElementById('eleccion-jugar').textContent = t`Me la juego`;
+  document.getElementById('eleccion-llave').textContent = t`A golpe de llave`;
+  document.getElementById('eleccion-fondo').hidden = false;
+}
+
+function cerrarEleccion(){
+  document.getElementById('eleccion-fondo').hidden = true;
+  averiaEnEleccion = null;
+}
+
 function minijuegoDeAveria(av){
   const obra = estado.construcciones.find(o => o.col === av.col && o.fila === av.fila);
   if(!obra) return 'tuberias';
@@ -1271,22 +1328,14 @@ function clicAveria(col, fila){
 
   // LA ELECCIÓN EN EL SITIO (petición del autor): el PRIMER clic sobre la
   // avería pregunta si prefieres jugarte el arreglo gratis, antes de empezar
-  // a pagar llaves. Una sola vez: elegir la llave se recuerda en la propia
-  // avería (elegidoLlave viaja en el guardado con ella) y no vuelve a
-  // preguntar. Con el intento ya gastado, tampoco.
+  // a pagar llaves. Con TARJETA del juego, no con confirm() — el diálogo
+  // nativo del navegador ("localhost dice...") rompía la estética entera y
+  // el autor lo vetó con captura en mano. Elegir la llave se recuerda en la
+  // avería (elegidoLlave, viaja en el guardado); cerrar sin elegir (Escape o
+  // clic fuera) no se recuerda: el siguiente clic vuelve a preguntar.
   if(!av.aManoJugada && !av.elegidoLlave){
-    const juego = minijuegoDeAveria(av);
-    const nombreJuego = juego === 'reciclaje' ? t`un turno en la cinta`
-                      : juego === 'camion' ? t`una ruta con el camión`
-                      : t`el tablero de tuberías`;
-    if(confirm(t`¿Te juegas el arreglo GRATIS con ${nombreJuego}? Un solo intento.
-
-(Cancelar = a golpe de llave: ${av.clics} golpes a ${formatear(coste)} € cada uno)`)){
-      jugarAveria(av);
-      return true;
-    }
-    av.elegidoLlave = true;
-    ui.invalidarCache();
+    mostrarEleccionAveria(av, coste);
+    return true;
   }
   if(!estado.puedePagar(coste)){
     avisar(t`Cada golpe de llave cuesta ${formatear(coste)} € y no hay fondos.`);
