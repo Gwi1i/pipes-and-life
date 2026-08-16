@@ -24,7 +24,7 @@ import { legado, nivelVentaja, costeVentaja, regionActual,
 import { formatear } from './util.js';
 import { celdaEn, piezaDeRuina, diametro, nivelDiametro, costeRenovar,
          nombreDeNucleo, tipoYacimiento, nucleoMasCercano,
-         costeCasillaTuberia, puedeColocar,
+         costeCasillaTuberia, puedeColocar, conjuntoDeRed,
          lineasConectadas, cuelloDeBotella, escalaDeRed,
          claseAcuifero, puedeSondear, costeSondeo,
          masasDelMapa, edadAños, fugasDe,
@@ -1650,6 +1650,23 @@ export class UI {
   }
 
   /**
+   * La demanda de TODO el conjunto que comparte red con este pueblo — los
+   * mismos pueblos entre los que reparte el clic. El recorrido de red es
+   * caro, así que se cachea y solo se rehace cuando cambia lo que puede
+   * cambiarlo: el pueblo activo, las tuberías o los pueblos incorporados.
+   * (Los habitantes crecen despacio: la firma con la suma redondeada basta.)
+   */
+  demandaDelConjunto(estado, p){
+    const firma = `${estado.puebloActivo},${estado.tuberias.length},${estado.pueblos.length}`;
+    if(this.cache.conjuntoFirma !== firma){
+      this.cache.conjuntoFirma = firma;
+      this.cache.conjuntoPueblos = conjuntoDeRed(estado, p.col, p.fila, 'abastecimiento');
+      if(!this.cache.conjuntoPueblos.length) this.cache.conjuntoPueblos = [p];
+    }
+    return this.cache.conjuntoPueblos.reduce((a, pb) => a + demandaMedia(pb.habitantes), 0);
+  }
+
+  /**
    * El botón de arreglar JUGANDO: cada avería ofrece el minijuego de SU
    * servicio (petición del autor) — tubería para las redes de tubo, la cinta
    * para la planta de reciclaje, la ruta para el vertedero. El premio es el
@@ -1834,8 +1851,11 @@ export class UI {
     // Produce CONTRA gasta, en el mismo vistazo (petición del autor): el
     // número suelto no decía si ibas sobrado o corto. Demanda MEDIA, no la
     // punta horaria: un número que baila cada segundo no se puede leer.
+    // Y del CONJUNTO entero: la producción es de la red compartida, así que
+    // compararla con la demanda de UN pueblo mentía en cuanto dos bebían de
+    // la misma tubería (lo cazó el autor con su segundo pueblo).
     const caudal = caudalCaptacion(p, estado, resultado.estiaje || 1);
-    const demanda = demandaMedia(p.habitantes);
+    const demanda = this.demandaDelConjunto(estado, p);
     const fmtLs = v => v < 10 ? v.toFixed(2) : formatear(Math.round(v));
     this.fijar('hud-produccion', fmtLs(caudal) + ' / ' + fmtLs(demanda) + ' L/s',
       resultado.averiada ? 'critico' : caudal >= demanda ? 'ok' : 'neutro');

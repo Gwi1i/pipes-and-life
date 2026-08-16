@@ -157,20 +157,20 @@ export const CONFIG = {
   mejoras: {
     bomba: {
       nombre: 'Potencia de bomba', orden: 1,
-      desc: 'Más agua por clic. También rinde más el auto-bombeo.',
+      desc: 'Más agua por clic, en la red municipal del casco urbano. También rinde más el auto-bombeo.',
       costeBase: 140, factorCoste: 1.5, nivelMax: 25,
       incrementoLitros: 150
     },
     deposito: {
       nombre: 'Depósito de reserva', orden: 2,
-      desc: 'Acumula agua para no depender del clic. Cada nivel amplía la reserva.',
+      desc: 'El depósito municipal del pueblo: acumula agua para no depender del clic. Cada nivel amplía la reserva.',
       // Barato a propósito: es la mejora que te saca del clic continuo, y tiene
       // que llegar en el primer medio minuto de partida.
       costeBase: 120, factorCoste: 1.7, nivelMax: 15
     },
     captacion: {
       nombre: 'Captación', orden: 3,
-      desc: 'Extrae agua sola, sin clicar. En verano rinde menos (estiaje).',
+      desc: 'La toma municipal: extrae agua sola, sin clicar. En verano rinde menos (estiaje).',
       // ELEMENTO EXCLUSIVO: produce sin clicar, o sea que compra justo lo que
       // el juego vende. Tiene que ser un objetivo caro, no un trámite del
       // primer minuto, o el jugador deja de clicar y se acaba la gracia.

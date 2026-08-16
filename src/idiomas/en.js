@@ -722,6 +722,9 @@ export const EN = {
     'section:has(> #registro) > h2': 'Log',
     'section:has(> .explica) > h2': 'How to play',
 
+    '.tienda-nota': 'This town’s own municipal system: it works on its own, no ' +
+      'connections needed. Map pieces are a different thing — upgrade them by ' +
+      'selecting them there, and they feed their whole network.',
     '#guia-rotulo': 'First steps',
     '.guia-saltar': 'I know what I’m doing — skip the guide',
 
@@ -833,7 +836,7 @@ export const EN = {
     ['.hud-item:has(#hud-expansion)', 'title',
      'Good service makes clearing tiles cheaper'],
     ['.hud-item:has(#hud-produccion)', 'title',
-     'What the intakes produce against what the town uses'],
+     'What your network produces against what every town drinking from it uses'],
     ['#btn-ajustes', 'title', 'Options']
   ],
 

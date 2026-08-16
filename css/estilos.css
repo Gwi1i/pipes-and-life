@@ -98,6 +98,12 @@ button{touch-action:manipulation;}
 .lienzo-caja{position:relative; flex:1; min-height:0;}
 
 /* ---------- PESTAÑAS DE PUEBLOS ---------- */
+/* La nota que reparte papeles entre la tienda y las piezas del mapa */
+.tienda-nota{
+  font-size:10px; line-height:1.5; color:var(--apagado);
+  margin:2px 0 8px; padding-left:8px; border-left:2px solid var(--linea-viva);
+}
+
 /* La BARRA DEL MAPA: las alertas a la izquierda y el engranaje a la derecha,
    en una sola línea — así la cabecera queda solo para la marca y el HUD. */
 .barra-mapa{display:flex; align-items:flex-start; background:#040a10; flex:none;}
