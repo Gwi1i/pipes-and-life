@@ -1512,7 +1512,7 @@ function mostrarVuelta(r){
        r.dinero >= 0 ? 'bien' : 'mal');
   if(r.dinero > 0)
     filas.push(`<p class="m-desc vuelta-nota">${t`Al ${Math.round(CONFIG.offline.rendimiento * 100)} %:
-      sin nadie al mando, la explotación rinde la mitad.`}</p>`);
+      sin nadie al mando, la explotación rinde lo justo.`}</p>`);
   if(Math.abs(r.hab) >= 1)
     fila(t`La población`, t`${r.hab >= 0 ? '+' : ''}${Math.round(r.hab)} habitantes`,
          r.hab >= 0 ? 'bien' : 'mal');
