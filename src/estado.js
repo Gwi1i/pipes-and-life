@@ -9,17 +9,31 @@
 import { CONFIG } from './config.js';
 import { generarMapa, comprimir, aplicarGuardado } from './mapa.js';
 import { legado, nivelVentaja, guardarLegado } from './legado.js';
+// La etiqueta de traducción (OJO: ninguna variable local puede llamarse t)
+import { t } from './idioma.js';
 
 /** Radio extra de arranque por la ventaja Cartografía del legado. */
 function radioCartografia(){
   return nivelVentaja('cartografia') * CONFIG.comarcas.ventajas.cartografia.radioExtra;
 }
 
-/** Niveles de mejora a cero: una clave por cada entrada de CONFIG.mejoras. */
-function mejorasACero(){
-  const m = {};
-  for(const clave of Object.keys(CONFIG.mejoras)) m[clave] = 0;
-  return m;
+/* LA MIGRACIÓN DE LA CIRUGÍA: la tienda murió (docs/cirugia.md) y sus
+   precios viejos solo sobreviven aquí, para REEMBOLSAR a las partidas que
+   compraron niveles municipales. [costeBase, factorCoste] de cada mejora
+   disuelta, tal como eran el día del corte. NO tocar: es historia. */
+const PRECIOS_TIENDA_VIEJA = {
+  bomba: [140, 1.5], deposito: [120, 1.7], captacion: [2500, 1.8],
+  depuradora: [2000, 1.8], pluviales: [3000, 1.7], tanque: [4500, 1.8],
+  reciclaje: [5000, 1.75]
+};
+
+/** Lo invertido en una mejora vieja hasta `nivel`: la suma geométrica. */
+function inversionTiendaVieja(clave, nivel){
+  const par = PRECIOS_TIENDA_VIEJA[clave];
+  if(!par || !nivel) return 0;
+  let total = 0;
+  for(let k = 0; k < nivel; k++) total += Math.round(par[0] * Math.pow(par[1], k));
+  return total;
 }
 
 /**
@@ -47,7 +61,6 @@ function crearPueblo(def){
     servicio: 0,
     abastecida: false,
     racha: 0,
-    mejoras: mejorasACero(),
     servicios: serviciosIniciales(),
     autobombaActivo: false,
     tanqueAgua: 0,              // litros retenidos ahora en el tanque de tormentas
@@ -119,6 +132,8 @@ export class Estado {
     // Cuántas veces se ha jugado cada minijuego ARREGLANDO averías: las
     // primeras piden menos puntería (minijuegos.averia). Por juego.
     this.reparacionesJugadas = { reciclaje: 0, camion: 0 };
+    // LA CUADRILLA de mantenimiento (común): lo que sobrevivió de la tienda
+    this.cuadrilla = 0;
     // Hitos ya contados. Cada uno se enseña UNA vez en toda la partida: si se
     // repitiera dejaría de ser un momento y pasaría a ser un estorbo.
     this.hitosVistos = [];
@@ -158,6 +173,7 @@ export class Estado {
       dnActual: this.dnActual, redActual: this.redActual,
       averias: this.averias, tutorial: this.tutorial, guias: this.guias,
       reparacionesJugadas: this.reparacionesJugadas,
+      cuadrilla: this.cuadrilla,
       hitosVistos: this.hitosVistos
     };
     try{
@@ -234,12 +250,32 @@ export class Estado {
           const base = crearPueblo(g);
           return {
             ...base, ...g,
-            mejoras: { ...base.mejoras, ...(g.mejoras || {}) },
             servicios: { ...base.servicios, ...(g.servicios || {}) }
           };
         });
       }
       if(estado.puebloActivo >= estado.pueblos.length) estado.puebloActivo = 0;
+
+      // LA MIGRACIÓN DE LA CIRUGÍA: las partidas con niveles de la tienda
+      // vieja los cobran de vuelta ÍNTEGROS (nadie pierde lo pagado) y el
+      // mantenimiento se convierte en cuadrilla, gratis (nadie pierde el
+      // efecto). Se hace UNA vez: al re-guardar, los pueblos ya no llevan
+      // `mejoras` y este bloque no vuelve a encontrar nada.
+      let reembolso = 0, mantenimientoViejo = 0;
+      for(const g of guardados){
+        if(!g.mejoras) continue;
+        for(const [clave, nivel] of Object.entries(g.mejoras))
+          reembolso += inversionTiendaVieja(clave, nivel);
+        mantenimientoViejo = Math.max(mantenimientoViejo, g.mejoras.mantenimiento || 0);
+      }
+      estado.cuadrilla = d.cuadrilla ?? mantenimientoViejo;
+      if(reembolso > 0){
+        estado.dinero += reembolso;
+        estado.anotar(t`La reforma de la mancomunidad: las mejoras municipales
+          pasan a las piezas del mapa, y lo invertido se te devuelve entero
+          (+${reembolso.toLocaleString('es-ES')} €). Amplía tus piezas con ello.`, 'ok');
+      }
+      for(const p of estado.pueblos) delete p.mejoras;
 
       estado.reparacionesJugadas = d.reparacionesJugadas ?? { reciclaje: 0, camion: 0 };
 

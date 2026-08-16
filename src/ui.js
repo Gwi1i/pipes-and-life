@@ -10,7 +10,7 @@
  */
 
 import { CONFIG } from './config.js';
-import { capacidad, demandaMedia, caudalCaptacion, costeMejora,
+import { capacidad, demandaMedia, caudalCaptacion, costeCuadrilla, nivelMaxPieza,
          requisitosAutobomba, capacidadTanque, nombreEstacion,
          poderExpansion, redEstrangula, capacidadTratamiento,
          servicioActivo, nivelReciclaje, fraccionesActivas,
@@ -46,9 +46,7 @@ export class UI {
   constructor(entrada){
     this.entrada = entrada;
     this.cache = {};
-    this.mejoras = Object.entries(CONFIG.mejoras)
-      .sort((a, b) => (a[1].orden || 0) - (b[1].orden || 0));
-    this.construirTienda();
+    this.construirServicios();
     this.construirPremium();
     this.construirPaletaObra();
   }
@@ -896,7 +894,7 @@ export class UI {
         ${lineasAqui}
         ${turno}
         <p class="m-desc">${this.queAporta(obra.tipo, nivel, def.desc) || def.desc}</p>
-        ${!ampliable ? '' : nivel >= A.nivelMax
+        ${!ampliable ? '' : nivel >= nivelMaxPieza(obra.tipo)
           ? `<p class="m-desc">${t`Ampliada al máximo: si hace falta más, toca construir otra.`}</p>`
           : `<button class="mejora obra" data-accion="ampliarPieza" style="--tono:${def.color}">
                <span class="m-cab"><span class="m-nom">${t`Ampliar a nivel ${nivel + 1}`}</span></span>
@@ -1454,44 +1452,18 @@ export class UI {
         : ''}`;
   }
 
-  /* ---------------- TIENDA (del pueblo activo) ---------------- */
+  /* ---------------- SERVICIOS (del pueblo activo) ---------------- */
 
   /**
-   * La tienda va AGRUPADA POR SERVICIO, no como una lista suelta de mejoras. Es
-   * la misma idea que ordena el juego entero: un pueblo necesita servicios, y
-   * cada servicio tiene sus vías de mejora y su red. Puestas en fila, "tanque de
-   * tormentas" y "potencia de bomba" parecían lo mismo.
+   * LA CIRUGÍA se llevó la tienda (la infraestructura se amplía en el mapa),
+   * pero el panel de SERVICIOS se queda: un pueblo es un conjunto de
+   * servicios, y saber cuál está en marcha y cuál espera es media partida.
    */
-  construirTienda(){
+  construirServicios(){
     const cont = document.getElementById('tienda');
     const servicios = Object.entries(CONFIG.servicios)
       .sort((a, b) => (a[1].orden || 0) - (b[1].orden || 0));
-
-    // Red de seguridad: una mejora que no figure en ningún servicio no puede
-    // desaparecer sin más de la tienda. Sería un fallo mudo —la añades, no la
-    // ves, y no hay ningún error—, así que cae en un grupo suelto al final.
-    const asignadas = new Set(servicios.flatMap(([, sv]) => sv.mejoras || []));
-    const huerfanas = Object.keys(CONFIG.mejoras).filter(k => !asignadas.has(k));
-    if(huerfanas.length){
-      servicios.push(['otras', { nombre: t`Otras mejoras`, siempre: true,
-        desc: 'Sin servicio asignado en CONFIG.servicios.', mejoras: huerfanas }]);
-    }
-
     cont.innerHTML = servicios.map(([sc, sv]) => {
-      const dentro = (sv.mejoras || [])
-        .filter(k => CONFIG.mejoras[k])
-        .map(k => {
-          const m = CONFIG.mejoras[k];
-          return `
-            <button class="mejora" data-accion="mejorar" data-clave="${k}" id="mejora-${k}">
-              <span class="m-cab">
-                <span class="m-nom">${m.nombre}</span>
-                <span class="m-nivel" id="nivel-${k}"></span>
-              </span>
-              <span class="m-desc">${m.desc}</span>
-              <span class="m-coste" id="coste-${k}">—</span>
-            </button>`;
-        }).join('');
       const tono = (CONFIG.redes[sv.red] || {}).color || CONFIG.color.alarma;
       return `
         <div class="servicio" id="servicio-${sc}" style="--tono:${tono}">
@@ -1500,17 +1472,14 @@ export class UI {
             <span class="sv-estado" id="sv-estado-${sc}"></span>
           </p>
           <p class="sv-desc">${sv.desc}</p>
-          ${dentro}
         </div>`;
     }).join('');
   }
 
-  refrescarTienda(estado){
+  refrescarServicios(estado){
     const p = estado.activo;
-
     // Cada servicio dice en qué punto está: de serie, en marcha, esperando a
-    // crecer o todavía cerrado. Sin esto, las mejoras de un servicio dormido
-    // salían igual que las demás y no se entendía por qué no hacían nada.
+    // crecer o todavía cerrado.
     for(const [sc, sv] of Object.entries(CONFIG.servicios)){
       const caja = document.getElementById('servicio-' + sc);
       const etq = document.getElementById('sv-estado-' + sc);
@@ -1527,35 +1496,29 @@ export class UI {
       etq.textContent = texto;
       caja.classList.toggle('dormido', !activo);
     }
+  }
 
-    for(const [clave, m] of this.mejoras){
-      const nivel = p.mejoras[clave];
-      const bt = document.getElementById('mejora-' + clave);
-      const elN = document.getElementById('nivel-' + clave);
-      const elC = document.getElementById('coste-' + clave);
-      if(!bt) continue;
-
-      // Mejoras de un servicio que todavía no está en marcha
-      if(m.requiere && !servicioActivo(p, m.requiere)){
-        bt.style.display = 'none';
-        continue;
-      }
-      bt.style.display = '';
-
-      elN.textContent = nivel > 0 ? t`Nv ${nivel}` : '';
-
-      if(nivel >= m.nivelMax){
-        elC.textContent = t`AL MÁXIMO`;
-        bt.classList.add('comprada'); bt.classList.remove('inalcanzable');
-        bt.disabled = true;
-        continue;
-      }
-      bt.disabled = false;
-      const coste = costeMejora(clave, nivel);
-      elC.textContent = formatear(coste) + ' €';
-      bt.classList.remove('comprada');
-      bt.classList.toggle('inalcanzable', !estado.puedePagar(coste));
-    }
+  /** LA CUADRILLA: la compra común de mantenimiento (vive en Mancomunidad). */
+  refrescarCuadrilla(estado){
+    const cont = document.getElementById('cuadrilla');
+    if(!cont) return;
+    const C = CONFIG.cuadrilla;
+    const nivel = estado.cuadrilla || 0;
+    const tope = nivel >= C.nivelMax;
+    const coste = costeCuadrilla(estado);
+    const firma = `${nivel},${tope ? 1 : estado.puedePagar(coste) ? 1 : 0}`;
+    if(this.cache.cuadrillaFirma === firma) return;
+    this.cache.cuadrillaFirma = firma;
+    cont.innerHTML = `
+      <button class="mejora ${tope ? 'comprada' : ''}" data-accion="cuadrilla"
+              ${tope ? 'disabled' : ''}>
+        <span class="m-cab">
+          <span class="m-nom">${C.nombre}</span>
+          <span class="m-nivel">${nivel > 0 ? t`Nv ${nivel}` : ''}</span>
+        </span>
+        <span class="m-desc">${C.desc}</span>
+        <span class="m-coste">${tope ? t`AL MÁXIMO` : formatear(coste) + ' €'}</span>
+      </button>`;
   }
 
   /* ---------------- FUNCIÓN ESPECIAL: AUTO-BOMBEO (del pueblo activo) ------ */
@@ -1592,7 +1555,7 @@ export class UI {
       return;
     }
 
-    const req = requisitosAutobomba(p);
+    const req = requisitosAutobomba(p, estado);
     const puede = req.cumple && estado.puedePagar(P.coste);
     etq.textContent = req.cumple ? t`DISPONIBLE` : t`BLOQUEADO`;
     reqs.innerHTML = req.lista.map(f =>
@@ -1786,8 +1749,8 @@ export class UI {
    * salen del estado, así que una partida cargada enseña lo suyo sin guiño.
    */
   refrescarMetricas(estado){
-    const conCaptacion = estado.pueblos.some(pb => pb.mejoras.captacion > 0)
-      || estado.construcciones.some(o => o.tipo === 'captacion' || o.tipo === 'acuifero');
+    const conCaptacion =
+      estado.construcciones.some(o => o.tipo === 'captacion' || o.tipo === 'acuifero');
     const visibles = {
       'hud-agua': true, 'hud-dinero': true, 'hud-servicio': true,
       'hud-poblacion': !!(estado.tutorial && estado.tutorial.terminado),
@@ -1939,7 +1902,8 @@ export class UI {
     this.refrescarFichaObra(estado);
     this.refrescarHallazgo(estado);
     this.refrescarAlmacen(estado);
-    this.refrescarTienda(estado);
+    this.refrescarServicios(estado);
+    this.refrescarCuadrilla(estado);
     this.refrescarPremium(estado);
     this.refrescarAverias(estado);
     this.refrescarExpediente(estado);
@@ -1984,10 +1948,12 @@ export class UI {
     const est = resultado.estiaje || 1;
     const estacion = nombreEstacion(estado.horas) +
       (est < 0.7 ? t` · estiaje` : est > 1.1 ? t` · deshielo` : '');
-    const nivelDep = p.mejoras.deposito;
-    const reserva = nivelDep === 0 ? t`Sin depósito` : t`Nivel ${nivelDep} · ${formatear(capacidad(p, estado))} L`;
+    // Tras la cirugía, todo son NIVELES CONECTADOS de piezas del mapa
+    const nivelDep = (estado._conectado || {}).deposito || 0;
+    const reserva = nivelDep === 0 ? t`Sin depósito` : t`${nivelDep} niveles · ${formatear(capacidad(p, estado))} L`;
+    const nivDepu = ((estado._conectadoSan || {}).depuradora || 0);
     const sane = servicioActivo(p, 'saneamiento')
-      ? (p.mejoras.depuradora > 0 ? t`Depuradora Nv ${p.mejoras.depuradora}` : t`SIN depurar ⚠`)
+      ? (nivDepu > 0 ? t`Depuradora: ${nivDepu} niveles` : t`SIN depurar ⚠`)
       : t`Aún no genera`;
 
     // Lluvia y tormentas (solo cuando la mancomunidad ya gestiona pluviales)
@@ -1995,7 +1961,7 @@ export class UI {
     const tanquePct = Math.round((resultado.tanqueFrac || 0) * 100);
     const filaLluvia = estado.pluvialesActivas ? `
       <div class="d-fila"><span>${t`Lluvia`}</span><b class="${lluviaPct > 50 ? 'agua' : ''}">${lluviaPct} %</b></div>
-      <div class="d-fila"><span>${t`Pluviales`}</span><b>${p.mejoras.pluviales > 0 ? t`Nivel ${p.mejoras.pluviales}` : t`Sin separar ⚠`}</b></div>
+      <div class="d-fila"><span>${t`Pluviales`}</span><b>${(resultado.separadaLh || 0) > 0 ? t`Separando` : t`Sin separar ⚠`}</b></div>
       <div class="d-fila"><span>${t`Tanque tormentas`}</span><b class="${resultado.aliviando ? 'critico' : ''}">${
         capacidadTanque(p, estado) > 0 ? t`${tanquePct} % lleno` : '—'}${resultado.aliviando ? t` · ALIVIANDO` : ''}</b></div>
       <div class="d-fila"><span>${t`Calidad`}</span><b class="${(resultado.calidad || 1) > 1.05 ? 'ok' : ''}">×${(resultado.calidad || 1).toFixed(2)}</b></div>` : '';
@@ -2012,9 +1978,9 @@ export class UI {
       <div class="d-fila"><span>${t`Sin recoger`}</span><b class="${basuraPct > 20 ? 'critico' : ''}">${basuraPct} %</b></div>` : '';
 
     const firma = [p.nombre, tendencia, Math.floor(p.habitantes),
-                   nivelDep, p.mejoras.captacion, estacion, sane, basuraPct, recicPct,
+                   nivelDep, nivDepu, estacion, sane, basuraPct, recicPct,
                    estado.pluvialesActivas, lluviaPct, tanquePct,
-                   resultado.aliviando, p.mejoras.pluviales, p.mejoras.tanque].join('|');
+                   resultado.aliviando, Math.round(resultado.separadaLh || 0)].join('|');
     if(this.cache.panelFirma === firma) return;
     this.cache.panelFirma = firma;
 
@@ -2026,7 +1992,7 @@ export class UI {
       <div class="d-fila"><span>${t`Captación`}</span><b>${prodAhora > 0 ? prodAhora.toFixed(2) + ' m³/h' : '—'}</b></div>
       <div class="d-fila"><span>${t`Estación`}</span><b>${estacion}</b></div>
       <div class="d-fila"><span>${t`Reserva`}</span><b>${reserva}</b></div>
-      <div class="d-fila"><span>${t`Saneamiento`}</span><b class="${servicioActivo(p, 'saneamiento') && p.mejoras.depuradora === 0 ? 'alarma' : ''}">${sane}</b></div>
+      <div class="d-fila"><span>${t`Saneamiento`}</span><b class="${servicioActivo(p, 'saneamiento') && nivDepu === 0 ? 'alarma' : ''}">${sane}</b></div>
       ${filaLluvia}
       ${filaResiduos}`;
   }

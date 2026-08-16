@@ -177,7 +177,6 @@ export function incorporarPueblo(estado, col, fila, celda){
     col, fila,
     desbloqueado: true,
     agua: 0, servicio: 0, abastecida: false, racha: 0,
-    mejoras: Object.fromEntries(Object.keys(CONFIG.mejoras).map(k => [k, 0])),
     servicios: Object.fromEntries(Object.entries(CONFIG.servicios)
       .map(([k, d]) => [k, { activo: !!d.siempre }])),
     autobombaActivo: false, tanqueAgua: 0, basuraCalle: 0
@@ -307,10 +306,12 @@ export function capacidadVertido(estado){
   return t;
 }
 
-/** Nivel efectivo de reciclaje: hace falta la mejora Y una planta conectada. */
+/** Nivel efectivo de reciclaje: los NIVELES de planta conectados a la
+ *  carretera. Ampliar la planta abre la siguiente fracción — el nivel ES
+ *  las fracciones (la cirugía: ya no hay mejora municipal). */
 export function nivelReciclaje(pueblo, estado){
-  if(!(piezasDeRed(estado, 'residuos').reciclaje || 0)) return 0;
-  return pueblo.mejoras.reciclaje || 0;
+  return Math.min(CONFIG.residuos.fracciones.length,
+                  piezasDeRed(estado, 'residuos').reciclaje || 0);
 }
 
 /**
@@ -452,18 +453,18 @@ export function rendimientoRed(estado){
   return 1 - tasaFugasRed(estado);
 }
 
+/* LA CIRUGÍA (docs/cirugia.md): la infraestructura vive SOLO en el mapa.
+   Estas fórmulas multiplican NIVELES CONECTADOS por su aporte, y punto. */
+
 export function litrosPorClic(pueblo, estado){
   const base = CONFIG.bomba.litrosPorClicBase
-             + pueblo.mejoras.bomba * CONFIG.mejoras.bomba.incrementoLitros
              + (piezas(estado).bomba || 0) * CONFIG.aportePorPieza.bomba;
   return base * eficiencia(pueblo) * rendimientoRed(estado);
 }
 
 export function capacidad(pueblo, estado){
-  const extra = (piezas(estado).deposito || 0) * CONFIG.aportePorPieza.deposito;
-  const n = pueblo.mejoras.deposito;
-  if(n === 0) return CONFIG.bomba.bufferSinDeposito + extra;
-  return CONFIG.deposito.capacidadBase + (n - 1) * CONFIG.deposito.incrementoCapacidad + extra;
+  return CONFIG.bomba.bufferSinDeposito
+       + (piezas(estado).deposito || 0) * CONFIG.aportePorPieza.deposito;
 }
 
 /**
@@ -580,8 +581,7 @@ export function tickAcuiferos(estado, dtHoras, lluvia, estiaje){
  * baja, el jugador necesita saber CUÁL ha sido. Sin esto, parece un fallo.
  */
 export function desgloseProduccion(pueblo, estado, estiaje = 1){
-  const rioBruto = pueblo.mejoras.captacion * CONFIG.mejoras.captacion.caudalPorNivel
-                 + (piezas(estado).captacion || 0) * CONFIG.aportePorPieza.captacion;
+  const rioBruto = (piezas(estado).captacion || 0) * CONFIG.aportePorPieza.captacion;
   const rio = rioBruto * estiaje;
   const pozos = caudalAcuiferos(estado, estiaje);
   const red = redDelPueblo(estado);
@@ -615,10 +615,17 @@ export function caudalCaptacion(pueblo, estado, estiaje = 1){
  * pieza por el factor elevado al nivel actual. Ampliar es más barato que
  * construir otra al principio y más caro después — la segunda unidad compite.
  */
+/** Tope de ampliación de un tipo de pieza (la cirugía: cada tipo el suyo). */
+export function nivelMaxPieza(tipo){
+  const A = CONFIG.ampliacion;
+  return (A.porTipo[tipo] || A).nivelMax;
+}
+
 export function costeAmpliarPieza(obra){
   const A = CONFIG.ampliacion;
+  const factor = (A.porTipo[obra.tipo] || A).factorCoste;
   return Math.round(CONFIG.construibles[obra.tipo].coste
-                    * Math.pow(A.factorCoste, obra.nivel || 1));
+                    * Math.pow(factor, obra.nivel || 1));
 }
 
 /** ¿Está la tubería estrangulando la captación? Para poder avisar en la UI. */
@@ -631,40 +638,34 @@ export function clicsAutoPorSeg(pueblo){
 }
 
 /**
- * Cómo de limpia sale el agua tratada (0..máx). Cuenta el nivel de la tienda Y
- * las depuradoras del mapa: si solo contara el nivel, una planta construida
- * junto al río haría pasar el agua por dentro y la devolvería igual de sucia.
+ * Cómo de limpia sale el agua tratada (0..máx): los NIVELES de depuradora
+ * enganchados al colector. Una planta preciosa junto al río, sin colector que
+ * le lleve el agua sucia, no trata absolutamente nada.
  */
 export function fraccionTratada(pueblo, estado){
-  const d = CONFIG.mejoras.depuradora;
-  return Math.min(d.fraccionMax,
-    pueblo.mejoras.depuradora * d.fraccionPorNivel
-    + (piezasSan(estado).depuradora || 0) * CONFIG.aportePorPieza.depuradoraCalidad);
+  const P = CONFIG.aportePorPieza;
+  return Math.min(P.depuradoraFraccionMax,
+    (piezasSan(estado).depuradora || 0) * P.depuradoraCalidad);
 }
 
-/**
- * Caudal máximo que se puede tratar, en L/h. Lo que exceda se alivia.
- * La tienda sube el NIVEL de la depuradora; el mapa dice CUÁNTAS tienes
- * enganchadas al colector. Una depuradora preciosa junto al río, sin colector
- * que le lleve el agua sucia, no trata absolutamente nada.
- */
+/** Caudal máximo que se puede tratar, en L/h. Lo que exceda se alivia. */
 export function capacidadTratamiento(pueblo, estado){
-  return pueblo.mejoras.depuradora * CONFIG.mejoras.depuradora.caudalPorNivel
-       + (piezasSan(estado).depuradora || 0) * CONFIG.aportePorPieza.depuradora;
+  return (piezasSan(estado).depuradora || 0) * CONFIG.aportePorPieza.depuradora;
 }
 
-/** Fracción de escorrentía que separa la MEJORA de pluviales (la de la tienda). */
-export function fraccionSeparada(pueblo){
-  const r = CONFIG.mejoras.pluviales;
-  return Math.min(r.fraccionMax, pueblo.mejoras.pluviales * r.fraccionPorNivel);
+/** Fracción de escorrentía que separan las LÍNEAS de pluviales conectadas.
+ *  La cirugía quitó la mejora municipal: tender ES el juego de esta red. */
+export function fraccionSeparada(estado){
+  const R = CONFIG.pluviales;
+  // redDelPueblo bebe de la caché de avanzar(): nada de recorrer la red aquí
+  const red = redDelPueblo(estado, 'pluviales');
+  return Math.min(R.fraccionMax, (red.lineas || []).length * R.fraccionPorLinea);
 }
 
-/** Litros que puede retener el tanque de tormentas. */
+/** Litros que puede retener el tanque de tormentas: niveles conectados a la
+ *  red de PLUVIALES — su trabajo es cortar la punta antes de que baje. */
 export function capacidadTanque(pueblo, estado){
-  return pueblo.mejoras.tanque * CONFIG.mejoras.tanque.capacidadPorNivel
-       // El tanque de tormentas vive en la red de PLUVIALES, no en el colector:
-       // su trabajo es cortar la punta de lluvia antes de que llegue abajo.
-       + (piezasDeRed(estado, 'pluviales').tanque || 0) * CONFIG.aportePorPieza.tanque;
+  return (piezasDeRed(estado, 'pluviales').tanque || 0) * CONFIG.aportePorPieza.tanque;
 }
 
 /**
@@ -709,27 +710,32 @@ export function poderExpansion(estado){
                  E.poderMin, E.poderMax);
 }
 
-/** Calidad del pueblo (multiplica el crecimiento): la sube el saneamiento fino. */
-export function calidadServicio(pueblo){
+/** Calidad del pueblo (multiplica el crecimiento): la sube el saneamiento
+ *  fino — los niveles de TANQUE y las líneas de PLUVIALES conectados. */
+export function calidadServicio(pueblo, estado){
   const Q = CONFIG.calidad;
+  const lineasPlu = (redDelPueblo(estado, 'pluviales').lineas || []).length;
   return Math.min(Q.max, Q.base
-    + pueblo.mejoras.tanque * Q.bonusTanque
-    + pueblo.mejoras.pluviales * Q.bonusPluviales);
+    + (piezasDeRed(estado, 'pluviales').tanque || 0) * Q.bonusTanque
+    + lineasPlu * Q.bonusPluviales);
 }
 
-export function costeMejora(clave, nivelActual){
-  const m = CONFIG.mejoras[clave];
-  return Math.round(m.costeBase * Math.pow(m.factorCoste, nivelActual));
+/** La CUADRILLA de mantenimiento: compra común de la mancomunidad. */
+export function costeCuadrilla(estado){
+  const C = CONFIG.cuadrilla;
+  return Math.round(C.costeBase * Math.pow(C.factorCoste, estado.cuadrilla || 0));
 }
 
-/** ¿Puede este pueblo desbloquear el auto-bombeo? Devuelve qué falta. */
-export function requisitosAutobomba(pueblo){
+/** ¿Puede este pueblo desbloquear el auto-bombeo? Devuelve qué falta.
+ *  Los requisitos son NIVELES de pieza CONECTADOS (la cirugía). */
+export function requisitosAutobomba(pueblo, estado){
   const r = CONFIG.premium.autobomba.requisitos;
   const hab = Math.floor(pueblo.habitantes);
+  const inv = piezas(estado);
   const lista = [
-    { txt: t`Potencia de bomba Nv ${r.bomba}`, ok: pueblo.mejoras.bomba >= r.bomba },
-    { txt: t`Captación Nv ${r.captacion}`,      ok: pueblo.mejoras.captacion >= r.captacion },
-    { txt: t`${r.habitantes} habitantes`,        ok: hab >= r.habitantes }
+    { txt: t`Bombeos conectados: ${r.bomba} niveles`, ok: (inv.bomba || 0) >= r.bomba },
+    { txt: t`Captaciones conectadas: ${r.captacion} niveles`, ok: (inv.captacion || 0) >= r.captacion },
+    { txt: t`${r.habitantes} habitantes`, ok: hab >= r.habitantes }
   ];
   return { cumple: lista.every(f => f.ok), lista };
 }
@@ -827,10 +833,10 @@ function avanzarPueblo(estado, p, dt, dtHoras, punta, estiaje, frenoCrec, lluvia
     // 1. Lo que entra al colector: aguas residuales + la lluvia NO separada.
     const aguasResiduales = servido * S.fraccionResidual;
     const escorrentia = p.habitantes * CONFIG.lluvia.litrosPorHabHora * lluvia * dtHoras;
-    // Lo que se saca del colector: lo que separa la mejora de la tienda MÁS lo
-    // que se lleva la red de pluviales del mapa, sin pasar de lo que llueve.
+    // Lo que se saca del colector: la fracción que separan las LÍNEAS de
+    // pluviales, topada por lo que cabe al tubo — y nunca más de lo que llueve.
     const separada = Math.min(escorrentia,
-      escorrentia * fraccionSeparada(p) + capacidadPluviales(estado) * dtHoras);
+      escorrentia * fraccionSeparada(estado) + capacidadPluviales(estado) * dtHoras);
     lluviaBruta = escorrentia; lluviaSeparada = separada;
     // La red de pluviales, además de aliviar el colector, recoge agua limpia
     aprovechado = separada * CONFIG.pluviales.fraccionAprovechada;
@@ -909,7 +915,7 @@ function avanzarPueblo(estado, p, dt, dtHoras, punta, estiaje, frenoCrec, lluvia
   // La basura en la calle frena el crecimiento igual que lo hace el cauce sucio:
   // nadie se muda a un pueblo que huele.
   const frenoBasura = 1 - (p.basuraCalle || 0) * CONFIG.residuos.penalizacionCrecimiento;
-  crecer(p, servicio, dtHoras, frenoCrec * frenoBasura, calidadServicio(p), topeRed);
+  crecer(p, servicio, dtHoras, frenoCrec * frenoBasura, calidadServicio(p, estado), topeRed);
 
   return {
     residual, recienSaneamiento, serviciosNuevos,
@@ -939,7 +945,7 @@ function avanzarPueblo(estado, p, dt, dtHoras, punta, estiaje, frenoCrec, lluvia
       separadaLh: dtHoras > 0 ? lluviaSeparada / dtHoras : 0,
       tanqueFrac: capacidadTanque(p, estado) > 0 ? p.tanqueAgua / capacidadTanque(p, estado) : 0,
       aprovechadoLh: dtHoras > 0 ? aprovechado / dtHoras : 0,
-      calidad: calidadServicio(p)
+      calidad: calidadServicio(p, estado)
     }
   };
 }

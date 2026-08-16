@@ -42,7 +42,9 @@ export function vecinoPendiente(estado){
    y la cadena lo salta — la carta nunca pide lo que el juego aún no da. */
 const PENDIENTE = {
 
-  mejora: (e) => e.pueblos[0].mejoras.bomba + e.pueblos[0].mejoras.deposito < 1,
+  // Pendiente hasta que alguna pieza esté AMPLIADA (la cirugía: la
+  // progresión vive en el mapa)
+  mejora: (e) => !e.construcciones.some(o => (o.nivel || 1) > 1),
 
   vecino: (e) => !vecinoPendiente(e),
 
@@ -68,7 +70,6 @@ const PENDIENTE = {
   tercero: (e) => e.pueblos.length < CONFIG.pluviales.abreConPueblos,
 
   pluviales: (e) => e.pluvialesActivas
-    && !e.pueblos.some(p => p.mejoras.pluviales > 0)
     && !(e.tuberias || []).some(tb => tb.red === 'pluviales'),
 
   residuos: (e) =>
@@ -79,8 +80,7 @@ const PENDIENTE = {
   reciclaje: (e) =>
     !!(e._conectadoRed && e._conectadoRed.residuos
        && e._conectadoRed.residuos.vertedero)
-    && !(e._conectadoRed.residuos.reciclaje)
-    && !e.pueblos.some(p => p.mejoras.reciclaje > 0),
+    && !(e._conectadoRed.residuos.reciclaje),
 
   potabilizadora: (e, res) => !!res
     && (res.aguaBrutaLh || 0) > (res.aguaTrataLh || 0) + 1

@@ -17,7 +17,7 @@ import { celdaEn, clicarCasilla, clicsParaDestapar, puedeColocar,
          puedeEstudiar, estudiarZona, puedeSondear, sondear,
          costeSondeo, claseAcuifero, edadAños, bautizarObra,
          nombreDeNucleo, conjuntoDeRed } from './mapa.js';
-import { avanzar, bombear, costeMejora, requisitosAutobomba,
+import { avanzar, bombear, costeCuadrilla, nivelMaxPieza, requisitosAutobomba,
          poderExpansion, servicioActivo, costeAmpliarVertedero,
          capacidadVaso, faseActual, faltanParaFase, capacidad,
          incorporarPueblo, canonIncorporacion, costeAmpliarPieza,
@@ -311,7 +311,7 @@ function procesarAcciones(){
         const obra = sel && estado.construcciones.find(o => o.col === sel.col && o.fila === sel.fila);
         if(!obra) break;
         const A = CONFIG.ampliacion;
-        if(!A.tipos.includes(obra.tipo) || (obra.nivel || 1) >= A.nivelMax) break;
+        if(!A.tipos.includes(obra.tipo) || (obra.nivel || 1) >= nivelMaxPieza(obra.tipo)) break;
         const coste = costeAmpliarPieza(obra);
         if(!estado.puedePagar(coste)){
           avisar(t`Ampliar cuesta ${formatear(coste)} € y no hay fondos.`);
@@ -632,24 +632,24 @@ function procesarAcciones(){
         break;
       }
 
-      case 'mejorar': {
-        const m = CONFIG.mejoras[a.clave];
-        if(!m) break;
-        const p = estado.activo;
-        const nivel = p.mejoras[a.clave];
-        if(nivel >= m.nivelMax){ avisar(t`${m.nombre}: ya está al máximo.`); break; }
-        const coste = costeMejora(a.clave, nivel);
+      /* LA CIRUGÍA: el caso 'mejorar' (la tienda) murió — la infraestructura
+         se amplía en el mapa. Sobrevive la CUADRILLA, que no es una obra. */
+      case 'cuadrilla': {
+        const C = CONFIG.cuadrilla;
+        if((estado.cuadrilla || 0) >= C.nivelMax){
+          avisar(t`${C.nombre}: ya está al completo.`);
+          break;
+        }
+        const coste = costeCuadrilla(estado);
         if(!estado.puedePagar(coste)){
-          avisar(t`Sin fondos: ${m.nombre.toLowerCase()} cuesta ${formatear(coste)} €.`);
+          avisar(t`Sin fondos: ampliar la cuadrilla cuesta ${formatear(coste)} €.`);
           break;
         }
         estado.pagar(coste);
-        p.mejoras[a.clave]++;
+        estado.cuadrilla = (estado.cuadrilla || 0) + 1;
         sonido.compra();
-        estado.anotar(t`${p.nombre} · ${m.nombre} nivel ${p.mejoras[a.clave]}.`, 'ok');
-        if(a.clave === 'deposito'   && p.mejoras.deposito   === 1) escena.aparecerDeposito();
-        if(a.clave === 'captacion'  && p.mejoras.captacion  === 1) escena.aparecerCaptacion();
-        if(a.clave === 'depuradora' && p.mejoras.depuradora === 1) escena.aparecerDepuradora();
+        estado.anotar(t`${C.nombre}: nivel ${estado.cuadrilla}. Menos golpes de
+          llave y arreglos solos más rápidos.`, 'ok');
         break;
       }
 
@@ -659,7 +659,7 @@ function procesarAcciones(){
         const P = CONFIG.premium.autobomba;
         // GANCHO de monetización futura (P.desbloqueoExterno). De momento solo
         // se activa cumpliendo requisitos y pagando en el juego.
-        if(!requisitosAutobomba(p).cumple){
+        if(!requisitosAutobomba(p, estado).cumple){
           avisar(t`Este pueblo aún no cumple los requisitos para el auto-bombeo.`);
           break;
         }
@@ -972,6 +972,13 @@ function colocarElemento(col, fila){
   }
   estado.construcciones.push({ tipo: clave, col, fila, nivel: 1,
                                nombre: bautizarObra(estado.construcciones, clave) });
+  // Los guiños de la escena, al colocar la PRIMERA pieza de cada tipo (antes
+  // vivían en la tienda, que murió con la cirugía)
+  if(estado.construcciones.filter(o => o.tipo === clave).length === 1){
+    if(clave === 'deposito' && escena.aparecerDeposito) escena.aparecerDeposito();
+    if(clave === 'captacion' && escena.aparecerCaptacion) escena.aparecerCaptacion();
+    if(clave === 'depuradora' && escena.aparecerDepuradora) escena.aparecerDepuradora();
+  }
   // Si queda SIN CONECTAR se dice en el acto (el autor colocó una
   // potabilizadora y nada le decía si había quedado enganchada): el mapa
   // además la pinta apagada y con su cartel hasta que le llegue la red.
@@ -1151,7 +1158,7 @@ function tickAverias(dtHoras){
   // 1. Lo que ya está roto: el personal contratado lo va terminando solo.
   for(let i = estado.averias.length - 1; i >= 0; i--){
     const av = estado.averias[i];
-    const nivel = Math.max(...estado.pueblos.map(p => p.mejoras.mantenimiento));
+    const nivel = estado.cuadrilla || 0;   // la cuadrilla común (la cirugía)
     if(nivel <= 0) continue;
     const tiempo = A.reparacionAutoHoras * Math.pow(A.reparacionAutoFactor, nivel - 1);
     if(estado.horas - av.desde >= tiempo){
@@ -1171,7 +1178,7 @@ function tickAverias(dtHoras){
   // averías en cadena, y con veinte habría sido injugable.
   let riesgo = A.probBasePorHora * dtHoras * Math.sqrt(sanas.length);
   riesgo *= 1 + A.factorDesgaste *
-            (p.mejoras.captacion + (p.autobombaActivo ? A.riesgoAutobomba : 0));
+            (((estado._conectado || {}).captacion || 0) + (p.autobombaActivo ? A.riesgoAutobomba : 0));
   if(Math.random() >= riesgo) return;
 
   const victima = sanas[Math.floor(Math.random() * sanas.length)];
@@ -1255,7 +1262,7 @@ function jugarAveria(av){
 /** Golpes de llave que pide una avería. El personal contratado deja menos faena. */
 function clicsDeReparacion(){
   const A = CONFIG.averias;
-  const nivel = Math.max(...estado.pueblos.map(p => p.mejoras.mantenimiento));
+  const nivel = estado.cuadrilla || 0;   // la cuadrilla común (la cirugía)
   return Math.max(A.clicsMinimos, A.clicsParaReparar - nivel * A.clicsMenosPorNivelMant);
 }
 

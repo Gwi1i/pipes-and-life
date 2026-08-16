@@ -214,26 +214,11 @@ export const EN = {
         desc: 'The crew that keeps everything else running. No network of its own.' }
     },
 
-    mejoras: {
-      bomba: { nombre: 'Pump power',
-        desc: 'More water per click. Auto-pumping benefits too.' },
-      deposito: { nombre: 'Reserve tank',
-        desc: 'Stores water so you are not living click to click. Each level adds capacity.' },
-      captacion: { nombre: 'Intake',
-        desc: 'Draws water on its own, no clicking. Yields less in summer (low flow).' },
-      depuradora: { nombre: 'Sewage works',
-        desc: 'Treats wastewater before returning it to the river. Each level, cleaner.' },
-      pluviales: { nombre: 'Storm drain network',
-        desc: 'Separates rainwater from the sewer: relieves the sewage ' +
-              'plant, and part of the rain tops up your tank.' },
-      tanque: { nombre: 'Storm tank',
-        desc: 'Holds the peak of a downpour so nothing overflows raw into ' +
-              'the river, then treats it calmly later. Raises the town’s quality.' },
-      reciclaje: { nombre: 'Recycling plant',
-        desc: 'Each level opens a new fraction (packaging, organic, ' +
-              'glass...) and its street container. What is sorted gets sold.' },
-      mantenimiento: { nombre: 'Maintenance crew',
-        desc: 'Repairs this town’s breakdowns on its own. Each level, faster.' }
+    /* La cirugía se llevó la tienda; sobrevive LA CUADRILLA (común) */
+    cuadrilla: {
+      nombre: 'Maintenance crew',
+      desc: 'Repairs breakdowns across the whole district: each level means ' +
+            'fewer wrench blows and faster self-repairs.'
     },
 
     premium: {
@@ -579,9 +564,9 @@ export const EN = {
       mancomunidad: {
         titulo: 'Not a town anymore — a district',
         pasa: 'Another town comes under your management. It has its own ' +
-              'people, its own tank and its own upgrades.',
-        hacer: 'Switch between towns with the tabs above. Each one runs its ' +
-               'own system, but the funds are ONE.',
+              'people and its own thirst... and it drinks from your network.',
+        hacer: 'Tap any town on the map to make it active. Each one keeps ' +
+               'its own service, but the funds and the network belong to all.',
         porque: 'This is how it really works: small towns cannot each afford a ' +
                 'water service of their own, so they band together to share ' +
                 'staff, works and rates. That is a water district.'
@@ -711,7 +696,8 @@ export const EN = {
     'section:has(> #construir) > h2': 'Build on the map',
     '#panel-red > h2': 'The network',
     'section:has(> #diagnostico) > h2': 'Where the water comes from',
-    'section:has(> #tienda) > h2': 'Town upgrades',
+    'section:has(> #tienda) > h2': 'Town services',
+    'section:has(> #cuadrilla) > h2': 'The crew',
     'section:has(> #premium) > h2': 'Special feature',
     'section:has(> #detalle) > h2': 'Your people',
     '#panel-cauce > h2': 'River (shared)',
@@ -723,9 +709,6 @@ export const EN = {
     'section:has(> #caja-desglose) > h2': 'The funds, in detail',
     'section:has(> .explica) > h2': 'How to play',
 
-    '.tienda-nota': 'This town’s own municipal system: it works on its own, no ' +
-      'connections needed. Map pieces are a different thing — upgrade them by ' +
-      'selecting them there, and they feed their whole network.',
     '#guia-rotulo': 'First steps',
     '.guia-saltar': 'I know what I’m doing — skip the guide',
 
@@ -1121,7 +1104,6 @@ export const EN = {
     'Y {0} líneas más, todas al día.': 'And {0} more lines, all up to date.',
 
     /* --- Tienda --- */
-    'Otras mejoras': 'Other upgrades',
     'de serie': 'built in',
     'en marcha': 'running',
     'con el cuarto pueblo': 'with the fourth town',
@@ -1137,8 +1119,6 @@ export const EN = {
     'BLOQUEADO': 'LOCKED',
     'Activar · {0} €': 'Activate · {0} €',
     'Cumple los requisitos para activarlo': 'Meet the requirements to activate it',
-    'Potencia de bomba Nv {0}': 'Pump power Lv {0}',
-    'Captación Nv {0}': 'Intake Lv {0}',
     '{0} habitantes': '{0} people',
 
     /* --- Averías --- */
@@ -1166,13 +1146,10 @@ export const EN = {
     '· estiaje': ' · low flow',
     '· deshielo': ' · snowmelt',
     'Sin depósito': 'No tank',
-    'Nivel {0} · {1} L': 'Level {0} · {1} L',
-    'Depuradora Nv {0}': 'Sewage works Lv {0}',
     'SIN depurar ⚠': 'NOT treated ⚠',
     'Aún no genera': 'None produced yet',
     'Lluvia': 'Rain',
     'Pluviales': 'Storm drains',
-    'Nivel {0}': 'Level {0}',
     'Sin separar ⚠': 'Not separated ⚠',
     'Tanque tormentas': 'Storm tank',
     '{0} % lleno': '{0} % full',
@@ -1269,9 +1246,7 @@ export const EN = {
       'PHASE {0}: the district can absorb the towns of the next, more distant ring.',
     '¡Fase {0}! Se abre el siguiente anillo de núcleos.':
       'Phase {0}! The next ring of towns opens up.',
-    '{0}: ya está al máximo.': '{0}: already maxed out.',
     'Sin fondos: {0} cuesta {1} €.': 'No funds: {0} costs {1} €.',
-    '{0} · {1} nivel {2}.': '{0} · {1} level {2}.',
     'Este pueblo aún no cumple los requisitos para el auto-bombeo.':
       'This town does not yet meet the requirements for auto-pumping.',
     'El auto-bombeo cuesta {0} €.': 'Auto-pumping costs {0} €.',
@@ -1286,6 +1261,16 @@ export const EN = {
       'Not enough: back to the wrench, the old way.',
     'El turno salió flojo ({0} de {1}): esa avería ya solo se arregla con la llave.':
       'A weak shift ({0} of {1}): that breakdown can only be fixed with the wrench now.',
+    'Bombeos conectados: {0} niveles': 'Connected pumping stations: {0} levels',
+    'Captaciones conectadas: {0} niveles': 'Connected intakes: {0} levels',
+    'Depuradora: {0} niveles': 'Sewage works: {0} levels',
+    'Separando': 'Splitting',
+    'Sin fondos: ampliar la cuadrilla cuesta {0} €.':
+      'No funds: expanding the crew costs {0} €.',
+    '{0} niveles · {1} L': '{0} levels · {1} L',
+    '{0}: nivel {1}. Menos golpes de llave y arreglos solos más rápidos.':
+      '{0}: level {1}. Fewer wrench blows and faster self-repairs.',
+    '{0}: ya está al completo.': '{0}: already at full strength.',
     'Agua facturada': 'Water billed',
     'Residuos (venta menos vertido)': 'Waste (sales minus landfill)',
     'Rentas de yacimientos': 'Dig site rents',
