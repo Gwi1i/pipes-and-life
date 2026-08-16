@@ -643,7 +643,7 @@ export const EN = {
     '.marca-sub': 'Run your water district',
 
     '.hud-item:has(#hud-agua) .e': 'Water',
-    '.hud-item:has(#hud-produccion) .e': 'Output',
+    '.hud-item:has(#hud-produccion) .e': 'Makes / uses',
     '.hud-item:has(#hud-dinero) .e': 'Funds',
     '.hud-item:has(#hud-poblacion) .e': 'Population',
     '.hud-item:has(#hud-servicio) .e': 'Service',
@@ -788,6 +788,8 @@ export const EN = {
   atributos: [
     ['.hud-item:has(#hud-expansion)', 'title',
      'Good service makes clearing tiles cheaper'],
+    ['.hud-item:has(#hud-produccion)', 'title',
+     'What the intakes produce against what the town uses'],
     ['#btn-ajustes', 'title', 'Options']
   ],
 

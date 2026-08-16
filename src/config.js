@@ -97,10 +97,13 @@ export const CONFIG = {
 
   /* ---------- EL DEPÓSITO ---------- */
   deposito: {
-    // Llenarlo tiene que costar decenas de clics y vaciarse rápido: es un
-    // respiro entre tandas de clic, no un piloto automático.
+    // El primer depósito es un respiro corto entre tandas de clic — pero
+    // cada nivel compra MINUTOS de margen, no segundos. Medido antes del
+    // ajuste: el lleno duraba 50 s al empezar y 18 s con 1.500 habitantes —
+    // el juego se volvía más niñera cuanto más crecías, y el autor no podía
+    // soltar el depósito para explorar.
     capacidadBase: 12000,      // ~27 clics de llenado
-    incrementoCapacidad: 14000
+    incrementoCapacidad: 22000
   },
 
   /* ---------- LOS SERVICIOS ----------
@@ -172,7 +175,12 @@ export const CONFIG = {
       // el juego vende. Tiene que ser un objetivo caro, no un trámite del
       // primer minuto, o el jugador deja de clicar y se acaba la gracia.
       costeBase: 2500, factorCoste: 1.8, nivelMax: 20,
-      caudalPorNivel: 0.12
+      // Subido de 0.12: la captación a tope cubría el 15% de la demanda y la
+      // inversión no compraba autonomía — el clic era vida asistida perpetua.
+      // Ahora la base se cubre invirtiendo y el clic paga el CRECIMIENTO...
+      // y el ESTIAJE: en verano la captación cae y vuelve la temporada de
+      // bombear a mano. El clic no muere: se vuelve estacional.
+      caudalPorNivel: 0.30
     },
     depuradora: {
       nombre: 'Estación depuradora', orden: 4,
@@ -1034,8 +1042,10 @@ export const CONFIG = {
   },
 
   aportePorPieza: {
-    captacion: 0.10,     // L/s de producción pasiva que suma cada captación
-    deposito: 9000,      // litros de capacidad que suma cada depósito
+    // Subidos con caudalPorNivel (ver mejoras.captacion): la pieza del mapa
+    // y la mejora municipal compran autonomía a la par.
+    captacion: 0.30,     // L/s de producción pasiva que suma cada captación
+    deposito: 14000,     // litros de capacidad que suma cada depósito
     bomba: 220,          // litros por clic que suma cada bombeo
     /* La ETAP: L/h de agua BRUTA que potabiliza cada planta. Escala pareja a
        la depuradora: son las dos caras del mismo oficio. */

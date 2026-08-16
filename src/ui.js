@@ -1801,10 +1801,14 @@ export class UI {
     // habitantes es un dato de verdad. Antes mostraba litros por segundo REAL
     // (clics incluidos) y con el desglose al lado eran dos verdades a la vista.
     // El clic no entra aquí: su respuesta es la escena y el nivel del depósito.
+    // Produce CONTRA gasta, en el mismo vistazo (petición del autor): el
+    // número suelto no decía si ibas sobrado o corto. Demanda MEDIA, no la
+    // punta horaria: un número que baila cada segundo no se puede leer.
     const caudal = caudalCaptacion(p, estado, resultado.estiaje || 1);
-    this.fijar('hud-produccion',
-      (caudal < 10 ? caudal.toFixed(2) : formatear(caudal)) + ' L/s',
-      resultado.averiada ? 'critico' : (caudal > 0 ? 'ok' : 'neutro'));
+    const demanda = demandaMedia(p.habitantes);
+    const fmtLs = v => v < 10 ? v.toFixed(2) : formatear(Math.round(v));
+    this.fijar('hud-produccion', fmtLs(caudal) + ' / ' + fmtLs(demanda) + ' L/s',
+      resultado.averiada ? 'critico' : caudal >= demanda ? 'ok' : 'neutro');
     this.fijar('hud-dinero', formatear(estado.dinero) + ' €',
       estado.dinero < 0 ? 'critico' : 'dinero');
     this.fijar('hud-poblacion',
