@@ -914,6 +914,13 @@ por callback y `main.js` decide qué significa. EL TALLER (solapa Mancomunidad)
 los ofrece en modo ensayo, sin premio ni castigo — nació para que el autor
 probara sin esperar una avería y se queda para que el jugador ensaye gratis.
 
+**Cada avería ofrece pagar la llave O el minijuego de SU servicio**
+(`minijuegoDeAveria()` en main, `minijuegos.averia.punteriaMinima`): las
+piezas de tubo van al tablero de tuberías; la planta de reciclaje, a la
+cinta; el vertedero, a la ruta del camión. En modo avería el premio es SOLO
+el arreglo gratis — nada de bonos, que tienen su propia puerta — y en cinta
+y ruta hace falta puntería mínima. Un intento por avería, como siempre.
+
 1. REPARACIÓN A MANO (`minijuego_tuberias.js`): desde el panel de averías, un
 tablero de tuberías contrarreloj — el tablero nace LLENO de piezas giradas al
 azar y el clic solo GIRA: hay que recomponer el camino de entrada a salida

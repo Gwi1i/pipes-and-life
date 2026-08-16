@@ -676,32 +676,55 @@ function procesarAcciones(){
       /* --- EL MINIJUEGO: reparar a mano ---
          Opcional y con UN intento por avería: si siempre se pudiera reintentar,
          la llave (que cuesta dinero) no tendría sentido. El intento se gasta al
-         ENTRAR — abandonar también cuenta, que mirar el tablero ya es ventaja. */
+         ENTRAR — abandonar también cuenta, que mirar el tablero ya es ventaja.
+         CADA AVERÍA JUEGA AL MINIJUEGO DE SU SERVICIO (petición del autor):
+         las piezas de tubería, al tablero; la planta de reciclaje, a la cinta;
+         el vertedero, a la ruta del camión. En modo avería el premio es SOLO
+         el arreglo gratis: nada de bonos, que tienen su propia puerta. */
       case 'repararAMano': {
         const av = estado.averias[parseInt(a.clave, 10)];
         if(!av || av.aManoJugada) break;
         av.aManoJugada = true;
-        analitica.contar('minijuego/tuberias');
+        const juego = minijuegoDeAveria(av);
+        analitica.contar('minijuego/' + juego + (juego === 'tuberias' ? '' : '-averia'));
         ui.invalidarCache();
-        miniTuberias.jugar((exito, razon) => {
-          if(exito){
-            const i = estado.averias.indexOf(av);
-            if(i >= 0) estado.averias.splice(i, 1);
-            const obra = estado.construcciones.find(o => o.col === av.col && o.fila === av.fila);
-            const nombre = obra ? CONFIG.construibles[obra.tipo].nombre : t`La instalación`;
-            estado.anotar(t`${nombre}: reparación a mano impecable. Ni un euro en llaves.`, 'ok');
-            avisar(t`¡En servicio! Reparada a mano, gratis.`);
-            sonido.reparada();
-            ui.caraGuia('bien');
-            escena.destelloMantenimiento();
-            ui.invalidarCache();
-          } else if(razon === 'derrame'){
-            estado.anotar(t`El agua llegó antes que tú: esa avería ya solo se arregla con la llave.`, 'alarma');
-            avisar(t`¡Derrame! A golpe de llave, como toda la vida.`);
-            sonido.seco();
-            ui.caraGuia('mal');
-          }
-        });
+
+        const arreglada = () => {
+          const i = estado.averias.indexOf(av);
+          if(i >= 0) estado.averias.splice(i, 1);
+          const obra = estado.construcciones.find(o => o.col === av.col && o.fila === av.fila);
+          const nombre = obra ? CONFIG.construibles[obra.tipo].nombre : t`La instalación`;
+          estado.anotar(t`${nombre}: reparación a mano impecable. Ni un euro en llaves.`, 'ok');
+          avisar(t`¡En servicio! Reparada a mano, gratis.`);
+          sonido.reparada();
+          ui.caraGuia('bien');
+          escena.destelloMantenimiento();
+          ui.invalidarCache();
+        };
+        const fallada = (texto) => {
+          estado.anotar(texto, 'alarma');
+          avisar(t`No ha bastado: a golpe de llave, como toda la vida.`);
+          sonido.seco();
+          ui.caraGuia('mal');
+        };
+
+        if(juego === 'tuberias'){
+          miniTuberias.jugar((exito, razon) => {
+            if(exito) arreglada();
+            else if(razon === 'derrame')
+              fallada(t`El agua llegó antes que tú: esa avería ya solo se arregla con la llave.`);
+          });
+        } else {
+          // La cinta o la ruta: se arregla gratis con puntería suficiente
+          const minimo = CONFIG.minijuegos.averia.punteriaMinima;
+          const mini = juego === 'reciclaje' ? miniReciclaje : miniCamion;
+          mini.jugar((aciertos, total, razon) => {
+            if(razon === 'abandonado') return;
+            const punteria = total ? aciertos / total : 0;
+            if(punteria >= minimo) arreglada();
+            else fallada(t`El turno salió flojo (${aciertos} de ${total}): esa avería ya solo se arregla con la llave.`);
+          });
+        }
         break;
       }
 
@@ -1202,6 +1225,17 @@ function tickAverias(dtHoras){
   sonido.averia();
   ui.caraGuia('mal');
   contarHito('averia');   // la primera, con tarjeta: qué ha pasado y qué se hace
+}
+
+/** Qué minijuego arregla cada avería: EL DE SU SERVICIO. Las piezas de las
+ *  redes de tubo van al tablero de tuberías; las de residuos, a lo suyo — la
+ *  planta a la cinta y el vertedero a la ruta del camión. */
+function minijuegoDeAveria(av){
+  const obra = estado.construcciones.find(o => o.col === av.col && o.fila === av.fila);
+  if(!obra) return 'tuberias';
+  if(obra.tipo === 'reciclaje') return 'reciclaje';
+  if(obra.tipo === 'vertedero') return 'camion';
+  return 'tuberias';
 }
 
 /** Golpes de llave que pide una avería. El personal contratado deja menos faena. */

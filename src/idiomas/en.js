@@ -1278,8 +1278,16 @@ export const EN = {
     '¡En servicio! Reparada a mano, gratis.': 'Back in service! Repaired by hand, for free.',
     'El agua llegó antes que tú: esa avería ya solo se arregla con la llave.':
       'The water got there before you: that breakdown can only be fixed with the wrench now.',
-    '¡Derrame! A golpe de llave, como toda la vida.':
-      'Spillover! Back to the wrench, the old way.',
+    'No ha bastado: a golpe de llave, como toda la vida.':
+      'Not enough: back to the wrench, the old way.',
+    'El turno salió flojo ({0} de {1}): esa avería ya solo se arregla con la llave.':
+      'A weak shift ({0} of {1}): that breakdown can only be fixed with the wrench now.',
+    'Arreglarla echando un turno': 'Fix it by working a shift',
+    'Arreglarla sacando la ruta': 'Fix it by running the route',
+    'Un turno de urgencia en la cinta: separa bien al menos el {0} % y la avería queda arreglada GRATIS. Un solo intento.':
+      'An emergency shift on the line: sort at least {0} % right and the breakdown is fixed for FREE. One try only.',
+    'Una ruta de urgencia con el camión: recoge al menos el {0} % y la avería queda arreglada GRATIS. Un solo intento.':
+      'An emergency truck route: collect at least {0} % and the breakdown is fixed for FREE. One try only.',
     'Todavía no hay nada que copiar.': 'There is nothing to copy yet.',
     'Partida copiada al portapapeles. Pégala en un sitio seguro.':
       'Game copied to the clipboard. Paste it somewhere safe.',

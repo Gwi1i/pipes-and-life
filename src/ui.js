@@ -1642,18 +1642,43 @@ export class UI {
             a ${formatear(coste)} € cada uno.`}</span>
           <span class="m-coste">${t`ir ahí →`}</span>
         </button>
-        ${av.aManoJugada ? '' : `
-        <button class="mejora obra" data-accion="repararAMano" data-clave="${i}"
-                style="--tono:${CONFIG.color.agua || '#38bdf8'}">
-          <span class="m-cab"><span class="m-nom">${t`Repararla a mano`}</span></span>
-          <span class="m-desc">${t`Monta el tramo antes de que llegue el agua y queda
-            arreglada GRATIS. Un solo intento: si se derrama, a golpe de llave.`}</span>
-          <span class="m-coste">${t`jugar`}</span>
-        </button>`}`;
+        ${av.aManoJugada ? '' : this.botonRepararJugando(obra, i)}`;
     }).join('') + (resto > 0
       ? `<p class="m-desc">${t`Y ${resto} averías más esperando: al reparar
            estas, entran aquí.`}</p>`
       : '');
+  }
+
+  /**
+   * El botón de arreglar JUGANDO: cada avería ofrece el minijuego de SU
+   * servicio (petición del autor) — tubería para las redes de tubo, la cinta
+   * para la planta de reciclaje, la ruta para el vertedero. El premio es el
+   * arreglo gratis; un solo intento, como siempre.
+   */
+  botonRepararJugando(obra, i){
+    const tipo = obra ? obra.tipo : null;
+    const pct = Math.round(CONFIG.minijuegos.averia.punteriaMinima * 100);
+    let titulo, desc;
+    if(tipo === 'reciclaje'){
+      titulo = t`Arreglarla echando un turno`;
+      desc = t`Un turno de urgencia en la cinta: separa bien al menos el
+        ${pct} % y la avería queda arreglada GRATIS. Un solo intento.`;
+    } else if(tipo === 'vertedero'){
+      titulo = t`Arreglarla sacando la ruta`;
+      desc = t`Una ruta de urgencia con el camión: recoge al menos el
+        ${pct} % y la avería queda arreglada GRATIS. Un solo intento.`;
+    } else {
+      titulo = t`Repararla a mano`;
+      desc = t`Monta el tramo antes de que llegue el agua y queda
+        arreglada GRATIS. Un solo intento: si se derrama, a golpe de llave.`;
+    }
+    return `
+        <button class="mejora obra" data-accion="repararAMano" data-clave="${i}"
+                style="--tono:${CONFIG.color.agua || '#38bdf8'}">
+          <span class="m-cab"><span class="m-nom">${titulo}</span></span>
+          <span class="m-desc">${desc}</span>
+          <span class="m-coste">${t`jugar`}</span>
+        </button>`;
   }
 
   /* ---------------- CAUCE (común) ---------------- */

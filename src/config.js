@@ -439,6 +439,13 @@ export const CONFIG = {
      momentos que ya existen y dan ventaja a quien los juega; quien pase de
      ellos no pierde nada esencial. Uno solo de momento: el de tuberías. */
   minijuegos: {
+    /* REPARAR JUGANDO: cada avería ofrece pagar la llave O el minijuego de
+       SU servicio (petición del autor) — tubería para las redes de tubo, la
+       cinta para la planta, la ruta para el vertedero. En modo avería el
+       premio es solo el arreglo gratis (sin bonos) y hace falta puntería. */
+    averia: {
+      punteriaMinima: 0.5      // aciertos/total para que el arreglo salga gratis
+    },
     tuberias: {
       columnas: 7, filas: 5,
       rocas: 4,                // celdas bloqueadas: obligan a rodear
