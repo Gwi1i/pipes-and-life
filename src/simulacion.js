@@ -810,7 +810,8 @@ function avanzarPueblo(estado, p, dt, dtHoras, punta, estiaje, frenoCrec, lluvia
   p.agua -= servido;
 
   const m3 = servido / 1000;
-  estado.dinero += m3 * CONFIG.economia.tarifa;
+  const facturado = m3 * CONFIG.economia.tarifa;
+  estado.dinero += facturado;
   estado.m3Servidos += m3;
 
   const servicio = consumo > 0 ? servido / consumo : 1;
@@ -912,6 +913,8 @@ function avanzarPueblo(estado, p, dt, dtHoras, punta, estiaje, frenoCrec, lluvia
 
   return {
     residual, recienSaneamiento, serviciosNuevos,
+    // Los euros de ESTE paso, para el desglose de la caja (se suman fuera)
+    facturado, ingresoResiduos,
     res: {
       servicio, demandaAhora: dem * punta, punta, estiaje,
       prodLps: dt > 0 ? entrada / dt : 0,
@@ -984,12 +987,16 @@ export function avanzar(estado, dt){
   let activoRes = null;
   const saneamientoNuevo = [];
   const serviciosNuevos = [];
+  // El desglose de la caja: los flujos de TODA la mancomunidad, en €/h
+  let facturadoPaso = 0, residuosPaso = 0;
 
   for(let i = 0; i < estado.pueblos.length; i++){
     const p = estado.pueblos[i];
     if(!p.desbloqueado) continue;
     const out = avanzarPueblo(estado, p, dt, dtHoras, punta, estiaje, frenoCrec, lluvia);
     totalResidual += out.residual;
+    facturadoPaso += out.facturado || 0;
+    residuosPaso += out.ingresoResiduos || 0;
     if(out.recienSaneamiento) saneamientoNuevo.push(p.nombre);
     // Los servicios que se acaban de abrir suben hasta aquí para que `main.js`
     // pueda contar su hito. Solo los del pueblo activo: los hitos son del
@@ -1061,6 +1068,18 @@ export function avanzar(estado, dt){
     multa,
     luzHora,
     nominaHora,
+    /* EL DESGLOSE DE LA CAJA (petición del autor: ver dónde se gana y dónde
+       se va el dinero). Flujos de TODA la mancomunidad en €/h; el clic no
+       entra — es facturación igual, y ya se ve entrar en la caja. */
+    caja: {
+      facturado: dtHoras > 0 ? facturadoPaso / dtHoras : 0,
+      residuos:  dtHoras > 0 ? residuosPaso / dtHoras : 0,
+      yacimientos: rentaYacimientos(estado),
+      luz: luzHora,
+      nomina: nominaHora,
+      multaCauce: dtHoras > 0 ? multa / dtHoras : 0,
+      multaZec: dtHoras > 0 ? multaProtegida / dtHoras : 0
+    },
     frenoCrec,
     // El agua bruta contra lo potabilizado: el panel y los avisos beben de
     // aquí, no recalculan su propia versión.

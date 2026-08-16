@@ -1702,6 +1702,46 @@ export class UI {
         </button>`;
   }
 
+  /**
+   * EL DESGLOSE DE LA CAJA (petición del autor: ver dónde se gana y dónde se
+   * va el dinero). Mismas reglas que el desglose del agua: la cuenta viene
+   * ENTERA de avanzar() —aquí no se recalcula nada, que duplicar fórmulas ya
+   * dio dos verdades una vez— y las líneas salen solo si existen. En €/h de
+   * juego. El clic no lleva línea propia: su agua se factura como toda.
+   */
+  refrescarCaja(estado, resultado){
+    const cont = document.getElementById('caja-desglose');
+    if(!cont || !resultado.caja) return;
+    const c = resultado.caja;
+    const neto = c.facturado + c.residuos + c.yacimientos
+               - c.luz - c.nomina - c.multaCauce - c.multaZec;
+    const firma = [c.facturado, c.residuos, c.yacimientos, c.luz, c.nomina,
+                   c.multaCauce, c.multaZec].map(v => Math.round(v * 10)).join(',');
+    if(this.cache.cajaFirma === firma) return;
+    this.cache.cajaFirma = firma;
+
+    const fmt = v => Math.abs(v) < 10 ? Math.abs(v).toFixed(1) : formatear(Math.round(Math.abs(v)));
+    const fila = (nombre, v, gasto = false) => Math.abs(v) < 0.05 ? '' :
+      `<div class="casilla-fila"><span>${nombre}</span>
+         <b style="color:${(gasto ? v > 0 : v < 0) ? 'var(--critico)' : 'var(--ok, #4ade80)'}">
+           ${(gasto ? v > 0 : v < 0) ? '−' : '+'}${fmt(v)} €/h</b></div>`;
+
+    cont.innerHTML = `
+      <div class="casilla-fila"><span>${t`Agua facturada`}</span>
+        <b>+${fmt(c.facturado)} €/h</b></div>
+      ${fila(t`Residuos (venta menos vertido)`, c.residuos)}
+      ${fila(t`Rentas de yacimientos`, c.yacimientos)}
+      ${fila(t`La luz de las instalaciones`, c.luz, true)}
+      ${fila(t`Nómina del personal`, c.nomina, true)}
+      ${fila(t`Multa por el cauce sucio`, c.multaCauce, true)}
+      ${fila(t`Multa por zonas protegidas dañadas`, c.multaZec, true)}
+      <div class="casilla-fila"><span><b>${t`Balance`}</b></span>
+        <b style="color:${neto >= 0 ? 'var(--ok, #4ade80)' : 'var(--critico)'}">
+          ${neto >= 0 ? '+' : '−'}${fmt(neto)} €/h</b></div>
+      <p class="m-desc">${t`Las obras, mejoras y reparaciones no salen aquí:
+        son pagos de una vez, no flujos.`}</p>`;
+  }
+
   /* ---------------- CAUCE (común) ---------------- */
 
   refrescarCauce(estado, resultado){
@@ -1904,6 +1944,7 @@ export class UI {
     this.refrescarAverias(estado);
     this.refrescarExpediente(estado);
     this.refrescarCauce(estado, resultado);
+    this.refrescarCaja(estado, resultado);
     this.marcarPestanaAveria(estado);
     this.actualizarPanel(estado, resultado);
     this.actualizarRegistro(estado);

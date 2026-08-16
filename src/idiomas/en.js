@@ -720,6 +720,7 @@ export const EN = {
     'section:has(> #expediente) > h2': 'Record and transfer',
     'section:has(> #respaldo) > h2': 'Backup',
     'section:has(> #registro) > h2': 'Log',
+    'section:has(> #caja-desglose) > h2': 'The funds, in detail',
     'section:has(> .explica) > h2': 'How to play',
 
     '.tienda-nota': 'This town’s own municipal system: it works on its own, no ' +
@@ -1285,6 +1286,16 @@ export const EN = {
       'Not enough: back to the wrench, the old way.',
     'El turno salió flojo ({0} de {1}): esa avería ya solo se arregla con la llave.':
       'A weak shift ({0} of {1}): that breakdown can only be fixed with the wrench now.',
+    'Agua facturada': 'Water billed',
+    'Residuos (venta menos vertido)': 'Waste (sales minus landfill)',
+    'Rentas de yacimientos': 'Dig site rents',
+    'La luz de las instalaciones': 'Facility power bills',
+    'Nómina del personal': 'Staff payroll',
+    'Multa por el cauce sucio': 'Dirty river fine',
+    'Multa por zonas protegidas dañadas': 'Damaged protected areas fine',
+    'Balance': 'Balance',
+    'Las obras, mejoras y reparaciones no salen aquí: son pagos de una vez, no flujos.':
+      'Works, upgrades and repairs are not shown here: they are one-off payments, not flows.',
     'el tablero de tuberías': 'the pipe board',
     'un turno en la cinta': 'a shift on the sorting line',
     'una ruta con el camión': 'a route with the truck',
