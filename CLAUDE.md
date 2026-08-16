@@ -709,6 +709,20 @@ El material de referencia suelto en `assets/` (esquemas, fondos viejos,
 capturas de otros juegos) se queda FUERA del zip: son 23 MB que nadie descarga
 para jugar. Los textos de la ficha de itch están en `docs/itch.md`.
 
+**La guía tiene CAPÍTULOS (`CONFIG.guias`).** Al abrirse un servicio nuevo
+(saneamiento, pluviales, residuos), el hito cuenta el PORQUÉ y su capítulo
+enseña el CÓMO con el mismo motor de la guía inicial (tutorial.js): pasos
+que se cumplen consiguiéndolos, saltables, con su estado en `estado.guias`
+(se guarda). Tres reglas: una partida vieja con el servicio YA abierto no ve
+su capítulo (lo decide `cargar()` — un veterano no necesita clase); mientras
+hay capítulo activo, el TAJO y los comentarios de Manuel callan (dos
+maestros a la vez es uno de más); y los ids de los pasos alimentan la VOZ
+(`generar_voces.py` los lee), así que van en `\w+` sin guiones. OJO al
+fallo que destapó esto: el recorrido de red arranca del propio pueblo, así
+que una pieza pegada a él cuenta como conectada SIN tubería — el paso
+'tuberia' de la guía exigía "algo conectado" y se cumplía solo; ahora exige
+captación+bombeo+depósito conectados los tres.
+
 **La guía envejece mal y nadie lo ve.** El tutorial llegó a pedir "pulsa
 BOMBEAR" y "engrasa la instalación" dos versiones después de quitarse ambos: el
 texto de los primeros pasos no lo relee nadie al refactorizar. Si quitas o

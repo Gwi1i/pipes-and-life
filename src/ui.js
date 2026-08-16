@@ -534,7 +534,9 @@ export class UI {
     panel.style.display = '';
 
     // Dos modos, un bocadillo: la guía enseña pasos; Manuel suelto, comenta
-    document.getElementById('guia-rotulo').textContent = paso ? t`Primeros pasos` : t`dice`;
+    // El rótulo dice QUÉ guía es: la inicial o el capítulo de un servicio
+    document.getElementById('guia-rotulo').textContent =
+      paso ? (paso.rotulo || t`Primeros pasos`) : t`dice`;
     document.getElementById('guia-titulo').style.display = paso ? '' : 'none';
     panel.querySelector('.guia-saltar').style.display = paso ? '' : 'none';
     if(com){

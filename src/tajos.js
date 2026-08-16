@@ -15,6 +15,7 @@
  */
 
 import { CONFIG } from './config.js';
+import { pasoActual } from './tutorial.js';
 import { servicioActivo, faseActual, capacidadPotabilizacion } from './simulacion.js';
 import { cuelloDeBotella, nivelDiametro, casillaEnRed } from './mapa.js';
 import { legado } from './legado.js';
@@ -98,6 +99,9 @@ const PENDIENTE = {
  */
 export function tajoActual(estado, resultado){
   if(!estado.tutorial || !estado.tutorial.terminado) return null;
+  // Con un capítulo de guía en marcha, la carta calla: dos maestros a la vez
+  // diciendo el siguiente paso es uno de más
+  if(pasoActual(estado)) return null;
   if(legado.comarca > 1) return null;
   for(const def of CONFIG.tajos){
     const pendiente = PENDIENTE[def.id];

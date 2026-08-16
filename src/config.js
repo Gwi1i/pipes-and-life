@@ -1648,6 +1648,63 @@ export const CONFIG = {
            'que crezca, y ve a por el siguiente. Yo estaré por aquí.'
   },
 
+  /* ---------- GUÍAS POR SERVICIO (capítulos) ----------
+     Petición del autor: al abrirse saneamiento, pluviales o residuos, el
+     HITO cuenta el porqué pero nadie enseña el CÓMO paso a paso. Cada
+     capítulo usa el mismo motor que la guía de primeros pasos (tutorial.js):
+     el paso se cumple consiguiéndolo de verdad, se puede saltar, y mientras
+     hay capítulo activo ni el tajo ni Manuel interrumpen. Una partida vieja
+     con el servicio YA abierto no ve su capítulo: llega tarde a enseñar.
+     OJO: los ids alimentan la VOZ (generar_voces.py): \w+, sin guiones. */
+  guias: {
+    saneamiento: {
+      rotulo: 'Guía del saneamiento',
+      pasos: [
+        { id: 'sanDepuradora', titulo: 'La depuradora, junto al río',
+          texto: 'El pueblo ya devuelve agua sucia, y lo que llegue crudo al ' +
+                 'cauce os frena a todos. En «Construir en el mapa», coloca ' +
+                 'una DEPURADORA en tierra pegada al agua.' },
+        { id: 'sanColector', titulo: 'El colector, con su propia tubería',
+          texto: 'A la depuradora no la conecta la tubería de beber: elige ' +
+                 'la red de SANEAMIENTO y tiende el COLECTOR desde el pueblo ' +
+                 'hasta tocarla. En cuanto enganche, verás bajar la suciedad ' +
+                 'del cauce.' }
+      ]
+    },
+    pluviales: {
+      rotulo: 'Guía de las pluviales',
+      pasos: [
+        { id: 'pluRed', titulo: 'Separa la lluvia del colector',
+          texto: 'Cuando llueve, la escorrentía entra al colector y revienta ' +
+                 'la depuradora. Elige la red de PLUVIALES y tiende unos ' +
+                 'tramos por el pueblo: la lluvia que separes ya no ensucia, ' +
+                 'y parte se aprovecha para tu depósito.' },
+        { id: 'pluTanque', titulo: 'El tanque de tormentas',
+          texto: 'La punta de la tormenta no cabe ni en la mejor depuradora. ' +
+                 'Coloca un TANQUE DE TORMENTAS conectado a la red de ' +
+                 'pluviales: retiene el golpe de agua y lo suelta cuando la ' +
+                 'planta respira.' }
+      ]
+    },
+    residuos: {
+      rotulo: 'Guía de los residuos',
+      pasos: [
+        { id: 'resCarretera', titulo: 'La basura sale por carretera',
+          texto: 'Este servicio no va por tubería: la basura se recoge en ' +
+                 'camión. Elige la red de RESIDUOS y tiende una CARRETERA ' +
+                 'desde el pueblo hacia donde quieras llevarla.' },
+        { id: 'resVertedero', titulo: 'El vertedero, lejos del agua',
+          texto: 'Coloca un VERTEDERO tocando la carretera y LEJOS del agua: ' +
+                 'suelta lixiviados, y ponerlo cerca de tu captación sería ' +
+                 'envenenarte tú solo.' },
+        { id: 'resReciclaje', titulo: 'Y que la basura pague',
+          texto: 'Una PLANTA DE RECICLAJE conectada a la carretera separa ' +
+                 'fracciones y las VENDE: es el primer servicio que ingresa ' +
+                 'en vez de costar. No la dejes para luego.' }
+      ]
+    }
+  },
+
   /* ---------- LOS HITOS ----------
      Cuando se abre un servicio nuevo, el juego CAMBIA de problema: hasta ese
      momento solo había que traer agua, y de repente hay que llevársela sucia, o

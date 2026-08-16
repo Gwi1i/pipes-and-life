@@ -1519,10 +1519,11 @@ function bucle(ahora){
     // Y lee el paso NUEVO, si hay voz: el que acaba de aparecer en el bocadillo
     const siguiente = pasoActual(estado);
     if(siguiente) sonido.hablar(siguiente.titulo + '. ' + siguiente.texto, siguiente.id);
-    else {
+    else if(!pasoHecho.capitulo){
       // EL CIERRE: la guía se acababa y Manuel se iba sin despedirse — el
       // último paso merece enhorabuena y un empujón hacia lo que viene
       // (petición del autor). Sale como "Manuel dice", no como paso.
+      // Solo para la guía INICIAL: los capítulos acaban con su ✓ y en paz.
       const c = CONFIG.cierreGuia;
       ui.mostrarComentario({ id: 'cierreGuia', texto: c.texto, animo: 'bien' });
       sonido.pueblo();

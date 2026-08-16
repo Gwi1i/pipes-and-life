@@ -149,6 +149,58 @@ export const EN = {
              'and go get the next one. I will be around.'
     },
 
+    /* Los capítulos por servicio: mismo orden que el castellano (se mezcla
+       por posición dentro de cada capítulo). */
+    guias: {
+      saneamiento: {
+        rotulo: 'Sewerage guide',
+        pasos: [
+          { titulo: 'The sewage plant, by the river',
+            texto: 'Your town now returns dirty water, and whatever reaches ' +
+                   'the river untreated slows everyone down. In "Build on ' +
+                   'the map", place a SEWAGE PLANT on land touching the water.' },
+          { titulo: 'The sewer, with its own pipe',
+            texto: 'The drinking pipe will not connect a sewage plant: pick ' +
+                   'the SEWERAGE network and lay the SEWER from the town ' +
+                   'until it touches the plant. The moment it hooks up, ' +
+                   'watch the river get cleaner.' }
+        ]
+      },
+      pluviales: {
+        rotulo: 'Storm drain guide',
+        pasos: [
+          { titulo: 'Split the rain from the sewer',
+            texto: 'When it rains, the runoff pours into the sewer and ' +
+                   'bursts the sewage plant. Pick the STORM DRAIN network ' +
+                   'and lay a few stretches through town: the rain you ' +
+                   'split off no longer pollutes, and part of it even tops ' +
+                   'up your tank.' },
+          { titulo: 'The storm tank',
+            texto: 'The peak of a storm does not fit through even the best ' +
+                   'plant. Place a STORM TANK connected to the storm drain ' +
+                   'network: it holds the surge and releases it once the ' +
+                   'plant can breathe.' }
+        ]
+      },
+      residuos: {
+        rotulo: 'Waste guide',
+        pasos: [
+          { titulo: 'Garbage leaves by road',
+            texto: 'This service does not run through pipes: garbage goes ' +
+                   'by truck. Pick the WASTE network and lay a ROAD from ' +
+                   'the town towards wherever you want to take it.' },
+          { titulo: 'The landfill, far from water',
+            texto: 'Place a LANDFILL touching the road and FAR from water: ' +
+                   'it leaks leachate, and next to your own intake you ' +
+                   'would be poisoning yourself.' },
+          { titulo: 'And make the garbage pay',
+            texto: 'A RECYCLING PLANT connected to the road separates ' +
+                   'fractions and SELLS them: the first service that earns ' +
+                   'instead of costing. Do not leave it for later.' }
+        ]
+      }
+    },
+
     servicios: {
       abastecimiento: { nombre: 'Water supply',
         desc: 'Bringing drinking water to the town. It is what the district lives on.' },

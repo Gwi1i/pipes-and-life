@@ -86,6 +86,14 @@ def lineas_castellano():
     if m:
         lineas['cierreGuia'] = unir_cadenas(m.group(1))
 
+    # Los capitulos por servicio (CONFIG.guias): mismos "titulo. texto".
+    # El bloque cierra con '},' a DOS espacios; los capitulos, a cuatro.
+    guias = config.split('guias: {', 1)[1].split('\n  },', 1)[0]
+    for m in re.finditer(
+            r"id: '(\w+)',\s*titulo: " + CADENA + r",\s*texto: " + CADENA, guias):
+        lineas[m.group(1)] = unir_cadenas(m.group(2)) + '. ' + unir_cadenas(m.group(3))
+        ids_tutorial.append(m.group(1))
+
     # Los comentarios: plantillas t`...` (sin ${}: regla escrita en el modulo)
     comentarios = open(os.path.join(RAIZ, 'src', 'comentarios.js'), encoding='utf-8').read()
     for m in re.finditer(r"id: '(\w+)'.*?texto: t`([^`]*)`", comentarios, re.DOTALL):
@@ -103,6 +111,10 @@ def lineas_ingles(castellano, ids_tutorial):
     # el castellano (se mezcla por indice), asi que se casa por posicion.
     tutorial = src.split('tutorial: [', 1)[1].split('\n    ],', 1)[0]
     entradas = re.findall(r"titulo: " + CADENA + r",\s*texto: " + CADENA, tutorial)
+    # Los capitulos (guias) siguen la misma regla: casar por posicion, en el
+    # mismo orden en que el castellano apunto sus ids.
+    guias = src.split('guias: {', 1)[1].split('\n    },', 1)[0]
+    entradas += re.findall(r"titulo: " + CADENA + r",\s*texto: " + CADENA, guias)
     for id_, (titulo, texto) in zip(ids_tutorial, entradas):
         lineas[id_] = unir_cadenas(titulo) + '. ' + unir_cadenas(texto)
 

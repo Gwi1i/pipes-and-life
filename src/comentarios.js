@@ -20,6 +20,7 @@
  */
 
 import { CONFIG } from './config.js';
+import { pasoActual } from './tutorial.js';
 import { capacidad, tasaFugasRed, redDelPueblo, redEstrangula,
          nivelMasa, pozosPorMasa, nivelCaserio } from './simulacion.js';
 // La etiqueta de traducción: los textos de Manuel se quedan aquí en
@@ -143,6 +144,9 @@ const dicho = {};            // id -> ya dicho y aún sin re-armar
  */
 export function comentar(estado, resultado, ahoraSeg){
   if(!estado.tutorial || !estado.tutorial.terminado) return null;
+  // Tampoco con un capítulo de guía en marcha: el bocadillo es de la guía, y
+  // sin esta puerta la voz de Manuel hablaba POR ENCIMA del paso en pantalla
+  if(pasoActual(estado)) return null;
   if(estado.hitoPendiente) return null;
 
   // El primer silencio también cuenta: nada de saludar según cargas

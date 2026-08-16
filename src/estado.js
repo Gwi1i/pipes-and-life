@@ -111,6 +111,11 @@ export class Estado {
     this.modo = { tipo: null, elemento: null, trazado: [], deInventario: false };
     this.seleccion = null;          // { col, fila } de la casilla que miras
     this.tutorial = { paso: 0, terminado: false };   // la guía de los primeros pasos
+    // Los CAPÍTULOS por servicio (CONFIG.guias): cada uno arranca cuando su
+    // servicio se abre, con el mismo motor que la guía inicial.
+    this.guias = { saneamiento: { paso: 0, terminada: false },
+                   pluviales:   { paso: 0, terminada: false },
+                   residuos:    { paso: 0, terminada: false } };
     // Hitos ya contados. Cada uno se enseña UNA vez en toda la partida: si se
     // repitiera dejaría de ser un momento y pasaría a ser un estorbo.
     this.hitosVistos = [];
@@ -148,7 +153,7 @@ export class Estado {
       inventario: this.inventario, camara: this.camara,
       construcciones: this.construcciones, tuberias: this.tuberias,
       dnActual: this.dnActual, redActual: this.redActual,
-      averias: this.averias, tutorial: this.tutorial,
+      averias: this.averias, tutorial: this.tutorial, guias: this.guias,
       hitosVistos: this.hitosVistos
     };
     try{
@@ -231,6 +236,17 @@ export class Estado {
         });
       }
       if(estado.puebloActivo >= estado.pueblos.length) estado.puebloActivo = 0;
+
+      // Los capítulos por servicio: una partida vieja con el servicio YA
+      // abierto no ve el suyo — un veterano no necesita que le enseñen lo
+      // que lleva media partida haciendo, y la guía llegaría tarde.
+      estado.guias = d.guias ?? {
+        saneamiento: { paso: 0,
+          terminada: estado.pueblos.some(p => p.servicios?.saneamiento?.activo) },
+        pluviales:   { paso: 0, terminada: !!estado.pluvialesActivas },
+        residuos:    { paso: 0,
+          terminada: estado.pueblos.some(p => p.servicios?.residuos?.activo) }
+      };
 
       // La partida manda sobre la semilla: si llega de OTRO navegador (una
       // copia de seguridad pegada), el mapa del constructor puede ser de otra
