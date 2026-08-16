@@ -1154,6 +1154,15 @@ y la partida joven moría en espiral de multas — de ahí
 `bombeo.desbordeTope` (el derrame ensucia hasta un tope: es agua limpia).
 
 
+**Cazar láminas que faltan**: `comprobar_assets.mjs` expande las rutas de
+imagen que el código monta desde CONFIG (tarjetas de hito y logro, fichas de
+yacimiento, ruina y caserío) y comprueba que el archivo existe — el `onerror`
+esconde el hueco y sin esto solo se veía jugando, cuando llegaba el momento.
+`(await import('/comprobar_assets.mjs')).comprobar()` desde la consola. Tras
+añadir un hito, un logro o un tipo con lámina: correrlo. Las opcionales por
+diseño (música, voz, estampas de minijuego, épocas, caras de Manuel) quedan
+fuera a propósito.
+
 `main.js` expone `window.juego` con `estado`, `entrada`, `escena` y `CONFIG`.
 Desde la consola del navegador:
 

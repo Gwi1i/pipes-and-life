@@ -559,6 +559,20 @@ alegre: el agua que no se veía, saliendo donde no hay río.
 > chorro de agua clara saliendo por la boca del entubado, con dos operarios
 > celebrándolo y un pueblo pequeño al fondo entre lomas, *(+ coletilla)*
 
+## El traslado de concesión (`h_traslado.png`)
+
+Sale cuando la mancomunidad ya camina sola y otra comarca llama: la red se
+queda, la veteranía viaja contigo. Debe transmitir orgullo y despedida a la
+vez — mirar lo construido por última vez, con el territorio nuevo esperando:
+
+### `h_traslado.png`
+> Genera una imagen: un ingeniero veterano con su maletín y un tubo de
+> planos bajo el brazo, de espaldas en lo alto de un camino, despidiéndose
+> de un valle con varios pueblos conectados por conducciones de agua,
+> depósitos y una depuradora junto al río, mientras al otro lado del camino
+> se abre un valle nuevo sin urbanizar esperándole, con luz de amanecer,
+> *(+ coletilla)*
+
 ## La primera avería (`h_averia.png`)
 
 La tarjeta sale con la primera avería de la partida y explica la mecánica:
