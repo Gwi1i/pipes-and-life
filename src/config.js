@@ -97,7 +97,12 @@ export const CONFIG = {
     // (ver economia.tarifa). Con 1500 L bastaban dos clics para llenar la barra
     // y el juego se quedaba esperando: eso mataba la esencia.
     litrosPorClicBase: 450,
-    bufferSinDeposito: 4000
+    /* Subido de 4000 con la cirugía: sin la tienda, el primer depósito de
+       verdad tarda minutos (pieza + colina + tubería) y con 4000 el colchón
+       duraba 7,3 SEGUNDOS a 200 habitantes — el autor no soltaba el clic ni
+       para destapar teselas. La red heredada siempre tuvo su depósito
+       municipal pequeño; esto es ese depósito. */
+    bufferSinDeposito: 12000
   },
 
   /* ---------- LA CUADRILLA (mantenimiento, común) ----------
@@ -810,7 +815,9 @@ export const CONFIG = {
     depuradora: {
       nombre: 'Depuradora', coste: 2000, orden: 4, color: '#34d399',
       terreno: ['prado', 'pastizal'], junto: ['agua', 'lago'],
-      desc: 'Trata las aguas residuales antes de devolverlas al cauce.',
+      desc: 'Trata las aguas residuales antes de devolverlas al cauce. Va ' +
+            'pegada al agua porque AHÍ vierte lo tratado, ella sola: el ' +
+            'colector que te toca tender es el del pueblo hasta ella.',
       // Ficha divulgativa: esto no es texto de juego, es lo que
       // esta pieza ES de verdad. El objetivo del autor es que quien
       // juegue acabe sabiendo algo del oficio.

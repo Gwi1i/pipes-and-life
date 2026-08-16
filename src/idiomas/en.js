@@ -290,7 +290,9 @@ export const EN = {
           'filters. That is the other half of the service reservoir’s job. '
         } },
       depuradora: { nombre: 'Sewage plant',
-        desc: 'Treats wastewater before returning it to the river.',
+        desc: 'Treats wastewater before returning it to the river. It sits ' +
+              'by the water because THAT is where it discharges, on its own: ' +
+              'the sewer you must lay runs from the town to the plant.',
         ficha: {
           que: 'A wastewater treatment works. What you see are the circular ' +
           'clarifiers with their rotating scraper bridge, but that is only ' +
