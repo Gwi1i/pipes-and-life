@@ -15,6 +15,7 @@ import { capacidad, demandaMedia, caudalCaptacion, costeCuadrilla, nivelMaxPieza
          poderExpansion, redEstrangula, capacidadTratamiento,
          servicioActivo, nivelReciclaje, fraccionesActivas,
          faseActual, faltanParaFase, canonIncorporacion,
+         aguaBrutaLh, factorEstiaje, capacidadPotabilizacion,
          llenadoVaso, capacidadVaso, costeAmpliarVertedero,
          nivelMasa, pozosPorMasa, caudalPozo, caudalSostenible,
          desgloseProduccion, tasaFugasRed, costeAmpliarPieza,
@@ -830,7 +831,10 @@ export class UI {
     // ...y el de la ruta del camión, en la del vertedero
       + (obra && obra.tipo === 'vertedero'
         ? Math.ceil(((estado.rutaCamion || {}).hasta || 0) - estado.horas) : '');
-    const firma = obra ? `${obra.tipo},${obra.col},${obra.fila},${obra.nivel || 1},${Math.round(obra.lleno || 0)},${nivelPozo},${estadoObra},${nLineas},${turnoFirma}` : 'nada';
+    // El uso de las plantas cambia solo (crecen los pueblos, gira el año):
+    // sin él en la firma, el porcentaje se quedaba clavado en el del clic
+    const usoFirma = obra ? Math.round((this.usoDePlanta(estado, obra) || 0) * 100) : '';
+    const firma = obra ? `${obra.tipo},${obra.col},${obra.fila},${obra.nivel || 1},${Math.round(obra.lleno || 0)},${nivelPozo},${estadoObra},${nLineas},${turnoFirma},${usoFirma}` : 'nada';
     if(this.cache.obraFirma === firma) return;
     this.cache.obraFirma = firma;
 
@@ -894,6 +898,15 @@ export class UI {
         ${lineasAqui}
         ${turno}
         <p class="m-desc">${this.queAporta(obra.tipo, nivel, def.desc) || def.desc}</p>
+        ${(() => {
+          const uso = this.usoDePlanta(estado, obra);
+          if(uso == null) return '';
+          const pct = Math.round(uso * 100);
+          const clase = pct >= 95 ? 'critico' : pct >= 70 ? 'alarma' : 'ok';
+          return `<p class="m-desc">${t`Uso actual: trabaja al`}
+            <b class="${clase}">${pct} %</b>${pct >= 90
+              ? ' — ' + t`va justa: amplíala o construye otra.` : ''}</p>`;
+        })()}
         ${!ampliable ? '' : nivel >= nivelMaxPieza(obra.tipo)
           ? `<p class="m-desc">${t`Ampliada al máximo: si hace falta más, toca construir otra.`}</p>`
           : `<button class="mejora obra" data-accion="ampliarPieza" style="--tono:${def.color}">
@@ -1046,6 +1059,31 @@ export class UI {
       .find(k => CONFIG.redes[k].piezas.includes(obra.tipo));
     if(red && !casillaEnRed(estado, obra.col, obra.fila, red)) return 'suelta';
     return '';
+  }
+
+  /**
+   * El USO de las plantas, 0..1+ (petición del autor: al clicar la
+   * depuradora o la ETAP, saber si va justa y toca ampliar). Es la MEDIA
+   * sostenida — para decidir ampliaciones sirve el régimen; las puntas de
+   * lluvia ya las cuentan los avisos de la red. Devuelve null si la pieza
+   * no es una planta o no tiene capacidad que medir.
+   */
+  usoDePlanta(estado, obra){
+    if(obra.tipo === 'potabilizadora'){
+      const cap = capacidadPotabilizacion(estado);
+      if(cap <= 0) return null;
+      return aguaBrutaLh(estado, factorEstiaje(estado.horas)) / cap;
+    }
+    if(obra.tipo === 'depuradora'){
+      const cap = capacidadTratamiento(estado.activo, estado);
+      if(cap <= 0) return null;
+      let residualLh = 0;
+      for(const p of estado.pueblos)
+        if(p.desbloqueado && servicioActivo(p, 'saneamiento'))
+          residualLh += demandaMedia(p.habitantes) * 3600 * CONFIG.saneamiento.fraccionResidual;
+      return residualLh / cap;
+    }
+    return null;
   }
 
   /**

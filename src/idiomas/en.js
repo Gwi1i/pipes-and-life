@@ -1289,6 +1289,8 @@ export const EN = {
     'una ruta con el camión': 'a route with the truck',
     'El dedo ya no puede con tanta sed: eso no se arregla clicando más fuerte. Amplía la captación hasta que la producción se acerque al gasto, y deja el clic para las puntas.':
       'Your finger cannot keep up with this much thirst — and clicking harder will not fix it. Upgrade the intake until production comes close to demand, and save the clicks for the peaks.',
+    'Uso actual: trabaja al': 'Current use: running at',
+    'va justa: amplíala o construye otra.': 'running tight — upgrade it or build another.',
     '¡Ha aflorado: {0}!': 'Surfaced: {0}!',
     '¡{0} bajo la tesela! Excávalo y ponlo en valor, o rodéalo.':
       '{0} under the tile! Excavate it and put it on display, or route around it.',
