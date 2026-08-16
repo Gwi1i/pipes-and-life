@@ -376,6 +376,12 @@ export const CONFIG = {
     // Bajada de 14 (sensación del autor: el dinero se acumulaba demasiado
     // rápido a media partida; medido con el bot, fase 2 sigue en la banda).
     tarifa: 12.00,
+    /* LA NÓMINA: cada pueblo incorporado suma personal (petición del autor:
+       el dinero se acumulaba y comprar todo era fácil — al añadir pueblos
+       tienen que subir los gastos). El PRIMERO va incluido, la cuadrilla de
+       casa; cada incorporación añade su parte. Es el gasto fijo que escala
+       con la expansión, como en una mancomunidad de verdad. */
+    personalPorPuebloHora: 4,   // con 5, el bot daba fase 2 en 74 min: pasado
     horasPorSegundo: 0.4
   },
 
@@ -1728,6 +1734,51 @@ export const CONFIG = {
 
      `img` es `assets/h_<id>.jpg`; si no está, la tarjeta sale igual sin imagen. */
   hitos: {
+    /* --- Las PRIMERAS VECES (petición del autor): cuando el jugador
+       descubre algo nuevo por primera vez, tarjeta con su sonido contando
+       qué está pasando. Una vez cada una, como todos los hitos. --- */
+    arqueologia: {
+      titulo: 'Ha aflorado un yacimiento',
+      pasa: 'La zanja ha tropezado con restos enterrados: ahí abajo hay ' +
+            'historia, y las obras paran en el acto.',
+      hacer: 'Rodéalo... o EXCÁVALO desde su ficha y ponlo en valor: cada ' +
+             'yacimiento a la vista deja una renta.',
+      porque: 'Es ley y es rutina del oficio: toda obra con movimiento de ' +
+              'tierras vigila lo que aflora, y media España tiene algo ' +
+              'debajo. Los hay corrientes... y los hay que valen una fortuna.'
+    },
+    ruina: {
+      titulo: 'Una instalación abandonada',
+      pasa: 'La niebla escondía una obra vieja: alguien la levantó, alguien ' +
+            'la dejó.',
+      hacer: 'Clícala y decide: repararla en el sitio (más barato) o ' +
+             'desmontarla y llevártela al almacén para colocarla donde ' +
+             'convenga.',
+      porque: 'El mapa está lleno de instalaciones huérfanas: pueblos que ' +
+              'menguaron, concesiones que acabaron. Recuperar sale más ' +
+              'barato que construir — también aquí.'
+    },
+    crecimiento: {
+      titulo: 'El pueblo crece',
+      pasa: 'El buen servicio corre la voz: ha llegado gente nueva. La ' +
+            'población sube... y con ella la demanda.',
+      hacer: 'Vigila «Produce / gasta»: lo que hoy sobra, mañana no llega. ' +
+             'Más habitantes son más facturación — y más obra por delante.',
+      porque: 'Este es el motor del juego entero: servir bien, crecer, más ' +
+              'demanda, más red. Un abastecimiento no se termina nunca; por ' +
+              'eso el oficio tampoco.'
+    },
+    averia: {
+      titulo: 'Primera avería',
+      pasa: 'Algo se ha roto en el mapa: esa pieza deja de aportar hasta ' +
+            'que alguien vaya.',
+      hacer: 'Búscala (el aviso de arriba te lleva) y clícala varias veces: ' +
+             'cada golpe de llave cuesta dinero. El personal de ' +
+             'mantenimiento acaba los arreglos solo, con tiempo.',
+      porque: 'En una red de verdad las averías no son un fallo: son el día ' +
+              'a día. Lo roto está en un sitio concreto y alguien tiene que ' +
+              'ir — por eso las redes se diseñan para poder llegar.'
+    },
     traslado: {
       titulo: 'Te llaman de otra comarca',
       pasa: 'Tu mancomunidad ya camina sola, y tu nombre empieza a sonar: otra ' +

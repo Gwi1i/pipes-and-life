@@ -1041,6 +1041,12 @@ export function avanzar(estado, dt){
       luzHora += (CONFIG.energia.porHora[tipoPieza] || 0) * niveles;
   estado.dinero -= luzHora * dtHoras;
 
+  // LA NÓMINA: el personal crece con los pueblos servidos (el primero va
+  // incluido — la cuadrilla de casa). Es el gasto fijo que escala con la
+  // expansión: la palanca contra la caja infinita de media partida.
+  const nominaHora = Math.max(0, estado.pueblos.length - 1) * eco.personalPorPuebloHora;
+  estado.dinero -= nominaHora * dtHoras;
+
   estado.horas += dtHoras;
 
   return {
@@ -1054,6 +1060,7 @@ export function avanzar(estado, dt){
     suciedad,
     multa,
     luzHora,
+    nominaHora,
     frenoCrec,
     // El agua bruta contra lo potabilizado: el panel y los avisos beben de
     // aquí, no recalculan su propia versión.

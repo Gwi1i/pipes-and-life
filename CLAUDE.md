@@ -578,7 +578,10 @@ precisamente su trabajo.
 
 **Los HITOS paran el juego, y por eso son pocos.** `CONFIG.hitos` tiene una
 tarjeta por momento en que CAMBIA EL PROBLEMA: se abre el saneamiento, las
-pluviales, los residuos, entra el segundo pueblo. Cuenta tres cosas y en este
+pluviales, los residuos, entra el segundo pueblo. Y las PRIMERAS VECES
+(petición del autor): el primer yacimiento aflorado, la primera ruina, el
+primer crecimiento y la primera avería llevan tarjeta que explica qué está
+pasando — una vez cada una, con el sonido de `contarHito()`, como todo. Cuenta tres cosas y en este
 orden: qué ha pasado, qué hay que conseguir ahora y POR QUÉ importa. Ese tercero
 es el que justifica tapar la pantalla — es lo que el jugador se está preguntando
 justo en ese momento.

@@ -487,6 +487,50 @@ export const EN = {
     },
 
     hitos: {
+      arqueologia: {
+        titulo: 'A dig site has surfaced',
+        pasa: 'The trench has struck buried remains: there is history down ' +
+              'there, and the works stop on the spot.',
+        hacer: 'Route around it... or EXCAVATE it from its card and put it ' +
+               'on display: every unearthed site pays a steady rent.',
+        porque: 'It is the law and the daily routine of the trade: every ' +
+                'earthworks job watches what surfaces, and half the country ' +
+                'has something underneath. Some finds are ordinary... and ' +
+                'some are worth a fortune.'
+      },
+      ruina: {
+        titulo: 'An abandoned facility',
+        pasa: 'The fog was hiding old works: someone built this, someone ' +
+              'walked away.',
+        hacer: 'Click it and decide: repair it where it stands (cheaper) or ' +
+               'dismantle it into your depot to place it wherever suits you.',
+        porque: 'The map is full of orphaned facilities: towns that shrank, ' +
+                'concessions that ended. Recovering is cheaper than ' +
+                'building — here too.'
+      },
+      crecimiento: {
+        titulo: 'The town is growing',
+        pasa: 'Good service spreads the word: new people have arrived. The ' +
+              'population rises... and demand rises with it.',
+        hacer: 'Watch "Makes / uses": what is enough today will fall short ' +
+               'tomorrow. More people means more billing — and more works ' +
+               'ahead.',
+        porque: 'This is the engine of the whole game: serve well, grow, ' +
+                'more demand, more network. A water supply is never ' +
+                'finished; neither is the trade.'
+      },
+      averia: {
+        titulo: 'First breakdown',
+        pasa: 'Something broke out on the map: that piece contributes ' +
+              'nothing until someone goes there.',
+        hacer: 'Find it (the alert up top takes you) and click it several ' +
+               'times: every turn of the wrench costs money. Maintenance ' +
+               'staff will finish repairs on their own, given time.',
+        porque: 'In a real network breakdowns are not a failure: they are ' +
+                'the daily routine. What breaks sits in one concrete spot ' +
+                'and someone has to go — that is why networks are designed ' +
+                'so you can get there.'
+      },
       traslado: {
         titulo: 'Another county is calling',
         pasa: 'Your district can walk on its own now, and your name is getting ' +
@@ -930,8 +974,8 @@ export const EN = {
     'Demasiado lejos para la mancomunidad de hoy: incorpora {0} núcleos más cercanos y se abrirá este anillo.':
       'Too far for today’s district: bring in {0} closer towns and this ring will open.',
     'Abastecer este pueblo': 'Supply this town',
-    'Hay que haberle llevado antes una tubería. Al hacerlo entra en la mancomunidad.':
-      'You must have brought a pipe to it first. Doing so brings it into the district.',
+    'Hay que haberle llevado antes una tubería. Al hacerlo entra en la mancomunidad... y suma su personal: +{0} €/h de nómina.':
+      'You must have brought a pipe to it first. Doing so brings it into the district... and adds its staff: +€{0}/h in payroll.',
     'canon: {0} €': 'joining fee: {0} €',
     'Pide de media': 'Asks on average',
     'Servicio': 'Service',

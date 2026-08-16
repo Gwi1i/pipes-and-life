@@ -952,6 +952,7 @@ function procesarAcciones(){
  */
 function tropiezoArqueologico(col, fila){
   if(!aflorarArqueologia(estado.mapa, col, fila)) return false;
+  contarHito('arqueologia');   // la primera vez, tarjeta: qué es y qué se hace
   estado.seleccion = { col, fila };
   estado.modo.trazado = [];
   const tipoA = tipoYacimiento(celdaEn(estado.mapa, col, fila));
@@ -1115,6 +1116,8 @@ function anunciarHallazgo(celda, col, fila){
     mostrarDescubierto(celda, col, fila);
     return;
   }
+  // La primera ruina merece su tarjeta: qué es y qué decisión trae
+  if(celda.hallazgo === 'ruina') contarHito('ruina');
   const textos = {
     ruina:      t`Instalación abandonada. Se podrá reparar o llevar al inventario.`,
     senal:      t`Una señal de camino: apunta al pueblo más cercano por descubrir.`,
@@ -1198,6 +1201,7 @@ function tickAverias(dtHoras){
   avisar(t`¡Avería en ${def.nombre}! Ve al mapa y clica encima.`);
   sonido.averia();
   ui.caraGuia('mal');
+  contarHito('averia');   // la primera, con tarjeta: qué ha pasado y qué se hace
 }
 
 /** Golpes de llave que pide una avería. El personal contratado deja menos faena. */
@@ -1251,6 +1255,10 @@ function anotarCrecimiento(){
     if(!p.desbloqueado) continue;
     const ahora = Math.floor(p.habitantes);
     const antes = habPrev[i];
+    // El PRIMER crecimiento de la partida lleva tarjeta (petición del autor:
+    // que la primera vez que pasa algo nuevo se explique qué está pasando).
+    // contarHito ya garantiza que es una sola vez en toda la partida.
+    if(ahora > antes) contarHito('crecimiento');
     const nivelAhora = nivelCaserio(ahora), nivelAntes = nivelCaserio(antes);
     // La línea de cada centena se calla si en este mismo paso hay cambio de
     // escalón: el aviso de escalón ya dice el número, y dos líneas seguidas

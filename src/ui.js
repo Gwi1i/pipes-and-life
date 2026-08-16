@@ -735,7 +735,8 @@ export class UI {
           : `<button class="mejora obra" data-accion="abastecerPueblo" style="--tono:${H.color.pueblo}">
                <span class="m-cab"><span class="m-nom">${t`Abastecer este pueblo`}</span></span>
                <span class="m-desc">${t`Hay que haberle llevado antes una tubería. Al
-                 hacerlo entra en la mancomunidad.`}</span>
+                 hacerlo entra en la mancomunidad... y suma su personal:
+                 +${CONFIG.economia.personalPorPuebloHora} €/h de nómina.`}</span>
                <span class="m-coste">${t`canon: ${formatear(canonIncorporacion(estado))} €`}</span>
              </button>`}`;
     }
