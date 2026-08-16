@@ -1066,8 +1066,12 @@ export class UI {
   aporteBase(tipo, nivel, P){
     switch(tipo){
       case 'captacion':
-        return t`Aporta <b>${(nivel * P.captacion).toFixed(2)} L/s</b> de producción
-                continua al pueblo, sin clicar.`;
+        // "A pleno caudal": el bruto de la pieza. El neto (tras estiaje,
+        // tubería y fugas) lo cuenta el desglose — sin este matiz, la ficha
+        // decía 1,80 y el HUD 1,19 y parecía un fallo (lo cazó el autor).
+        return t`Aporta <b>${(nivel * P.captacion).toFixed(2)} L/s</b> a pleno caudal,
+                sin clicar. Lo que llega tras estiaje, tubería y fugas lo
+                desglosa «De dónde sale el agua».`;
       case 'bomba':
         return t`Suma <b>${formatear(nivel * P.bomba)} L</b> a cada clic de bombeo.`;
       case 'deposito':

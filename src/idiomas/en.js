@@ -1026,8 +1026,8 @@ export const EN = {
       'The tile is freed and the demolition recovers {0} €.',
 
     /* --- Qué aporta cada pieza --- */
-    'Aporta <b>{0} L/s</b> de producción continua al pueblo, sin clicar.':
-      'It contributes <b>{0} L/s</b> of continuous production, no clicking.',
+    'Aporta <b>{0} L/s</b> a pleno caudal, sin clicar. Lo que llega tras estiaje, tubería y fugas lo desglosa «De dónde sale el agua».':
+      'It contributes <b>{0} L/s</b> at full flow, no clicking. What actually arrives after low flow, pipe limits and leaks is broken down in “Where the water comes from”.',
     'Suma <b>{0} L</b> a cada clic de bombeo.': 'It adds <b>{0} L</b> to every pump click.',
     'Añade <b>{0} L</b> de capacidad de reserva.': 'It adds <b>{0} L</b> of reserve capacity.',
     'Potabiliza <b>{0} L/h</b> de agua bruta del río o de pozos exprimidos. Sin tratar, esa agua frena el crecimiento.':
