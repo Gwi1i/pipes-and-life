@@ -1274,6 +1274,7 @@ export const EN = {
       '{0}: level {1}. Fewer wrench blows and faster self-repairs.',
     '{0}: ya está al completo.': '{0}: already at full strength.',
     'Agua facturada': 'Water billed',
+    'Agua servida sin cobrar (impagos)': 'Water served but never paid for',
     'Residuos (venta menos vertido)': 'Waste (sales minus landfill)',
     'Rentas de yacimientos': 'Dig site rents',
     'La luz de las instalaciones': 'Facility power bills',

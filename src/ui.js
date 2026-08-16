@@ -1678,8 +1678,10 @@ export class UI {
     const c = resultado.caja;
     const neto = c.facturado + c.residuos + c.yacimientos
                - c.luz - c.nomina - c.multaCauce - c.multaZec;
-    const firma = [c.facturado, c.residuos, c.yacimientos, c.luz, c.nomina,
-                   c.multaCauce, c.multaZec].map(v => Math.round(v * 10)).join(',');
+    // Los impagos van en la firma pero NO en el balance: no son un gasto,
+    // son ingreso que nunca llegó (el facturado ya viene sin ellos)
+    const firma = [c.facturado, c.impagos || 0, c.residuos, c.yacimientos, c.luz,
+                   c.nomina, c.multaCauce, c.multaZec].map(v => Math.round(v * 10)).join(',');
     if(this.cache.cajaFirma === firma) return;
     this.cache.cajaFirma = firma;
 
@@ -1692,6 +1694,7 @@ export class UI {
     cont.innerHTML = `
       <div class="casilla-fila"><span>${t`Agua facturada`}</span>
         <b>+${fmt(c.facturado)} €/h</b></div>
+      ${fila(t`Agua servida sin cobrar (impagos)`, c.impagos || 0, true)}
       ${fila(t`Residuos (venta menos vertido)`, c.residuos)}
       ${fila(t`Rentas de yacimientos`, c.yacimientos)}
       ${fila(t`La luz de las instalaciones`, c.luz, true)}

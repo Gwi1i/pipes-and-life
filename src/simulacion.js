@@ -816,7 +816,9 @@ function avanzarPueblo(estado, p, dt, dtHoras, punta, estiaje, frenoCrec, lluvia
   p.agua -= servido;
 
   const m3 = servido / 1000;
-  const facturado = m3 * CONFIG.economia.tarifa;
+  // No se factura el 100% de lo servido (impagos, subcontaje): tasaCobro
+  const facturado = m3 * CONFIG.economia.tarifa * CONFIG.economia.tasaCobro;
+  const impagado = m3 * CONFIG.economia.tarifa * (1 - CONFIG.economia.tasaCobro);
   estado.dinero += facturado;
   estado.m3Servidos += m3;
 
@@ -920,7 +922,7 @@ function avanzarPueblo(estado, p, dt, dtHoras, punta, estiaje, frenoCrec, lluvia
   return {
     residual, recienSaneamiento, serviciosNuevos,
     // Los euros de ESTE paso, para el desglose de la caja (se suman fuera)
-    facturado, ingresoResiduos,
+    facturado, impagado, ingresoResiduos,
     res: {
       servicio, demandaAhora: dem * punta, punta, estiaje,
       prodLps: dt > 0 ? entrada / dt : 0,
@@ -994,7 +996,7 @@ export function avanzar(estado, dt){
   const saneamientoNuevo = [];
   const serviciosNuevos = [];
   // El desglose de la caja: los flujos de TODA la mancomunidad, en €/h
-  let facturadoPaso = 0, residuosPaso = 0;
+  let facturadoPaso = 0, residuosPaso = 0, impagadoPaso = 0;
 
   for(let i = 0; i < estado.pueblos.length; i++){
     const p = estado.pueblos[i];
@@ -1002,6 +1004,7 @@ export function avanzar(estado, dt){
     const out = avanzarPueblo(estado, p, dt, dtHoras, punta, estiaje, frenoCrec, lluvia);
     totalResidual += out.residual;
     facturadoPaso += out.facturado || 0;
+    impagadoPaso += out.impagado || 0;
     residuosPaso += out.ingresoResiduos || 0;
     if(out.recienSaneamiento) saneamientoNuevo.push(p.nombre);
     // Los servicios que se acaban de abrir suben hasta aquí para que `main.js`
@@ -1079,6 +1082,7 @@ export function avanzar(estado, dt){
        entra — es facturación igual, y ya se ve entrar en la caja. */
     caja: {
       facturado: dtHoras > 0 ? facturadoPaso / dtHoras : 0,
+      impagos:   dtHoras > 0 ? impagadoPaso / dtHoras : 0,
       residuos:  dtHoras > 0 ? residuosPaso / dtHoras : 0,
       yacimientos: rentaYacimientos(estado),
       luz: luzHora,

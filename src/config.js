@@ -326,6 +326,12 @@ export const CONFIG = {
     // Bajada de 14 (sensación del autor: el dinero se acumulaba demasiado
     // rápido a media partida; medido con el bot, fase 2 sigue en la banda).
     tarifa: 12.00,
+    /* Dicho por el autor, que es del oficio: "no se factura el 100% de lo
+       que se extrae". La primera mitad del hueco ya la modelan las FUGAS
+       (extraído ≠ entregado); esta tasa es la segunda: de lo SERVIDO, una
+       parte no se cobra — impagos de quien no puede o no quiere pagar,
+       contadores que subcuentan, tomas sin contador. */
+    tasaCobro: 0.94,
     /* LA NÓMINA: cada pueblo incorporado suma personal (petición del autor:
        el dinero se acumulaba y comprar todo era fácil — al añadir pueblos
        tienen que subir los gastos). El PRIMERO va incluido, la cuadrilla de
