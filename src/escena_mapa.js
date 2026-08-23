@@ -14,7 +14,7 @@ import { CONFIG } from './config.js';
 import { celdaEn, clicsParaDestapar, esAlcanzable, puedeColocar,
          puedeSeguirTrazado, costeTrazado, costeCasillaTuberia,
          diametro, nivelDiametro, redDe, casillaEnRed,
-         construccionesConectadas, averiaEn,
+         construccionesConectadas, averiaEn, lineasConectadas,
          nucleoMasCercano, nombreDeNucleo } from './mapa.js';
 import { poderExpansion, llenadoVaso, factorEstiaje,
          capacidad, escalonCaserio } from './simulacion.js';
@@ -1372,6 +1372,7 @@ export class EscenaMapa extends Escena {
     if(!estado.tuberias.length) return;
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
 
+    const vivas = this.lineasVivas(estado);
     const ordenRedes = Object.keys(CONFIG.redes);
     for(const tub of estado.tuberias){
       const clave = redDe(tub);
@@ -1415,10 +1416,56 @@ export class EscenaMapa extends Escena {
       this.trazo(pts);
       ctx.restore();
 
-      // 4. lo que lleva dentro
+      // 4. lo que lleva dentro — pero solo si la línea TRABAJA: por un tubo
+      //    suelto no corre nada, y esa quietud es el aviso de que algo falta
+      const sentido = vivas.get(tub);
       if(R.esVial) this.marcaVial(pts, ancho);
-      else this.gotasEnRuta(pts, ancho, R.color);
+      else if(sentido) this.gotasEnRuta(pts, ancho, R.color, sentido);
     }
+  }
+
+  /**
+   * Qué líneas están ENGANCHADAS a la red de su pueblo, y en qué SENTIDO corre
+   * el agua por cada una. Por una línea suelta no corre nada — las gotas en
+   * movimiento son información, no adorno: si se mueven, ese tubo trabaja.
+   * El sentido es el del oficio: el abastecimiento fluye HACIA el pueblo y el
+   * saneamiento y las pluviales DESDE él. Se decide mirando qué extremo del
+   * camino queda más cerca de un pueblo incorporado — con mallas raras puede
+   * fallar, pero para leer el mapa basta y sale gratis.
+   * El recorrido de red es caro: misma receta de cache que piezasSueltas.
+   */
+  lineasVivas(estado){
+    const firma = estado.tuberias.length + ':' + estado.construcciones.length
+                + ':' + estado.averias.length + ':'
+                + estado.pueblos.filter(p => p.desbloqueado).length;
+    if(this._vivasFirma === firma) return this._vivas;
+    this._vivasFirma = firma;
+    this._vivas = new Map();
+    const nucleos = [];
+    for(const p of estado.pueblos)
+      if(p.desbloqueado && p.col !== undefined) nucleos.push(p);
+    const distNucleo = (punto) => {
+      let mejor = Infinity;
+      for(const n of nucleos)
+        mejor = Math.min(mejor, Math.hypot(punto.col - n.col, punto.fila - n.fila));
+      return mejor;
+    };
+    for(const [clave, r] of Object.entries(CONFIG.redes)){
+      if(r.esVial){
+        // La carretera no lleva sentido: su marca vial es estática
+        for(const { tuberia } of lineasConectadas(estado, clave))
+          this._vivas.set(tuberia, 1);
+        continue;
+      }
+      for(const { tuberia } of lineasConectadas(estado, clave)){
+        const cam = tuberia.camino;
+        const haciaElFinal = distNucleo(cam[cam.length - 1]) <= distNucleo(cam[0]);
+        // Abastecimiento: hacia el pueblo. Las redes que EVACÚAN, al revés.
+        const sentido = (clave === 'abastecimiento') === haciaElFinal ? 1 : -1;
+        this._vivas.set(tuberia, sentido);
+      }
+    }
+    return this._vivas;
   }
 
   /** Marca vial discontinua, para que la carretera no parezca un tubo gris. */
@@ -1432,11 +1479,15 @@ export class EscenaMapa extends Escena {
     ctx.restore();
   }
 
-  /** Gotas viajando por dentro, para que se vea que la tubería lleva agua. */
-  gotasEnRuta(pts, ancho, color){
+  /** Gotas viajando por dentro, para que se vea que la tubería lleva agua —
+   *  en el sentido en que el agua va de verdad (lo decide lineasVivas). */
+  gotasEnRuta(pts, ancho, color, sentido = 1){
     const ctx = this.ctx;
     ctx.fillStyle = aclarar(color, 0.55);
-    const sep = ancho * 3.2, desfase = (this.tiempo * 34) % sep;
+    const G = CONFIG.estiloMapa.gotas;
+    const sep = ancho * G.separacion;
+    let desfase = (this.tiempo * G.velocidad * this.zoom * sentido) % sep;
+    if(desfase < 0) desfase += sep;
     let acum = -desfase;
     for(let i = 0; i < pts.length - 1; i++){
       const a = pts[i], b = pts[i + 1];

@@ -692,6 +692,15 @@ export const CONFIG = {
        demás (pregunta del autor: se solapaban, sí). El orden del carril es
        el de CONFIG.redes. */
     carril: 0.11,           // separación entre redes, en fracción de casilla
+    /* Las GOTAS que viajan por las tuberías. Solo corren por líneas
+       CONECTADAS (un tubo suelto se dibuja seco: el agua en movimiento es
+       información, no adorno) y llevan el sentido del agua de verdad: el
+       abastecimiento HACIA el pueblo, el saneamiento y las pluviales DESDE
+       él. */
+    gotas: {
+      velocidad: 34,        // píxeles por segundo a zoom 1
+      separacion: 3.2       // distancia entre gotas, en anchos de tubería
+    },
     /* TINTA: contorno oscuro en las aristas de las edificaciones, como en el
        resto del arte del juego (residuos, contenedores, piezas del
        minijuego). 0 lo apaga. */
