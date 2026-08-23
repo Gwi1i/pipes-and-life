@@ -341,6 +341,20 @@ export const CONFIG = {
     horasPorSegundo: 0.4
   },
 
+  /* ---------- EL TACTO ----------
+     Vibración en móvil, SOLO en los momentos que ya son especiales — los que
+     tienen sonido propio: la tarjeta, el pueblo descubierto, la incorporación
+     y la avería reparada. Nunca en el clic de bombear: el gesto más repetido
+     del juego convertido en taladradora. Patrones en milisegundos
+     ([vibra, pausa, vibra...]); donde no hay vibrador (escritorio, iPhone) el
+     navegador lo ignora sin más. */
+  tacto: {
+    hito:        [45, 60, 45],         // la tarjeta que para el juego
+    descubierto: [30, 40, 30, 40, 60], // ¡un pueblo en el mapa!
+    pueblo:      [40, 50, 40, 50, 90], // la incorporación, el momentazo
+    reparada:    [25, 35, 50]          // la avería resuelta: alivio corto
+  },
+
   /* ---------- SONIDO ----------
      Sintetizado entero (src/sonido.js): aquí solo los mandos de volumen. Los
      "parches" de cada efecto —frecuencias, envolventes— son decisiones
