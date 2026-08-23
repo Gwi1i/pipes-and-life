@@ -587,6 +587,9 @@ function procesarAcciones(){
         estado.anotar(t`${nuevo.nombre} entra en la mancomunidad: ya recibe agua.`, 'ok');
         avisar(t`¡${nuevo.nombre} incorporado! (${estado.pueblos.length} núcleos)`);
         sonido.pueblo();
+        // La fiesta: incorporar es EL momento del juego y se despachaba con
+        // una línea de registro. Anillos y confeti sobre el núcleo.
+        escena.celebrarIncorporacion(sel.col, sel.fila);
         ui.reconstruirPestanas(estado);
         contarHito('mancomunidad');
         if(faseActual(estado) > faseAntes){

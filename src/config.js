@@ -701,6 +701,13 @@ export const CONFIG = {
       velocidad: 34,        // píxeles por segundo a zoom 1
       separacion: 3.2       // distancia entre gotas, en anchos de tubería
     },
+    /* La FIESTA de incorporar un pueblo: anillos y confeti sobre el núcleo.
+       Incorporar es EL momento del juego —el canon, la fase, el mapa que
+       crece— y hasta ahora se despachaba con una línea de registro. */
+    fiesta: {
+      duracion: 2.6,        // segundos de celebración
+      particulas: 26        // papeles de confeti por fiesta
+    },
     /* TINTA: contorno oscuro en las aristas de las edificaciones, como en el
        resto del arte del juego (residuos, contenedores, piezas del
        minijuego). 0 lo apaga. */

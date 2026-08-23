@@ -33,6 +33,16 @@ export class EscenaMapa extends Escena {
     this.golpe = 0;
     this.centrada = false;
     this.resaltada = null;    // { col, fila } bajo el cursor
+    this.fiestas = [];        // celebraciones de incorporación en curso
+  }
+
+  /**
+   * La FIESTA de incorporar: anillos y confeti sobre el núcleo recién entrado.
+   * Va en coordenadas de MAPA, no de pantalla: si el jugador arrastra la
+   * cámara a mitad de celebración, el confeti se queda con su pueblo.
+   */
+  celebrarIncorporacion(col, fila){
+    this.fiestas.push({ col, fila, t: 0 });
   }
 
   /** Píxeles por casilla al zoom actual. */
@@ -170,6 +180,55 @@ export class EscenaMapa extends Escena {
     this.velosDeAmbiente();
     this.dibujarAverias(estado);
     this.destellosClic();
+    this.dibujarFiestas(estado, dt);
+  }
+
+  /**
+   * El confeti es DETERMINISTA: cada papel sale de su índice (ángulo y
+   * velocidad por seno-hash) y su posición se calcula del tiempo, sin estado
+   * por partícula. Así la fiesta no reserva memoria y se recicla sola.
+   */
+  dibujarFiestas(estado, dt){
+    if(!this.fiestas.length) return;
+    const F = CONFIG.estiloMapa.fiesta;
+    this.fiestas = this.fiestas.filter(f => (f.t += dt) < F.duracion);
+    const ctx = this.ctx, t = this.tam;
+    const colores = ['#f5b544', '#7dd3fc', '#a7f3d0', '#fda4af', '#fef9c3'];
+    for(const f of this.fiestas){
+      const cx = f.col * t - estado.camara.x + t / 2;
+      const cy = f.fila * t - estado.camara.y + t / 2;
+      const k = f.t / F.duracion;             // 0..1 de la celebración
+      // Dos anillos que se expanden, dorado y blanco, desfasados
+      for(const [desfase, color] of [[0, '#f5b544'], [0.18, '#ffffff']]){
+        const kk = (k - desfase) / (1 - desfase);
+        if(kk <= 0) continue;
+        ctx.globalAlpha = (1 - kk) * 0.7;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = Math.max(2, t * 0.06 * (1 - kk));
+        ctx.beginPath();
+        ctx.arc(cx, cy, t * (0.3 + kk * 2.2), 0, 7);
+        ctx.stroke();
+      }
+      // El confeti: sale disparado, frena y cae
+      for(let i = 0; i < F.particulas; i++){
+        const azar = Math.abs(Math.sin(i * 127.1 + f.col * 3.7 + f.fila * 1.3));
+        const ang = (i / F.particulas) * Math.PI * 2 + azar;
+        const vel = t * (1.6 + azar * 2.2);
+        const frenado = 1 - Math.exp(-f.t * 2.4);
+        const px = cx + Math.cos(ang) * vel * frenado * 0.62;
+        const py = cy + Math.sin(ang) * vel * frenado * 0.62
+                 + f.t * f.t * t * 0.85;      // la gravedad, sencilla
+        ctx.globalAlpha = Math.max(0, 1 - k * 1.15);
+        ctx.fillStyle = colores[i % colores.length];
+        ctx.save();
+        ctx.translate(px, py);
+        ctx.rotate(azar * 6 + f.t * (2 + azar * 3));
+        const lado = Math.max(2, t * (0.05 + azar * 0.05));
+        ctx.fillRect(-lado / 2, -lado / 2, lado, lado * 0.6);
+        ctx.restore();
+      }
+    }
+    ctx.globalAlpha = 1;
   }
 
   /* ---------- casilla descubierta ---------- */
