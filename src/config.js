@@ -722,6 +722,17 @@ export const CONFIG = {
       duracion: 2.6,        // segundos de celebración
       particulas: 26        // papeles de confeti por fiesta
     },
+    /* El CUELLO DE BOTELLA se señala a sí mismo: cuando una red está
+       limitada AHORA (el agua captada no cabe por la conducción, el
+       colector rebosa), sus tramos más estrechos llevan una marca roja
+       marchante. El mapa es el diagnóstico: se mira y se sabe qué renovar,
+       sin abrir ningún panel. */
+    cuello: {
+      color: '#ef4444',     // el rojo de alarma del juego
+      alfa: 0.8,            // opacidad máxima del pulso
+      velocidad: 26,        // marcha de la raya, px/s a zoom 1
+      cadaSegundos: 1       // cada cuánto se re-mira si la red sigue limitada
+    },
     /* TINTA: contorno oscuro en las aristas de las edificaciones, como en el
        resto del arte del juego (residuos, contenedores, piezas del
        minijuego). 0 lo apaga. */

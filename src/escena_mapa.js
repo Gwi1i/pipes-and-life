@@ -17,7 +17,7 @@ import { celdaEn, clicsParaDestapar, esAlcanzable, puedeColocar,
          construccionesConectadas, averiaEn, lineasConectadas,
          nucleoMasCercano, nombreDeNucleo } from './mapa.js';
 import { poderExpansion, llenadoVaso, factorEstiaje,
-         capacidad, escalonCaserio } from './simulacion.js';
+         capacidad, escalonCaserio, redEstrangula } from './simulacion.js';
 import { formatear } from './util.js';
 import { limitar } from './util.js';
 import { Escena, mezclarColor, oscurecer, aclarar } from './escena.js';
@@ -1480,7 +1480,30 @@ export class EscenaMapa extends Escena {
       const sentido = vivas.get(tub);
       if(R.esVial) this.marcaVial(pts, ancho);
       else if(sentido) this.gotasEnRuta(pts, ancho, R.color, sentido);
+
+      // 5. el CUELLO DE BOTELLA se señala: si esta red está limitada AHORA y
+      //    este es uno de sus tramos más estrechos, raya roja marchante.
+      //    El mapa es el diagnóstico: se mira y se sabe qué renovar.
+      if(!R.esVial && sentido
+         && (this._estrechas.get(clave) || []).includes(tub)
+         && this.redLimitada(estado, clave))
+        this.marcaCuello(pts, ancho);
     }
+  }
+
+  /** La raya del cuello: discontinua, roja, marchando y con pulso — la misma
+   *  gramática que la avería: rojo que se mueve = esto te está costando. */
+  marcaCuello(pts, ancho){
+    const ctx = this.ctx, C = CONFIG.estiloMapa.cuello;
+    ctx.save();
+    const pulso = 0.55 + 0.45 * Math.sin(this.tiempo * 5);
+    ctx.globalAlpha = C.alfa * pulso;
+    ctx.strokeStyle = C.color;
+    ctx.lineWidth = Math.max(1.5, ancho * 0.30);
+    ctx.setLineDash([ancho * 0.9, ancho * 0.7]);
+    ctx.lineDashOffset = -this.tiempo * C.velocidad * this.zoom;
+    this.trazo(pts);
+    ctx.restore();
   }
 
   /**
@@ -1500,6 +1523,7 @@ export class EscenaMapa extends Escena {
     if(this._vivasFirma === firma) return this._vivas;
     this._vivasFirma = firma;
     this._vivas = new Map();
+    this._estrechas = new Map();   // red -> sus tramos más estrechos
     const nucleos = [];
     for(const p of estado.pueblos)
       if(p.desbloqueado && p.col !== undefined) nucleos.push(p);
@@ -1516,15 +1540,44 @@ export class EscenaMapa extends Escena {
           this._vivas.set(tuberia, 1);
         continue;
       }
-      for(const { tuberia } of lineasConectadas(estado, clave)){
+      const conectadas = lineasConectadas(estado, clave);
+      for(const { tuberia } of conectadas){
         const cam = tuberia.camino;
         const haciaElFinal = distNucleo(cam[cam.length - 1]) <= distNucleo(cam[0]);
         // Abastecimiento: hacia el pueblo. Las redes que EVACÚAN, al revés.
         const sentido = (clave === 'abastecimiento') === haciaElFinal ? 1 : -1;
         this._vivas.set(tuberia, sentido);
       }
+      // Los tramos MÁS ESTRECHOS de cada red: los candidatos a cuello de
+      // botella. Si la red está limitada, son ellos los que se señalan.
+      if(conectadas.length){
+        const nivel = (tb) => nivelDiametro(tb.dn, clave);
+        const peor = Math.min(...conectadas.map(({ tuberia }) => nivel(tuberia)));
+        this._estrechas.set(clave,
+          conectadas.filter(({ tuberia }) => nivel(tuberia) === peor)
+                    .map(({ tuberia }) => tuberia));
+      }
     }
     return this._vivas;
+  }
+
+  /**
+   * ¿Está esta red LIMITADA ahora mismo? Abastecimiento: el agua captada no
+   * cabe por la conducción (redEstrangula). Saneamiento: el colector rebosa
+   * (lo dice el resultado del paso). La cuenta de estrangular no es gratis,
+   * así que se re-mira cada CONFIG.estiloMapa.cuello.cadaSegundos y no por
+   * fotograma.
+   */
+  redLimitada(estado, clave){
+    const C = CONFIG.estiloMapa.cuello;
+    if(this.tiempo - (this._limitadaVez || -99) > C.cadaSegundos){
+      this._limitadaVez = this.tiempo;
+      this._limitada = {
+        abastecimiento: redEstrangula(estado.activo, estado),
+        saneamiento: !!(this._res && this._res.rebosando)
+      };
+    }
+    return !!(this._limitada && this._limitada[clave]);
   }
 
   /** Marca vial discontinua, para que la carretera no parezca un tubo gris. */
