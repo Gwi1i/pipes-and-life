@@ -991,6 +991,9 @@ function colocarElemento(col, fila){
   }
   estado.construcciones.push({ tipo: clave, col, fila, nivel: 1,
                                nombre: bautizarObra(estado.construcciones, clave) });
+  // La página del libro del oficio: construir un tipo por primera vez es
+  // conocerlo, y derribar no des-aprende
+  if(!estado.conocidas.includes(clave)) estado.conocidas.push(clave);
   // Los guiños de la escena, al colocar la PRIMERA pieza de cada tipo (antes
   // vivían en la tienda, que murió con la cirugía)
   if(estado.construcciones.filter(o => o.tipo === clave).length === 1){
@@ -1049,6 +1052,7 @@ function accionRuina(desmontar){
     estado.pagar(coste);
     estado.construcciones.push({ tipo, col: sel.col, fila: sel.fila, nivel: 1,
                                  nombre: bautizarObra(estado.construcciones, tipo) });
+    if(!estado.conocidas.includes(tipo)) estado.conocidas.push(tipo);
     estado.anotar(t`${def.nombre} recuperado y puesto en marcha por ${formatear(coste)} €.`, 'ok');
   } else {
     estado.pagar(coste);

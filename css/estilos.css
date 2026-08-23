@@ -178,6 +178,10 @@ button{touch-action:manipulation;}
 }
 .ficha[open] .ficha-resumen{margin-bottom:8px;}
 .ficha-resumen:hover{filter:brightness(1.25);}
+/* El libro del oficio: las páginas por conocer, en penumbra — que se vea
+   cuánto queda por aprender es el coleccionismo. */
+#libro .libro-cerrada{opacity:.5;}
+#libro .ficha{margin:4px 0;}
 .ficha-dib{
   display:block; width:100%; height:auto; border-radius:4px;
   border:1px solid var(--linea-viva); margin-bottom:9px; background:#0d1a26;

@@ -1155,7 +1155,7 @@ export class UI {
    * propósito para que se pueda leer sin ruido y para que sea evidente, al
    * añadir una pieza nueva, que también hay que explicarla.
    */
-  fichaHTML(def, clave, abierta = false){
+  fichaHTML(def, clave, abierta = false, titulo = null){
     if(!def || !def.ficha) return '';
     const f = def.ficha;
     // El DIAGRAMA va primero y es lo que hace que se lea lo de abajo. Un muro de
@@ -1170,7 +1170,7 @@ export class UI {
     // que es cuando apetece leerla. <details> nativo: cero cableado.
     return `
       <details class="ficha" style="--tono:${def.color}" ${abierta ? 'open' : ''}>
-        <summary class="ficha-resumen">${t`¿Qué es esto?`}</summary>
+        <summary class="ficha-resumen">${titulo || t`¿Qué es esto?`}</summary>
         ${dib}
         <p class="ficha-tit">${t`¿Qué es?`}</p>
         <p class="ficha-txt">${f.que}</p>
@@ -1567,6 +1567,55 @@ export class UI {
       </button>`;
   }
 
+  /**
+   * EL LIBRO DEL OFICIO: las fichas divulgativas coleccionadas. Se desbloquean
+   * CONSTRUYENDO (estado.conocidas): conocer el oficio es haber levantado sus
+   * piezas, y derribar no des-aprende. Los escalones del caserío entran cuando
+   * algún pueblo tuyo alcanza ese tamaño. Cada página es un <details> plegado
+   * con el nombre de la pieza — la regla de escala, de serie: doce líneas de
+   * una altura, no doce fichas abiertas. Las páginas por conocer salen como
+   * «???»: que se vea cuánto oficio queda por aprender es el coleccionismo.
+   */
+  refrescarLibro(estado){
+    const cont = document.getElementById('libro');
+    if(!cont) return;
+    const piezas = Object.entries(CONFIG.construibles)
+      .filter(([, def]) => def.ficha)
+      .sort((a, b) => (a[1].orden || 99) - (b[1].orden || 99));
+    const escalones = CONFIG.caserio.escalones.filter(e => e.ficha);
+    const maxHab = Math.max(0, ...estado.pueblos
+      .filter(p => p.desbloqueado).map(p => p.habitantes || 0));
+    const escalonMax = escalones.findLastIndex(e => escalonCaserio(maxHab) === e);
+    const sabidas = piezas.filter(([clave]) => estado.conocidas.includes(clave)).length;
+    const total = piezas.length + escalones.length;
+    const firma = `${sabidas}:${escalonMax}`;
+    if(this.cache.libroFirma === firma) return;
+    this.cache.libroFirma = firma;
+
+    const porConocer = `<span class="m-nivel">???</span>`;
+    const paginas = piezas.map(([clave, def]) =>
+      estado.conocidas.includes(clave)
+        ? this.fichaHTML(def, clave, false, def.nombre)
+        : `<p class="m-desc libro-cerrada">${porConocer} ${t`Se conoce construyéndola.`}</p>`
+    ).join('');
+    const tamanos = escalones.map((esc, i) =>
+      i <= escalonMax
+        ? `<details class="ficha" style="--tono:#e7d8b0">
+             <summary class="ficha-resumen">${esc.titulo[0].toUpperCase() + esc.titulo.slice(1)}</summary>
+             <p class="ficha-txt">${esc.ficha}</p>
+           </details>`
+        : `<p class="m-desc libro-cerrada">${porConocer} ${t`Se conoce cuando un pueblo tuyo llega a ese tamaño.`}</p>`
+    ).join('');
+
+    cont.innerHTML = `
+      <p class="m-desc">${t`Lo que el oficio te ha enseñado, pieza a pieza:
+        ${sabidas + Math.max(0, escalonMax + 1)} de ${total} páginas escritas.
+        Las que faltan se aprenden construyendo.`}</p>
+      ${paginas}
+      <p class="m-desc" style="margin-top:0.6em"><b>${t`Los tamaños de un núcleo`}</b></p>
+      ${tamanos}`;
+  }
+
   /* ---------------- FUNCIÓN ESPECIAL: AUTO-BOMBEO (del pueblo activo) ------ */
 
   construirPremium(){
@@ -1956,6 +2005,7 @@ export class UI {
     this.refrescarPremium(estado);
     this.refrescarAverias(estado);
     this.refrescarExpediente(estado);
+    this.refrescarLibro(estado);
     this.refrescarCauce(estado, resultado);
     this.refrescarCaja(estado, resultado);
     this.marcarPestanaAveria(estado);

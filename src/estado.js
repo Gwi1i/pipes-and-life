@@ -134,6 +134,10 @@ export class Estado {
     this.reparacionesJugadas = { reciclaje: 0, camion: 0 };
     // LA CUADRILLA de mantenimiento (común): lo que sobrevivió de la tienda
     this.cuadrilla = 0;
+    // EL LIBRO DEL OFICIO: qué tipos de pieza se han construido alguna vez.
+    // Conocer el oficio es haber levantado sus piezas: cada tipo desbloquea
+    // su ficha divulgativa en el compendio. Derribar no des-aprende.
+    this.conocidas = [];
     // Hitos ya contados. Cada uno se enseña UNA vez en toda la partida: si se
     // repitiera dejaría de ser un momento y pasaría a ser un estorbo.
     this.hitosVistos = [];
@@ -174,6 +178,7 @@ export class Estado {
       averias: this.averias, tutorial: this.tutorial, guias: this.guias,
       reparacionesJugadas: this.reparacionesJugadas,
       cuadrilla: this.cuadrilla,
+      conocidas: this.conocidas,
       hitosVistos: this.hitosVistos
     };
     try{
@@ -325,6 +330,12 @@ export class Estado {
           o.nombre = vistos[o.tipo] === 1 ? base : `${base} ${vistos[o.tipo]}`;
         }
       }
+      // El libro del oficio: una partida de antes del libro no empieza con
+      // las páginas en blanco — lo ya construido (en pie o en el almacén)
+      // cuenta como conocido. Un veterano no des-aprende por actualizar.
+      estado.conocidas = d.conocidas
+        ?? [...new Set([...estado.construcciones.map(o => o.tipo),
+                        ...estado.inventario.map(p => p.tipo)])];
       estado.tuberias = d.tuberias || [];
       // Las tuberías de antes de los diámetros se quedan en el más estrecho: es
       // exactamente la red vieja de fibrocemento que uno se encuentra heredada.

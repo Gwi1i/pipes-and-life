@@ -837,6 +837,14 @@ export const EN = {
      debe traerlo también. */
   frases: {
 
+    /* --- El libro del oficio --- */
+    'Lo que el oficio te ha enseñado, pieza a pieza: {0} de {1} páginas escritas. Las que faltan se aprenden construyendo.':
+      'What the trade has taught you, piece by piece: {0} of {1} pages written. The rest are learned by building.',
+    'Los tamaños de un núcleo': 'The sizes of a settlement',
+    'Se conoce construyéndola.': 'Learned by building one.',
+    'Se conoce cuando un pueblo tuyo llega a ese tamaño.':
+      'Learned when one of your towns reaches that size.',
+
     /* --- Paleta de obra y panel de red --- */
     'Colocar {0}': 'Lay {0}',
     'Marca el recorrido casilla a casilla. Clic en la última para rematar, en la anterior para deshacer.':
