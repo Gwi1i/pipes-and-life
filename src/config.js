@@ -602,7 +602,7 @@ export const CONFIG = {
        guardado: una partida vieja (sin él = 1) regenera SU mundo exacto y
        solo las nuevas estrenan la siembra. Si tocas cualquier sembrar*, sube
        este número y deja el camino viejo intacto bajo su guardia. */
-    mundo: 2,
+    mundo: 3,   // 3: los manantiales (el indicio natural de acuífero)
     origen: { col: 48, fila: 34 },   // aquí está tu pueblo inicial
     radioInicial: 3,                // casillas ya abiertas al empezar
     // Alrededor del pueblo, el terreno se rebaja a su variante barata: empezar
@@ -1237,7 +1237,7 @@ export const CONFIG = {
     ruinas: 30,
     distanciaMinima: 4,      // nada de hallazgos pegados al origen
     color: { pueblo: '#facc15', ruina: '#c084fc', arqueologia: '#d9a441',
-             senal: '#d9c58a' },
+             senal: '#d9c58a', manantial: '#7dd3fc' },
     /* SEÑALES DE CAMINO: cada núcleo siembra una a medio camino hacia el
        origen. Al destaparla apunta al pueblo sin descubrir MÁS CERCANO con
        su distancia — explorar deja de ser dar clics sin rumbo (petición del
@@ -1454,6 +1454,14 @@ export const CONFIG = {
        geología que promete y no cumple. Sale en torno a dos aciertos de cada
        tres, que es lo que hace que estudiar valga la pena SIN volverlo seguro. */
     haloIndicios: 0,        // casillas de indicios alrededor de cada masa
+    /* EL MANANTIAL (idea del autor): el agua de abajo ASOMA. Se siembra
+       sobre casillas con masa de verdad — preferentemente en relieve, que
+       es donde el karst aflora — y al destaparlo es el único indicio que
+       NO puede mentir: donde brota un manantial, el sondeo no sale seco.
+       Los señuelos no tienen manantial jamás: esa es la gracia entera. */
+    manantiales: {
+      probPorMasa: 0.75     // no todas las masas asoman: encontrarlo es premio
+    },
     señuelos: 11,           // manchas con indicios y SIN agua: el sondeo seco
     tamSeñuelo: 4,
     estudio: {
@@ -1779,6 +1787,18 @@ export const CONFIG = {
       porque: 'Es ley y es rutina del oficio: toda obra con movimiento de ' +
               'tierras vigila lo que aflora, y media España tiene algo ' +
               'debajo. Los hay corrientes... y los hay que valen una fortuna.'
+    },
+    manantial: {
+      titulo: 'Un manantial',
+      pasa: 'El agua brota sola del terreno: ahí abajo hay una masa de agua ' +
+            'subterránea asomando a la superficie.',
+      hacer: 'Apúntatelo: donde brota un manantial, el SONDEO no sale seco. ' +
+             'Es el único indicio que no puede mentir — los estudios aciertan ' +
+             'mucho; el manantial, siempre.',
+      porque: 'Así se buscaba el agua durante siglos, antes de los estudios ' +
+              'hidrogeológicos: mirando dónde brota. En el karst de montaña ' +
+              'sigue siendo la pista reina — el agua que asoma es agua que ' +
+              'está debajo.'
     },
     ruina: {
       titulo: 'Una instalación abandonada',

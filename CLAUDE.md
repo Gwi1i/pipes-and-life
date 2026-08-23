@@ -234,6 +234,15 @@ subsuelo es la otra respuesta, en TRES pasos que no se saltan (`CONFIG.acuiferos
 3. **Pozo**: la pieza `acuifero` ya solo se puede poner sobre un sondeo positivo
    (`requiereSondeo`); antes pedía `terreno` + `lejosDeAgua` y no producía nada.
 
+**EL MANANTIAL (mundo >= 3, idea del autor): el indicio que NO miente.** Se
+siembra al final de `generarMapa` (`sembrarManantiales`, ~75% de las masas,
+preferencia por relieve — el karst aflora en la montaña) SOLO sobre masas con
+agua, jamás sobre señuelos: donde brota un manantial, el sondeo no sale seco.
+Es `hallazgo: 'manantial'` — no bloquea obra, no late (información permanente,
+sus ondas ya se mueven), tiene ficha en el panel de hallazgo y tarjeta de
+primera vez (`hitos.manantial`, lámina `h_manantial.jpg`). El premio de
+explorar la montaña: leer el terreno sustituye al estudio.
+
 **Los indicios NO son el acuífero, y esa separación es la mecánica.** Se marcan
 sobre las masas con agua Y sobre `señuelos` sin ella. Está medido: con
 `haloIndicios: 1` acertabas el 19% de las veces —el estudio no se pagaba— y con

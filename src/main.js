@@ -1144,9 +1144,13 @@ function anunciarHallazgo(celda, col, fila){
   // lámina de la instalación abandonada concreta que acaba de aparecer
   if(celda.hallazgo === 'ruina')
     contarHito('ruina', `assets/f_${piezaDeRuina(celda)}_ruina.jpg`);
+  // Y el primer manantial también: es el indicio que no miente, y sin
+  // contarlo parece un adorno del terreno
+  if(celda.hallazgo === 'manantial') contarHito('manantial');
   const textos = {
     ruina:      t`Instalación abandonada. Se podrá reparar o llevar al inventario.`,
     senal:      t`Una señal de camino: apunta al pueblo más cercano por descubrir.`,
+    manantial:  t`¡Un manantial! Donde brota, el sondeo no sale seco.`,
   };
   if(!textos[celda.hallazgo]) return;
   estado.anotar(textos[celda.hallazgo], 'ok');

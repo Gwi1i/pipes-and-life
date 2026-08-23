@@ -559,6 +559,20 @@ alegre: el agua que no se veía, saliendo donde no hay río.
 > chorro de agua clara saliendo por la boca del entubado, con dos operarios
 > celebrándolo y un pueblo pequeño al fondo entre lomas, *(+ coletilla)*
 
+## El manantial (`h_manantial.png`)
+
+Sale la primera vez que se destapa un manantial. La lección: el agua que
+brota es agua que está debajo — el indicio que no puede mentir. Debe dar
+ganas de perforar ahí mismo:
+
+### `h_manantial.png`
+> Genera una imagen: un manantial de montaña brotando entre rocas calizas en
+> la ladera, el agua clara saliendo con fuerza de una poza de piedra y
+> bajando en un arroyo pequeño, vegetación fresca alrededor del agua en
+> contraste con la ladera seca, y un zahorí antiguo dibujado como recuerdo
+> lejano — un hombre con vara de avellano — difuminado al fondo,
+> *(+ coletilla)*
+
 ## El traslado de concesión (`h_traslado.png`)
 
 Sale cuando la mancomunidad ya camina sola y otra comarca llama: la red se

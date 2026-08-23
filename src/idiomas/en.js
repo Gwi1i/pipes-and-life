@@ -485,6 +485,18 @@ export const EN = {
                 'has something underneath. Some finds are ordinary... and ' +
                 'some are worth a fortune.'
       },
+      manantial: {
+        titulo: 'A spring',
+        pasa: 'Water is welling up out of the ground on its own: a body of ' +
+              'groundwater is surfacing right there.',
+        hacer: 'Take note: where a spring flows, the BOREHOLE never comes up ' +
+               'dry. It is the one clue that cannot lie — surveys are right ' +
+               'most of the time; a spring, always.',
+        porque: 'This is how water was found for centuries, before ' +
+                'hydrogeological surveys: by watching where it flows. In ' +
+                'mountain karst it is still the queen of clues — water that ' +
+                'surfaces is water that is underneath.'
+      },
       ruina: {
         titulo: 'An abandoned facility',
         pasa: 'The fog was hiding old works: someone built this, someone ' +
@@ -836,6 +848,15 @@ export const EN = {
      frase original empezaba con espacio (t` · estiaje`), el valor inglés
      debe traerlo también. */
   frases: {
+
+    /* --- El manantial --- */
+    'Manantial': 'Spring',
+    '¡Un manantial! Donde brota, el sondeo no sale seco.':
+      'A spring! Where it flows, the borehole never comes up dry.',
+    'El agua subterránea asoma: debajo de esta casilla hay una masa de agua. El SONDEO aquí no sale seco — es el único indicio que no puede mentir.':
+      'Groundwater is surfacing: there is a body of water beneath this tile. The BOREHOLE here never comes up dry — it is the one clue that cannot lie.',
+    'Así se buscó el agua durante siglos, antes de los estudios hidrogeológicos: mirando dónde brota. En el karst de montaña sigue siendo la pista reina.':
+      'This is how water was found for centuries, before hydrogeological surveys: by watching where it flows. In mountain karst it is still the queen of clues.',
 
     /* --- El libro del oficio --- */
     'Lo que el oficio te ha enseñado, pieza a pieza: {0} de {1} páginas escritas. Las que faltan se aprenden construyendo.':

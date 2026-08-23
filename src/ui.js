@@ -658,6 +658,21 @@ export class UI {
       return;
     }
 
+    // EL MANANTIAL: información del terreno, no un premio pendiente. Su ficha
+    // dice la verdad mecánica entera — es el único indicio que no miente.
+    if(celda && celda.hallazgo === 'manantial'){
+      panel.style.display = '';
+      cont.innerHTML = `
+        <p class="red-cuello" style="--tono:${H.color.manantial}"><b>${t`Manantial`}</b></p>
+        <p class="m-desc">${t`El agua subterránea asoma: debajo de esta casilla hay
+          una masa de agua. El SONDEO aquí no sale seco — es el único indicio
+          que no puede mentir.`}</p>
+        <p class="m-desc">${t`Así se buscó el agua durante siglos, antes de los
+          estudios hidrogeológicos: mirando dónde brota. En el karst de montaña
+          sigue siendo la pista reina.`}</p>`;
+      return;
+    }
+
     if(!celda || !celda.hallazgo || celda.resuelto){ panel.style.display = 'none'; return; }
     panel.style.display = '';
 

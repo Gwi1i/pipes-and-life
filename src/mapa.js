@@ -119,9 +119,38 @@ export function generarMapa(semilla = CONFIG.mapaMundo.semilla, radioExtra = 0,
   // (mundo 1, viaja en el guardado) regeneran su mundo EXACTO. Va al final a
   // propósito: todo lo anterior consume el azar en el mismo orden de siempre.
   if(mundo >= 2) sembrarArranque(celdas, azar);
+  // AL FINAL, como manda la guardia: todo lo anterior consume el azar en su
+  // orden de siempre y los mundos viejos regeneran su siembra exacta.
+  if(mundo >= 3) sembrarManantiales(celdas, azar);
   abrirZonaInicial(celdas, radioExtra);
   aflorarDescubiertas(celdas);   // lo que nace a la vista, aflorado
   return celdas;
+}
+
+/**
+ * EL MANANTIAL (mundo >= 3, idea del autor): el agua de abajo ASOMA. En cada
+ * masa (con suerte) brota uno, preferentemente en relieve — el karst aflora
+ * en la montaña, que es donde el autor lo ve en su oficio. Es el único
+ * indicio que no puede mentir: se siembra SOLO sobre masas de verdad, nunca
+ * sobre señuelos, así que donde hay manantial el sondeo no sale seco. La
+ * lección de leer el terreno, premiada.
+ */
+function sembrarManantiales(celdas, azar){
+  const prob = CONFIG.acuiferos.manantiales.probPorMasa;
+  const porMasa = new Map();
+  for(const celda of celdas){
+    if(!celda || !celda.masa || celda.hallazgo) continue;
+    if(!porMasa.has(celda.masa)) porMasa.set(celda.masa, []);
+    porMasa.get(celda.masa).push(celda);
+  }
+  for(const casillas of porMasa.values()){
+    if(azar() > prob) continue;
+    const enRelieve = casillas.filter(c =>
+      (CONFIG.terrenos[c.tipo] || {}).familia === 'relieve');
+    const candidatas = enRelieve.length ? enRelieve : casillas;
+    const elegida = candidatas[Math.floor(azar() * candidatas.length)];
+    elegida.hallazgo = 'manantial';
+  }
 }
 
 /**

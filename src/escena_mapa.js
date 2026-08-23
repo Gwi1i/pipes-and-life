@@ -1081,8 +1081,10 @@ export class EscenaMapa extends Escena {
     // muro roto dejaba fantasmas por el mapa y ensuciaba la pieza reparada.
     if(celda.resuelto && celda.hallazgo === 'ruina') return;
 
-    // La señal no late: es un cartel, no un premio pendiente
-    if(!celda.resuelto && celda.hallazgo !== 'senal'){
+    // La señal no late (es un cartel) ni el manantial (es información del
+    // terreno, permanente — sus ondas ya se mueven solas)
+    if(!celda.resuelto && celda.hallazgo !== 'senal'
+       && celda.hallazgo !== 'manantial'){
       const pulso = 0.5 + Math.sin(this.tiempo * 3) * 0.5;
       ctx.globalAlpha = 0.20 + pulso * 0.28;
       ctx.fillStyle = col;
@@ -1102,9 +1104,53 @@ export class EscenaMapa extends Escena {
       this.caserio(cx, y + t * 0.70, t, col, habitantes);
     else if(celda.hallazgo === 'ruina') this.ruina(cx, y + t * 0.70, t, col);
     else if(celda.hallazgo === 'senal') this.senal(cx, y + t * 0.72, t, extra);
+    else if(celda.hallazgo === 'manantial') this.manantial(cx, y + t * 0.62, t);
     else return;
 
     ctx.globalAlpha = 1;
+  }
+
+  /**
+   * El MANANTIAL: una poza entre piedras con el agua asomando — ondas que
+   * nacen en el centro y un brillo que sube. Es el único hallazgo que se
+   * mueve solo: el agua viva es su manera de decir "aquí abajo hay más".
+   */
+  manantial(cx, cy, t){
+    const ctx = this.ctx;
+    const r = t * 0.26;
+    // la poza
+    ctx.fillStyle = '#0e5a86';
+    ctx.beginPath(); ctx.ellipse(cx, cy, r, r * 0.62, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = '#38bdf8';
+    ctx.beginPath(); ctx.ellipse(cx, cy, r * 0.78, r * 0.46, 0, 0, 7); ctx.fill();
+    // las ondas: dos, naciendo del centro, recicladas por fase
+    for(const desfase of [0, 0.5]){
+      const k = ((this.tiempo * 0.55 + desfase) % 1);
+      ctx.globalAlpha = (1 - k) * 0.55;
+      ctx.strokeStyle = '#e0f2fe';
+      ctx.lineWidth = Math.max(1, t * 0.018);
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, r * 0.2 + r * 0.62 * k, (r * 0.2 + r * 0.62 * k) * 0.6,
+                  0, 0, 7);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    // el borbotón: un destello subiendo del centro
+    const sube = (this.tiempo * 1.4) % 1;
+    ctx.globalAlpha = (1 - sube) * 0.8;
+    ctx.fillStyle = '#e0f2fe';
+    ctx.beginPath();
+    ctx.arc(cx, cy - sube * r * 0.5, Math.max(1, t * 0.024), 0, 7);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    // las piedras del brocal, con la luz de siempre
+    ctx.fillStyle = '#8a94a0';
+    for(const [dx, dy, s] of [[-0.9, -0.25, 0.11], [0.85, -0.3, 0.09],
+                              [0.6, 0.5, 0.10], [-0.55, 0.55, 0.08]]){
+      ctx.beginPath();
+      ctx.ellipse(cx + dx * r, cy + dy * r * 0.7, t * s, t * s * 0.7, 0, 0, 7);
+      ctx.fill();
+    }
   }
 
   /**
