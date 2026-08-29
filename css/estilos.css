@@ -405,6 +405,10 @@ button{touch-action:manipulation;}
   pointer-events:none;
 }
 .guia-flotante .guia-avatar, .guia-flotante .guia-bocadillo{pointer-events:auto;}
+/* EL ESQUIVE: si el bocadillo pisa el núcleo del pueblo (ventana estrecha),
+   salta al lado derecho. Lo decide ui.esquivarPueblo cada ciclo. */
+.guia-flotante.esquiva{left:auto; right:12px; flex-direction:row-reverse;}
+.guia-flotante.esquiva .guia-bocadillo::after{display:none;}
 .guia-avatar{
   flex:none; width:58px; height:58px; border-radius:50%; cursor:pointer;
   border:2px solid var(--ok); background:var(--panel); padding:0;

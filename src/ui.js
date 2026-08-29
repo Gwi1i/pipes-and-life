@@ -539,7 +539,33 @@ export class UI {
     else this.respingoGuia();         // sin cambio de cara, el bote avisa igual
   }
 
+  /**
+   * EL ESQUIVE del bocadillo: si pisa el núcleo del pueblo activo (en ventana
+   * estrecha el lienzo es pequeño y hasta la esquina llega al centro), salta
+   * al lado contrario. Corre fuera del cache de pasos porque la cámara se
+   * mueve sin que el paso cambie. Lo pidieron los TRES probadores fríos: dos
+   * clicaron el bocadillo creyendo clicar su pueblo.
+   */
+  esquivarPueblo(estado){
+    const panel = document.getElementById('panel-guia');
+    if(!panel || panel.style.display === 'none' || !this.escena) return;
+    const caja = panel.parentElement;   // .lienzo-caja
+    if(!caja) return;
+    const t = this.escena.tam;
+    const px = estado.activo.col * t - estado.camara.x + t / 2;
+    const py = estado.activo.fila * t - estado.camara.y + t / 2;
+    const margen = t, an = panel.offsetWidth, al = panel.offsetHeight;
+    // Se evalúan las DOS posiciones candidatas (izquierda de casa, derecha de
+    // esquive) contra el punto del pueblo — determinista, sin parpadeo
+    const pisaEn = (x) => px > x - margen && px < x + an + margen
+                       && py > 14 - margen && py < 14 + al + margen;
+    const pisaIzq = pisaEn(12);
+    const pisaDer = pisaEn(caja.clientWidth - 12 - an);
+    panel.classList.toggle('esquiva', pisaIzq && !pisaDer);
+  }
+
   refrescarGuia(estado){
+    this.esquivarPueblo(estado);
     const paso = pasoActual(estado);
     // El comentario caduca solo; mientras vive, el bocadillo es suyo
     if(this.comentario && Date.now() > this.comentario.hasta) this.comentario = null;
@@ -2041,6 +2067,9 @@ export class UI {
         el.textContent = (ritmo >= 0 ? '+' : '−')
           + Math.abs(ritmo).toFixed(Math.abs(ritmo) < 10 ? 1 : 0) + ' €/h';
         el.className = 'hud-ritmo ' + (ritmo >= 0 ? 'ok' : 'critico');
+        // El rojo sin explicación deja "la mosca detrás de la oreja"
+        // (jugadora de trance): el tooltip cuenta la cuenta
+        el.title = t`Facturación del agua menos luz, nómina y multas. De noche se consume menos y se factura menos; la luz no descansa.`;
       }
     }
     this.fijar('hud-poblacion',

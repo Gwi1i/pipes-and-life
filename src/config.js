@@ -743,6 +743,13 @@ export const CONFIG = {
       velocidad: 26,        // marcha de la raya, px/s a zoom 1
       cadaSegundos: 1       // cada cuánto se re-mira si la red sigue limitada
     },
+    /* LA FLECHA de la señal de camino al clicarla: línea dorada marchante
+       hacia el pueblo por descubrir. "Yo quiero ir, no adivinar" (jugadora
+       de trance dixit). */
+    rumbo: {
+      duracion: 4,          // segundos de flecha en pantalla
+      velocidad: 40         // marcha del punteado, px/s a zoom 1
+    },
     /* Los NÚMEROS FLOTANTES del dinero: "−300 €" subiendo del sitio del
        gasto. Un pago que no se ve no se siente (probador frío dixit). */
     flotante: {
