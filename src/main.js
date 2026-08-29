@@ -174,6 +174,17 @@ function golpeDeBomba(px, py, col, fila){
   sonido.bombear();
 }
 
+/**
+ * Los METODOS NUEVOS de la escena se llaman SIEMPRE con guarda (el patron de
+ * aparecerDeposito): tras un despliegue, GitHub Pages puede servir 10 minutos
+ * un main.js nuevo con una escena vieja de la cache — y una carga mezclada
+ * debe degradar (sin numerito flotante) en vez de reventar la partida.
+ * Lo cazo el autor en vivo: 'escena.flotarDinero is not a function'.
+ */
+function flotar(col, fila, cantidad){
+  if(escena.flotarDinero) escena.flotarDinero(col, fila, cantidad);
+}
+
 function procesarAcciones(){
   for(const a of entrada.vaciarAcciones()){
     switch(a.tipo){
@@ -295,7 +306,7 @@ function procesarAcciones(){
           break;
         }
         estado.pagar(coste);
-        escena.flotarDinero(sel.col, sel.fila, -coste);
+        flotar(sel.col, sel.fila, -coste);
         const antes = diametro(tub.dn, red).nombre;
         tub.dn = destino;
         tub.coste = (tub.coste || 0) + coste;
@@ -319,7 +330,7 @@ function procesarAcciones(){
           break;
         }
         estado.pagar(coste);
-        escena.flotarDinero(sel.col, sel.fila, -coste);
+        flotar(sel.col, sel.fila, -coste);
         obra.nivel = (obra.nivel || 1) + 1;
         sonido.compra();
         estado.anotar(t`${obra.nombre || obra.tipo} ampliado a nivel ${obra.nivel}: aporta como ${obra.nivel} piezas.`, 'ok');
@@ -344,7 +355,7 @@ function procesarAcciones(){
         // Lo que estaba roto en esa casilla se va con el escombro
         estado.averias = estado.averias.filter(av => av.col !== sel.col || av.fila !== sel.fila);
         estado.dinero += recupera;
-        escena.flotarDinero(sel.col, sel.fila, recupera);
+        flotar(sel.col, sel.fila, recupera);
         estado.anotar(t`${obra.nombre || def.nombre} derribado: ${formatear(recupera)} € recuperados.`, 'info');
         avisar(t`Derribado. La casilla queda libre.`);
         sonido.picar();
@@ -365,7 +376,7 @@ function procesarAcciones(){
                     Ojo: lo que colgaba de ella quedará sin conectar.`)) break;
         estado.tuberias.splice(estado.tuberias.indexOf(tub), 1);
         estado.dinero += recupera;
-        escena.flotarDinero(sel.col, sel.fila, recupera);
+        flotar(sel.col, sel.fila, recupera);
         estado.anotar(t`Línea de ${R.nombre.toLowerCase()} levantada: ${formatear(recupera)} € de material recuperado.`, 'info');
         avisar(t`Línea levantada.`);
         sonido.picar();
@@ -506,7 +517,7 @@ function procesarAcciones(){
           break;
         }
         estado.pagar(A.costeExcavar);
-        escena.flotarDinero(sel.col, sel.fila, -A.costeExcavar);
+        flotar(sel.col, sel.fila, -A.costeExcavar);
         celda.excavado = true;
         const tipoY = tipoYacimiento(celda);
         estado.anotar(t`${tipoY.nombre} puesto en valor: renta ${formatear(tipoY.renta)} €/h.`, 'ok');
@@ -528,7 +539,7 @@ function procesarAcciones(){
           break;
         }
         estado.pagar(precioEstudio);
-        escena.flotarDinero(sel.col, sel.fila, -precioEstudio);
+        flotar(sel.col, sel.fila, -precioEstudio);
         const conIndicios = estudiarZona(estado.mapa, sel.col, sel.fila);
         // Un estudio sin indicios NO es dinero tirado y hay que decirlo así:
         // descartar una zona es la mitad del trabajo de un hidrogeólogo.
@@ -555,7 +566,7 @@ function procesarAcciones(){
           break;
         }
         estado.pagar(coste);
-        escena.flotarDinero(sel.col, sel.fila, -coste);
+        flotar(sel.col, sel.fila, -coste);
         const clase = sondear(estado.mapa, sel.col, sel.fila);
         if(clase){
           contarHito('acuifero');
@@ -595,7 +606,7 @@ function procesarAcciones(){
           break;
         }
         estado.pagar(canon);
-        escena.flotarDinero(sel.col, sel.fila, -canon);
+        flotar(sel.col, sel.fila, -canon);
         const faseAntes = faseActual(estado);
         const nuevo = incorporarPueblo(estado, sel.col, sel.fila, celda);
         habPrev.push(Math.floor(nuevo.habitantes));
@@ -604,7 +615,7 @@ function procesarAcciones(){
         sonido.pueblo();
         // La fiesta: incorporar es EL momento del juego y se despachaba con
         // una línea de registro. Anillos y confeti sobre el núcleo.
-        escena.celebrarIncorporacion(sel.col, sel.fila);
+        if(escena.celebrarIncorporacion) escena.celebrarIncorporacion(sel.col, sel.fila);
         ui.reconstruirPestanas(estado);
         contarHito('mancomunidad');
         if(faseActual(estado) > faseAntes){
@@ -998,7 +1009,7 @@ function colocarElemento(col, fila){
       return;
     }
     estado.pagar(def.coste);
-  escena.flotarDinero(col, fila, -def.coste);
+  flotar(col, fila, -def.coste);
     estado.anotar(t`${def.nombre} construido por ${formatear(def.coste)} €.`, 'ok');
   } else {
     estado.inventario.splice(deInv, 1);
@@ -1124,7 +1135,7 @@ function rematarTuberia(){
   }
   estado.pagar(coste);
   const remate = trazado[trazado.length - 1];
-  escena.flotarDinero(remate.col, remate.fila, -coste);
+  flotar(remate.col, remate.fila, -coste);
   estado.tuberias.push({ camino: trazado.slice(), coste, dn, red,
                          nacida: estado.horas });
   estado.anotar(t`${CONFIG.redes[red].nombre}: ${diametro(dn, red).nombre} de
