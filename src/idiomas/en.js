@@ -852,6 +852,10 @@ export const EN = {
     /* --- Las curas del probador frío --- */
     '{0} casillas · {1} €': '{0} tiles · {1} €',
     'faltan {0} €': '{0} € short',
+    'Facturación del agua menos luz, nómina y multas. De noche se consume menos y se factura menos; la luz no descansa.':
+      'Water billing minus power, payroll and fines. At night less is used and less is billed; the power bill never sleeps.',
+    '¿Las casillas piden más clics? Es la sed: cuidar el abastecimiento abarata explorar. Atiende el agua y verás bajar los números.':
+      'Tiles asking for more clicks? That is thirst: a well-served town makes exploring cheaper. Tend to the water and watch the numbers drop.',
     'Manuel otea el terreno: el relieve más cercano queda {0}, a unas {1} casillas del pueblo.':
       'Manuel scans the land: the nearest high ground lies {0}, about {1} tiles from town.',
     'Paso saltado: la guía sigue en el siguiente.':
