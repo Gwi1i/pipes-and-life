@@ -866,6 +866,7 @@ export const EN = {
 
     /* --- Las curas del probador frío --- */
     '{0} casillas · {1} €': '{0} tiles · {1} €',
+    'faltan {0} €': '{0} € short',
     'Manuel otea el terreno: el relieve más cercano queda {0}, a unas {1} casillas del pueblo.':
       'Manuel scans the land: the nearest high ground lies {0}, about {1} tiles from town.',
     'Paso saltado: la guía sigue en el siguiente.':

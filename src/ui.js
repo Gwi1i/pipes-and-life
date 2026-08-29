@@ -2063,6 +2063,15 @@ export class UI {
     // Multa por hora, para el panel de cauce
     resultado.multaHora = (resultado.suciedad || 0) * CONFIG.cauce.multaMaxPorHora;
 
+    // EL SCROLL DEL LATERAL SE RESPETA: algún refresco reconstruye su bloque
+    // y el navegador re-clava el scroll arriba — el probador frío apuntaba a
+    // CAPTACIÓN y compró DEPURADORA dos veces porque la lista se le movió
+    // bajo el dedo. Se toma nota antes de refrescar y se repone si algún
+    // panel lo ha tocado; el usuario scrollea ENTRE ciclos, nunca dentro,
+    // así que reponer no le pisa el gesto.
+    const laterales = document.querySelectorAll('.lateral');
+    const scrolls = [...laterales].map(l => l.scrollTop);
+
     this.refrescarHito(estado);
     this.refrescarGuia(estado);
     this.refrescarTajo(estado, resultado);
@@ -2086,6 +2095,9 @@ export class UI {
     this.marcarPestanaAveria(estado);
     this.actualizarPanel(estado, resultado);
     this.actualizarRegistro(estado);
+
+    // ...y se repone el scroll si algún refresco lo ha movido
+    laterales.forEach((l, i) => { if(l.scrollTop !== scrolls[i]) l.scrollTop = scrolls[i]; });
   }
 
   /** Vigila TODO lo que pinta la barra de estado y la reconstruye al cambiar. */

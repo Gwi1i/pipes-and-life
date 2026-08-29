@@ -47,7 +47,13 @@ export class EscenaMapa extends Escena {
   flotarDinero(col, fila, cantidad){
     const texto = (cantidad > 0 ? '+' : '−')
                 + Math.abs(Math.round(cantidad)).toLocaleString('es-ES') + ' €';
-    this.flotantes.push({ col, fila, texto, t: 0, cobro: cantidad > 0 });
+    this.flotarTexto(col, fila, texto, cantidad > 0);
+  }
+
+  /** Cualquier texto corto flotando desde una casilla ("faltan 36 €"):
+   *  mismo motor que el dinero. Rojo salvo que sea un cobro. */
+  flotarTexto(col, fila, texto, cobro = false){
+    this.flotantes.push({ col, fila, texto, t: 0, cobro });
   }
 
   dibujarFlotantes(estado, dt){

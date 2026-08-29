@@ -1011,6 +1011,11 @@ function colocarElemento(col, fila){
   if(deInv === false){
     if(!estado.puedePagar(def.coste)){
       avisar(t`Sin fondos: ${def.nombre.toLowerCase()} cuesta ${formatear(def.coste)} €.`);
+      // ...y el sitio del clic también lo dice (probador frío: clicó el río
+      // sin dinero y "no pasó NADA visible" — el aviso quedaba lejos del dedo)
+      if(escena.flotarTexto)
+        escena.flotarTexto(col, fila, t`faltan ${formatear(def.coste - estado.dinero)} €`);
+      sonido.seco();
       return;
     }
     estado.pagar(def.coste);
@@ -1136,6 +1141,10 @@ function rematarTuberia(){
   const coste = costeTrazado(estado.mapa, trazado, dn, red);
   if(!estado.puedePagar(coste)){
     avisar(t`Ese trazado cuesta ${formatear(coste)} € y no hay fondos.`);
+    const u = trazado[trazado.length - 1];
+    if(escena.flotarTexto)
+      escena.flotarTexto(u.col, u.fila, t`faltan ${formatear(coste - estado.dinero)} €`);
+    sonido.seco();
     return;
   }
   estado.pagar(coste);
