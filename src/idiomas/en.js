@@ -112,8 +112,9 @@ export const EN = {
                'one is the clicks it still needs.' },
       { titulo: 'Pump by clicking your town',
         texto: 'Click YOUR TOWN (or press the space bar): every click lifts ' +
-               'water, and the water you serve gets billed. That is what ' +
-               'pays for the works coming next.' },
+               'water, and the water you serve gets billed. And note this ' +
+               'down: as soon as you have a PUMP STATION connected, IT will ' +
+               'pump for you — your finger is only for getting started.' },
       { titulo: 'Step 1 of the works: the intake',
         texto: 'In the MAP tab, under “Build on the map”, pick INTAKE and ' +
                'click a water tile on the river to place it. Green means it ' +
@@ -484,6 +485,20 @@ export const EN = {
                 'earthworks job watches what surfaces, and half the country ' +
                 'has something underneath. Some finds are ordinary... and ' +
                 'some are worth a fortune.'
+      },
+      jubilacion: {
+        titulo: 'The pump takes over',
+        pasa: 'Your connected PUMP STATION now lifts the water on its own, ' +
+              'at its own pace, day and night. The pumping click retires: ' +
+              'clicking your town now opens its card.',
+        hacer: 'Your job changes: UPGRADE the pump when the town asks for ' +
+               'more, watch that no piece is choking the network, and spend ' +
+               'your finger where it is still needed — uncovering land and ' +
+               'fixing breakdowns.',
+        porque: 'That is how a real water utility works: nobody hauls the ' +
+                'water by hand. The trade is not pumping — it is SIZING: ' +
+                'making sure every piece of the chain delivers the flow ' +
+                'the town needs.'
       },
       manantial: {
         titulo: 'A spring',

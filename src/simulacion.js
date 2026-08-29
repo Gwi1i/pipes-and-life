@@ -633,8 +633,11 @@ export function redEstrangula(pueblo, estado){
   return desgloseProduccion(pueblo, estado, 1).perdidaTope > 1e-9;
 }
 
-export function clicsAutoPorSeg(pueblo){
-  return pueblo.autobombaActivo ? CONFIG.premium.autobomba.clicsPorSeg : 0;
+// SINCLIC: la bomba trabaja sola en cuanto EXISTE — un bombeo conectado
+// jubila el clic para siempre. Sin bomba, bombeas tu: el arranque manual es
+// lo que hace que la automatizacion sepa a premio (leccion de Botting).
+export function clicsAutoPorSeg(pueblo, estado){
+  return (piezas(estado).bomba || 0) > 0 ? CONFIG.sinclic.ritmo : 0;
 }
 
 /**
@@ -804,7 +807,7 @@ function avanzarPueblo(estado, p, dt, dtHoras, punta, estiaje, frenoCrec, lluvia
   // La instalación se gasta con el tiempo; el personal de mantenimiento lo frena
   const ef = eficiencia(p);
   const prodCaptacion = caudalCaptacion(p, estado, estiaje) * ef * 3600 * dtHoras;
-  const prodAuto = clicsAutoPorSeg(p) * litrosPorClic(p, estado) * dt;
+  const prodAuto = clicsAutoPorSeg(p, estado) * litrosPorClic(p, estado) * dt;
   const antes = p.agua;
   p.agua = Math.min(cap, p.agua + prodCaptacion + prodAuto);
   const entrada = p.agua - antes;

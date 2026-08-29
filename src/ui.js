@@ -1649,6 +1649,15 @@ export class UI {
   /* ---------------- FUNCIÓN ESPECIAL: AUTO-BOMBEO (del pueblo activo) ------ */
 
   construirPremium(){
+    // SINCLIC: el auto-bombeo llega solo con la primera bomba — la funcion
+    // especial que lo vendia ya no significa nada y su bloque se esconde.
+    const bloque = document.getElementById('premium');
+    if(bloque){
+      bloque.hidden = true;
+      if(bloque.parentElement?.tagName === 'SECTION') bloque.parentElement.hidden = true;
+    }
+    return;
+    // eslint-disable-next-line no-unreachable
     const P = CONFIG.premium.autobomba;
     document.getElementById('premium').innerHTML = `
       <button class="premium" data-accion="activarAutobomba" id="premium-autobomba">
@@ -1663,6 +1672,8 @@ export class UI {
   }
 
   refrescarPremium(estado){
+    return;   // SINCLIC: sin bloque premium que refrescar
+    // eslint-disable-next-line no-unreachable
     const P = CONFIG.premium.autobomba;
     const p = estado.activo;
     const bt = document.getElementById('premium-autobomba');

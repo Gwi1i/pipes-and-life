@@ -89,6 +89,16 @@ export const CONFIG = {
     tasaDeclineAnual: -0.40
   },
 
+  /* ---------- SINCLIC (RAMA DE EXPERIMENTO) ----------
+     El clic de bombear existe SOLO al arranque: sin ningun BOMBEO conectado
+     bombeas tu, a mano — y tu primera bomba conectada te JUBILA el dedo
+     (con tarjeta y fiesta). Leccion del estudio de exitos (Game About
+     Botting): el premio de automatizar solo sabe a gloria si recuerdas el
+     trabajo. Desde entonces el cuello es la instalacion, no el clic. */
+  sinclic: {
+    ritmo: 1.5              // golpes de bomba por segundo, automaticos, con bomba
+  },
+
   /* ---------- LA BOMBA (el clic principal) ---------- */
   bomba: {
     // El clic es la identidad del juego: tiene que costar llenar y hay que
@@ -1672,8 +1682,9 @@ export const CONFIG = {
              'los clics que les faltan.' },
     { id: 'bombear',   titulo: 'Bombea clicando tu pueblo',
       texto: 'Clica TU PUEBLO (o dale a la barra espaciadora): cada clic sube ' +
-             'agua, y el agua servida se factura. Con eso se paga la obra que ' +
-             'viene ahora.' },
+             'agua, y el agua servida se factura. Y apunta esto: en cuanto ' +
+             'tengas un BOMBEO conectado, bombeara EL por ti — el dedo es ' +
+             'solo para arrancar.' },
     { id: 'captacion', titulo: 'Paso 1 de la obra: la captación',
       texto: 'En la solapa MAPA, en «Construir en el mapa», elige CAPTACIÓN y ' +
              'clica una casilla de agua del río para colocarla. En verde vale; ' +
@@ -1793,6 +1804,18 @@ export const CONFIG = {
       porque: 'Es ley y es rutina del oficio: toda obra con movimiento de ' +
               'tierras vigila lo que aflora, y media España tiene algo ' +
               'debajo. Los hay corrientes... y los hay que valen una fortuna.'
+    },
+    jubilacion: {
+      titulo: 'La bomba te releva',
+      pasa: 'Tu BOMBEO conectado ya impulsa el agua solo, a su ritmo, dia y ' +
+            'noche. El clic de bombear queda jubilado: clicar el pueblo ahora ' +
+            'abre su ficha.',
+      hacer: 'Tu trabajo cambia: AMPLIA el bombeo cuando el pueblo pida mas, ' +
+             'vigila que ninguna pieza estrangule la red, y gasta el dedo en ' +
+             'lo que si lo necesita — destapar terreno y reparar averias.',
+      porque: 'Asi funciona un abastecimiento de verdad: nadie acarrea el agua ' +
+              'a mano. El oficio no es bombear — es DIMENSIONAR: que cada ' +
+              'pieza de la cadena de el caudal que el pueblo necesita.'
     },
     manantial: {
       titulo: 'Un manantial',
