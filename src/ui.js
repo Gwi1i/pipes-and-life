@@ -19,7 +19,8 @@ import { capacidad, demandaMedia, caudalCaptacion, costeCuadrilla, nivelMaxPieza
          llenadoVaso, capacidadVaso, costeAmpliarVertedero,
          nivelMasa, pozosPorMasa, caudalPozo, caudalSostenible,
          desgloseProduccion, tasaFugasRed, costeAmpliarPieza,
-         escalonCaserio, costeEstudio, veteraniaAlTrasladarse } from './simulacion.js';
+         escalonCaserio, costeEstudio, veteraniaAlTrasladarse,
+         clicsAutoPorSeg, litrosPorClic } from './simulacion.js';
 import { legado, nivelVentaja, costeVentaja, regionActual,
          epocaActual } from './legado.js';
 import { formatear } from './util.js';
@@ -2014,7 +2015,12 @@ export class UI {
     // Y del CONJUNTO entero: la producción es de la red compartida, así que
     // compararla con la demanda de UN pueblo mentía en cuanto dos bebían de
     // la misma tubería (lo cazó el autor con su segundo pueblo).
-    const caudal = caudalCaptacion(p, estado, resultado.estiaje || 1);
+    // SINCLIC: el caudal del bombeo automatico tambien es "Produce" — tras
+    // el relevo, la bomba trabajaba y el HUD decia 0,00 (probador frio 3).
+    // Mismo cambio de escala accion→mundo que usa avanzar(), a la inversa.
+    const autoLps = clicsAutoPorSeg(p, estado) * litrosPorClic(p, estado)
+                  / (3600 * CONFIG.economia.horasPorSegundo);
+    const caudal = caudalCaptacion(p, estado, resultado.estiaje || 1) + autoLps;
     const demanda = this.demandaDelConjunto(estado, p);
     const fmtLs = v => v < 10 ? v.toFixed(2) : formatear(Math.round(v));
     this.fijar('hud-produccion', fmtLs(caudal) + ' / ' + fmtLs(demanda) + ' L/s',
