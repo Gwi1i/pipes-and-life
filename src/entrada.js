@@ -102,8 +102,15 @@ export class Entrada {
     // OJO al `repeat`: mantenerla pulsada dispara la repetición del sistema y
     // bombeaba en ráfaga sola — un autoclic gratis que el autor cazó jugando.
     // Una pulsación, una bombada, como el ratón.
+    // OJO al foco (lo cazaron DOS probadores frios): tras clicar cualquier
+    // boton, el foco se queda en el boton y `e.target === document.body`
+    // mataba la tecla en silencio. Ahora bombea salvo que el foco este en
+    // algo que de verdad escribe o se pulsa con espacio.
     window.addEventListener('keydown', e => {
-      if(e.code === 'Space' && e.target === document.body && !e.repeat){
+      const o = e.target;
+      const interactivo = o && (/^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(o.tagName)
+                                || o.isContentEditable);
+      if(e.code === 'Space' && !interactivo && !e.repeat){
         e.preventDefault();
         this.emitir('bombear');
       }
@@ -129,7 +136,10 @@ export class Entrada {
       const cont = document.getElementById(id);
       if(cont) cont.addEventListener('click', e => {
         const b = e.target.closest('[data-accion]');
-        if(b) this.emitir(b.dataset.accion, { clave: b.dataset.clave });
+        if(b){
+          this.emitir(b.dataset.accion, { clave: b.dataset.clave });
+          b.blur();   // que la espaciadora no "pulse" el ultimo boton tocado
+        }
       });
     }
   }

@@ -34,6 +34,43 @@ export class EscenaMapa extends Escena {
     this.centrada = false;
     this.resaltada = null;    // { col, fila } bajo el cursor
     this.fiestas = [];        // celebraciones de incorporación en curso
+    this.flotantes = [];      // números de dinero subiendo del sitio del gasto
+  }
+
+  /**
+   * El dinero se VE moverse: "−300 €" flotando desde la casilla del gasto,
+   * "+120 €" desde el cobro. Lo trajo el probador frío: pagó 550 € en obras
+   * y la caja "parecía seguir igual" (la facturación lo enmascaraba) — un
+   * pago que no se ve no se siente, y un juego de dinero sin dolor de pagar
+   * no enseña a decidir. En coordenadas de MAPA, como la fiesta.
+   */
+  flotarDinero(col, fila, cantidad){
+    const texto = (cantidad > 0 ? '+' : '−')
+                + Math.abs(Math.round(cantidad)).toLocaleString('es-ES') + ' €';
+    this.flotantes.push({ col, fila, texto, t: 0, cobro: cantidad > 0 });
+  }
+
+  dibujarFlotantes(estado, dt){
+    if(!this.flotantes.length) return;
+    const F = CONFIG.estiloMapa.flotante;
+    this.flotantes = this.flotantes.filter(f => (f.t += dt) < F.duracion);
+    const ctx = this.ctx, t = this.tam;
+    ctx.save();
+    ctx.font = `700 ${Math.max(11, Math.round(t * 0.22))}px "IBM Plex Mono", monospace`;
+    ctx.textAlign = 'center';
+    for(const f of this.flotantes){
+      const k = f.t / F.duracion;
+      const x = f.col * t - estado.camara.x + t / 2;
+      const y = f.fila * t - estado.camara.y + t * 0.3 - k * t * F.subida;
+      ctx.globalAlpha = Math.min(1, (1 - k) * 1.6);
+      // El halo oscuro que lo despega del terreno, como los rótulos
+      ctx.fillStyle = 'rgba(8,14,22,0.75)';
+      const w = ctx.measureText(f.texto).width;
+      ctx.fillRect(x - w / 2 - 4, y - t * 0.18, w + 8, t * 0.26);
+      ctx.fillStyle = f.cobro ? '#7ee2a8' : '#f77c7c';
+      ctx.fillText(f.texto, x, y);
+    }
+    ctx.restore();
   }
 
   /**
@@ -181,6 +218,7 @@ export class EscenaMapa extends Escena {
     this.dibujarAverias(estado);
     this.destellosClic();
     this.dibujarFiestas(estado, dt);
+    this.dibujarFlotantes(estado, dt);
   }
 
   /**
