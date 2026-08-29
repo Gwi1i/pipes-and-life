@@ -849,6 +849,20 @@ export const EN = {
      debe traerlo también. */
   frases: {
 
+    /* --- Las curas del probador frío --- */
+    'Manuel otea el terreno: el relieve más cercano queda {0}, a unas {1} casillas del pueblo.':
+      'Manuel scans the land: the nearest high ground lies {0}, about {1} tiles from town.',
+    'Paso saltado: la guía sigue en el siguiente.':
+      'Step skipped: the guide moves on to the next one.',
+    'al este': 'to the east',
+    'al sureste': 'to the southeast',
+    'al sur': 'to the south',
+    'al suroeste': 'to the southwest',
+    'al oeste': 'to the west',
+    'al noroeste': 'to the northwest',
+    'al norte': 'to the north',
+    'al nordeste': 'to the northeast',
+
     /* --- El manantial --- */
     'Manantial': 'Spring',
     '¡Un manantial! Donde brota, el sondeo no sale seco.':
@@ -1324,8 +1338,8 @@ export const EN = {
     '¡{0} bajo la tesela! Excávalo y ponlo en valor, o rodéalo.':
       '{0} under the tile! Excavate it and put it on display, or route around it.',
     '¿Cómo la arreglamos?': 'How do we fix it?',
-    'Puedes jugarte el arreglo GRATIS con {0} — un solo intento — o ir a golpe de llave: {1} golpes a {2} € cada uno.':
-      'You can play {0} to fix it for FREE — one try only — or go with the wrench: {1} blows at {2} € each.',
+    'Puedes jugarte el arreglo GRATIS con {0} — un SOLO intento, y se gasta al entrar (abandonar cuenta) — o ir a golpe de llave: {1} golpes a {2} € cada uno.':
+      'You can play for the FREE repair with {0} — ONE try only, spent the moment you enter (quitting counts) — or go wrench by wrench: {1} hits at {2} € each.',
     'Me la juego': 'I’ll play for it',
     'A golpe de llave': 'The wrench it is',
     'Arreglarla echando un turno': 'Fix it by working a shift',

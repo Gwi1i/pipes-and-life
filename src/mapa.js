@@ -1261,6 +1261,32 @@ export function comprimir(celdas){
 /** La pieza que esconde una ruina, ya resuelta o no. */
 export function piezaDeRuina(celda){ return celda?.pieza || 'bomba'; }
 
+/**
+ * El relieve más cercano a una casilla: a qué distancia cae la primera
+ * colina/sierra/roca y hacia qué rumbo. Nació del muro del probador frío: el
+ * paso 3 de la guía pide una COLINA y la semilla puede no dejar ninguna a la
+ * vista — sin dirección, el jugador destapa a ciegas hasta aburrirse. Manuel
+ * ahora otea y señala el rumbo, como las señales de camino señalan pueblos.
+ */
+export function relieveMasCercano(celdas, col, fila, tipos){
+  const M = CONFIG.mapaMundo;
+  let mejor = null;
+  for(let f = 0; f < M.filas; f++)
+    for(let c = 0; c < M.cols; c++){
+      const celda = celdas[f * M.cols + c];
+      if(!celda || !tipos.includes(celda.tipo)) continue;
+      const d = Math.hypot(c - col, f - fila);
+      if(!mejor || d < mejor.d) mejor = { d, c, f };
+    }
+  if(!mejor) return null;
+  // El rumbo por octantes: la fila crece hacia el SUR (y hacia abajo)
+  const ang = Math.atan2(mejor.f - fila, mejor.c - col);
+  const rumbos = [t`al este`, t`al sureste`, t`al sur`, t`al suroeste`,
+                  t`al oeste`, t`al noroeste`, t`al norte`, t`al nordeste`];
+  const oct = ((Math.round(ang / (Math.PI / 4)) % 8) + 8) % 8;
+  return { dist: Math.round(mejor.d), rumbo: rumbos[oct] };
+}
+
 export function aplicarGuardado(celdas, datos){
   if(!datos) return;
   for(const i of datos.abiertas || []) if(celdas[i]) celdas[i].oculta = false;

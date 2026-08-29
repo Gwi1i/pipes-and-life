@@ -30,7 +30,7 @@ import { celdaEn, piezaDeRuina, diametro, nivelDiametro, costeRenovar,
          claseAcuifero, puedeSondear, costeSondeo,
          masasDelMapa, edadAños, fugasDe,
          nombreDeObra, averiaEn, casillaEnRed,
-         lineasEnCasilla, redDe, costeTrazado } from './mapa.js';
+         lineasEnCasilla, redDe, costeTrazado, relieveMasCercano } from './mapa.js';
 import { lista as listaLugares } from './lugares.js';
 import { pasoActual } from './tutorial.js';
 import { tajoActual } from './tajos.js';
@@ -541,7 +541,9 @@ export class UI {
     document.getElementById('guia-rotulo').textContent =
       paso ? (paso.rotulo || t`Primeros pasos`) : t`dice`;
     document.getElementById('guia-titulo').style.display = paso ? '' : 'none';
-    panel.querySelector('.guia-saltar').style.display = paso ? '' : 'none';
+    // Los DOS botones de saltar (el paso suelto y la guía entera)
+    for(const b of panel.querySelectorAll('.guia-saltar'))
+      b.style.display = paso ? '' : 'none';
     if(com){
       // En el TELÉFONO los comentarios salen PLEGADOS: el bocadillo tapaba
       // medio mapa (lo cazó el autor). El avatar da su respingo y quien
@@ -576,6 +578,19 @@ export class UI {
       `${estado.tutorial.paso + 1}/${CONFIG.tutorial.length}`;
     document.getElementById('guia-titulo').textContent = paso.titulo;
     document.getElementById('guia-texto').textContent = paso.texto;
+    // El paso de la COLINA lleva brújula (atascó al probador frío diez
+    // minutos): Manuel otea el relieve más cercano y señala el rumbo, como
+    // las señales de camino señalan pueblos. El terreno de la semilla no se
+    // mueve, así que se calcula una vez y listo.
+    if(paso.id === 'deposito'){
+      if(this._rumboRelieve === undefined)
+        this._rumboRelieve = relieveMasCercano(estado.mapa,
+          CONFIG.mapaMundo.origen.col, CONFIG.mapaMundo.origen.fila,
+          CONFIG.construibles.deposito.terreno) || null;
+      const r = this._rumboRelieve;
+      if(r) document.getElementById('guia-texto').textContent +=
+        ' ' + t`Manuel otea el terreno: el relieve más cercano queda ${r.rumbo}, a unas ${r.dist} casillas del pueblo.`;
+    }
   }
 
   /* ---------------- HALLAZGO SELECCIONADO Y ALMACÉN ---------------- */

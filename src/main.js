@@ -13,7 +13,7 @@ import { EscenaMapa } from './escena_mapa.js';
 import { celdaEn, clicarCasilla, clicsParaDestapar, puedeColocar,
          puedeSeguirTrazado, costeTrazado, casillaEnRed,
          piezaDeRuina, diametro, nivelDiametro, costeRenovar,
-         averiaEn, aflorarArqueologia, tipoYacimiento,
+         averiaEn, aflorarArqueologia, tipoYacimiento, construccionesConectadas,
          puedeEstudiar, estudiarZona, puedeSondear, sondear,
          costeSondeo, claseAcuifero, edadAños, bautizarObra,
          nombreDeNucleo, conjuntoDeRed } from './mapa.js';
@@ -40,7 +40,7 @@ function aplicarRegion(){
     def.color = mezclarColor(def.color, r.tinte, r.fuerza);
 }
 import { formatear } from './util.js';
-import { comprobar as comprobarGuia, saltar as saltarGuia,
+import { comprobar as comprobarGuia, saltar as saltarGuia, saltarPaso,
          pasoActual } from './tutorial.js';
 import { comentar } from './comentarios.js';
 import { vecinoPendiente } from './tajos.js';
@@ -295,6 +295,7 @@ function procesarAcciones(){
           break;
         }
         estado.pagar(coste);
+        escena.flotarDinero(sel.col, sel.fila, -coste);
         const antes = diametro(tub.dn, red).nombre;
         tub.dn = destino;
         tub.coste = (tub.coste || 0) + coste;
@@ -318,6 +319,7 @@ function procesarAcciones(){
           break;
         }
         estado.pagar(coste);
+        escena.flotarDinero(sel.col, sel.fila, -coste);
         obra.nivel = (obra.nivel || 1) + 1;
         sonido.compra();
         estado.anotar(t`${obra.nombre || obra.tipo} ampliado a nivel ${obra.nivel}: aporta como ${obra.nivel} piezas.`, 'ok');
@@ -342,6 +344,7 @@ function procesarAcciones(){
         // Lo que estaba roto en esa casilla se va con el escombro
         estado.averias = estado.averias.filter(av => av.col !== sel.col || av.fila !== sel.fila);
         estado.dinero += recupera;
+        escena.flotarDinero(sel.col, sel.fila, recupera);
         estado.anotar(t`${obra.nombre || def.nombre} derribado: ${formatear(recupera)} € recuperados.`, 'info');
         avisar(t`Derribado. La casilla queda libre.`);
         sonido.picar();
@@ -362,6 +365,7 @@ function procesarAcciones(){
                     Ojo: lo que colgaba de ella quedará sin conectar.`)) break;
         estado.tuberias.splice(estado.tuberias.indexOf(tub), 1);
         estado.dinero += recupera;
+        escena.flotarDinero(sel.col, sel.fila, recupera);
         estado.anotar(t`Línea de ${R.nombre.toLowerCase()} levantada: ${formatear(recupera)} € de material recuperado.`, 'info');
         avisar(t`Línea levantada.`);
         sonido.picar();
@@ -404,6 +408,13 @@ function procesarAcciones(){
       case 'saltarGuia':
         saltarGuia(estado);
         estado.anotar(t`Guía saltada. Suerte ahí fuera.`, 'info');
+        break;
+
+      // Saltar SOLO el paso que te atasca, sin tirar el manual entero
+      // (el muro de la colina del probador frío)
+      case 'saltarPaso':
+        saltarPaso(estado);
+        estado.anotar(t`Paso saltado: la guía sigue en el siguiente.`, 'info');
         break;
 
       case 'cancelarModo':
@@ -495,6 +506,7 @@ function procesarAcciones(){
           break;
         }
         estado.pagar(A.costeExcavar);
+        escena.flotarDinero(sel.col, sel.fila, -A.costeExcavar);
         celda.excavado = true;
         const tipoY = tipoYacimiento(celda);
         estado.anotar(t`${tipoY.nombre} puesto en valor: renta ${formatear(tipoY.renta)} €/h.`, 'ok');
@@ -516,6 +528,7 @@ function procesarAcciones(){
           break;
         }
         estado.pagar(precioEstudio);
+        escena.flotarDinero(sel.col, sel.fila, -precioEstudio);
         const conIndicios = estudiarZona(estado.mapa, sel.col, sel.fila);
         // Un estudio sin indicios NO es dinero tirado y hay que decirlo así:
         // descartar una zona es la mitad del trabajo de un hidrogeólogo.
@@ -542,6 +555,7 @@ function procesarAcciones(){
           break;
         }
         estado.pagar(coste);
+        escena.flotarDinero(sel.col, sel.fila, -coste);
         const clase = sondear(estado.mapa, sel.col, sel.fila);
         if(clase){
           contarHito('acuifero');
@@ -581,6 +595,7 @@ function procesarAcciones(){
           break;
         }
         estado.pagar(canon);
+        escena.flotarDinero(sel.col, sel.fila, -canon);
         const faseAntes = faseActual(estado);
         const nuevo = incorporarPueblo(estado, sel.col, sel.fila, celda);
         habPrev.push(Math.floor(nuevo.habitantes));
@@ -983,6 +998,7 @@ function colocarElemento(col, fila){
       return;
     }
     estado.pagar(def.coste);
+  escena.flotarDinero(col, fila, -def.coste);
     estado.anotar(t`${def.nombre} construido por ${formatear(def.coste)} €.`, 'ok');
   } else {
     estado.inventario.splice(deInv, 1);
@@ -1107,6 +1123,8 @@ function rematarTuberia(){
     return;
   }
   estado.pagar(coste);
+  const remate = trazado[trazado.length - 1];
+  escena.flotarDinero(remate.col, remate.fila, -coste);
   estado.tuberias.push({ camino: trazado.slice(), coste, dn, red,
                          nacida: estado.horas });
   estado.anotar(t`${CONFIG.redes[red].nombre}: ${diametro(dn, red).nombre} de
@@ -1207,9 +1225,17 @@ function tickAverias(dtHoras){
     }
   }
 
-  // 2. Lo que puede romperse: SOLO piezas puestas en el mapa. Sin instalación no
-  //    hay averías, que es lo que mantiene limpio el arranque de la partida.
-  const sanas = estado.construcciones.filter(o => !averiaEn(estado, o.col, o.fila));
+  // 2. Lo que puede romperse: SOLO piezas puestas en el mapa Y CONECTADAS.
+  //    Una bomba parada no revienta — lo que trabaja es lo que se gasta, y es
+  //    lo realista. Lo trajo el probador frío: su primera avería cayó en una
+  //    captación recién comprada que aún no había dado un litro, y a media
+  //    guía esa multa se siente arbitraria. De paso mantiene limpio el
+  //    arranque: sin red en marcha no hay averías.
+  const conectadas = new Set();
+  for(const clave of Object.keys(CONFIG.redes))
+    for(const o of construccionesConectadas(estado, clave)) conectadas.add(o);
+  const sanas = estado.construcciones.filter(o =>
+    conectadas.has(o) && !averiaEn(estado, o.col, o.fila));
   if(!sanas.length) return;
 
   const p = estado.activo;
@@ -1252,9 +1278,13 @@ function mostrarEleccionAveria(av, coste){
                     : juego === 'camion' ? t`una ruta con el camión`
                     : t`el tablero de tuberías`;
   document.getElementById('eleccion-titulo').textContent = t`¿Cómo la arreglamos?`;
+  // OJO: el "se gasta al ENTRAR" tiene que estar dicho AQUÍ, antes de entrar.
+  // El probador frío perdió su intento leyendo las reglas de dentro y lo
+  // descubrió perdiendo — la letra pequeña a posteriori sabe a timo.
   document.getElementById('eleccion-texto').textContent =
-    t`Puedes jugarte el arreglo GRATIS con ${nombreJuego} — un solo intento — o
-      ir a golpe de llave: ${av.clics} golpes a ${formatear(coste)} € cada uno.`;
+    t`Puedes jugarte el arreglo GRATIS con ${nombreJuego} — un SOLO intento, y
+      se gasta al entrar (abandonar cuenta) — o ir a golpe de llave:
+      ${av.clics} golpes a ${formatear(coste)} € cada uno.`;
   document.getElementById('eleccion-jugar').textContent = t`Me la juego`;
   document.getElementById('eleccion-llave').textContent = t`A golpe de llave`;
   document.getElementById('eleccion-fondo').hidden = false;

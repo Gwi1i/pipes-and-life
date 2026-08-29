@@ -733,6 +733,12 @@ export const CONFIG = {
       velocidad: 26,        // marcha de la raya, px/s a zoom 1
       cadaSegundos: 1       // cada cuánto se re-mira si la red sigue limitada
     },
+    /* Los NÚMEROS FLOTANTES del dinero: "−300 €" subiendo del sitio del
+       gasto. Un pago que no se ve no se siente (probador frío dixit). */
+    flotante: {
+      duracion: 1.4,        // segundos en pantalla
+      subida: 0.8           // cuánto sube, en casillas
+    },
     /* TINTA: contorno oscuro en las aristas de las edificaciones, como en el
        resto del arte del juego (residuos, contenedores, piezas del
        minijuego). 0 lo apaga. */
