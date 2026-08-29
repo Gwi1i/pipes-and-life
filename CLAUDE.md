@@ -1115,6 +1115,13 @@ fondo, no un fastidio continuo.
 
 ## Trampas conocidas
 
+- La trampa de la caché tiene VERSIÓN WEB: GitHub Pages cachea los módulos
+  ~10 minutos SIN el `no-store` de servidor.py, así que tras cada despliegue
+  hay una ventana en que un jugador puede cargar un main.js nuevo con una
+  escena vieja mezclada (pasó en vivo: `escena.flotarDinero is not a
+  function`). Regla: todo método NUEVO de la escena que llame main.js se
+  estrena CON GUARDA (`if(escena.metodo)`, el patrón de `aparecerDeposito`)
+  — una carga mezclada debe degradar, no reventar.
 - El navegador cachea los módulos ES con ganas. `servidor.py` lo desactiva con
   `no-store`, así que con el lanzador del proyecto no da guerra. Si arrancas con
   `py -m http.server` a pelo, vuelve el problema: editas un `.js`, recargas y

@@ -103,7 +103,22 @@ export class UI {
       const abierta = !r.requiere || servicioActivo(p, r.requiere);
       caja.style.display = abierta ? '' : 'none';
       const etq = document.getElementById('tender-coste-' + clave);
-      if(etq && abierta) etq.textContent = diametro(estado.dnActual[clave], clave).nombre;
+      if(etq && abierta){
+        // MIENTRAS TRAZAS, la etiqueta del botón se vuelve el taxímetro:
+        // "N casillas · X €" en vivo. En escritorio ya lo decía el cartel
+        // del cursor, pero en MÓVIL no hay hover y el probador frío remaba
+        // a ciegas — con 300 € justos, el precio se ve ANTES de rematar.
+        const trazado = estado.modo.trazado;
+        if(estado.modo.tipo === 'tuberia' && estado.redActual === clave
+           && trazado && trazado.length){
+          const total = costeTrazado(estado.mapa, trazado, estado.dnActual[clave], clave);
+          etq.textContent = t`${trazado.length} casillas · ${formatear(total)} €`;
+          etq.style.color = estado.puedePagar(total) ? '' : 'var(--critico, #ef4444)';
+        } else {
+          etq.textContent = diametro(estado.dnActual[clave], clave).nombre;
+          etq.style.color = '';
+        }
+      }
     }
   }
 
@@ -2003,6 +2018,22 @@ export class UI {
       resultado.averiada ? 'critico' : caudal >= demanda ? 'ok' : 'neutro');
     this.fijar('hud-dinero', formatear(estado.dinero) + ' €',
       estado.dinero < 0 ? 'critico' : 'dinero');
+    // EL RITMO DE LA CAJA en €/h, al lado del saldo: el probador frío vio
+    // el dinero "bajar solo" sin recibo y pensó en un fallo — el goteo de
+    // la luz y la nómina tiene que verse donde se mira el dinero. La cuenta
+    // sale de resultado.caja (la única fuente); el detalle, en Mancomunidad.
+    const cj = resultado.caja;
+    if(cj){
+      const ritmo = (cj.facturado || 0) - (cj.impagos || 0) + (cj.residuos || 0)
+                  + (cj.yacimientos || 0) - (cj.luz || 0) - (cj.nomina || 0)
+                  - (cj.multaCauce || 0) - (cj.multaZec || 0);
+      const el = document.getElementById('hud-dinero-ritmo');
+      if(el){
+        el.textContent = (ritmo >= 0 ? '+' : '−')
+          + Math.abs(ritmo).toFixed(Math.abs(ritmo) < 10 ? 1 : 0) + ' €/h';
+        el.className = 'hud-ritmo ' + (ritmo >= 0 ? 'ok' : 'critico');
+      }
+    }
     this.fijar('hud-poblacion',
       t`${Math.floor(p.habitantes).toLocaleString('es-ES')} hab`, 'neutro');
 

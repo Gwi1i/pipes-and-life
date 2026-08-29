@@ -385,14 +385,26 @@ button{touch-action:manipulation;}
 .dn i{font-style:normal; font-size:9px; color:var(--tenue); line-height:1.35;}
 .mejora.linea.hecha{opacity:.45;}
 
+/* El ritmo de la caja: letra pequeña bajo el saldo, verde o rojo */
+.hud-ritmo{display:block; font-family:var(--mono); font-size:9px; font-weight:600;}
+.hud-ritmo.ok{color:#7ee2a8;}
+.hud-ritmo.critico{color:#f77c7c;}
+
 /* ---------- LA GUÍA FLOTANTE ----------
    Un bocadillo sobre el mapa con la cara del guía al lado: en la barra
    lateral no la veía nadie, y una guía que no se ve no guía. */
+/* ARRIBA a la izquierda, no abajo: la cámara centra el pueblo en el lienzo
+   y el bocadillo abajo-izquierda acababa PISÁNDOLO — dos probadores fríos
+   clicaron el bocadillo creyendo clicar su pueblo, justo en el paso que
+   enseña a clicarlo. Y pointer-events:none en el contenedor: solo el
+   bocadillo y la cara bloquean clics, no su caja invisible. */
 .guia-flotante{
-  position:absolute; left:12px; bottom:36px; z-index:6;
-  display:flex; align-items:flex-end; gap:9px;
-  max-width:min(360px, calc(100% - 24px));
+  position:absolute; left:12px; top:14px; z-index:6;
+  display:flex; align-items:flex-start; gap:9px;
+  max-width:min(300px, calc(100% - 24px));
+  pointer-events:none;
 }
+.guia-flotante .guia-avatar, .guia-flotante .guia-bocadillo{pointer-events:auto;}
 .guia-avatar{
   flex:none; width:58px; height:58px; border-radius:50%; cursor:pointer;
   border:2px solid var(--ok); background:var(--panel); padding:0;
@@ -437,9 +449,9 @@ button{touch-action:manipulation;}
   box-shadow:0 8px 26px rgba(0,0,0,0.5), 0 0 26px -14px var(--ok);
   animation:guia-pop .3s ease-out;
 }
-/* El rabito del bocadillo, apuntando al guía */
+/* El rabito del bocadillo, apuntando al guía (ahora arriba a la izquierda) */
 .guia-bocadillo::after{
-  content:''; position:absolute; left:-7px; bottom:12px;
+  content:''; position:absolute; left:-7px; top:16px;
   width:12px; height:12px; background:var(--panel);
   border-left:1px solid var(--ok); border-bottom:1px solid var(--ok);
   transform:rotate(45deg);
