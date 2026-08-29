@@ -1160,7 +1160,10 @@ export class UI {
                 sin clicar. Lo que llega tras estiaje, tubería y fugas lo
                 desglosa «De dónde sale el agua».`;
       case 'bomba':
-        return t`Suma <b>${formatear(nivel * P.bomba)} L</b> a cada clic de bombeo.`;
+        // SINCLIC: la bomba trabaja sola — hablarle al jugador de "clics"
+        // tras jubilarle el dedo era contradecir la tarjeta del relevo
+        // (fosil cazado por el probador frio 3)
+        return t`Impulsa <b>${formatear(nivel * P.bomba)} L</b> en cada golpe de bomba (${CONFIG.sinclic.ritmo}/s, automáticos).`;
       case 'deposito':
         return t`Añade <b>${formatear(nivel * P.deposito)} L</b> de capacidad de reserva.`;
       case 'potabilizadora':
