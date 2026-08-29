@@ -14,6 +14,7 @@ import { celdaEn, clicarCasilla, clicsParaDestapar, puedeColocar,
          puedeSeguirTrazado, costeTrazado, casillaEnRed,
          piezaDeRuina, diametro, nivelDiametro, costeRenovar,
          averiaEn, aflorarArqueologia, tipoYacimiento, construccionesConectadas,
+         nucleoMasCercano,
          puedeEstudiar, estudiarZona, puedeSondear, sondear,
          costeSondeo, claseAcuifero, edadAños, bautizarObra,
          nombreDeNucleo, conjuntoDeRed } from './mapa.js';
@@ -494,6 +495,13 @@ function procesarAcciones(){
         } else if(celda.hallazgo && !celda.resuelto){
           // Un hallazgo sin atender se selecciona: sus acciones salen en el panel
           estado.seleccion = { col, fila };
+          // LA SEÑAL además SEÑALA: flecha dorada hacia el pueblo por
+          // descubrir unos segundos ("yo quiero ir, no adivinar" — jugadora
+          // de trance). El cartel dibujado ya apunta, pero de fino no se ve.
+          if(celda.hallazgo === 'senal' && escena.senalarRumbo){
+            const obj = nucleoMasCercano(estado.mapa, col, fila);
+            if(obj) escena.senalarRumbo(col, fila, obj.c, obj.f);
+          }
         } else {
           // Terreno pelado: se selecciona y su ficha cuenta qué es, qué cuesta
           // cruzarlo y qué cabe encima. Mirar tiene que ser gratis.

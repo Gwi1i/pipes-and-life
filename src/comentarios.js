@@ -21,7 +21,7 @@
 
 import { CONFIG } from './config.js';
 import { pasoActual } from './tutorial.js';
-import { capacidad, tasaFugasRed, redDelPueblo, redEstrangula,
+import { capacidad, tasaFugasRed, redDelPueblo, redEstrangula, poderExpansion,
          nivelMasa, pozosPorMasa, nivelCaserio,
          caudalCaptacion, demandaMedia } from './simulacion.js';
 // La etiqueta de traducción: los textos de Manuel se quedan aquí en
@@ -76,6 +76,13 @@ const COMENTARIOS = [
       && caudalCaptacion(e.activo, e, res.estiaje || 1)
          < demandaMedia(e.activo.habitantes) * 0.6,
     texto: t`El dedo ya no puede con tanta sed: eso no se arregla clicando más fuerte. Amplía la captación hasta que la producción se acerque al gasto, y deja el clic para las puntas.`},
+  {
+    // El susto del 15→29 (jugadora de trance: "sentí que el juego me
+    // castigaba por jugar"): explorar se encarece con la sed y nadie lo
+    // decía. La lección del bucle central, dicha cuando duele.
+    id: 'exploracionCara', animo: 'mal',
+    cuando: (e) => poderExpansion(e) < 0.85 && e.descubiertas > 5,
+    texto: t`¿Las casillas piden más clics? Es la sed: cuidar el abastecimiento abarata explorar. Atiende el agua y verás bajar los números.`},
   {
     id: 'estiaje', animo: null,
     cuando: (e, res) => (res.estiaje || 1) < 0.5,

@@ -56,6 +56,49 @@ export class EscenaMapa extends Escena {
     this.flotantes.push({ col, fila, texto, t: 0, cobro });
   }
 
+  /**
+   * LA FLECHA GORDA de la señal de camino (deseo textual de la jugadora de
+   * trance: "yo quiero ir, no adivinar"). Al clicar una señal, una línea
+   * dorada marchante sale de ella hacia el pueblo por descubrir, unos
+   * segundos y se apaga. No es un camino que seguir casilla a casilla — es
+   * el brazo de Manuel señalando el horizonte.
+   */
+  senalarRumbo(colA, filaA, colB, filaB){
+    this.rumbos = [{ colA, filaA, colB, filaB, t: 0 }];   // uno cada vez
+  }
+
+  dibujarRumbos(estado, dt){
+    if(!this.rumbos || !this.rumbos.length) return;
+    const R = CONFIG.estiloMapa.rumbo;
+    this.rumbos = this.rumbos.filter(r => (r.t += dt) < R.duracion);
+    const ctx = this.ctx, t = this.tam;
+    for(const r of this.rumbos){
+      const x1 = r.colA * t - estado.camara.x + t / 2;
+      const y1 = r.filaA * t - estado.camara.y + t / 2;
+      const x2 = r.colB * t - estado.camara.x + t / 2;
+      const y2 = r.filaB * t - estado.camara.y + t / 2;
+      const k = r.t / R.duracion;
+      ctx.save();
+      ctx.globalAlpha = Math.min(1, (1 - k) * 1.8) * 0.9;
+      ctx.strokeStyle = '#f5d76e';
+      ctx.lineWidth = Math.max(3, t * 0.09);
+      ctx.lineCap = 'round';
+      ctx.setLineDash([t * 0.35, t * 0.25]);
+      ctx.lineDashOffset = -this.tiempo * R.velocidad * this.zoom;
+      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+      ctx.setLineDash([]);
+      // La punta: dos alas hacia atrás desde el destino
+      const ang = Math.atan2(y2 - y1, x2 - x1), p = Math.max(8, t * 0.28);
+      ctx.beginPath();
+      ctx.moveTo(x2, y2);
+      ctx.lineTo(x2 - Math.cos(ang - 0.5) * p, y2 - Math.sin(ang - 0.5) * p);
+      ctx.moveTo(x2, y2);
+      ctx.lineTo(x2 - Math.cos(ang + 0.5) * p, y2 - Math.sin(ang + 0.5) * p);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
   dibujarFlotantes(estado, dt){
     if(!this.flotantes.length) return;
     const F = CONFIG.estiloMapa.flotante;
@@ -224,6 +267,7 @@ export class EscenaMapa extends Escena {
     this.dibujarAverias(estado);
     this.destellosClic();
     this.dibujarFiestas(estado, dt);
+    this.dibujarRumbos(estado, dt);
     this.dibujarFlotantes(estado, dt);
   }
 
