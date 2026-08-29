@@ -116,6 +116,8 @@ export class MinijuegoTuberias {
     } while(this.yaResuelto(K) && ++vueltas < 20);
 
     this.reloj = 0;
+    this.crono = 0;           // el reloj DEL JUEGO: no arranca hasta el primer giro
+    this.esperando = true;    // el agua espera tu primera pieza
     this.gracia = K.graciaSegundos;
     this.tCelda = K.segundosPorCelda;
     // El agua: dónde está, por qué lado entró y cuánto lleva cruzado (0..1)
@@ -244,6 +246,11 @@ export class MinijuegoTuberias {
 
     celda.rot = (celda.rot + 1) % 4;
     sonido.tramo();
+    // El primer giro ARRANCA el agua. Antes el reloj corría desde que se
+    // abría el telón y se podía perder leyendo las instrucciones — lo cazó
+    // el probador frío: perder sin haber tocado una pieza es la peor
+    // primera impresión posible.
+    this.esperando = false;
   }
 
   tick(dt){
@@ -256,10 +263,14 @@ export class MinijuegoTuberias {
         this.terminar(this.fin.exito, this.fin.razon);
       return;
     }
+    // Mientras esperas tu primer giro, el agua no corre: el reloj de juego
+    // (crono) se queda quieto y solo se mueven los brillos (reloj).
+    if(this.esperando) return;
+    this.crono += dt;
     const a = this.agua;
 
     if(!a.dentro){
-      if(this.reloj < this.gracia) return;
+      if(this.crono < this.gracia) return;
       // El agua asoma por la boca: si no hay pieza que la reciba, derrame YA.
       // Esperar a "cruzar" un hueco invisible sería regalar un tiempo falso.
       a.dentro = true;
@@ -332,8 +343,13 @@ export class MinijuegoTuberias {
     ctx.font = '600 13px "IBM Plex Mono", monospace';
     ctx.fillStyle = '#8aa0b4';
     ctx.fillText('GIRA LAS PIEZAS Y UNE LAS BOCAS', this.margenX, t * 0.4);
-    if(!this.agua.dentro){
-      const resta = Math.max(0, this.gracia - this.reloj);
+    if(this.esperando){
+      // El agua espera tu primer giro: sin prisa hasta que tocas — y que
+      // se sepa, con un latido para que no parezca un reloj congelado
+      ctx.fillStyle = 0.5 + Math.sin(this.reloj * 4) * 0.5 > 0.5 ? '#f0d060' : '#c8a840';
+      ctx.fillText('EL AGUA ESPERA TU PRIMER GIRO', W - 300 - this.margenX, t * 0.42);
+    } else if(!this.agua.dentro){
+      const resta = Math.max(0, this.gracia - this.crono);
       const frac = resta / this.gracia;
       ctx.fillStyle = '#0d2233';
       ctx.fillRect(W - 190 - this.margenX, t * 0.18, 190, t * 0.34);
@@ -564,7 +580,7 @@ export class MinijuegoTuberias {
     ctx.fillRect(x, cy - t * 0.16, t * 0.42, t * 0.10);
     // La boca: oscura de normal; en la entrada, azul cuando el agua está al
     // caer — es el aviso silencioso de que el reloj se acaba
-    ctx.fillStyle = esEntrada && (this.agua.dentro || this.reloj > this.gracia * 0.8)
+    ctx.fillStyle = esEntrada && (this.agua.dentro || this.crono > this.gracia * 0.8)
       ? '#38bdf8' : '#0c151d';
     ctx.beginPath();
     ctx.ellipse(bocaX, cy, t * 0.06, t * 0.17, 0, 0, 7);

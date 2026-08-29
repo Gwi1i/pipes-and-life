@@ -98,9 +98,21 @@ export function destapar(){
   tono(660, 990, 0.09, 'sine', 0.14, 0.05);
 }
 
+/**
+ * EL TACTO: vibración en móvil, colgada de los momentos que ya tienen sonido
+ * propio — la misma filosofía que la analítica colgada de contarHito: los
+ * momentos especiales YA están señalados, no hay que inventar otra lista.
+ * Donde no hay vibrador (escritorio, iPhone) no pasa nada y no peta nada.
+ * Va aquí y no en main porque este es el módulo del feedback no visual.
+ */
+function vibrar(patron){
+  try{ if(navigator.vibrate) navigator.vibrate(patron); }catch(_){ /* sin drama */ }
+}
+
 /** Un PUEBLO descubierto: campanitas que suben — el logro del explorador.
  *  Distinta de la fanfarria de hito, que esa es de contarHito y de nadie más. */
 export function descubierto(){
+  vibrar(CONFIG.tacto.descubierto);
   tono(523, 523, 0.16, 'triangle', 0.35);
   tono(659, 659, 0.16, 'triangle', 0.35, 0.11);
   tono(784, 784, 0.26, 'triangle', 0.40, 0.22);
@@ -144,6 +156,7 @@ export function llave(){
 
 /** Reparación terminada: arpegio corto hacia arriba. */
 export function reparada(){
+  vibrar(CONFIG.tacto.reparada);
   tono(440, 440, 0.07, 'triangle', 0.2);
   tono(550, 550, 0.07, 'triangle', 0.2, 0.07);
   tono(660, 660, 0.11, 'triangle', 0.2, 0.14);
@@ -158,12 +171,14 @@ export function hallazgo(){
 
 /** Tarjeta de hito o logro: dos notas serenas. Es un momento, no una feria. */
 export function hito(){
+  vibrar(CONFIG.tacto.hito);
   tono(440, 440, 0.18, 'triangle', 0.22);
   tono(660, 660, 0.30, 'triangle', 0.2, 0.16);
 }
 
 /** Un pueblo se incorpora: la fanfarria buena, tres notas. */
 export function pueblo(){
+  vibrar(CONFIG.tacto.pueblo);
   tono(392, 392, 0.14, 'triangle', 0.24);
   tono(494, 494, 0.14, 'triangle', 0.24, 0.12);
   tono(587, 587, 0.28, 'triangle', 0.24, 0.24);

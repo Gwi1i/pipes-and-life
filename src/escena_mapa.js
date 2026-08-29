@@ -14,10 +14,10 @@ import { CONFIG } from './config.js';
 import { celdaEn, clicsParaDestapar, esAlcanzable, puedeColocar,
          puedeSeguirTrazado, costeTrazado, costeCasillaTuberia,
          diametro, nivelDiametro, redDe, casillaEnRed,
-         construccionesConectadas, averiaEn,
+         construccionesConectadas, averiaEn, lineasConectadas,
          nucleoMasCercano, nombreDeNucleo } from './mapa.js';
 import { poderExpansion, llenadoVaso, factorEstiaje,
-         capacidad, escalonCaserio } from './simulacion.js';
+         capacidad, escalonCaserio, redEstrangula } from './simulacion.js';
 import { formatear } from './util.js';
 import { limitar } from './util.js';
 import { Escena, mezclarColor, oscurecer, aclarar } from './escena.js';
@@ -33,6 +33,16 @@ export class EscenaMapa extends Escena {
     this.golpe = 0;
     this.centrada = false;
     this.resaltada = null;    // { col, fila } bajo el cursor
+    this.fiestas = [];        // celebraciones de incorporación en curso
+  }
+
+  /**
+   * La FIESTA de incorporar: anillos y confeti sobre el núcleo recién entrado.
+   * Va en coordenadas de MAPA, no de pantalla: si el jugador arrastra la
+   * cámara a mitad de celebración, el confeti se queda con su pueblo.
+   */
+  celebrarIncorporacion(col, fila){
+    this.fiestas.push({ col, fila, t: 0 });
   }
 
   /** Píxeles por casilla al zoom actual. */
@@ -170,6 +180,55 @@ export class EscenaMapa extends Escena {
     this.velosDeAmbiente();
     this.dibujarAverias(estado);
     this.destellosClic();
+    this.dibujarFiestas(estado, dt);
+  }
+
+  /**
+   * El confeti es DETERMINISTA: cada papel sale de su índice (ángulo y
+   * velocidad por seno-hash) y su posición se calcula del tiempo, sin estado
+   * por partícula. Así la fiesta no reserva memoria y se recicla sola.
+   */
+  dibujarFiestas(estado, dt){
+    if(!this.fiestas.length) return;
+    const F = CONFIG.estiloMapa.fiesta;
+    this.fiestas = this.fiestas.filter(f => (f.t += dt) < F.duracion);
+    const ctx = this.ctx, t = this.tam;
+    const colores = ['#f5b544', '#7dd3fc', '#a7f3d0', '#fda4af', '#fef9c3'];
+    for(const f of this.fiestas){
+      const cx = f.col * t - estado.camara.x + t / 2;
+      const cy = f.fila * t - estado.camara.y + t / 2;
+      const k = f.t / F.duracion;             // 0..1 de la celebración
+      // Dos anillos que se expanden, dorado y blanco, desfasados
+      for(const [desfase, color] of [[0, '#f5b544'], [0.18, '#ffffff']]){
+        const kk = (k - desfase) / (1 - desfase);
+        if(kk <= 0) continue;
+        ctx.globalAlpha = (1 - kk) * 0.7;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = Math.max(2, t * 0.06 * (1 - kk));
+        ctx.beginPath();
+        ctx.arc(cx, cy, t * (0.3 + kk * 2.2), 0, 7);
+        ctx.stroke();
+      }
+      // El confeti: sale disparado, frena y cae
+      for(let i = 0; i < F.particulas; i++){
+        const azar = Math.abs(Math.sin(i * 127.1 + f.col * 3.7 + f.fila * 1.3));
+        const ang = (i / F.particulas) * Math.PI * 2 + azar;
+        const vel = t * (1.6 + azar * 2.2);
+        const frenado = 1 - Math.exp(-f.t * 2.4);
+        const px = cx + Math.cos(ang) * vel * frenado * 0.62;
+        const py = cy + Math.sin(ang) * vel * frenado * 0.62
+                 + f.t * f.t * t * 0.85;      // la gravedad, sencilla
+        ctx.globalAlpha = Math.max(0, 1 - k * 1.15);
+        ctx.fillStyle = colores[i % colores.length];
+        ctx.save();
+        ctx.translate(px, py);
+        ctx.rotate(azar * 6 + f.t * (2 + azar * 3));
+        const lado = Math.max(2, t * (0.05 + azar * 0.05));
+        ctx.fillRect(-lado / 2, -lado / 2, lado, lado * 0.6);
+        ctx.restore();
+      }
+    }
+    ctx.globalAlpha = 1;
   }
 
   /* ---------- casilla descubierta ---------- */
@@ -1022,8 +1081,10 @@ export class EscenaMapa extends Escena {
     // muro roto dejaba fantasmas por el mapa y ensuciaba la pieza reparada.
     if(celda.resuelto && celda.hallazgo === 'ruina') return;
 
-    // La señal no late: es un cartel, no un premio pendiente
-    if(!celda.resuelto && celda.hallazgo !== 'senal'){
+    // La señal no late (es un cartel) ni el manantial (es información del
+    // terreno, permanente — sus ondas ya se mueven solas)
+    if(!celda.resuelto && celda.hallazgo !== 'senal'
+       && celda.hallazgo !== 'manantial'){
       const pulso = 0.5 + Math.sin(this.tiempo * 3) * 0.5;
       ctx.globalAlpha = 0.20 + pulso * 0.28;
       ctx.fillStyle = col;
@@ -1043,9 +1104,53 @@ export class EscenaMapa extends Escena {
       this.caserio(cx, y + t * 0.70, t, col, habitantes);
     else if(celda.hallazgo === 'ruina') this.ruina(cx, y + t * 0.70, t, col);
     else if(celda.hallazgo === 'senal') this.senal(cx, y + t * 0.72, t, extra);
+    else if(celda.hallazgo === 'manantial') this.manantial(cx, y + t * 0.62, t);
     else return;
 
     ctx.globalAlpha = 1;
+  }
+
+  /**
+   * El MANANTIAL: una poza entre piedras con el agua asomando — ondas que
+   * nacen en el centro y un brillo que sube. Es el único hallazgo que se
+   * mueve solo: el agua viva es su manera de decir "aquí abajo hay más".
+   */
+  manantial(cx, cy, t){
+    const ctx = this.ctx;
+    const r = t * 0.26;
+    // la poza
+    ctx.fillStyle = '#0e5a86';
+    ctx.beginPath(); ctx.ellipse(cx, cy, r, r * 0.62, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = '#38bdf8';
+    ctx.beginPath(); ctx.ellipse(cx, cy, r * 0.78, r * 0.46, 0, 0, 7); ctx.fill();
+    // las ondas: dos, naciendo del centro, recicladas por fase
+    for(const desfase of [0, 0.5]){
+      const k = ((this.tiempo * 0.55 + desfase) % 1);
+      ctx.globalAlpha = (1 - k) * 0.55;
+      ctx.strokeStyle = '#e0f2fe';
+      ctx.lineWidth = Math.max(1, t * 0.018);
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, r * 0.2 + r * 0.62 * k, (r * 0.2 + r * 0.62 * k) * 0.6,
+                  0, 0, 7);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    // el borbotón: un destello subiendo del centro
+    const sube = (this.tiempo * 1.4) % 1;
+    ctx.globalAlpha = (1 - sube) * 0.8;
+    ctx.fillStyle = '#e0f2fe';
+    ctx.beginPath();
+    ctx.arc(cx, cy - sube * r * 0.5, Math.max(1, t * 0.024), 0, 7);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    // las piedras del brocal, con la luz de siempre
+    ctx.fillStyle = '#8a94a0';
+    for(const [dx, dy, s] of [[-0.9, -0.25, 0.11], [0.85, -0.3, 0.09],
+                              [0.6, 0.5, 0.10], [-0.55, 0.55, 0.08]]){
+      ctx.beginPath();
+      ctx.ellipse(cx + dx * r, cy + dy * r * 0.7, t * s, t * s * 0.7, 0, 0, 7);
+      ctx.fill();
+    }
   }
 
   /**
@@ -1372,6 +1477,7 @@ export class EscenaMapa extends Escena {
     if(!estado.tuberias.length) return;
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
 
+    const vivas = this.lineasVivas(estado);
     const ordenRedes = Object.keys(CONFIG.redes);
     for(const tub of estado.tuberias){
       const clave = redDe(tub);
@@ -1415,10 +1521,109 @@ export class EscenaMapa extends Escena {
       this.trazo(pts);
       ctx.restore();
 
-      // 4. lo que lleva dentro
+      // 4. lo que lleva dentro — pero solo si la línea TRABAJA: por un tubo
+      //    suelto no corre nada, y esa quietud es el aviso de que algo falta
+      const sentido = vivas.get(tub);
       if(R.esVial) this.marcaVial(pts, ancho);
-      else this.gotasEnRuta(pts, ancho, R.color);
+      else if(sentido) this.gotasEnRuta(pts, ancho, R.color, sentido);
+
+      // 5. el CUELLO DE BOTELLA se señala: si esta red está limitada AHORA y
+      //    este es uno de sus tramos más estrechos, raya roja marchante.
+      //    El mapa es el diagnóstico: se mira y se sabe qué renovar.
+      if(!R.esVial && sentido
+         && (this._estrechas.get(clave) || []).includes(tub)
+         && this.redLimitada(estado, clave))
+        this.marcaCuello(pts, ancho);
     }
+  }
+
+  /** La raya del cuello: discontinua, roja, marchando y con pulso — la misma
+   *  gramática que la avería: rojo que se mueve = esto te está costando. */
+  marcaCuello(pts, ancho){
+    const ctx = this.ctx, C = CONFIG.estiloMapa.cuello;
+    ctx.save();
+    const pulso = 0.55 + 0.45 * Math.sin(this.tiempo * 5);
+    ctx.globalAlpha = C.alfa * pulso;
+    ctx.strokeStyle = C.color;
+    ctx.lineWidth = Math.max(1.5, ancho * 0.30);
+    ctx.setLineDash([ancho * 0.9, ancho * 0.7]);
+    ctx.lineDashOffset = -this.tiempo * C.velocidad * this.zoom;
+    this.trazo(pts);
+    ctx.restore();
+  }
+
+  /**
+   * Qué líneas están ENGANCHADAS a la red de su pueblo, y en qué SENTIDO corre
+   * el agua por cada una. Por una línea suelta no corre nada — las gotas en
+   * movimiento son información, no adorno: si se mueven, ese tubo trabaja.
+   * El sentido es el del oficio: el abastecimiento fluye HACIA el pueblo y el
+   * saneamiento y las pluviales DESDE él. Se decide mirando qué extremo del
+   * camino queda más cerca de un pueblo incorporado — con mallas raras puede
+   * fallar, pero para leer el mapa basta y sale gratis.
+   * El recorrido de red es caro: misma receta de cache que piezasSueltas.
+   */
+  lineasVivas(estado){
+    const firma = estado.tuberias.length + ':' + estado.construcciones.length
+                + ':' + estado.averias.length + ':'
+                + estado.pueblos.filter(p => p.desbloqueado).length;
+    if(this._vivasFirma === firma) return this._vivas;
+    this._vivasFirma = firma;
+    this._vivas = new Map();
+    this._estrechas = new Map();   // red -> sus tramos más estrechos
+    const nucleos = [];
+    for(const p of estado.pueblos)
+      if(p.desbloqueado && p.col !== undefined) nucleos.push(p);
+    const distNucleo = (punto) => {
+      let mejor = Infinity;
+      for(const n of nucleos)
+        mejor = Math.min(mejor, Math.hypot(punto.col - n.col, punto.fila - n.fila));
+      return mejor;
+    };
+    for(const [clave, r] of Object.entries(CONFIG.redes)){
+      if(r.esVial){
+        // La carretera no lleva sentido: su marca vial es estática
+        for(const { tuberia } of lineasConectadas(estado, clave))
+          this._vivas.set(tuberia, 1);
+        continue;
+      }
+      const conectadas = lineasConectadas(estado, clave);
+      for(const { tuberia } of conectadas){
+        const cam = tuberia.camino;
+        const haciaElFinal = distNucleo(cam[cam.length - 1]) <= distNucleo(cam[0]);
+        // Abastecimiento: hacia el pueblo. Las redes que EVACÚAN, al revés.
+        const sentido = (clave === 'abastecimiento') === haciaElFinal ? 1 : -1;
+        this._vivas.set(tuberia, sentido);
+      }
+      // Los tramos MÁS ESTRECHOS de cada red: los candidatos a cuello de
+      // botella. Si la red está limitada, son ellos los que se señalan.
+      if(conectadas.length){
+        const nivel = (tb) => nivelDiametro(tb.dn, clave);
+        const peor = Math.min(...conectadas.map(({ tuberia }) => nivel(tuberia)));
+        this._estrechas.set(clave,
+          conectadas.filter(({ tuberia }) => nivel(tuberia) === peor)
+                    .map(({ tuberia }) => tuberia));
+      }
+    }
+    return this._vivas;
+  }
+
+  /**
+   * ¿Está esta red LIMITADA ahora mismo? Abastecimiento: el agua captada no
+   * cabe por la conducción (redEstrangula). Saneamiento: el colector rebosa
+   * (lo dice el resultado del paso). La cuenta de estrangular no es gratis,
+   * así que se re-mira cada CONFIG.estiloMapa.cuello.cadaSegundos y no por
+   * fotograma.
+   */
+  redLimitada(estado, clave){
+    const C = CONFIG.estiloMapa.cuello;
+    if(this.tiempo - (this._limitadaVez || -99) > C.cadaSegundos){
+      this._limitadaVez = this.tiempo;
+      this._limitada = {
+        abastecimiento: redEstrangula(estado.activo, estado),
+        saneamiento: !!(this._res && this._res.rebosando)
+      };
+    }
+    return !!(this._limitada && this._limitada[clave]);
   }
 
   /** Marca vial discontinua, para que la carretera no parezca un tubo gris. */
@@ -1432,11 +1637,15 @@ export class EscenaMapa extends Escena {
     ctx.restore();
   }
 
-  /** Gotas viajando por dentro, para que se vea que la tubería lleva agua. */
-  gotasEnRuta(pts, ancho, color){
+  /** Gotas viajando por dentro, para que se vea que la tubería lleva agua —
+   *  en el sentido en que el agua va de verdad (lo decide lineasVivas). */
+  gotasEnRuta(pts, ancho, color, sentido = 1){
     const ctx = this.ctx;
     ctx.fillStyle = aclarar(color, 0.55);
-    const sep = ancho * 3.2, desfase = (this.tiempo * 34) % sep;
+    const G = CONFIG.estiloMapa.gotas;
+    const sep = ancho * G.separacion;
+    let desfase = (this.tiempo * G.velocidad * this.zoom * sentido) % sep;
+    if(desfase < 0) desfase += sep;
     let acum = -desfase;
     for(let i = 0; i < pts.length - 1; i++){
       const a = pts[i], b = pts[i + 1];

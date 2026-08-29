@@ -39,8 +39,13 @@ export const CONFIG = {
     // que hace la dificultad exponencial de verdad: la tubería crece lineal con
     // la distancia, pero el canon crece geométrico con el tamaño de la
     // mancomunidad. El decimoquinto pueblo no cuesta lo que el quinto.
-    canonBase: 400,
-    canonFactor: 1.30,
+    // Subidos con la cirugía (base 400 → 700, factor 1.30 → 1.42): el dinero
+    // que antes absorbía la escalera de la tienda se iba entero a cánones y
+    // el bot incorporaba 5 núcleos en 13 minutos. El canon es LA palanca de
+    // la dificultad exponencial: la base frena el arranque, el factor frena
+    // el juego largo.
+    canonBase: 700,
+    canonFactor: 1.42,
     habitantesMin: 120,      // tamaño con el que llega cada uno (crece por anillo)
     habitantesMax: 260,
     habitantesPorAnillo: 60, // los lejanos son algo mayores: premio por el viaje
@@ -92,18 +97,24 @@ export const CONFIG = {
     // (ver economia.tarifa). Con 1500 L bastaban dos clics para llenar la barra
     // y el juego se quedaba esperando: eso mataba la esencia.
     litrosPorClicBase: 450,
-    bufferSinDeposito: 4000
+    /* Subido de 4000 con la cirugía: sin la tienda, el primer depósito de
+       verdad tarda minutos (pieza + colina + tubería) y con 4000 el colchón
+       duraba 7,3 SEGUNDOS a 200 habitantes — el autor no soltaba el clic ni
+       para destapar teselas. La red heredada siempre tuvo su depósito
+       municipal pequeño; esto es ese depósito. */
+    bufferSinDeposito: 12000
   },
 
-  /* ---------- EL DEPÓSITO ---------- */
-  deposito: {
-    // El primer depósito es un respiro corto entre tandas de clic — pero
-    // cada nivel compra MINUTOS de margen, no segundos. Medido antes del
-    // ajuste: el lleno duraba 50 s al empezar y 18 s con 1.500 habitantes —
-    // el juego se volvía más niñera cuanto más crecías, y el autor no podía
-    // soltar el depósito para explorar.
-    capacidadBase: 12000,      // ~27 clics de llenado
-    incrementoCapacidad: 22000
+  /* ---------- LA CUADRILLA (mantenimiento, común) ----------
+     LA CIRUGÍA disolvió la tienda en el mapa; el personal de mantenimiento
+     no es una obra, así que vive aquí: una compra de la MANCOMUNIDAD (nivel
+     común, estado.cuadrilla), hermana de la nómina. Mismos números que la
+     mejora municipal que sustituye. */
+  cuadrilla: {
+    nombre: 'Cuadrilla de mantenimiento',
+    desc: 'Repara las averías de toda la mancomunidad: cada nivel deja menos ' +
+          'golpes de llave y termina antes los arreglos por su cuenta.',
+    costeBase: 1500, factorCoste: 1.8, nivelMax: 8
   },
 
   /* ---------- LOS SERVICIOS ----------
@@ -152,84 +163,18 @@ export const CONFIG = {
     }
   },
 
-  /* ---------- MEJORAS (la tienda de cada pueblo) ----------
-     Cada pueblo tiene su propio nivel de cada vía. La tienda se genera sola. */
-  mejoras: {
-    bomba: {
-      nombre: 'Potencia de bomba', orden: 1,
-      desc: 'Más agua por clic, en la red municipal del casco urbano. También rinde más el auto-bombeo.',
-      costeBase: 140, factorCoste: 1.5, nivelMax: 25,
-      incrementoLitros: 150
-    },
-    deposito: {
-      nombre: 'Depósito de reserva', orden: 2,
-      desc: 'El depósito municipal del pueblo: acumula agua para no depender del clic. Cada nivel amplía la reserva.',
-      // Barato a propósito: es la mejora que te saca del clic continuo, y tiene
-      // que llegar en el primer medio minuto de partida.
-      costeBase: 120, factorCoste: 1.7, nivelMax: 15
-    },
-    captacion: {
-      nombre: 'Captación', orden: 3,
-      desc: 'La toma municipal: extrae agua sola, sin clicar. En verano rinde menos (estiaje).',
-      // ELEMENTO EXCLUSIVO: produce sin clicar, o sea que compra justo lo que
-      // el juego vende. Tiene que ser un objetivo caro, no un trámite del
-      // primer minuto, o el jugador deja de clicar y se acaba la gracia.
-      costeBase: 2500, factorCoste: 1.8, nivelMax: 20,
-      // Subido de 0.12: la captación a tope cubría el 15% de la demanda y la
-      // inversión no compraba autonomía — el clic era vida asistida perpetua.
-      // Ahora la base se cubre invirtiendo y el clic paga el CRECIMIENTO...
-      // y el ESTIAJE: en verano la captación cae y vuelve la temporada de
-      // bombear a mano. El clic no muere: se vuelve estacional.
-      caudalPorNivel: 0.30
-    },
-    depuradora: {
-      nombre: 'Estación depuradora', orden: 4,
-      desc: 'Trata las aguas residuales antes de devolverlas al cauce. Cada nivel, más limpio.',
-      costeBase: 2000, factorCoste: 1.8, nivelMax: 6,
-      fraccionPorNivel: 0.22,   // fracción de residual que trata cada nivel
-      fraccionMax: 0.96,        // ni la mejor depuradora deja el agua perfecta
-      // Subido de 2500: con aquello, a 6000 hab el residual (33.000 L/h)
-      // superaba el tratamiento máximo posible y el río moría hicieras lo que
-      // hicieras. La lección que enseñaba era la contraria a la buscada.
-      caudalPorNivel: 6000      // L/h que es capaz de tratar cada nivel (lo que
-                                // exceda se ALIVIA crudo al cauce)
-    },
-    // --- Solo cuando se abre el tercer pueblo (requiere: 'pluviales') ---
-    pluviales: {
-      nombre: 'Red de pluviales', orden: 5,
-      desc: 'Separa el agua de lluvia del saneamiento: alivia la depuradora y ' +
-            'aprovecha parte de la lluvia para tu depósito.',
-      costeBase: 3000, factorCoste: 1.7, nivelMax: 5,
-      requiere: 'pluviales',
-      fraccionPorNivel: 0.20,   // fracción de escorrentía que saca del colector
-      fraccionMax: 0.85
-    },
-    tanque: {
-      nombre: 'Tanque de tormentas', orden: 6,
-      desc: 'Retiene la punta de lluvia para no aliviar crudo al cauce, y la ' +
-            'trata luego con calma. Mejora la calidad del pueblo.',
-      costeBase: 4500, factorCoste: 1.8, nivelMax: 5,
-      requiere: 'pluviales',
-      capacidadPorNivel: 30000  // litros de retención por nivel
-    },
-    reciclaje: {
-      nombre: 'Planta de reciclaje', orden: 7,
-      desc: 'Cada nivel abre una fracción nueva (envases, orgánica, vidrio...) ' +
-            'y con ella un contenedor en el pueblo. Lo separado se vende.',
-      costeBase: 5000, factorCoste: 1.75, nivelMax: 7,
-      requiere: 'residuos'
-    },
-    mantenimiento: {
-      nombre: 'Personal de mantenimiento', orden: 8,
-      desc: 'Repara las averías de este pueblo solo. Cada nivel, más rápido.',
-      costeBase: 1500, factorCoste: 1.8, nivelMax: 8
-    }
-  },
+  /* LA TIENDA HA MUERTO (la cirugía, docs/cirugia.md): sus mejoras se
+     disolvieron en las piezas del mapa — el único hogar de la
+     infraestructura. Los niveles municipales comprados se REEMBOLSAN al
+     cargar (la tabla vieja de precios vive en estado.js, junto a la
+     migración). El mantenimiento sobrevive como CUADRILLA (arriba). */
 
   /* ---------- FUNCIÓN ESPECIAL: AUTO-BOMBEO ----------
      Por pueblo: cada concesión se gana su automatización. Requisitos + pago
      alto. `desbloqueoExterno` es el gancho para una futura vía de anuncio/pago;
-     aquí NO se implementa pago ni anuncio real. */
+     aquí NO se implementa pago ni anuncio real. Los requisitos son NIVELES
+     de pieza CONECTADOS a la red (tras la cirugía ya no hay niveles
+     municipales). */
   premium: {
     autobomba: {
       nombre: 'Auto-bombeo',
@@ -267,6 +212,11 @@ export const CONFIG = {
     // servicios se le amontonaban: saneamiento con dos pueblos y pluviales
     // con el tercero, todo en la primera hora.
     abreConPueblos: 4,
+    /* LA CIRUGÍA: la fracción separada ya no la da una mejora municipal —
+       la dan las LÍNEAS de pluviales conectadas. Tender ES el juego, que
+       siempre fue la doctrina de esta red. */
+    fraccionPorLinea: 0.20,     // de escorrentía separada por línea conectada
+    fraccionMax: 0.85,
     fraccionAprovechada: 0.35,  // de lo separado, cuánto se recoge para el depósito
     // Un pluvial va sobradísimo respecto a la línea de agua potable: lo suyo son
     // puntas cortas y bestiales, no un caudal sostenido.
@@ -376,6 +326,12 @@ export const CONFIG = {
     // Bajada de 14 (sensación del autor: el dinero se acumulaba demasiado
     // rápido a media partida; medido con el bot, fase 2 sigue en la banda).
     tarifa: 12.00,
+    /* Dicho por el autor, que es del oficio: "no se factura el 100% de lo
+       que se extrae". La primera mitad del hueco ya la modelan las FUGAS
+       (extraído ≠ entregado); esta tasa es la segunda: de lo SERVIDO, una
+       parte no se cobra — impagos de quien no puede o no quiere pagar,
+       contadores que subcuentan, tomas sin contador. */
+    tasaCobro: 0.94,
     /* LA NÓMINA: cada pueblo incorporado suma personal (petición del autor:
        el dinero se acumulaba y comprar todo era fácil — al añadir pueblos
        tienen que subir los gastos). El PRIMERO va incluido, la cuadrilla de
@@ -383,6 +339,20 @@ export const CONFIG = {
        con la expansión, como en una mancomunidad de verdad. */
     personalPorPuebloHora: 4,   // con 5, el bot daba fase 2 en 74 min: pasado
     horasPorSegundo: 0.4
+  },
+
+  /* ---------- EL TACTO ----------
+     Vibración en móvil, SOLO en los momentos que ya son especiales — los que
+     tienen sonido propio: la tarjeta, el pueblo descubierto, la incorporación
+     y la avería reparada. Nunca en el clic de bombear: el gesto más repetido
+     del juego convertido en taladradora. Patrones en milisegundos
+     ([vibra, pausa, vibra...]); donde no hay vibrador (escritorio, iPhone) el
+     navegador lo ignora sin más. */
+  tacto: {
+    hito:        [45, 60, 45],         // la tarjeta que para el juego
+    descubierto: [30, 40, 30, 40, 60], // ¡un pueblo en el mapa!
+    pueblo:      [40, 50, 40, 50, 90], // la incorporación, el momentazo
+    reparada:    [25, 35, 50]          // la avería resuelta: alivio corto
   },
 
   /* ---------- SONIDO ----------
@@ -597,19 +567,18 @@ export const CONFIG = {
   /* ---------- PROGRESO OFFLINE ---------- */
   offline: {
     minSegundos: 60,
-    /* Ocho horas y a MEDIO rendimiento: la explotación sin nadie al mando
-       rinde menos, y el juego es estar. Empezó en 3 h, pero justo midiendo la
-       RETENCIÓN eso era un tiro en el pie: quien juega por la noche y vuelve
-       por la mañana tiene que encontrarse algo — la noche entera cabe en 8.
-       El medio rendimiento se queda: deja hueco para la monetización futura
-       (pagar por el rendimiento completo sería la ventaja natural a vender).
-       Como el auto-bombeo y los aceleradores: `desbloqueoExterno` es el
-       GANCHO — NO hay pago ni anuncio implementado y no se simula ninguno. */
+    /* Ocho horas de tope: quien juega por la noche y vuelve por la mañana
+       tiene que encontrarse algo — la noche entera cabe en 8 (empezó en 3,
+       y midiendo RETENCIÓN aquello era un tiro en el pie).
+       El rendimiento bajó de 0.5 a 0.2 con la cirugía: la autonomía nueva
+       (captación que cubre la base) convertía la ausencia en una imprenta
+       de billetes — el autor volvió tras 51 minutos con la caja reventada.
+       El principio es suyo: jugar se premia, no jugar se nota. Volver debe
+       dar una alegría, no una paga.
+       El rendimiento pleno queda como hueco de monetización futura:
+       `desbloqueoExterno` es el GANCHO — NO hay pago ni anuncio
+       implementado y no se simula ninguno. */
     maxHoras: 8,
-    /* Bajado de 0.5: con la captación cundiendo (autonomía comprable), la
-       ausencia era una imprenta de billetes — el autor volvió tras 51 min
-       con la caja reventada. Su principio: jugar se premia, no jugar se
-       nota — volver debe dar una alegría, no una paga. */
     rendimiento: 0.2,          // fracción de la ganancia que se cobra offline
     desbloqueoExterno: null,
     /* La TARJETA de vuelta solo desde ausencias de verdad: por debajo, la línea
@@ -633,7 +602,7 @@ export const CONFIG = {
        guardado: una partida vieja (sin él = 1) regenera SU mundo exacto y
        solo las nuevas estrenan la siembra. Si tocas cualquier sembrar*, sube
        este número y deja el camino viejo intacto bajo su guardia. */
-    mundo: 2,
+    mundo: 3,   // 3: los manantiales (el indicio natural de acuífero)
     origen: { col: 48, fila: 34 },   // aquí está tu pueblo inicial
     radioInicial: 3,                // casillas ya abiertas al empezar
     // Alrededor del pueblo, el terreno se rebaja a su variante barata: empezar
@@ -737,6 +706,39 @@ export const CONFIG = {
        demás (pregunta del autor: se solapaban, sí). El orden del carril es
        el de CONFIG.redes. */
     carril: 0.11,           // separación entre redes, en fracción de casilla
+    /* Las GOTAS que viajan por las tuberías. Solo corren por líneas
+       CONECTADAS (un tubo suelto se dibuja seco: el agua en movimiento es
+       información, no adorno) y llevan el sentido del agua de verdad: el
+       abastecimiento HACIA el pueblo, el saneamiento y las pluviales DESDE
+       él. */
+    gotas: {
+      velocidad: 34,        // píxeles por segundo a zoom 1
+      separacion: 3.2       // distancia entre gotas, en anchos de tubería
+    },
+    /* La FIESTA de incorporar un pueblo: anillos y confeti sobre el núcleo.
+       Incorporar es EL momento del juego —el canon, la fase, el mapa que
+       crece— y hasta ahora se despachaba con una línea de registro. */
+    fiesta: {
+      duracion: 2.6,        // segundos de celebración
+      particulas: 26        // papeles de confeti por fiesta
+    },
+    /* El CUELLO DE BOTELLA se señala a sí mismo: cuando una red está
+       limitada AHORA (el agua captada no cabe por la conducción, el
+       colector rebosa), sus tramos más estrechos llevan una marca roja
+       marchante. El mapa es el diagnóstico: se mira y se sabe qué renovar,
+       sin abrir ningún panel. */
+    cuello: {
+      color: '#ef4444',     // el rojo de alarma del juego
+      alfa: 0.8,            // opacidad máxima del pulso
+      velocidad: 26,        // marcha de la raya, px/s a zoom 1
+      cadaSegundos: 1       // cada cuánto se re-mira si la red sigue limitada
+    },
+    /* Los NÚMEROS FLOTANTES del dinero: "−300 €" subiendo del sitio del
+       gasto. Un pago que no se ve no se siente (probador frío dixit). */
+    flotante: {
+      duracion: 1.4,        // segundos en pantalla
+      subida: 0.8           // cuánto sube, en casillas
+    },
     /* TINTA: contorno oscuro en las aristas de las edificaciones, como en el
        resto del arte del juego (residuos, contenedores, piezas del
        minijuego). 0 lo apaga. */
@@ -866,7 +868,9 @@ export const CONFIG = {
     depuradora: {
       nombre: 'Depuradora', coste: 2000, orden: 4, color: '#34d399',
       terreno: ['prado', 'pastizal'], junto: ['agua', 'lago'],
-      desc: 'Trata las aguas residuales antes de devolverlas al cauce.',
+      desc: 'Trata las aguas residuales antes de devolverlas al cauce. Va ' +
+            'pegada al agua porque AHÍ vierte lo tratado, ella sola: el ' +
+            'colector que te toca tender es el del pueblo hasta ella.',
       // Ficha divulgativa: esto no es texto de juego, es lo que
       // esta pieza ES de verdad. El objetivo del autor es que quien
       // juegue acabe sabiendo algo del oficio.
@@ -1025,9 +1029,25 @@ export const CONFIG = {
   ampliacion: {
     // La potabilizadora faltaba: llegó después y nadie la apuntó aquí, así
     // que su ficha salía sin botón AMPLIAR y parecía que "no tenía niveles".
-    tipos: ['captacion', 'bomba', 'deposito', 'depuradora', 'tanque', 'potabilizadora'],
+    tipos: ['captacion', 'bomba', 'deposito', 'depuradora', 'tanque',
+            'potabilizadora', 'reciclaje', 'acuifero'],
+    /* LA CIRUGÍA: las ampliaciones absorben la progresión profunda que daba
+       la tienda, así que cada tipo lleva SU tope y SU factor (antes: todos a
+       4 y 1,7). Factores más suaves donde la escalera es larga — con 1,7 el
+       nivel 15 era impagable — y el conjunto lo calibra el BOT contra la
+       banda de fases, no el ojo. En reciclaje el nivel ES las fracciones. */
+    porTipo: {
+      captacion:      { nivelMax: 20, factorCoste: 1.6 },
+      bomba:          { nivelMax: 20, factorCoste: 1.5 },
+      deposito:       { nivelMax: 15, factorCoste: 1.55 },
+      depuradora:     { nivelMax: 8,  factorCoste: 1.65 },
+      tanque:         { nivelMax: 6,  factorCoste: 1.65 },
+      potabilizadora: { nivelMax: 6,  factorCoste: 1.65 },
+      reciclaje:      { nivelMax: 7,  factorCoste: 1.65 },
+      acuifero:       { nivelMax: 6,  factorCoste: 1.65 }
+    },
     nivelMax: 4,
-    factorCoste: 1.7       // ampliar a nivel n cuesta coste × factor^(n-1)
+    factorCoste: 1.7       // respaldo para tipos sin entrada en porTipo
   },
 
   /* ---------- DERRIBO ----------
@@ -1040,8 +1060,8 @@ export const CONFIG = {
   },
 
   /* ---------- LO QUE APORTA CADA PIEZA CONECTADA ----------
-     La tienda de mejoras sube el NIVEL (lo bien que rinde cada una); el mapa
-     decide CUÁNTAS tienes y si están enganchadas. Una pieza sin tubería al
+     El nivel de la pieza (ampliaciones) dice lo bien que rinde; el mapa
+     decide dónde está y si está enganchada. Una pieza sin tubería al
      pueblo no cuenta: por eso el trazado importa. */
   /* ---------- EL CLIC DE BOMBEAR: límites ----------
      Dos protecciones que van juntas (petición del autor):
@@ -1065,20 +1085,22 @@ export const CONFIG = {
   },
 
   aportePorPieza: {
-    // Subidos con caudalPorNivel (ver mejoras.captacion): la pieza del mapa
-    // y la mejora municipal compran autonomía a la par.
-    captacion: 0.30,     // L/s de producción pasiva que suma cada captación
-    deposito: 14000,     // litros de capacidad que suma cada depósito
+    /* TRAS LA CIRUGÍA estas son LAS cuentas (no hay mitad municipal): cada
+       fórmula multiplica NIVELES CONECTADOS por su aporte. Recalibrados
+       para absorber la escalera de la tienda; los vigila el bot. */
+    captacion: 0.30,     // L/s de producción pasiva por nivel
+    deposito: 18000,     // litros de capacidad por nivel (14000 + la parte municipal)
     bomba: 220,          // litros por clic que suma cada bombeo
     /* La ETAP: L/h de agua BRUTA que potabiliza cada planta. Escala pareja a
        la depuradora: son las dos caras del mismo oficio. */
     potabilizadora: 5000,
     // Estas dos van por la red de SANEAMIENTO, no por la de abastecimiento
-    depuradora: 8000,    // L/h de tratamiento que suma cada depuradora
+    depuradora: 9000,    // L/h de tratamiento por nivel (8000 + la parte municipal)
     // ...y lo BIEN que lo trata. Sin esto una depuradora del mapa hacía pasar el
     // agua por dentro y la devolvía igual de sucia: mucho caudal y cero limpieza.
     depuradoraCalidad: 0.22,
-    tanque: 25000        // litros de retención que suma cada tanque
+    depuradoraFraccionMax: 0.96,  // ni la mejor planta deja el agua perfecta
+    tanque: 30000        // litros de retención por nivel (25000 + la municipal)
   },
 
   /* ---------- LAS REDES ----------
@@ -1221,7 +1243,7 @@ export const CONFIG = {
     ruinas: 30,
     distanciaMinima: 4,      // nada de hallazgos pegados al origen
     color: { pueblo: '#facc15', ruina: '#c084fc', arqueologia: '#d9a441',
-             senal: '#d9c58a' },
+             senal: '#d9c58a', manantial: '#7dd3fc' },
     /* SEÑALES DE CAMINO: cada núcleo siembra una a medio camino hacia el
        origen. Al destaparla apunta al pueblo sin descubrir MÁS CERCANO con
        su distancia — explorar deja de ser dar clics sin rumbo (petición del
@@ -1438,6 +1460,14 @@ export const CONFIG = {
        geología que promete y no cumple. Sale en torno a dos aciertos de cada
        tres, que es lo que hace que estudiar valga la pena SIN volverlo seguro. */
     haloIndicios: 0,        // casillas de indicios alrededor de cada masa
+    /* EL MANANTIAL (idea del autor): el agua de abajo ASOMA. Se siembra
+       sobre casillas con masa de verdad — preferentemente en relieve, que
+       es donde el karst aflora — y al destaparlo es el único indicio que
+       NO puede mentir: donde brota un manantial, el sondeo no sale seco.
+       Los señuelos no tienen manantial jamás: esa es la gracia entera. */
+    manantiales: {
+      probPorMasa: 0.75     // no todas las masas asoman: encontrarlo es premio
+    },
     señuelos: 11,           // manchas con indicios y SIN agua: el sondeo seco
     tamSeñuelo: 4,
     estudio: {
@@ -1567,10 +1597,10 @@ export const CONFIG = {
      `boton` es opcional: si está, la tarjeta lleva un botón que hace lo
      obvio (main.js, caso 'irTajo'). */
   tajos: [
-    { id: 'mejora', titulo: 'Sube la primera mejora',
-      texto: 'En la solapa PUEBLO está la tienda: cada nivel de POTENCIA DE ' +
-             'BOMBA o de DEPÓSITO se nota en el grifo al momento.',
-      boton: 'Abrir la tienda' },
+    { id: 'mejora', titulo: 'Amplía tu primera pieza',
+      texto: 'Selecciona tu BOMBEO o tu DEPÓSITO en el mapa y dale a ' +
+             'AMPLIAR: cada nivel aporta como una pieza más, y se nota en ' +
+             'el grifo al momento.' },
     { id: 'vecino', titulo: 'Encuentra a tu primer vecino',
       texto: 'Destapa terreno siguiendo las SEÑALES de camino: los postes ' +
              'apuntan al pueblo sin descubrir más cercano, con su distancia.' },
@@ -1764,6 +1794,18 @@ export const CONFIG = {
               'tierras vigila lo que aflora, y media España tiene algo ' +
               'debajo. Los hay corrientes... y los hay que valen una fortuna.'
     },
+    manantial: {
+      titulo: 'Un manantial',
+      pasa: 'El agua brota sola del terreno: ahí abajo hay una masa de agua ' +
+            'subterránea asomando a la superficie.',
+      hacer: 'Apúntatelo: donde brota un manantial, el SONDEO no sale seco. ' +
+             'Es el único indicio que no puede mentir — los estudios aciertan ' +
+             'mucho; el manantial, siempre.',
+      porque: 'Así se buscaba el agua durante siglos, antes de los estudios ' +
+              'hidrogeológicos: mirando dónde brota. En el karst de montaña ' +
+              'sigue siendo la pista reina — el agua que asoma es agua que ' +
+              'está debajo.'
+    },
     ruina: {
       titulo: 'Una instalación abandonada',
       pasa: 'La niebla escondía una obra vieja: alguien la levantó, alguien ' +
@@ -1843,9 +1885,9 @@ export const CONFIG = {
     mancomunidad: {
       titulo: 'Ya no es un pueblo, es una mancomunidad',
       pasa: 'Otro núcleo entra a formar parte de la gestión. Tiene sus propios ' +
-            'habitantes, su propio depósito y sus propias mejoras.',
-      hacer: 'Cambia entre pueblos con las pestañas de arriba. Cada uno lleva su ' +
-             'sistema, pero la caja es UNA sola.',
+            'habitantes y su propia sed... y bebe de tu red.',
+      hacer: 'Toca cualquier pueblo en el mapa para hacerlo activo. Cada uno ' +
+             'lleva su servicio, pero la caja y la red son de todos.',
       porque: 'Así funciona de verdad: los pueblos pequeños no pueden pagarse un ' +
               'servicio de agua cada uno, así que se juntan para compartir ' +
               'personal, obras y tarifa. Eso es una mancomunidad.'

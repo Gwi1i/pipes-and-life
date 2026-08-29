@@ -119,9 +119,38 @@ export function generarMapa(semilla = CONFIG.mapaMundo.semilla, radioExtra = 0,
   // (mundo 1, viaja en el guardado) regeneran su mundo EXACTO. Va al final a
   // propósito: todo lo anterior consume el azar en el mismo orden de siempre.
   if(mundo >= 2) sembrarArranque(celdas, azar);
+  // AL FINAL, como manda la guardia: todo lo anterior consume el azar en su
+  // orden de siempre y los mundos viejos regeneran su siembra exacta.
+  if(mundo >= 3) sembrarManantiales(celdas, azar);
   abrirZonaInicial(celdas, radioExtra);
   aflorarDescubiertas(celdas);   // lo que nace a la vista, aflorado
   return celdas;
+}
+
+/**
+ * EL MANANTIAL (mundo >= 3, idea del autor): el agua de abajo ASOMA. En cada
+ * masa (con suerte) brota uno, preferentemente en relieve — el karst aflora
+ * en la montaña, que es donde el autor lo ve en su oficio. Es el único
+ * indicio que no puede mentir: se siembra SOLO sobre masas de verdad, nunca
+ * sobre señuelos, así que donde hay manantial el sondeo no sale seco. La
+ * lección de leer el terreno, premiada.
+ */
+function sembrarManantiales(celdas, azar){
+  const prob = CONFIG.acuiferos.manantiales.probPorMasa;
+  const porMasa = new Map();
+  for(const celda of celdas){
+    if(!celda || !celda.masa || celda.hallazgo) continue;
+    if(!porMasa.has(celda.masa)) porMasa.set(celda.masa, []);
+    porMasa.get(celda.masa).push(celda);
+  }
+  for(const casillas of porMasa.values()){
+    if(azar() > prob) continue;
+    const enRelieve = casillas.filter(c =>
+      (CONFIG.terrenos[c.tipo] || {}).familia === 'relieve');
+    const candidatas = enRelieve.length ? enRelieve : casillas;
+    const elegida = candidatas[Math.floor(azar() * candidatas.length)];
+    elegida.hallazgo = 'manantial';
+  }
 }
 
 /**
@@ -1231,6 +1260,32 @@ export function comprimir(celdas){
 
 /** La pieza que esconde una ruina, ya resuelta o no. */
 export function piezaDeRuina(celda){ return celda?.pieza || 'bomba'; }
+
+/**
+ * El relieve más cercano a una casilla: a qué distancia cae la primera
+ * colina/sierra/roca y hacia qué rumbo. Nació del muro del probador frío: el
+ * paso 3 de la guía pide una COLINA y la semilla puede no dejar ninguna a la
+ * vista — sin dirección, el jugador destapa a ciegas hasta aburrirse. Manuel
+ * ahora otea y señala el rumbo, como las señales de camino señalan pueblos.
+ */
+export function relieveMasCercano(celdas, col, fila, tipos){
+  const M = CONFIG.mapaMundo;
+  let mejor = null;
+  for(let f = 0; f < M.filas; f++)
+    for(let c = 0; c < M.cols; c++){
+      const celda = celdas[f * M.cols + c];
+      if(!celda || !tipos.includes(celda.tipo)) continue;
+      const d = Math.hypot(c - col, f - fila);
+      if(!mejor || d < mejor.d) mejor = { d, c, f };
+    }
+  if(!mejor) return null;
+  // El rumbo por octantes: la fila crece hacia el SUR (y hacia abajo)
+  const ang = Math.atan2(mejor.f - fila, mejor.c - col);
+  const rumbos = [t`al este`, t`al sureste`, t`al sur`, t`al suroeste`,
+                  t`al oeste`, t`al noroeste`, t`al norte`, t`al nordeste`];
+  const oct = ((Math.round(ang / (Math.PI / 4)) % 8) + 8) % 8;
+  return { dist: Math.round(mejor.d), rumbo: rumbos[oct] };
+}
 
 export function aplicarGuardado(celdas, datos){
   if(!datos) return;

@@ -21,9 +21,9 @@
  */
 import { CONFIG } from './src/config.js';
 import { Estado } from './src/estado.js';
-import { avanzar, bombear, costeMejora, servicioActivo, faseActual,
+import { avanzar, bombear, costeCuadrilla, servicioActivo, faseActual,
          incorporarPueblo, canonIncorporacion, capacidad,
-         costeAmpliarPieza, desgloseProduccion } from './src/simulacion.js';
+         costeAmpliarPieza, nivelMaxPieza, desgloseProduccion } from './src/simulacion.js';
 import { puedeColocar, costeTrazado, celdaEn, escalaDeRed,
          estudiarZona, sondear, aflorarArqueologia } from './src/mapa.js';
 
@@ -81,16 +81,12 @@ export async function caos(semilla = 1, maxMin = 90, pasoSeg = 0.25){
       for(let i = 0; i < 1 + azar() * 6; i++) bombear(p, estado);
     },
     mejorar(){
-      const p = estado.pueblos[Math.floor(azar() * estado.pueblos.length)];
-      const claves = Object.keys(CONFIG.mejoras);
-      const clave = claves[Math.floor(azar() * claves.length)];
-      const def = CONFIG.mejoras[clave];
-      if(def.requiere && !servicioActivo(p, def.requiere)) return;
-      const nivel = p.mejoras[clave] || 0;
-      if(nivel >= def.nivelMax) return;
-      const coste = costeMejora(clave, nivel);
+      // La cirugía se llevó la tienda: lo comprable común es la cuadrilla
+      if((estado.cuadrilla || 0) >= CONFIG.cuadrilla.nivelMax) return;
+      const coste = costeCuadrilla(estado);
       if(estado.dinero < coste) return;
-      estado.pagar(coste); p.mejoras[clave]++;
+      estado.pagar(coste);
+      estado.cuadrilla = (estado.cuadrilla || 0) + 1;
     },
     construirDondeSea(){
       // Pieza al azar en casilla al azar: casi siempre queda SIN CONECTAR,
@@ -152,7 +148,7 @@ export async function caos(semilla = 1, maxMin = 90, pasoSeg = 0.25){
     ampliar(){
       const cabe = estado.construcciones.filter(
         o => CONFIG.ampliacion.tipos.includes(o.tipo)
-          && (o.nivel || 1) < CONFIG.ampliacion.nivelMax);
+          && (o.nivel || 1) < nivelMaxPieza(o.tipo));
       if(!cabe.length) return;
       const obra = cabe[Math.floor(azar() * cabe.length)];
       const coste = costeAmpliarPieza(obra);

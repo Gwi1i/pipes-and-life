@@ -19,7 +19,8 @@
  */
 import { CONFIG } from './src/config.js';
 import { Estado } from './src/estado.js';
-import { avanzar, bombear, costeMejora, servicioActivo, redEstrangula,
+import { avanzar, bombear, costeAmpliarPieza, nivelMaxPieza, costeCuadrilla,
+         servicioActivo, redEstrangula,
          redDelPueblo, requisitosAutobomba, faseActual,
          incorporarPueblo, canonIncorporacion,
          veteraniaAlTrasladarse, nivelCaserio } from './src/simulacion.js';
@@ -78,9 +79,9 @@ function tender(estado, red, c, f){
   return false;
 }
 
-function construir(estado, tipo, red){
+function construir(estado, tipo, red, radio = 8){
   const def = CONFIG.construibles[tipo];
-  const sitio = buscarSitio(estado, tipo);
+  const sitio = buscarSitio(estado, tipo, radio);
   if(!sitio || estado.dinero < def.coste + 800) return false;
   estado.pagar(def.coste);
   estado.construcciones.push({ tipo, col: sitio.c, fila: sitio.f,
@@ -110,8 +111,8 @@ export async function medir(pasoSeg = 0.25, maxMin = 240, informar = () => {}){
   const marca = (id) => { if(!marcas.some(m => m.id === id))
     marcas.push({ id, min: +(seg / 60).toFixed(1) }); };
   let seg = 0, res = null;
-  const PRIORIDAD = ['deposito', 'bomba', 'captacion', 'depuradora', 'mantenimiento',
-                     'pluviales', 'tanque', 'reciclaje'];
+  const PRIORIDAD = ['deposito', 'bomba', 'captacion', 'depuradora',
+                     'tanque', 'reciclaje'];
   // Núcleos a los que las dos L no llegan (ZEC en medio): se apartan para no
   // reintentar el mismo eternamente. Un humano rodearía; el bot pasa al otro.
   const inalcanzables = new Set();
@@ -138,6 +139,18 @@ export async function medir(pasoSeg = 0.25, maxMin = 240, informar = () => {}){
     // --- obras que pide cada servicio ---
     if(!estado.construcciones.some(o => o.tipo === 'captacion')){
       if(construir(estado, 'captacion', 'abastecimiento')) marca('obra captacion');
+    }
+    // La cirugía: bombeo y depósito ya solo existen como piezas — el bot
+    // los construye igual que el tutorial se los pide al jugador. La
+    // búsqueda de sitio es cara y la del depósito (pide colina) puede no
+    // dar fruto: se intenta cada pocos segundos, no cada paso.
+    if(seg % 4 < pasoSeg){
+      if(!estado.construcciones.some(o => o.tipo === 'bomba')){
+        if(construir(estado, 'bomba', 'abastecimiento')) marca('obra bomba');
+      }
+      if(!estado.construcciones.some(o => o.tipo === 'deposito')){
+        if(construir(estado, 'deposito', 'abastecimiento', 18)) marca('obra deposito');
+      }
     }
     // El agua del río se potabiliza SIEMPRE: en cuanto hay captación, la ETAP
     // es la siguiente obra o el crecimiento va frenado.
@@ -175,17 +188,32 @@ export async function medir(pasoSeg = 0.25, maxMin = 240, informar = () => {}){
     if((res.basuraTh || 0) > (res.recogidaTh || 0) + 1e-6)
       if(renovarRed(estado, 'residuos')) marca('renueva carretera');
 
-    // --- tienda, por prioridad, guardando un colchón ---
-    for(const clave of PRIORIDAD){
-      const m = CONFIG.mejoras[clave];
-      if(m.requiere && !servicioActivo(p, m.requiere)) continue;
-      const nivel = p.mejoras[clave];
-      if(nivel >= m.nivelMax) continue;
-      const coste = costeMejora(clave, nivel);
-      if(estado.dinero > coste + 500){ estado.pagar(coste); p.mejoras[clave]++; break; }
+    // --- ampliar piezas guardando un colchón (la cirugía: la progresión
+    //     profunda vive en las ampliaciones). Estrategia: con SED manda la
+    //     captación; si no, la pieza más atrasada — la prioridad fija fundía
+    //     todo el dinero en depósito y la curva salía coja (medido: 84 min).
+    const ampliables = estado.construcciones
+      .filter(o => PRIORIDAD.includes(o.tipo) && (o.nivel || 1) < nivelMaxPieza(o.tipo))
+      .sort((a, b) => ((a.nivel || 1) - (b.nivel || 1))
+        || PRIORIDAD.indexOf(a.tipo) - PRIORIDAD.indexOf(b.tipo));
+    const conSed = p.servicio < 0.95;
+    const objetivo = (conSed && ampliables.find(o => o.tipo === 'captacion')) || ampliables[0];
+    if(objetivo){
+      const coste = costeAmpliarPieza(objetivo);
+      if(estado.dinero > coste + 500){
+        estado.pagar(coste);
+        objetivo.nivel = (objetivo.nivel || 1) + 1;
+      }
+    }
+    // ...y la cuadrilla de mantenimiento, con más colchón
+    if((estado.cuadrilla || 0) < CONFIG.cuadrilla.nivelMax){
+      const cCuad = costeCuadrilla(estado);
+      if(estado.dinero > cCuad + 3000){ estado.pagar(cCuad); estado.cuadrilla++; }
     }
     // auto-bombeo en cuanto se pueda: es lo que sostiene el crecimiento
-    if(!p.autobombaActivo && requisitosAutobomba(p).ok
+    // (de paso: aquí se leía `.ok` donde la función devuelve `.cumple` — el
+    // bot llevaba sin comprar el auto-bombeo desde siempre)
+    if(!p.autobombaActivo && requisitosAutobomba(p, estado).cumple
        && estado.dinero > CONFIG.premium.autobomba.coste + 2000){
       estado.pagar(CONFIG.premium.autobomba.coste);
       p.autobombaActivo = true;

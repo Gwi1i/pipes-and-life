@@ -214,26 +214,11 @@ export const EN = {
         desc: 'The crew that keeps everything else running. No network of its own.' }
     },
 
-    mejoras: {
-      bomba: { nombre: 'Pump power',
-        desc: 'More water per click. Auto-pumping benefits too.' },
-      deposito: { nombre: 'Reserve tank',
-        desc: 'Stores water so you are not living click to click. Each level adds capacity.' },
-      captacion: { nombre: 'Intake',
-        desc: 'Draws water on its own, no clicking. Yields less in summer (low flow).' },
-      depuradora: { nombre: 'Sewage works',
-        desc: 'Treats wastewater before returning it to the river. Each level, cleaner.' },
-      pluviales: { nombre: 'Storm drain network',
-        desc: 'Separates rainwater from the sewer: relieves the sewage ' +
-              'plant, and part of the rain tops up your tank.' },
-      tanque: { nombre: 'Storm tank',
-        desc: 'Holds the peak of a downpour so nothing overflows raw into ' +
-              'the river, then treats it calmly later. Raises the town’s quality.' },
-      reciclaje: { nombre: 'Recycling plant',
-        desc: 'Each level opens a new fraction (packaging, organic, ' +
-              'glass...) and its street container. What is sorted gets sold.' },
-      mantenimiento: { nombre: 'Maintenance crew',
-        desc: 'Repairs this town’s breakdowns on its own. Each level, faster.' }
+    /* La cirugía se llevó la tienda; sobrevive LA CUADRILLA (común) */
+    cuadrilla: {
+      nombre: 'Maintenance crew',
+      desc: 'Repairs breakdowns across the whole district: each level means ' +
+            'fewer wrench blows and faster self-repairs.'
     },
 
     premium: {
@@ -305,7 +290,9 @@ export const EN = {
           'filters. That is the other half of the service reservoir’s job. '
         } },
       depuradora: { nombre: 'Sewage plant',
-        desc: 'Treats wastewater before returning it to the river.',
+        desc: 'Treats wastewater before returning it to the river. It sits ' +
+              'by the water because THAT is where it discharges, on its own: ' +
+              'the sewer you must lay runs from the town to the plant.',
         ficha: {
           que: 'A wastewater treatment works. What you see are the circular ' +
           'clarifiers with their rotating scraper bridge, but that is only ' +
@@ -498,6 +485,18 @@ export const EN = {
                 'has something underneath. Some finds are ordinary... and ' +
                 'some are worth a fortune.'
       },
+      manantial: {
+        titulo: 'A spring',
+        pasa: 'Water is welling up out of the ground on its own: a body of ' +
+              'groundwater is surfacing right there.',
+        hacer: 'Take note: where a spring flows, the BOREHOLE never comes up ' +
+               'dry. It is the one clue that cannot lie — surveys are right ' +
+               'most of the time; a spring, always.',
+        porque: 'This is how water was found for centuries, before ' +
+                'hydrogeological surveys: by watching where it flows. In ' +
+                'mountain karst it is still the queen of clues — water that ' +
+                'surfaces is water that is underneath.'
+      },
       ruina: {
         titulo: 'An abandoned facility',
         pasa: 'The fog was hiding old works: someone built this, someone ' +
@@ -579,9 +578,9 @@ export const EN = {
       mancomunidad: {
         titulo: 'Not a town anymore — a district',
         pasa: 'Another town comes under your management. It has its own ' +
-              'people, its own tank and its own upgrades.',
-        hacer: 'Switch between towns with the tabs above. Each one runs its ' +
-               'own system, but the funds are ONE.',
+              'people and its own thirst... and it drinks from your network.',
+        hacer: 'Tap any town on the map to make it active. Each one keeps ' +
+               'its own service, but the funds and the network belong to all.',
         porque: 'This is how it really works: small towns cannot each afford a ' +
                 'water service of their own, so they band together to share ' +
                 'staff, works and rates. That is a water district.'
@@ -711,7 +710,8 @@ export const EN = {
     'section:has(> #construir) > h2': 'Build on the map',
     '#panel-red > h2': 'The network',
     'section:has(> #diagnostico) > h2': 'Where the water comes from',
-    'section:has(> #tienda) > h2': 'Town upgrades',
+    'section:has(> #tienda) > h2': 'Town services',
+    'section:has(> #cuadrilla) > h2': 'The crew',
     'section:has(> #premium) > h2': 'Special feature',
     'section:has(> #detalle) > h2': 'Your people',
     '#panel-cauce > h2': 'River (shared)',
@@ -723,9 +723,6 @@ export const EN = {
     'section:has(> #caja-desglose) > h2': 'The funds, in detail',
     'section:has(> .explica) > h2': 'How to play',
 
-    '.tienda-nota': 'This town’s own municipal system: it works on its own, no ' +
-      'connections needed. Map pieces are a different thing — upgrade them by ' +
-      'selecting them there, and they feed their whole network.',
     '#guia-rotulo': 'First steps',
     '.guia-saltar': 'I know what I’m doing — skip the guide',
 
@@ -851,6 +848,37 @@ export const EN = {
      frase original empezaba con espacio (t` · estiaje`), el valor inglés
      debe traerlo también. */
   frases: {
+
+    /* --- Las curas del probador frío --- */
+    'Manuel otea el terreno: el relieve más cercano queda {0}, a unas {1} casillas del pueblo.':
+      'Manuel scans the land: the nearest high ground lies {0}, about {1} tiles from town.',
+    'Paso saltado: la guía sigue en el siguiente.':
+      'Step skipped: the guide moves on to the next one.',
+    'al este': 'to the east',
+    'al sureste': 'to the southeast',
+    'al sur': 'to the south',
+    'al suroeste': 'to the southwest',
+    'al oeste': 'to the west',
+    'al noroeste': 'to the northwest',
+    'al norte': 'to the north',
+    'al nordeste': 'to the northeast',
+
+    /* --- El manantial --- */
+    'Manantial': 'Spring',
+    '¡Un manantial! Donde brota, el sondeo no sale seco.':
+      'A spring! Where it flows, the borehole never comes up dry.',
+    'El agua subterránea asoma: debajo de esta casilla hay una masa de agua. El SONDEO aquí no sale seco — es el único indicio que no puede mentir.':
+      'Groundwater is surfacing: there is a body of water beneath this tile. The BOREHOLE here never comes up dry — it is the one clue that cannot lie.',
+    'Así se buscó el agua durante siglos, antes de los estudios hidrogeológicos: mirando dónde brota. En el karst de montaña sigue siendo la pista reina.':
+      'This is how water was found for centuries, before hydrogeological surveys: by watching where it flows. In mountain karst it is still the queen of clues.',
+
+    /* --- El libro del oficio --- */
+    'Lo que el oficio te ha enseñado, pieza a pieza: {0} de {1} páginas escritas. Las que faltan se aprenden construyendo.':
+      'What the trade has taught you, piece by piece: {0} of {1} pages written. The rest are learned by building.',
+    'Los tamaños de un núcleo': 'The sizes of a settlement',
+    'Se conoce construyéndola.': 'Learned by building one.',
+    'Se conoce cuando un pueblo tuyo llega a ese tamaño.':
+      'Learned when one of your towns reaches that size.',
 
     /* --- Paleta de obra y panel de red --- */
     'Colocar {0}': 'Lay {0}',
@@ -1041,8 +1069,8 @@ export const EN = {
       'The tile is freed and the demolition recovers {0} €.',
 
     /* --- Qué aporta cada pieza --- */
-    'Aporta <b>{0} L/s</b> de producción continua al pueblo, sin clicar.':
-      'It contributes <b>{0} L/s</b> of continuous production, no clicking.',
+    'Aporta <b>{0} L/s</b> a pleno caudal, sin clicar. Lo que llega tras estiaje, tubería y fugas lo desglosa «De dónde sale el agua».':
+      'It contributes <b>{0} L/s</b> at full flow, no clicking. What actually arrives after low flow, pipe limits and leaks is broken down in “Where the water comes from”.',
     'Suma <b>{0} L</b> a cada clic de bombeo.': 'It adds <b>{0} L</b> to every pump click.',
     'Añade <b>{0} L</b> de capacidad de reserva.': 'It adds <b>{0} L</b> of reserve capacity.',
     'Potabiliza <b>{0} L/h</b> de agua bruta del río o de pozos exprimidos. Sin tratar, esa agua frena el crecimiento.':
@@ -1121,7 +1149,6 @@ export const EN = {
     'Y {0} líneas más, todas al día.': 'And {0} more lines, all up to date.',
 
     /* --- Tienda --- */
-    'Otras mejoras': 'Other upgrades',
     'de serie': 'built in',
     'en marcha': 'running',
     'con el cuarto pueblo': 'with the fourth town',
@@ -1137,8 +1164,6 @@ export const EN = {
     'BLOQUEADO': 'LOCKED',
     'Activar · {0} €': 'Activate · {0} €',
     'Cumple los requisitos para activarlo': 'Meet the requirements to activate it',
-    'Potencia de bomba Nv {0}': 'Pump power Lv {0}',
-    'Captación Nv {0}': 'Intake Lv {0}',
     '{0} habitantes': '{0} people',
 
     /* --- Averías --- */
@@ -1166,13 +1191,10 @@ export const EN = {
     '· estiaje': ' · low flow',
     '· deshielo': ' · snowmelt',
     'Sin depósito': 'No tank',
-    'Nivel {0} · {1} L': 'Level {0} · {1} L',
-    'Depuradora Nv {0}': 'Sewage works Lv {0}',
     'SIN depurar ⚠': 'NOT treated ⚠',
     'Aún no genera': 'None produced yet',
     'Lluvia': 'Rain',
     'Pluviales': 'Storm drains',
-    'Nivel {0}': 'Level {0}',
     'Sin separar ⚠': 'Not separated ⚠',
     'Tanque tormentas': 'Storm tank',
     '{0} % lleno': '{0} % full',
@@ -1269,9 +1291,7 @@ export const EN = {
       'PHASE {0}: the district can absorb the towns of the next, more distant ring.',
     '¡Fase {0}! Se abre el siguiente anillo de núcleos.':
       'Phase {0}! The next ring of towns opens up.',
-    '{0}: ya está al máximo.': '{0}: already maxed out.',
     'Sin fondos: {0} cuesta {1} €.': 'No funds: {0} costs {1} €.',
-    '{0} · {1} nivel {2}.': '{0} · {1} level {2}.',
     'Este pueblo aún no cumple los requisitos para el auto-bombeo.':
       'This town does not yet meet the requirements for auto-pumping.',
     'El auto-bombeo cuesta {0} €.': 'Auto-pumping costs {0} €.',
@@ -1286,7 +1306,18 @@ export const EN = {
       'Not enough: back to the wrench, the old way.',
     'El turno salió flojo ({0} de {1}): esa avería ya solo se arregla con la llave.':
       'A weak shift ({0} of {1}): that breakdown can only be fixed with the wrench now.',
+    'Bombeos conectados: {0} niveles': 'Connected pumping stations: {0} levels',
+    'Captaciones conectadas: {0} niveles': 'Connected intakes: {0} levels',
+    'Depuradora: {0} niveles': 'Sewage works: {0} levels',
+    'Separando': 'Splitting',
+    'Sin fondos: ampliar la cuadrilla cuesta {0} €.':
+      'No funds: expanding the crew costs {0} €.',
+    '{0} niveles · {1} L': '{0} levels · {1} L',
+    '{0}: nivel {1}. Menos golpes de llave y arreglos solos más rápidos.':
+      '{0}: level {1}. Fewer wrench blows and faster self-repairs.',
+    '{0}: ya está al completo.': '{0}: already at full strength.',
     'Agua facturada': 'Water billed',
+    'Agua servida sin cobrar (impagos)': 'Water served but never paid for',
     'Residuos (venta menos vertido)': 'Waste (sales minus landfill)',
     'Rentas de yacimientos': 'Dig site rents',
     'La luz de las instalaciones': 'Facility power bills',
@@ -1299,14 +1330,18 @@ export const EN = {
     'el tablero de tuberías': 'the pipe board',
     'un turno en la cinta': 'a shift on the sorting line',
     'una ruta con el camión': 'a route with the truck',
-    '¿Cómo la arreglamos?': 'How do we fix it?',
-    'Puedes jugarte el arreglo GRATIS con {0} — un solo intento — o ir a golpe de llave: {1} golpes a {2} € cada uno.':
-      'You can play {0} to fix it for FREE — one try only — or go with the wrench: {1} blows at {2} € each.',
-    'Me la juego': 'I’ll play for it',
-    'A golpe de llave': 'The wrench it is',
+    'El dedo ya no puede con tanta sed: eso no se arregla clicando más fuerte. Amplía la captación hasta que la producción se acerque al gasto, y deja el clic para las puntas.':
+      'Your finger cannot keep up with this much thirst — and clicking harder will not fix it. Upgrade the intake until production comes close to demand, and save the clicks for the peaks.',
+    'Uso actual: trabaja al': 'Current use: running at',
+    'va justa: amplíala o construye otra.': 'running tight — upgrade it or build another.',
     '¡Ha aflorado: {0}!': 'Surfaced: {0}!',
     '¡{0} bajo la tesela! Excávalo y ponlo en valor, o rodéalo.':
       '{0} under the tile! Excavate it and put it on display, or route around it.',
+    '¿Cómo la arreglamos?': 'How do we fix it?',
+    'Puedes jugarte el arreglo GRATIS con {0} — un SOLO intento, y se gasta al entrar (abandonar cuenta) — o ir a golpe de llave: {1} golpes a {2} € cada uno.':
+      'You can play for the FREE repair with {0} — ONE try only, spent the moment you enter (quitting counts) — or go wrench by wrench: {1} hits at {2} € each.',
+    'Me la juego': 'I’ll play for it',
+    'A golpe de llave': 'The wrench it is',
     'Arreglarla echando un turno': 'Fix it by working a shift',
     'Arreglarla sacando la ruta': 'Fix it by running the route',
     'Un turno de urgencia en la cinta: separa bien al menos el {0} % y la avería queda arreglada GRATIS. Un solo intento.':

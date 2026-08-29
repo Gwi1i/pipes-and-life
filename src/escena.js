@@ -132,12 +132,12 @@ export class Escena {
     this.suelo();
     this.rio(dt);
     this.tuberiaSaneamiento();
-    if(p.mejoras.captacion > 0) this.captacion();
+    if((p.mejoras || {}).captacion > 0) this.captacion();
     this.bomba();
-    if(p.mejoras.deposito > 0) this.deposito();
-    if(p.mejoras.depuradora > 0) this.depuradora();
+    if((p.mejoras || {}).deposito > 0) this.deposito();
+    if((p.mejoras || {}).depuradora > 0) this.depuradora();
     this.tuberiaAbastecimiento();
-    if(p.mejoras.tanque > 0) this.tanqueTormentas();
+    if((p.mejoras || {}).tanque > 0) this.tanqueTormentas();
     this.pueblo();
     this.arboles(false);
     this.vertido();
@@ -451,7 +451,7 @@ export class Escena {
     }
     ctx.restore(); ctx.globalAlpha = 1;
     ctx.font = '700 9px IBM Plex Mono, ui-monospace, monospace'; ctx.textAlign = 'center';
-    ctx.fillStyle = C.depuradora; ctx.fillText(`DEPURADORA Nv${p.mejoras.depuradora}`, x, base + 15);
+    ctx.fillStyle = C.depuradora; ctx.fillText(`DEPURADORA Nv${(p.mejoras || {}).depuradora}`, x, base + 15);
   }
 
   /* ---------- tubería de abastecimiento ---------- */
@@ -460,7 +460,7 @@ export class Escena {
     const yA = this.sueloY - H * 0.055;
     const xBomba = W * 0.17, xDep = W * 0.36, xPueblo = W * 0.52;
     const entra = this.pulso > 0.02 || r.produciendo;
-    if(p.mejoras.deposito > 0){
+    if((p.mejoras || {}).deposito > 0){
       this.tubo(xBomba, yA, xDep, yA, entra, '#38bdf8');
       this.tubo(xDep, yA, xPueblo, yA, r.servicio > 0.01, '#38bdf8');
     } else {
@@ -521,7 +521,7 @@ export class Escena {
 
     // Red de pluviales: canal aparte que lleva la lluvia limpia al cauce sin
     // pasar por la depuradora. Solo "fluye" cuando de verdad está lloviendo.
-    if(p.mejoras.pluviales > 0){
+    if((p.mejoras || {}).pluviales > 0){
       const yP = yS + (this.rioY - yS) * 0.45, xP = W * 0.30;
       const llueve = (r.lluvia || 0) > 0.05;
       this.tubo(W * 0.52, yP, xP, yP, llueve, CONFIG.color.pluviales);
@@ -529,7 +529,7 @@ export class Escena {
     }
     const suciedad = 1 - fraccionTratada(p, this._estado);
     const colSucio = mezclarColor('#38bdf8', '#7a5a2a', 0.85);
-    if(p.mejoras.depuradora > 0){
+    if((p.mejoras || {}).depuradora > 0){
       this.tubo(xPueblo, yS, xDepu, yS, true, colSucio);
       const colSalida = mezclarColor('#38bdf8', '#7a5a2a', suciedad);
       this.tubo(xDepu, yS, xVert, yS, true, colSalida);

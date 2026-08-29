@@ -87,7 +87,7 @@ red-hidraulica/
     ├── tutorial.js     La guía de los primeros pasos (solo lee estado)
     ├── diagramas.js    Los esquemas animados de cada instalación (módulo puro)
     ├── entrada.js      Ratón, tacto, teclado → acciones
-    ├── ui.js           DOM fuera de la escena: HUD, tienda, paneles
+    ├── ui.js           DOM fuera de la escena: HUD, servicios, paneles
     ├── analitica.js    Contador anónimo de visitas y vueltas (solo reacciona)
     └── main.js         Ensamblado y bucle principal
 ```
@@ -208,10 +208,10 @@ debe simular ninguno falso.
 **Dos obstáculos de trazado, y son distintos a propósito.** Los YACIMIENTOS
 (`CONFIG.arqueologia`) AFLORAN AL DESTAPAR la casilla
 (`aflorarDescubiertas()`; petición del autor — cuando solo afloraban al
-picar para construir, el 95% no se veía jamás): cada uno ES algo
-concreto (`tipos`, con peso de rareza y renta propia — de poblado antiguo a
-fósiles de dinosaurio, el más raro y el que más renta) y se puede excavar y
-poner en valor. Las ZONAS DE ESPECIAL CONSERVACIÓN (`CONFIG.proteccion`) se ven
+picar para construir, el 95% no se veía jamás): cada uno ES algo concreto
+(`tipos`, con peso de rareza y renta propia — de poblado antiguo a fósiles
+de dinosaurio, el más raro y el que más renta) y se puede excavar y poner
+en valor. Las ZONAS DE ESPECIAL CONSERVACIÓN (`CONFIG.proteccion`) se ven
 desde el principio, son manchas orgánicas de fauna o flora, y NO tienen premio:
 no se construye ni se traza dentro nunca, y `puedeColocar`/`puedeSeguirTrazado`
 dan la pega de protección ANTES que ninguna otra. Si los lixiviados de un
@@ -233,6 +233,15 @@ subsuelo es la otra respuesta, en TRES pasos que no se saltan (`CONFIG.acuiferos
    se pierde el dinero, y es la lección entera.
 3. **Pozo**: la pieza `acuifero` ya solo se puede poner sobre un sondeo positivo
    (`requiereSondeo`); antes pedía `terreno` + `lejosDeAgua` y no producía nada.
+
+**EL MANANTIAL (mundo >= 3, idea del autor): el indicio que NO miente.** Se
+siembra al final de `generarMapa` (`sembrarManantiales`, ~75% de las masas,
+preferencia por relieve — el karst aflora en la montaña) SOLO sobre masas con
+agua, jamás sobre señuelos: donde brota un manantial, el sondeo no sale seco.
+Es `hallazgo: 'manantial'` — no bloquea obra, no late (información permanente,
+sus ondas ya se mueven), tiene ficha en el panel de hallazgo y tarjeta de
+primera vez (`hitos.manantial`, lámina `h_manantial.jpg`). El premio de
+explorar la montaña: leer el terreno sustituye al estudio.
 
 **Los indicios NO son el acuífero, y esa separación es la mecánica.** Se marcan
 sobre las masas con agua Y sobre `señuelos` sin ella. Está medido: con
@@ -310,9 +319,10 @@ Lo que es de cada pueblo y lo que es común está separado a propósito:
   `contaminacion` (un solo cauce) y `averias` (lo que está roto sobre el mapa).
 
 La UI muestra SIEMPRE el pueblo activo (`estado.activo`, índice en
-`estado.puebloActivo`); las pestañas cambian cuál. La tienda, el panel de
-detalle, las averías y el premium se refieren al activo. El cauce y la caja son
-comunes. `ui.invalidarCache()` fuerza redibujar todo al cambiar de pueblo.
+`estado.puebloActivo`); tocar un pueblo en el mapa cambia cuál. Los
+servicios, el panel de detalle y el premium se refieren al activo. El
+cauce, la caja y la cuadrilla son comunes. `ui.invalidarCache()` fuerza
+redibujar todo al cambiar de pueblo.
 
 El CUARTO pueblo incorporado (`pluviales.abreConPueblos`) activa
 `estado.pluvialesActivas`, que desbloquea
@@ -411,9 +421,9 @@ enciende y devuelve los recién abiertos para poder anunciarlos.
 (el personal) no tiene tubería, y los RESIDUOS que vienen tampoco —se recogen en
 camión, con rutas—. Fundirlas ahora dejaría fuera la mitad de lo que falta. Las
 `piezas` construibles NO se repiten en `servicios`: viven solo en
-`CONFIG.redes[red].piezas`. La tienda se genera agrupada por servicio, y una
-mejora que no figure en ninguno cae en un grupo "Otras" en vez de desaparecer sin
-avisar, que sería un fallo mudo.
+`CONFIG.redes[red].piezas`. El panel de servicios enseña el estado de cada
+uno (de serie / en marcha / desde X hab), sin botones: la cirugía se llevó
+las compras al mapa.
 
 **Cada servicio tiene SU red.** `CONFIG.redes` define `abastecimiento` (trae agua
 limpia), `saneamiento` (se lleva la sucia), `pluviales` (saca la lluvia del
@@ -447,9 +457,9 @@ aporta nada y callárselo parece un timo) y su botón AMPLIAR
 (`CONFIG.ampliacion`, coste geométrico). La clave del encaje:
 `inventarioConectado()` suma NIVELES, no unidades — una pieza a nivel 3 cuenta
 como tres — y así todas las fórmulas de aporte recogen la ampliación sin
-tocarlas. El reparto de papeles, que confundía de verdad: la TIENDA ("Mejoras
-del pueblo") sube la instalación municipal del pueblo activo; cada pieza del
-MAPA se amplía seleccionándola. El vertedero queda FUERA de la ampliación
+tocarlas. Cada pieza del MAPA se amplía seleccionándola (tras la cirugía es
+LA progresión: tope y factor por tipo en `ampliacion.porTipo`, helper
+`nivelMaxPieza()`). El vertedero queda FUERA de la ampliación
 genérica: su `nivel` es el vaso y tiene su propio botón. Las partidas viejas
 bautizan sus obras al cargar.
 
@@ -855,12 +865,21 @@ más no da nada. Por eso el crecimiento de población es agresivo
 siga teniendo sentido. Si algún día bajas el crecimiento, el juego se queda sin
 tensión a los pocos minutos.
 
-**Mejoras.** La tienda se genera sola desde `CONFIG.mejoras`: cada entrada tiene
-`costeBase`, `factorCoste`, `nivelMax` y sus parámetros de efecto. El nivel vive
-en `pueblo.mejoras[clave]` (por pueblo); el coste del siguiente nivel es
-`costeBase · factorCoste^nivel` (`costeMejora()`). Añadir una vía nueva es añadir
-una entrada en config y, si necesita efecto, leerlo en `simulacion.js`. No hace
-falta tocar la UI ni `entrada.js`.
+**LA CIRUGÍA: la tienda no existe (docs/cirugia.md).** La infraestructura
+vive SOLO en el mapa: todas las fórmulas multiplican NIVELES CONECTADOS de
+piezas por su `aportePorPieza`, y la progresión profunda son las
+AMPLIACIONES (`ampliacion.porTipo`: tope y factor por tipo — captación a 20
+niveles, bombeo a 20, depósito a 15...). Las pluviales se separan POR
+LÍNEAS tendidas (`pluviales.fraccionPorLinea`); en la planta de reciclaje
+el nivel ES las fracciones abiertas. El mantenimiento sobrevive como LA
+CUADRILLA (`CONFIG.cuadrilla`, `estado.cuadrilla`, común, se compra en
+Mancomunidad). El auto-bombeo pide niveles de pieza conectados. MIGRACIÓN:
+una partida vieja con niveles municipales cobra al cargar el reembolso
+íntegro (tabla congelada `PRECIOS_TIENDA_VIEJA` en estado.js — NO tocar:
+es historia) y su mantenimiento se convierte en cuadrilla gratis. El canon
+subió a 700/1.42 con la cirugía: el dinero que absorbía la tienda se iba
+entero a cánones. El panel "Servicios del pueblo" (id `tienda`, solo
+nombre de contenedor) enseña el estado de cada servicio, sin botones.
 
 **Crecimiento.** En `crecer()`: la población crece solo tras una *racha* de buen
 servicio sostenido (un corte la resetea), mengua si va mal servida, y se queda
@@ -925,8 +944,8 @@ tienen su propia puerta — y en cinta y ruta hace falta puntería: 50%
 durante el rodaje (10 primeras partidas de cada juego,
 `estado.reparacionesJugadas`) y 75% después. Un intento por avería. Y LA
 ELECCIÓN SALE AL PINCHAR la avería en el mapa (petición del autor): el
-primer clic pregunta con TARJETA del juego (overlay eleccion-fondo; el
-confirm() nativo rompía la estética y el autor lo vetó) si te la juegas gratis o vas a la llave; elegir llave se recuerda (`elegidoLlave`) y no
+primer clic pregunta con `confirm()` si te la juegas gratis o vas a la
+llave; elegir llave se recuerda en la propia avería (`elegidoLlave`) y no
 vuelve a preguntar. El panel lateral mantiene su botón.
 
 1. REPARACIÓN A MANO (`minijuego_tuberias.js`): desde el panel de averías, un
@@ -1050,9 +1069,10 @@ muy por debajo de la real.
 **Offline.** `progresoOffline()` en `main.js` simula el tiempo ausente a pasos
 (la curva diaria y el estiaje cambian por el camino) con tope `offline.maxHoras`
 (8 h: la noche entera cabe, decidido al empezar a medir retención) y al
-`offline.rendimiento` (20%; con el 50% la ausencia era una imprenta de
-billetes y el principio del autor es que jugar se premia): de la GANANCIA
-solo se cobra esa fracción —
+`offline.rendimiento` (20% desde la cirugía: con la autonomía nueva, al 50%
+la ausencia era una imprenta de billetes — 51 min fuera reventaban la caja,
+y el principio del autor es que jugar se premia): de la GANANCIA solo se
+cobra esa fracción —
 las pérdidas se pagan enteras, la ausencia no es un escudo—. Y LA NOCHE NO
 DESPUEBLA (petición del autor: 8 h reales son AÑOS de juego, y volver al día
 siguiente con los pueblos vacíos obligaba a conectarse cada poco): en tu
@@ -1108,7 +1128,7 @@ fondo, no un fastidio continuo.
 - Los botones van por delegación (`data-accion`, y `data-clave` para la mejora,
   el índice de pueblo, el diámetro o la red). `entrada.js` escucha varios
   contenedores — la lista ÚNICA y verdadera es la del bucle `for(const id of
-  [...])` en `entrada.js`; hoy: `tienda`, `premium`, `panel-averias`,
+  [...])` en `entrada.js`; hoy: `cuadrilla`, `premium`, `panel-averias`,
   `pestanas`, `panel-cauce`, `construir`, `hallazgo`, `almacen`, `panel-guia`,
   `red`, `obra`, `hito`, `casilla`, `vuelta`, `lugares`, `taller`,
   `respaldo` y `expediente`. Añadir un botón dentro de uno de ellos no obliga a tocar el
@@ -1142,6 +1162,15 @@ el guardado real y lo repone pase lo que pase. Su primera presa fue real: a
 y la partida joven moría en espiral de multas — de ahí
 `bombeo.desbordeTope` (el derrame ensucia hasta un tope: es agua limpia).
 
+
+**Cazar láminas que faltan**: `comprobar_assets.mjs` expande las rutas de
+imagen que el código monta desde CONFIG (tarjetas de hito y logro, fichas de
+yacimiento, ruina y caserío) y comprueba que el archivo existe — el `onerror`
+esconde el hueco y sin esto solo se veía jugando, cuando llegaba el momento.
+`(await import('/comprobar_assets.mjs')).comprobar()` desde la consola. Tras
+añadir un hito, un logro o un tipo con lámina: correrlo. Las opcionales por
+diseño (música, voz, estampas de minijuego, épocas, caras de Manuel) quedan
+fuera a propósito.
 
 `main.js` expone `window.juego` con `estado`, `entrada`, `escena` y `CONFIG`.
 Desde la consola del navegador:

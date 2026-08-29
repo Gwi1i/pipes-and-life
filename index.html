@@ -132,6 +132,9 @@
             </div>
             <p class="guia-titulo" id="guia-titulo">—</p>
             <p class="guia-texto" id="guia-texto">—</p>
+            <!-- Dos salidas a propósito (lo pidió el muro del probador frío):
+                 saltar SOLO el paso que te atasca, o la guía entera. -->
+            <button class="guia-saltar" data-accion="saltarPaso">Saltar este paso</button>
             <button class="guia-saltar" data-accion="saltarGuia">Sé lo que hago, saltar la guía</button>
           </div>
         </div>
@@ -200,22 +203,17 @@
 
       <div class="hoja" data-hoja="pueblo" hidden>
         <!-- El desglose contesta a "¿por qué produzco menos?", que sin
-             respuesta parece un fallo del juego. Va antes que la tienda:
-             primero entender, luego comprar. -->
+             respuesta parece un fallo del juego. Va primero: entender
+             antes que nada. -->
         <section class="bloque">
           <h2>De dónde sale el agua</h2>
           <div id="diagnostico" class="diagnostico"></div>
         </section>
-        <!-- "del pueblo" no es adorno: con piezas ampliables sobre el mapa,
-             hay que decir que ESTAS mejoras suben la instalación municipal del
-             pueblo activo, no ninguna pieza concreta. -->
+        <!-- LA CIRUGÍA se llevó la tienda: la infraestructura se amplía en el
+             mapa. Queda el estado de los SERVICIOS, que es lo que importaba.
+             (El id "tienda" se conserva: es solo un nombre de contenedor.) -->
         <section class="bloque">
-          <h2>Mejoras del pueblo</h2>
-          <!-- El reparto de papeles, dicho UNA vez y arriba: el autor volvió a
-               confundir la tienda con el AMPLIAR de las piezas del mapa. -->
-          <p class="tienda-nota">La instalación municipal de ESTE pueblo: funciona
-            sola, sin conectarla a nada. Las piezas del mapa son otra cosa: se
-            amplían seleccionándolas allí, y suman a toda su red.</p>
+          <h2>Servicios del pueblo</h2>
           <div id="tienda" class="tienda"></div>
         </section>
         <section class="bloque">
@@ -235,6 +233,13 @@
         <section class="bloque">
           <h2>La caja, al detalle</h2>
           <div id="caja-desglose"></div>
+        </section>
+
+        <!-- LA CUADRILLA: el mantenimiento que sobrevivió a la cirugía de la
+             tienda. Es personal, no obra: compra común de la mancomunidad. -->
+        <section class="bloque">
+          <h2>La cuadrilla</h2>
+          <div id="cuadrilla" class="tienda"></div>
         </section>
 
         <section class="bloque" id="panel-cauce" style="display:none">
@@ -273,6 +278,14 @@
               <span class="m-desc">La recogida de madrugada, de ensayo.</span>
             </button>
           </div>
+        </section>
+
+        <!-- EL LIBRO DEL OFICIO: las fichas divulgativas de cada instalación,
+             coleccionadas. Se desbloquean CONSTRUYENDO: conocer el oficio es
+             haber levantado sus piezas. Lo pinta ui.refrescarLibro. -->
+        <section class="bloque">
+          <h2>El libro del oficio</h2>
+          <div id="libro" class="tienda"></div>
         </section>
 
         <section class="bloque">

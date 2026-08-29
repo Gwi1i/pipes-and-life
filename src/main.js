@@ -13,11 +13,11 @@ import { EscenaMapa } from './escena_mapa.js';
 import { celdaEn, clicarCasilla, clicsParaDestapar, puedeColocar,
          puedeSeguirTrazado, costeTrazado, casillaEnRed,
          piezaDeRuina, diametro, nivelDiametro, costeRenovar,
-         averiaEn, aflorarArqueologia, tipoYacimiento,
+         averiaEn, aflorarArqueologia, tipoYacimiento, construccionesConectadas,
          puedeEstudiar, estudiarZona, puedeSondear, sondear,
          costeSondeo, claseAcuifero, edadAños, bautizarObra,
          nombreDeNucleo, conjuntoDeRed } from './mapa.js';
-import { avanzar, bombear, costeMejora, requisitosAutobomba,
+import { avanzar, bombear, costeCuadrilla, nivelMaxPieza, requisitosAutobomba,
          poderExpansion, servicioActivo, costeAmpliarVertedero,
          capacidadVaso, faseActual, faltanParaFase, capacidad,
          incorporarPueblo, canonIncorporacion, costeAmpliarPieza,
@@ -40,7 +40,7 @@ function aplicarRegion(){
     def.color = mezclarColor(def.color, r.tinte, r.fuerza);
 }
 import { formatear } from './util.js';
-import { comprobar as comprobarGuia, saltar as saltarGuia,
+import { comprobar as comprobarGuia, saltar as saltarGuia, saltarPaso,
          pasoActual } from './tutorial.js';
 import { comentar } from './comentarios.js';
 import { vecinoPendiente } from './tajos.js';
@@ -295,6 +295,7 @@ function procesarAcciones(){
           break;
         }
         estado.pagar(coste);
+        escena.flotarDinero(sel.col, sel.fila, -coste);
         const antes = diametro(tub.dn, red).nombre;
         tub.dn = destino;
         tub.coste = (tub.coste || 0) + coste;
@@ -311,13 +312,14 @@ function procesarAcciones(){
         const obra = sel && estado.construcciones.find(o => o.col === sel.col && o.fila === sel.fila);
         if(!obra) break;
         const A = CONFIG.ampliacion;
-        if(!A.tipos.includes(obra.tipo) || (obra.nivel || 1) >= A.nivelMax) break;
+        if(!A.tipos.includes(obra.tipo) || (obra.nivel || 1) >= nivelMaxPieza(obra.tipo)) break;
         const coste = costeAmpliarPieza(obra);
         if(!estado.puedePagar(coste)){
           avisar(t`Ampliar cuesta ${formatear(coste)} € y no hay fondos.`);
           break;
         }
         estado.pagar(coste);
+        escena.flotarDinero(sel.col, sel.fila, -coste);
         obra.nivel = (obra.nivel || 1) + 1;
         sonido.compra();
         estado.anotar(t`${obra.nombre || obra.tipo} ampliado a nivel ${obra.nivel}: aporta como ${obra.nivel} piezas.`, 'ok');
@@ -342,6 +344,7 @@ function procesarAcciones(){
         // Lo que estaba roto en esa casilla se va con el escombro
         estado.averias = estado.averias.filter(av => av.col !== sel.col || av.fila !== sel.fila);
         estado.dinero += recupera;
+        escena.flotarDinero(sel.col, sel.fila, recupera);
         estado.anotar(t`${obra.nombre || def.nombre} derribado: ${formatear(recupera)} € recuperados.`, 'info');
         avisar(t`Derribado. La casilla queda libre.`);
         sonido.picar();
@@ -362,6 +365,7 @@ function procesarAcciones(){
                     Ojo: lo que colgaba de ella quedará sin conectar.`)) break;
         estado.tuberias.splice(estado.tuberias.indexOf(tub), 1);
         estado.dinero += recupera;
+        escena.flotarDinero(sel.col, sel.fila, recupera);
         estado.anotar(t`Línea de ${R.nombre.toLowerCase()} levantada: ${formatear(recupera)} € de material recuperado.`, 'info');
         avisar(t`Línea levantada.`);
         sonido.picar();
@@ -404,6 +408,13 @@ function procesarAcciones(){
       case 'saltarGuia':
         saltarGuia(estado);
         estado.anotar(t`Guía saltada. Suerte ahí fuera.`, 'info');
+        break;
+
+      // Saltar SOLO el paso que te atasca, sin tirar el manual entero
+      // (el muro de la colina del probador frío)
+      case 'saltarPaso':
+        saltarPaso(estado);
+        estado.anotar(t`Paso saltado: la guía sigue en el siguiente.`, 'info');
         break;
 
       case 'cancelarModo':
@@ -495,6 +506,7 @@ function procesarAcciones(){
           break;
         }
         estado.pagar(A.costeExcavar);
+        escena.flotarDinero(sel.col, sel.fila, -A.costeExcavar);
         celda.excavado = true;
         const tipoY = tipoYacimiento(celda);
         estado.anotar(t`${tipoY.nombre} puesto en valor: renta ${formatear(tipoY.renta)} €/h.`, 'ok');
@@ -516,6 +528,7 @@ function procesarAcciones(){
           break;
         }
         estado.pagar(precioEstudio);
+        escena.flotarDinero(sel.col, sel.fila, -precioEstudio);
         const conIndicios = estudiarZona(estado.mapa, sel.col, sel.fila);
         // Un estudio sin indicios NO es dinero tirado y hay que decirlo así:
         // descartar una zona es la mitad del trabajo de un hidrogeólogo.
@@ -542,6 +555,7 @@ function procesarAcciones(){
           break;
         }
         estado.pagar(coste);
+        escena.flotarDinero(sel.col, sel.fila, -coste);
         const clase = sondear(estado.mapa, sel.col, sel.fila);
         if(clase){
           contarHito('acuifero');
@@ -581,12 +595,16 @@ function procesarAcciones(){
           break;
         }
         estado.pagar(canon);
+        escena.flotarDinero(sel.col, sel.fila, -canon);
         const faseAntes = faseActual(estado);
         const nuevo = incorporarPueblo(estado, sel.col, sel.fila, celda);
         habPrev.push(Math.floor(nuevo.habitantes));
         estado.anotar(t`${nuevo.nombre} entra en la mancomunidad: ya recibe agua.`, 'ok');
         avisar(t`¡${nuevo.nombre} incorporado! (${estado.pueblos.length} núcleos)`);
         sonido.pueblo();
+        // La fiesta: incorporar es EL momento del juego y se despachaba con
+        // una línea de registro. Anillos y confeti sobre el núcleo.
+        escena.celebrarIncorporacion(sel.col, sel.fila);
         ui.reconstruirPestanas(estado);
         contarHito('mancomunidad');
         if(faseActual(estado) > faseAntes){
@@ -633,24 +651,24 @@ function procesarAcciones(){
         break;
       }
 
-      case 'mejorar': {
-        const m = CONFIG.mejoras[a.clave];
-        if(!m) break;
-        const p = estado.activo;
-        const nivel = p.mejoras[a.clave];
-        if(nivel >= m.nivelMax){ avisar(t`${m.nombre}: ya está al máximo.`); break; }
-        const coste = costeMejora(a.clave, nivel);
+      /* LA CIRUGÍA: el caso 'mejorar' (la tienda) murió — la infraestructura
+         se amplía en el mapa. Sobrevive la CUADRILLA, que no es una obra. */
+      case 'cuadrilla': {
+        const C = CONFIG.cuadrilla;
+        if((estado.cuadrilla || 0) >= C.nivelMax){
+          avisar(t`${C.nombre}: ya está al completo.`);
+          break;
+        }
+        const coste = costeCuadrilla(estado);
         if(!estado.puedePagar(coste)){
-          avisar(t`Sin fondos: ${m.nombre.toLowerCase()} cuesta ${formatear(coste)} €.`);
+          avisar(t`Sin fondos: ampliar la cuadrilla cuesta ${formatear(coste)} €.`);
           break;
         }
         estado.pagar(coste);
-        p.mejoras[a.clave]++;
+        estado.cuadrilla = (estado.cuadrilla || 0) + 1;
         sonido.compra();
-        estado.anotar(t`${p.nombre} · ${m.nombre} nivel ${p.mejoras[a.clave]}.`, 'ok');
-        if(a.clave === 'deposito'   && p.mejoras.deposito   === 1) escena.aparecerDeposito();
-        if(a.clave === 'captacion'  && p.mejoras.captacion  === 1) escena.aparecerCaptacion();
-        if(a.clave === 'depuradora' && p.mejoras.depuradora === 1) escena.aparecerDepuradora();
+        estado.anotar(t`${C.nombre}: nivel ${estado.cuadrilla}. Menos golpes de
+          llave y arreglos solos más rápidos.`, 'ok');
         break;
       }
 
@@ -660,7 +678,7 @@ function procesarAcciones(){
         const P = CONFIG.premium.autobomba;
         // GANCHO de monetización futura (P.desbloqueoExterno). De momento solo
         // se activa cumpliendo requisitos y pagando en el juego.
-        if(!requisitosAutobomba(p).cumple){
+        if(!requisitosAutobomba(p, estado).cumple){
           avisar(t`Este pueblo aún no cumple los requisitos para el auto-bombeo.`);
           break;
         }
@@ -950,10 +968,11 @@ function procesarAcciones(){
  */
 function tropiezoArqueologico(col, fila){
   if(!aflorarArqueologia(estado.mapa, col, fila)) return false;
-  contarHito('arqueologia');   // la primera vez, tarjeta: qué es y qué se hace
+  const tipoA = tipoYacimiento(celdaEn(estado.mapa, col, fila));
+  // La primera vez, tarjeta: qué es y qué se hace — con la lámina del tipo
+  contarHito('arqueologia', `assets/a_${tipoA.id}.jpg`);
   estado.seleccion = { col, fila };
   estado.modo.trazado = [];
-  const tipoA = tipoYacimiento(celdaEn(estado.mapa, col, fila));
   estado.anotar(t`¡${tipoA.nombre} al excavar! No se puede construir ahí: hay que rodearlo.`, 'alarma');
   avisar(t`¡${tipoA.nombre}! Rodéalo... o excávalo y ponlo en valor.`);
   ui.invalidarCache();
@@ -979,6 +998,7 @@ function colocarElemento(col, fila){
       return;
     }
     estado.pagar(def.coste);
+  escena.flotarDinero(col, fila, -def.coste);
     estado.anotar(t`${def.nombre} construido por ${formatear(def.coste)} €.`, 'ok');
   } else {
     estado.inventario.splice(deInv, 1);
@@ -987,6 +1007,16 @@ function colocarElemento(col, fila){
   }
   estado.construcciones.push({ tipo: clave, col, fila, nivel: 1,
                                nombre: bautizarObra(estado.construcciones, clave) });
+  // La página del libro del oficio: construir un tipo por primera vez es
+  // conocerlo, y derribar no des-aprende
+  if(!estado.conocidas.includes(clave)) estado.conocidas.push(clave);
+  // Los guiños de la escena, al colocar la PRIMERA pieza de cada tipo (antes
+  // vivían en la tienda, que murió con la cirugía)
+  if(estado.construcciones.filter(o => o.tipo === clave).length === 1){
+    if(clave === 'deposito' && escena.aparecerDeposito) escena.aparecerDeposito();
+    if(clave === 'captacion' && escena.aparecerCaptacion) escena.aparecerCaptacion();
+    if(clave === 'depuradora' && escena.aparecerDepuradora) escena.aparecerDepuradora();
+  }
   // Si queda SIN CONECTAR se dice en el acto (el autor colocó una
   // potabilizadora y nada le decía si había quedado enganchada): el mapa
   // además la pinta apagada y con su cartel hasta que le llegue la red.
@@ -1038,6 +1068,7 @@ function accionRuina(desmontar){
     estado.pagar(coste);
     estado.construcciones.push({ tipo, col: sel.col, fila: sel.fila, nivel: 1,
                                  nombre: bautizarObra(estado.construcciones, tipo) });
+    if(!estado.conocidas.includes(tipo)) estado.conocidas.push(tipo);
     estado.anotar(t`${def.nombre} recuperado y puesto en marcha por ${formatear(coste)} €.`, 'ok');
   } else {
     estado.pagar(coste);
@@ -1092,6 +1123,8 @@ function rematarTuberia(){
     return;
   }
   estado.pagar(coste);
+  const remate = trazado[trazado.length - 1];
+  escena.flotarDinero(remate.col, remate.fila, -coste);
   estado.tuberias.push({ camino: trazado.slice(), coste, dn, red,
                          nacida: estado.horas });
   estado.anotar(t`${CONFIG.redes[red].nombre}: ${diametro(dn, red).nombre} de
@@ -1111,8 +1144,8 @@ function anunciarHallazgo(celda, col, fila){
   // mayoría de las casillas nunca se coloca nada encima).
   if(celda.arqueologia && !celda.aflorado){
     aflorarArqueologia(estado.mapa, col, fila);
-    contarHito('arqueologia');
     const tipoA = tipoYacimiento(celda);
+    contarHito('arqueologia', `assets/a_${tipoA.id}.jpg`);
     estado.anotar(t`¡${tipoA.nombre} bajo la tesela! Excávalo y ponlo en valor, o rodéalo.`, 'ok');
     avisar(t`¡Ha aflorado: ${tipoA.nombre}!`);
     sonido.hallazgo();
@@ -1125,11 +1158,17 @@ function anunciarHallazgo(celda, col, fila){
     mostrarDescubierto(celda, col, fila);
     return;
   }
-  // La primera ruina merece su tarjeta: qué es y qué decisión trae
-  if(celda.hallazgo === 'ruina') contarHito('ruina');
+  // La primera ruina merece su tarjeta: qué es y qué decisión trae — con la
+  // lámina de la instalación abandonada concreta que acaba de aparecer
+  if(celda.hallazgo === 'ruina')
+    contarHito('ruina', `assets/f_${piezaDeRuina(celda)}_ruina.jpg`);
+  // Y el primer manantial también: es el indicio que no miente, y sin
+  // contarlo parece un adorno del terreno
+  if(celda.hallazgo === 'manantial') contarHito('manantial');
   const textos = {
     ruina:      t`Instalación abandonada. Se podrá reparar o llevar al inventario.`,
     senal:      t`Una señal de camino: apunta al pueblo más cercano por descubrir.`,
+    manantial:  t`¡Un manantial! Donde brota, el sondeo no sale seco.`,
   };
   if(!textos[celda.hallazgo]) return;
   estado.anotar(textos[celda.hallazgo], 'ok');
@@ -1177,7 +1216,7 @@ function tickAverias(dtHoras){
   // 1. Lo que ya está roto: el personal contratado lo va terminando solo.
   for(let i = estado.averias.length - 1; i >= 0; i--){
     const av = estado.averias[i];
-    const nivel = Math.max(...estado.pueblos.map(p => p.mejoras.mantenimiento));
+    const nivel = estado.cuadrilla || 0;   // la cuadrilla común (la cirugía)
     if(nivel <= 0) continue;
     const tiempo = A.reparacionAutoHoras * Math.pow(A.reparacionAutoFactor, nivel - 1);
     if(estado.horas - av.desde >= tiempo){
@@ -1186,9 +1225,17 @@ function tickAverias(dtHoras){
     }
   }
 
-  // 2. Lo que puede romperse: SOLO piezas puestas en el mapa. Sin instalación no
-  //    hay averías, que es lo que mantiene limpio el arranque de la partida.
-  const sanas = estado.construcciones.filter(o => !averiaEn(estado, o.col, o.fila));
+  // 2. Lo que puede romperse: SOLO piezas puestas en el mapa Y CONECTADAS.
+  //    Una bomba parada no revienta — lo que trabaja es lo que se gasta, y es
+  //    lo realista. Lo trajo el probador frío: su primera avería cayó en una
+  //    captación recién comprada que aún no había dado un litro, y a media
+  //    guía esa multa se siente arbitraria. De paso mantiene limpio el
+  //    arranque: sin red en marcha no hay averías.
+  const conectadas = new Set();
+  for(const clave of Object.keys(CONFIG.redes))
+    for(const o of construccionesConectadas(estado, clave)) conectadas.add(o);
+  const sanas = estado.construcciones.filter(o =>
+    conectadas.has(o) && !averiaEn(estado, o.col, o.fila));
   if(!sanas.length) return;
 
   const p = estado.activo;
@@ -1197,7 +1244,7 @@ function tickAverias(dtHoras){
   // averías en cadena, y con veinte habría sido injugable.
   let riesgo = A.probBasePorHora * dtHoras * Math.sqrt(sanas.length);
   riesgo *= 1 + A.factorDesgaste *
-            (p.mejoras.captacion + (p.autobombaActivo ? A.riesgoAutobomba : 0));
+            (((estado._conectado || {}).captacion || 0) + (p.autobombaActivo ? A.riesgoAutobomba : 0));
   if(Math.random() >= riesgo) return;
 
   const victima = sanas[Math.floor(Math.random() * sanas.length)];
@@ -1213,9 +1260,6 @@ function tickAverias(dtHoras){
   contarHito('averia');   // la primera, con tarjeta: qué ha pasado y qué se hace
 }
 
-/** Qué minijuego arregla cada avería: EL DE SU SERVICIO. Las piezas de las
- *  redes de tubo van al tablero de tuberías; las de residuos, a lo suyo — la
- *  planta a la cinta y el vertedero a la ruta del camión. */
 /* La avería cuya elección está en pantalla ahora mismo (tarjeta) */
 let averiaEnEleccion = null;
 
@@ -1234,9 +1278,13 @@ function mostrarEleccionAveria(av, coste){
                     : juego === 'camion' ? t`una ruta con el camión`
                     : t`el tablero de tuberías`;
   document.getElementById('eleccion-titulo').textContent = t`¿Cómo la arreglamos?`;
+  // OJO: el "se gasta al ENTRAR" tiene que estar dicho AQUÍ, antes de entrar.
+  // El probador frío perdió su intento leyendo las reglas de dentro y lo
+  // descubrió perdiendo — la letra pequeña a posteriori sabe a timo.
   document.getElementById('eleccion-texto').textContent =
-    t`Puedes jugarte el arreglo GRATIS con ${nombreJuego} — un solo intento — o
-      ir a golpe de llave: ${av.clics} golpes a ${formatear(coste)} € cada uno.`;
+    t`Puedes jugarte el arreglo GRATIS con ${nombreJuego} — un SOLO intento, y
+      se gasta al entrar (abandonar cuenta) — o ir a golpe de llave:
+      ${av.clics} golpes a ${formatear(coste)} € cada uno.`;
   document.getElementById('eleccion-jugar').textContent = t`Me la juego`;
   document.getElementById('eleccion-llave').textContent = t`A golpe de llave`;
   document.getElementById('eleccion-fondo').hidden = false;
@@ -1247,6 +1295,9 @@ function cerrarEleccion(){
   averiaEnEleccion = null;
 }
 
+/** Qué minijuego arregla cada avería: EL DE SU SERVICIO. Las piezas de las
+ *  redes de tubo van al tablero de tuberías; las de residuos, a lo suyo — la
+ *  planta a la cinta y el vertedero a la ruta del camión. */
 function minijuegoDeAveria(av){
   const obra = estado.construcciones.find(o => o.col === av.col && o.fila === av.fila);
   if(!obra) return 'tuberias';
@@ -1312,7 +1363,7 @@ function jugarAveria(av){
 /** Golpes de llave que pide una avería. El personal contratado deja menos faena. */
 function clicsDeReparacion(){
   const A = CONFIG.averias;
-  const nivel = Math.max(...estado.pueblos.map(p => p.mejoras.mantenimiento));
+  const nivel = estado.cuadrilla || 0;   // la cuadrilla común (la cirugía)
   return Math.max(A.clicsMinimos, A.clicsParaReparar - nivel * A.clicsMenosPorNivelMant);
 }
 
@@ -1375,8 +1426,10 @@ function anotarCrecimiento(){
     // El PRIMER crecimiento de la partida lleva tarjeta (petición del autor:
     // que la primera vez que pasa algo nuevo se explique qué está pasando).
     // contarHito ya garantiza que es una sola vez en toda la partida.
-    if(ahora > antes) contarHito('crecimiento');
     const nivelAhora = nivelCaserio(ahora), nivelAntes = nivelCaserio(antes);
+    if(ahora > antes)
+      contarHito('crecimiento',
+        `assets/f_${CONFIG.caserio.escalones[nivelAhora].nombre}.jpg`);
     // La línea de cada centena se calla si en este mismo paso hay cambio de
     // escalón: el aviso de escalón ya dice el número, y dos líneas seguidas
     // contando lo mismo ensucian el registro.
@@ -1556,11 +1609,16 @@ function avisar(texto){
  * Encola un hito para que se cuente. Solo la primera vez: un hito repetido deja
  * de ser un momento y pasa a ser un estorbo.
  */
-function contarHito(id){
+function contarHito(id, imagen){
   if(!CONFIG.hitos[id]) return;
   if(estado.hitosVistos.includes(id)) return;
   estado.hitosVistos.push(id);
   estado.hitoPendiente = id;
+  // La lámina del hallazgo CONCRETO que dispara la tarjeta (el yacimiento
+  // aflorado, la ruina encontrada, el caserío que crece): sin ella se busca
+  // la genérica h_<id>.jpg. Transitoria a propósito — hitoPendiente tampoco
+  // sobrevive a una recarga.
+  estado.hitoImagen = imagen || null;
   // Único embudo de hitos Y logros: el sonido de tarjeta va aquí y en ningún
   // otro sitio, así ningún momento suena dos veces.
   sonido.hito();

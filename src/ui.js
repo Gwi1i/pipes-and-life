@@ -10,11 +10,12 @@
  */
 
 import { CONFIG } from './config.js';
-import { capacidad, demandaMedia, caudalCaptacion, costeMejora,
+import { capacidad, demandaMedia, caudalCaptacion, costeCuadrilla, nivelMaxPieza,
          requisitosAutobomba, capacidadTanque, nombreEstacion,
          poderExpansion, redEstrangula, capacidadTratamiento,
          servicioActivo, nivelReciclaje, fraccionesActivas,
          faseActual, faltanParaFase, canonIncorporacion,
+         aguaBrutaLh, factorEstiaje, capacidadPotabilizacion,
          llenadoVaso, capacidadVaso, costeAmpliarVertedero,
          nivelMasa, pozosPorMasa, caudalPozo, caudalSostenible,
          desgloseProduccion, tasaFugasRed, costeAmpliarPieza,
@@ -29,7 +30,7 @@ import { celdaEn, piezaDeRuina, diametro, nivelDiametro, costeRenovar,
          claseAcuifero, puedeSondear, costeSondeo,
          masasDelMapa, edadAños, fugasDe,
          nombreDeObra, averiaEn, casillaEnRed,
-         lineasEnCasilla, redDe, costeTrazado } from './mapa.js';
+         lineasEnCasilla, redDe, costeTrazado, relieveMasCercano } from './mapa.js';
 import { lista as listaLugares } from './lugares.js';
 import { pasoActual } from './tutorial.js';
 import { tajoActual } from './tajos.js';
@@ -46,9 +47,7 @@ export class UI {
   constructor(entrada){
     this.entrada = entrada;
     this.cache = {};
-    this.mejoras = Object.entries(CONFIG.mejoras)
-      .sort((a, b) => (a[1].orden || 0) - (b[1].orden || 0));
-    this.construirTienda();
+    this.construirServicios();
     this.construirPremium();
     this.construirPaletaObra();
   }
@@ -460,8 +459,12 @@ export class UI {
     img.hidden = true;
     img.onload = () => { img.hidden = false; };
     img.onerror = () => { img.hidden = true; };
-    // Los logros llevan su propia imagen, amable: `l_` en vez de `h_`.
-    img.src = `assets/${h.logro ? 'l' : 'h'}_${id}.jpg`;
+    // Los logros llevan su propia imagen, amable: `l_` en vez de `h_`. Y las
+    // tarjetas de PRIMERA VEZ (yacimiento, ruina, crecimiento) enseñan la
+    // lámina del hallazgo CONCRETO que las disparó (estado.hitoImagen, lo
+    // deja contarHito): ese arte ya existe en las fichas y es mejor tarjeta
+    // que una ilustración genérica.
+    img.src = estado.hitoImagen || `assets/${h.logro ? 'l' : 'h'}_${id}.jpg`;
 
     // La tarjeta cambia de tono: un problema entra en ámbar y un logro en verde.
     // Con el mismo color, la de "el río vuelve a estar vivo" se leía como otra
@@ -538,7 +541,9 @@ export class UI {
     document.getElementById('guia-rotulo').textContent =
       paso ? (paso.rotulo || t`Primeros pasos`) : t`dice`;
     document.getElementById('guia-titulo').style.display = paso ? '' : 'none';
-    panel.querySelector('.guia-saltar').style.display = paso ? '' : 'none';
+    // Los DOS botones de saltar (el paso suelto y la guía entera)
+    for(const b of panel.querySelectorAll('.guia-saltar'))
+      b.style.display = paso ? '' : 'none';
     if(com){
       // En el TELÉFONO los comentarios salen PLEGADOS: el bocadillo tapaba
       // medio mapa (lo cazó el autor). El avatar da su respingo y quien
@@ -573,6 +578,19 @@ export class UI {
       `${estado.tutorial.paso + 1}/${CONFIG.tutorial.length}`;
     document.getElementById('guia-titulo').textContent = paso.titulo;
     document.getElementById('guia-texto').textContent = paso.texto;
+    // El paso de la COLINA lleva brújula (atascó al probador frío diez
+    // minutos): Manuel otea el relieve más cercano y señala el rumbo, como
+    // las señales de camino señalan pueblos. El terreno de la semilla no se
+    // mueve, así que se calcula una vez y listo.
+    if(paso.id === 'deposito'){
+      if(this._rumboRelieve === undefined)
+        this._rumboRelieve = relieveMasCercano(estado.mapa,
+          CONFIG.mapaMundo.origen.col, CONFIG.mapaMundo.origen.fila,
+          CONFIG.construibles.deposito.terreno) || null;
+      const r = this._rumboRelieve;
+      if(r) document.getElementById('guia-texto').textContent +=
+        ' ' + t`Manuel otea el terreno: el relieve más cercano queda ${r.rumbo}, a unas ${r.dist} casillas del pueblo.`;
+    }
   }
 
   /* ---------------- HALLAZGO SELECCIONADO Y ALMACÉN ---------------- */
@@ -652,6 +670,21 @@ export class UI {
         : `<p class="red-cuello" style="--tono:${H.color.senal}"><b>${t`Señal de camino`}</b></p>
            <p class="m-desc">${t`Ya no señala a nadie: no queda ningún pueblo por
              descubrir en la comarca. Buen trabajo.`}</p>`;
+      return;
+    }
+
+    // EL MANANTIAL: información del terreno, no un premio pendiente. Su ficha
+    // dice la verdad mecánica entera — es el único indicio que no miente.
+    if(celda && celda.hallazgo === 'manantial'){
+      panel.style.display = '';
+      cont.innerHTML = `
+        <p class="red-cuello" style="--tono:${H.color.manantial}"><b>${t`Manantial`}</b></p>
+        <p class="m-desc">${t`El agua subterránea asoma: debajo de esta casilla hay
+          una masa de agua. El SONDEO aquí no sale seco — es el único indicio
+          que no puede mentir.`}</p>
+        <p class="m-desc">${t`Así se buscó el agua durante siglos, antes de los
+          estudios hidrogeológicos: mirando dónde brota. En el karst de montaña
+          sigue siendo la pista reina.`}</p>`;
       return;
     }
 
@@ -832,7 +865,10 @@ export class UI {
     // ...y el de la ruta del camión, en la del vertedero
       + (obra && obra.tipo === 'vertedero'
         ? Math.ceil(((estado.rutaCamion || {}).hasta || 0) - estado.horas) : '');
-    const firma = obra ? `${obra.tipo},${obra.col},${obra.fila},${obra.nivel || 1},${Math.round(obra.lleno || 0)},${nivelPozo},${estadoObra},${nLineas},${turnoFirma}` : 'nada';
+    // El uso de las plantas cambia solo (crecen los pueblos, gira el año):
+    // sin él en la firma, el porcentaje se quedaba clavado en el del clic
+    const usoFirma = obra ? Math.round((this.usoDePlanta(estado, obra) || 0) * 100) : '';
+    const firma = obra ? `${obra.tipo},${obra.col},${obra.fila},${obra.nivel || 1},${Math.round(obra.lleno || 0)},${nivelPozo},${estadoObra},${nLineas},${turnoFirma},${usoFirma}` : 'nada';
     if(this.cache.obraFirma === firma) return;
     this.cache.obraFirma = firma;
 
@@ -896,7 +932,16 @@ export class UI {
         ${lineasAqui}
         ${turno}
         <p class="m-desc">${this.queAporta(obra.tipo, nivel, def.desc) || def.desc}</p>
-        ${!ampliable ? '' : nivel >= A.nivelMax
+        ${(() => {
+          const uso = this.usoDePlanta(estado, obra);
+          if(uso == null) return '';
+          const pct = Math.round(uso * 100);
+          const clase = pct >= 95 ? 'critico' : pct >= 70 ? 'alarma' : 'ok';
+          return `<p class="m-desc">${t`Uso actual: trabaja al`}
+            <b class="${clase}">${pct} %</b>${pct >= 90
+              ? ' — ' + t`va justa: amplíala o construye otra.` : ''}</p>`;
+        })()}
+        ${!ampliable ? '' : nivel >= nivelMaxPieza(obra.tipo)
           ? `<p class="m-desc">${t`Ampliada al máximo: si hace falta más, toca construir otra.`}</p>`
           : `<button class="mejora obra" data-accion="ampliarPieza" style="--tono:${def.color}">
                <span class="m-cab"><span class="m-nom">${t`Ampliar a nivel ${nivel + 1}`}</span></span>
@@ -1051,6 +1096,31 @@ export class UI {
   }
 
   /**
+   * El USO de las plantas, 0..1+ (petición del autor: al clicar la
+   * depuradora o la ETAP, saber si va justa y toca ampliar). Es la MEDIA
+   * sostenida — para decidir ampliaciones sirve el régimen; las puntas de
+   * lluvia ya las cuentan los avisos de la red. Devuelve null si la pieza
+   * no es una planta o no tiene capacidad que medir.
+   */
+  usoDePlanta(estado, obra){
+    if(obra.tipo === 'potabilizadora'){
+      const cap = capacidadPotabilizacion(estado);
+      if(cap <= 0) return null;
+      return aguaBrutaLh(estado, factorEstiaje(estado.horas)) / cap;
+    }
+    if(obra.tipo === 'depuradora'){
+      const cap = capacidadTratamiento(estado.activo, estado);
+      if(cap <= 0) return null;
+      let residualLh = 0;
+      for(const p of estado.pueblos)
+        if(p.desbloqueado && servicioActivo(p, 'saneamiento'))
+          residualLh += demandaMedia(p.habitantes) * 3600 * CONFIG.saneamiento.fraccionResidual;
+      return residualLh / cap;
+    }
+    return null;
+  }
+
+  /**
    * Qué aporta una pieza del mapa a su nivel actual, en cristiano y con sus
    * números. Es la respuesta a "¿cuál de mis dos depósitos es este?": el que
    * dice lo que dice esta ficha.
@@ -1068,8 +1138,12 @@ export class UI {
   aporteBase(tipo, nivel, P){
     switch(tipo){
       case 'captacion':
-        return t`Aporta <b>${(nivel * P.captacion).toFixed(2)} L/s</b> de producción
-                continua al pueblo, sin clicar.`;
+        // "A pleno caudal": el bruto de la pieza. El neto (tras estiaje,
+        // tubería y fugas) lo cuenta el desglose — sin este matiz, la ficha
+        // decía 1,80 y el HUD 1,19 y parecía un fallo (lo cazó el autor).
+        return t`Aporta <b>${(nivel * P.captacion).toFixed(2)} L/s</b> a pleno caudal,
+                sin clicar. Lo que llega tras estiaje, tubería y fugas lo
+                desglosa «De dónde sale el agua».`;
       case 'bomba':
         return t`Suma <b>${formatear(nivel * P.bomba)} L</b> a cada clic de bombeo.`;
       case 'deposito':
@@ -1111,7 +1185,7 @@ export class UI {
    * propósito para que se pueda leer sin ruido y para que sea evidente, al
    * añadir una pieza nueva, que también hay que explicarla.
    */
-  fichaHTML(def, clave, abierta = false){
+  fichaHTML(def, clave, abierta = false, titulo = null){
     if(!def || !def.ficha) return '';
     const f = def.ficha;
     // El DIAGRAMA va primero y es lo que hace que se lea lo de abajo. Un muro de
@@ -1126,7 +1200,7 @@ export class UI {
     // que es cuando apetece leerla. <details> nativo: cero cableado.
     return `
       <details class="ficha" style="--tono:${def.color}" ${abierta ? 'open' : ''}>
-        <summary class="ficha-resumen">${t`¿Qué es esto?`}</summary>
+        <summary class="ficha-resumen">${titulo || t`¿Qué es esto?`}</summary>
         ${dib}
         <p class="ficha-tit">${t`¿Qué es?`}</p>
         <p class="ficha-txt">${f.que}</p>
@@ -1454,44 +1528,18 @@ export class UI {
         : ''}`;
   }
 
-  /* ---------------- TIENDA (del pueblo activo) ---------------- */
+  /* ---------------- SERVICIOS (del pueblo activo) ---------------- */
 
   /**
-   * La tienda va AGRUPADA POR SERVICIO, no como una lista suelta de mejoras. Es
-   * la misma idea que ordena el juego entero: un pueblo necesita servicios, y
-   * cada servicio tiene sus vías de mejora y su red. Puestas en fila, "tanque de
-   * tormentas" y "potencia de bomba" parecían lo mismo.
+   * LA CIRUGÍA se llevó la tienda (la infraestructura se amplía en el mapa),
+   * pero el panel de SERVICIOS se queda: un pueblo es un conjunto de
+   * servicios, y saber cuál está en marcha y cuál espera es media partida.
    */
-  construirTienda(){
+  construirServicios(){
     const cont = document.getElementById('tienda');
     const servicios = Object.entries(CONFIG.servicios)
       .sort((a, b) => (a[1].orden || 0) - (b[1].orden || 0));
-
-    // Red de seguridad: una mejora que no figure en ningún servicio no puede
-    // desaparecer sin más de la tienda. Sería un fallo mudo —la añades, no la
-    // ves, y no hay ningún error—, así que cae en un grupo suelto al final.
-    const asignadas = new Set(servicios.flatMap(([, sv]) => sv.mejoras || []));
-    const huerfanas = Object.keys(CONFIG.mejoras).filter(k => !asignadas.has(k));
-    if(huerfanas.length){
-      servicios.push(['otras', { nombre: t`Otras mejoras`, siempre: true,
-        desc: 'Sin servicio asignado en CONFIG.servicios.', mejoras: huerfanas }]);
-    }
-
     cont.innerHTML = servicios.map(([sc, sv]) => {
-      const dentro = (sv.mejoras || [])
-        .filter(k => CONFIG.mejoras[k])
-        .map(k => {
-          const m = CONFIG.mejoras[k];
-          return `
-            <button class="mejora" data-accion="mejorar" data-clave="${k}" id="mejora-${k}">
-              <span class="m-cab">
-                <span class="m-nom">${m.nombre}</span>
-                <span class="m-nivel" id="nivel-${k}"></span>
-              </span>
-              <span class="m-desc">${m.desc}</span>
-              <span class="m-coste" id="coste-${k}">—</span>
-            </button>`;
-        }).join('');
       const tono = (CONFIG.redes[sv.red] || {}).color || CONFIG.color.alarma;
       return `
         <div class="servicio" id="servicio-${sc}" style="--tono:${tono}">
@@ -1500,17 +1548,14 @@ export class UI {
             <span class="sv-estado" id="sv-estado-${sc}"></span>
           </p>
           <p class="sv-desc">${sv.desc}</p>
-          ${dentro}
         </div>`;
     }).join('');
   }
 
-  refrescarTienda(estado){
+  refrescarServicios(estado){
     const p = estado.activo;
-
     // Cada servicio dice en qué punto está: de serie, en marcha, esperando a
-    // crecer o todavía cerrado. Sin esto, las mejoras de un servicio dormido
-    // salían igual que las demás y no se entendía por qué no hacían nada.
+    // crecer o todavía cerrado.
     for(const [sc, sv] of Object.entries(CONFIG.servicios)){
       const caja = document.getElementById('servicio-' + sc);
       const etq = document.getElementById('sv-estado-' + sc);
@@ -1527,35 +1572,78 @@ export class UI {
       etq.textContent = texto;
       caja.classList.toggle('dormido', !activo);
     }
+  }
 
-    for(const [clave, m] of this.mejoras){
-      const nivel = p.mejoras[clave];
-      const bt = document.getElementById('mejora-' + clave);
-      const elN = document.getElementById('nivel-' + clave);
-      const elC = document.getElementById('coste-' + clave);
-      if(!bt) continue;
+  /** LA CUADRILLA: la compra común de mantenimiento (vive en Mancomunidad). */
+  refrescarCuadrilla(estado){
+    const cont = document.getElementById('cuadrilla');
+    if(!cont) return;
+    const C = CONFIG.cuadrilla;
+    const nivel = estado.cuadrilla || 0;
+    const tope = nivel >= C.nivelMax;
+    const coste = costeCuadrilla(estado);
+    const firma = `${nivel},${tope ? 1 : estado.puedePagar(coste) ? 1 : 0}`;
+    if(this.cache.cuadrillaFirma === firma) return;
+    this.cache.cuadrillaFirma = firma;
+    cont.innerHTML = `
+      <button class="mejora ${tope ? 'comprada' : ''}" data-accion="cuadrilla"
+              ${tope ? 'disabled' : ''}>
+        <span class="m-cab">
+          <span class="m-nom">${C.nombre}</span>
+          <span class="m-nivel">${nivel > 0 ? t`Nv ${nivel}` : ''}</span>
+        </span>
+        <span class="m-desc">${C.desc}</span>
+        <span class="m-coste">${tope ? t`AL MÁXIMO` : formatear(coste) + ' €'}</span>
+      </button>`;
+  }
 
-      // Mejoras de un servicio que todavía no está en marcha
-      if(m.requiere && !servicioActivo(p, m.requiere)){
-        bt.style.display = 'none';
-        continue;
-      }
-      bt.style.display = '';
+  /**
+   * EL LIBRO DEL OFICIO: las fichas divulgativas coleccionadas. Se desbloquean
+   * CONSTRUYENDO (estado.conocidas): conocer el oficio es haber levantado sus
+   * piezas, y derribar no des-aprende. Los escalones del caserío entran cuando
+   * algún pueblo tuyo alcanza ese tamaño. Cada página es un <details> plegado
+   * con el nombre de la pieza — la regla de escala, de serie: doce líneas de
+   * una altura, no doce fichas abiertas. Las páginas por conocer salen como
+   * «???»: que se vea cuánto oficio queda por aprender es el coleccionismo.
+   */
+  refrescarLibro(estado){
+    const cont = document.getElementById('libro');
+    if(!cont) return;
+    const piezas = Object.entries(CONFIG.construibles)
+      .filter(([, def]) => def.ficha)
+      .sort((a, b) => (a[1].orden || 99) - (b[1].orden || 99));
+    const escalones = CONFIG.caserio.escalones.filter(e => e.ficha);
+    const maxHab = Math.max(0, ...estado.pueblos
+      .filter(p => p.desbloqueado).map(p => p.habitantes || 0));
+    const escalonMax = escalones.findLastIndex(e => escalonCaserio(maxHab) === e);
+    const sabidas = piezas.filter(([clave]) => estado.conocidas.includes(clave)).length;
+    const total = piezas.length + escalones.length;
+    const firma = `${sabidas}:${escalonMax}`;
+    if(this.cache.libroFirma === firma) return;
+    this.cache.libroFirma = firma;
 
-      elN.textContent = nivel > 0 ? t`Nv ${nivel}` : '';
+    const porConocer = `<span class="m-nivel">???</span>`;
+    const paginas = piezas.map(([clave, def]) =>
+      estado.conocidas.includes(clave)
+        ? this.fichaHTML(def, clave, false, def.nombre)
+        : `<p class="m-desc libro-cerrada">${porConocer} ${t`Se conoce construyéndola.`}</p>`
+    ).join('');
+    const tamanos = escalones.map((esc, i) =>
+      i <= escalonMax
+        ? `<details class="ficha" style="--tono:#e7d8b0">
+             <summary class="ficha-resumen">${esc.titulo[0].toUpperCase() + esc.titulo.slice(1)}</summary>
+             <p class="ficha-txt">${esc.ficha}</p>
+           </details>`
+        : `<p class="m-desc libro-cerrada">${porConocer} ${t`Se conoce cuando un pueblo tuyo llega a ese tamaño.`}</p>`
+    ).join('');
 
-      if(nivel >= m.nivelMax){
-        elC.textContent = t`AL MÁXIMO`;
-        bt.classList.add('comprada'); bt.classList.remove('inalcanzable');
-        bt.disabled = true;
-        continue;
-      }
-      bt.disabled = false;
-      const coste = costeMejora(clave, nivel);
-      elC.textContent = formatear(coste) + ' €';
-      bt.classList.remove('comprada');
-      bt.classList.toggle('inalcanzable', !estado.puedePagar(coste));
-    }
+    cont.innerHTML = `
+      <p class="m-desc">${t`Lo que el oficio te ha enseñado, pieza a pieza:
+        ${sabidas + Math.max(0, escalonMax + 1)} de ${total} páginas escritas.
+        Las que faltan se aprenden construyendo.`}</p>
+      ${paginas}
+      <p class="m-desc" style="margin-top:0.6em"><b>${t`Los tamaños de un núcleo`}</b></p>
+      ${tamanos}`;
   }
 
   /* ---------------- FUNCIÓN ESPECIAL: AUTO-BOMBEO (del pueblo activo) ------ */
@@ -1592,7 +1680,7 @@ export class UI {
       return;
     }
 
-    const req = requisitosAutobomba(p);
+    const req = requisitosAutobomba(p, estado);
     const puede = req.cumple && estado.puedePagar(P.coste);
     etq.textContent = req.cumple ? t`DISPONIBLE` : t`BLOQUEADO`;
     reqs.innerHTML = req.lista.map(f =>
@@ -1715,8 +1803,10 @@ export class UI {
     const c = resultado.caja;
     const neto = c.facturado + c.residuos + c.yacimientos
                - c.luz - c.nomina - c.multaCauce - c.multaZec;
-    const firma = [c.facturado, c.residuos, c.yacimientos, c.luz, c.nomina,
-                   c.multaCauce, c.multaZec].map(v => Math.round(v * 10)).join(',');
+    // Los impagos van en la firma pero NO en el balance: no son un gasto,
+    // son ingreso que nunca llegó (el facturado ya viene sin ellos)
+    const firma = [c.facturado, c.impagos || 0, c.residuos, c.yacimientos, c.luz,
+                   c.nomina, c.multaCauce, c.multaZec].map(v => Math.round(v * 10)).join(',');
     if(this.cache.cajaFirma === firma) return;
     this.cache.cajaFirma = firma;
 
@@ -1729,6 +1819,7 @@ export class UI {
     cont.innerHTML = `
       <div class="casilla-fila"><span>${t`Agua facturada`}</span>
         <b>+${fmt(c.facturado)} €/h</b></div>
+      ${fila(t`Agua servida sin cobrar (impagos)`, c.impagos || 0, true)}
       ${fila(t`Residuos (venta menos vertido)`, c.residuos)}
       ${fila(t`Rentas de yacimientos`, c.yacimientos)}
       ${fila(t`La luz de las instalaciones`, c.luz, true)}
@@ -1786,8 +1877,8 @@ export class UI {
    * salen del estado, así que una partida cargada enseña lo suyo sin guiño.
    */
   refrescarMetricas(estado){
-    const conCaptacion = estado.pueblos.some(pb => pb.mejoras.captacion > 0)
-      || estado.construcciones.some(o => o.tipo === 'captacion' || o.tipo === 'acuifero');
+    const conCaptacion =
+      estado.construcciones.some(o => o.tipo === 'captacion' || o.tipo === 'acuifero');
     const visibles = {
       'hud-agua': true, 'hud-dinero': true, 'hud-servicio': true,
       'hud-poblacion': !!(estado.tutorial && estado.tutorial.terminado),
@@ -1939,10 +2030,12 @@ export class UI {
     this.refrescarFichaObra(estado);
     this.refrescarHallazgo(estado);
     this.refrescarAlmacen(estado);
-    this.refrescarTienda(estado);
+    this.refrescarServicios(estado);
+    this.refrescarCuadrilla(estado);
     this.refrescarPremium(estado);
     this.refrescarAverias(estado);
     this.refrescarExpediente(estado);
+    this.refrescarLibro(estado);
     this.refrescarCauce(estado, resultado);
     this.refrescarCaja(estado, resultado);
     this.marcarPestanaAveria(estado);
@@ -1984,10 +2077,12 @@ export class UI {
     const est = resultado.estiaje || 1;
     const estacion = nombreEstacion(estado.horas) +
       (est < 0.7 ? t` · estiaje` : est > 1.1 ? t` · deshielo` : '');
-    const nivelDep = p.mejoras.deposito;
-    const reserva = nivelDep === 0 ? t`Sin depósito` : t`Nivel ${nivelDep} · ${formatear(capacidad(p, estado))} L`;
+    // Tras la cirugía, todo son NIVELES CONECTADOS de piezas del mapa
+    const nivelDep = (estado._conectado || {}).deposito || 0;
+    const reserva = nivelDep === 0 ? t`Sin depósito` : t`${nivelDep} niveles · ${formatear(capacidad(p, estado))} L`;
+    const nivDepu = ((estado._conectadoSan || {}).depuradora || 0);
     const sane = servicioActivo(p, 'saneamiento')
-      ? (p.mejoras.depuradora > 0 ? t`Depuradora Nv ${p.mejoras.depuradora}` : t`SIN depurar ⚠`)
+      ? (nivDepu > 0 ? t`Depuradora: ${nivDepu} niveles` : t`SIN depurar ⚠`)
       : t`Aún no genera`;
 
     // Lluvia y tormentas (solo cuando la mancomunidad ya gestiona pluviales)
@@ -1995,7 +2090,7 @@ export class UI {
     const tanquePct = Math.round((resultado.tanqueFrac || 0) * 100);
     const filaLluvia = estado.pluvialesActivas ? `
       <div class="d-fila"><span>${t`Lluvia`}</span><b class="${lluviaPct > 50 ? 'agua' : ''}">${lluviaPct} %</b></div>
-      <div class="d-fila"><span>${t`Pluviales`}</span><b>${p.mejoras.pluviales > 0 ? t`Nivel ${p.mejoras.pluviales}` : t`Sin separar ⚠`}</b></div>
+      <div class="d-fila"><span>${t`Pluviales`}</span><b>${(resultado.separadaLh || 0) > 0 ? t`Separando` : t`Sin separar ⚠`}</b></div>
       <div class="d-fila"><span>${t`Tanque tormentas`}</span><b class="${resultado.aliviando ? 'critico' : ''}">${
         capacidadTanque(p, estado) > 0 ? t`${tanquePct} % lleno` : '—'}${resultado.aliviando ? t` · ALIVIANDO` : ''}</b></div>
       <div class="d-fila"><span>${t`Calidad`}</span><b class="${(resultado.calidad || 1) > 1.05 ? 'ok' : ''}">×${(resultado.calidad || 1).toFixed(2)}</b></div>` : '';
@@ -2012,9 +2107,9 @@ export class UI {
       <div class="d-fila"><span>${t`Sin recoger`}</span><b class="${basuraPct > 20 ? 'critico' : ''}">${basuraPct} %</b></div>` : '';
 
     const firma = [p.nombre, tendencia, Math.floor(p.habitantes),
-                   nivelDep, p.mejoras.captacion, estacion, sane, basuraPct, recicPct,
+                   nivelDep, nivDepu, estacion, sane, basuraPct, recicPct,
                    estado.pluvialesActivas, lluviaPct, tanquePct,
-                   resultado.aliviando, p.mejoras.pluviales, p.mejoras.tanque].join('|');
+                   resultado.aliviando, Math.round(resultado.separadaLh || 0)].join('|');
     if(this.cache.panelFirma === firma) return;
     this.cache.panelFirma = firma;
 
@@ -2026,7 +2121,7 @@ export class UI {
       <div class="d-fila"><span>${t`Captación`}</span><b>${prodAhora > 0 ? prodAhora.toFixed(2) + ' m³/h' : '—'}</b></div>
       <div class="d-fila"><span>${t`Estación`}</span><b>${estacion}</b></div>
       <div class="d-fila"><span>${t`Reserva`}</span><b>${reserva}</b></div>
-      <div class="d-fila"><span>${t`Saneamiento`}</span><b class="${servicioActivo(p, 'saneamiento') && p.mejoras.depuradora === 0 ? 'alarma' : ''}">${sane}</b></div>
+      <div class="d-fila"><span>${t`Saneamiento`}</span><b class="${servicioActivo(p, 'saneamiento') && nivDepu === 0 ? 'alarma' : ''}">${sane}</b></div>
       ${filaLluvia}
       ${filaResiduos}`;
   }

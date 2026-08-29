@@ -104,6 +104,25 @@ export function comprobar(estado){
   return paso;
 }
 
+/**
+ * Saltar SOLO el paso actual. Nació del muro del probador frío: el paso de
+ * la colina lo atascó diez minutos y la única salida era tirar la guía
+ * ENTERA — castigar el atasco con perder el manual es lo contrario de
+ * enseñar. Vale para la guía inicial y para los capítulos.
+ */
+export function saltarPaso(estado){
+  const paso = pasoActual(estado);
+  if(!paso) return;
+  if(paso.capitulo){
+    const g = estado.guias[paso.capitulo];
+    g.paso++;
+    if(g.paso >= CONFIG.guias[paso.capitulo].pasos.length) g.terminada = true;
+  } else {
+    estado.tutorial.paso++;
+    if(estado.tutorial.paso >= CONFIG.tutorial.length) estado.tutorial.terminado = true;
+  }
+}
+
 /** Saltarse la guía (botón de la propia guía): la inicial, o el capítulo. */
 export function saltar(estado){
   const t = estado.tutorial;

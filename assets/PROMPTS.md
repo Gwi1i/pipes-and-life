@@ -559,6 +559,54 @@ alegre: el agua que no se veía, saliendo donde no hay río.
 > chorro de agua clara saliendo por la boca del entubado, con dos operarios
 > celebrándolo y un pueblo pequeño al fondo entre lomas, *(+ coletilla)*
 
+## El manantial (`h_manantial.png`)
+
+Sale la primera vez que se destapa un manantial. La lección: el agua que
+brota es agua que está debajo — el indicio que no puede mentir. Debe dar
+ganas de perforar ahí mismo:
+
+### `h_manantial.png`
+> Genera una imagen: un manantial de montaña brotando entre rocas calizas en
+> la ladera, el agua clara saliendo con fuerza de una poza de piedra y
+> bajando en un arroyo pequeño, vegetación fresca alrededor del agua en
+> contraste con la ladera seca, y un zahorí antiguo dibujado como recuerdo
+> lejano — un hombre con vara de avellano — difuminado al fondo,
+> *(+ coletilla)*
+
+## El traslado de concesión (`h_traslado.png`)
+
+Sale cuando la mancomunidad ya camina sola y otra comarca llama: la red se
+queda, la veteranía viaja contigo. Debe transmitir orgullo y despedida a la
+vez — mirar lo construido por última vez, con el territorio nuevo esperando:
+
+### `h_traslado.png`
+> Genera una imagen: un ingeniero veterano con su maletín y un tubo de
+> planos bajo el brazo, de espaldas en lo alto de un camino, despidiéndose
+> de un valle con varios pueblos conectados por conducciones de agua,
+> depósitos y una depuradora junto al río, mientras al otro lado del camino
+> se abre un valle nuevo sin urbanizar esperándole, con luz de amanecer,
+> *(+ coletilla)*
+
+## La primera avería (`h_averia.png`)
+
+La tarjeta sale con la primera avería de la partida y explica la mecánica:
+lo roto deja de aportar y se arregla YENDO ALLÍ con la llave. Debe transmitir
+oficio y arreglo, no catástrofe — una avería es rutina del abastecimiento:
+
+### `h_averia.png`
+
+**Corrección del autor (del oficio): NADIE actúa sobre una tubería en
+presión — está prohibidísimo.** Primero se corta el agua; la reparación
+viene después, con la línea despresurizada. Los operarios se dibujan AL
+BORDE de la zanja, evaluando, nunca con la llave sobre el tubo en carga.
+
+> Genera una imagen: una tubería enterrada fisurada vista en una zanja
+> recién abierta en un camino rural, un chorro de agua saliendo con fuerza
+> por la fisura, y dos operarios con casco al borde de la zanja evaluando
+> la avería con palas y herramienta, la camioneta de la cuadrilla aparcada
+> al lado y un pueblo pequeño con su depósito elevado al fondo,
+> *(+ coletilla)*
+
 ## La zona protegida (`h_proteccion.png`)
 
 La tarjeta sale la primera vez que una obra tropieza con una zona de especial
