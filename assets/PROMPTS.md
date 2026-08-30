@@ -559,6 +559,18 @@ alegre: el agua que no se veía, saliendo donde no hay río.
 > chorro de agua clara saliendo por la boca del entubado, con dos operarios
 > celebrándolo y un pueblo pequeño al fondo entre lomas, *(+ coletilla)*
 
+## La bomba te releva (`h_jubilacion.png`) — rama sinclic
+
+Sale cuando la primera bomba conectada jubila el clic de bombear. Es una
+celebración: la máquina releva a la mano, como en el oficio de verdad:
+
+### `h_jubilacion.png`
+> Genera una imagen: un operario joven soltando con alivio una palanca de
+> bomba manual antigua mientras a su lado arranca una estación de bombeo
+> moderna con su motor reluciente y el agua corriendo por la tubería de
+> salida, el operario secándose la frente con media sonrisa, un pueblo
+> pequeño al fondo con su depósito en la colina, *(+ coletilla)*
+
 ## El manantial (`h_manantial.png`)
 
 Sale la primera vez que se destapa un manantial. La lección: el agua que
