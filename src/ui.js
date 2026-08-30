@@ -701,7 +701,7 @@ export class UI {
     // La SEÑAL DE CAMINO: dice a quién apunta y a cuánto, en vivo.
     if(celda && celda.hallazgo === 'senal'){
       panel.style.display = '';
-      const obj = nucleoMasCercano(estado.mapa, sel.col, sel.fila);
+      const obj = nucleoMasCercano(estado.mapa, sel.col, sel.fila, true);
       cont.innerHTML = obj
         ? `<p class="red-cuello" style="--tono:${H.color.senal}"><b>${t`Señal de camino`}</b></p>
            <p class="m-desc">${t`«${nombreDeNucleo(obj.celda.nombreIdx || 0)} ·
