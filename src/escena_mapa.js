@@ -1617,7 +1617,13 @@ export class EscenaMapa extends Escena {
       // 4. lo que lleva dentro — pero solo si la línea TRABAJA: por un tubo
       //    suelto no corre nada, y esa quietud es el aviso de que algo falta
       const sentido = vivas.get(tub);
-      if(R.esVial) this.marcaVial(pts, ancho);
+      if(R.esVial){
+        this.marcaVial(pts, ancho);
+        // La vida de la carretera es EL CAMIÓN: la tubería lleva gotas y la
+        // vía llevaba solo pintura (lo echó de menos el autor). Recorre la
+        // línea en el sentido del residuo: del pueblo hacia el vertedero.
+        if(sentido) this.camionEnRuta(pts, ancho, sentido);
+      }
       else if(sentido) this.gotasEnRuta(pts, ancho, R.color, sentido);
 
       // 5. el CUELLO DE BOTELLA se señala: si esta red está limitada AHORA y
@@ -1673,12 +1679,6 @@ export class EscenaMapa extends Escena {
       return mejor;
     };
     for(const [clave, r] of Object.entries(CONFIG.redes)){
-      if(r.esVial){
-        // La carretera no lleva sentido: su marca vial es estática
-        for(const { tuberia } of lineasConectadas(estado, clave))
-          this._vivas.set(tuberia, 1);
-        continue;
-      }
       const conectadas = lineasConectadas(estado, clave);
       // El sentido del agua sale de la DISTANCIA POR LA RED (BFS desde los
       // pueblos por las casillas con tubería de esta red): el agua de
@@ -1748,6 +1748,45 @@ export class EscenaMapa extends Escena {
       };
     }
     return !!(this._limitada && this._limitada[clave]);
+  }
+
+  /**
+   * El camión de la basura trotando por la carretera conectada, en bucle.
+   * Vista cenital pequeña: caja clara, cabina oscura delante, dos ruedas.
+   * Es la gota de la red de residuos — si el camión rueda, la vía trabaja.
+   */
+  camionEnRuta(pts, ancho, sentido){
+    const ctx = this.ctx, t = this.tam, C = CONFIG.estiloMapa.camionVial;
+    // longitud total y posición cíclica sobre la polilínea
+    const tramos = [];
+    let total = 0;
+    for(let i = 0; i < pts.length - 1; i++){
+      const L = Math.hypot(pts[i+1].x - pts[i].x, pts[i+1].y - pts[i].y);
+      tramos.push(L); total += L;
+    }
+    if(total <= 0) return;
+    let d = ((this.tiempo * C.velocidad * this.zoom * sentido) % total + total) % total;
+    let i = 0;
+    while(i < tramos.length - 1 && d > tramos[i]){ d -= tramos[i]; i++; }
+    const a = pts[i], b = pts[i + 1], k = tramos[i] > 0 ? d / tramos[i] : 0;
+    const x = a.x + (b.x - a.x) * k, y = a.y + (b.y - a.y) * k;
+    const ang = Math.atan2((b.y - a.y) * sentido, (b.x - a.x) * sentido);
+    const largo = Math.max(7, t * 0.30), anchoC = Math.max(4, t * 0.17);
+    ctx.save();
+    ctx.translate(x, y); ctx.rotate(ang);
+    // sombra, caja, cabina — con la tinta de la casa
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ctx.fillRect(-largo / 2 + 1, -anchoC / 2 + 2, largo, anchoC);
+    ctx.fillStyle = '#cfd6b8';
+    ctx.fillRect(-largo / 2, -anchoC / 2, largo * 0.68, anchoC);
+    ctx.fillStyle = '#4a6a52';
+    ctx.fillRect(-largo / 2 + largo * 0.68, -anchoC / 2, largo * 0.32, anchoC);
+    ctx.globalAlpha = CONFIG.estiloMapa.tinta;
+    ctx.strokeStyle = '#101a12';
+    ctx.lineWidth = Math.max(1, t * 0.015);
+    ctx.strokeRect(-largo / 2, -anchoC / 2, largo, anchoC);
+    ctx.globalAlpha = 1;
+    ctx.restore();
   }
 
   /** Marca vial discontinua, para que la carretera no parezca un tubo gris. */
