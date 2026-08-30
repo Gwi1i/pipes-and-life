@@ -1213,10 +1213,10 @@ export const CONFIG = {
         costeRelativo: 1,   color: '#9aa08a' },
       { id: 'dn110', nombre: 'DN 110', material: 'polietileno',
         caudalMax: 3.20, habitantesMax: 1600, fugas: 0.04, vidaAños: 50,
-        costeRelativo: 3.5, color: '#38bdf8' },
+        costeRelativo: 5.5, color: '#38bdf8' },
       { id: 'dn200', nombre: 'DN 200', material: 'fundición dúctil',
         caudalMax: 12.0, habitantesMax: 6000, fugas: 0.01, vidaAños: 70,
-        costeRelativo: 11, color: '#cbd5e1' }
+        costeRelativo: 14, color: '#cbd5e1' }
     ],
     /* Cómo envejece una línea pasada su vida útil: las fugas crecen despacio y
        con TECHO — una red vieja sangra, no mata. Renovarla (aunque sea al mismo
@@ -1227,6 +1227,12 @@ export const CONFIG = {
     },
     // Al renovar un tramo se recupera parte del material viejo: renovar es más
     // barato que tender de cero, pero no gratis.
+    /* La OBRA FIJA de renovar: desplazar cuadrilla y maquinaria cuesta lo
+       mismo para 5 casillas que para 50 — es lo que convierte la renovacion
+       temprana (lineas cortas) en decision y no en tramite (el bot renovaba
+       en el minuto 4; medido). En las renovaciones largas del final apenas
+       pesa, que es justo como funciona en la realidad. */
+    renovacionObraFija: 400,
     valorRecuperado: 0.25
   },
 
@@ -1250,10 +1256,10 @@ export const CONFIG = {
         costeRelativo: 0.8, color: '#a8896a' },
       { id: 'asfalto', nombre: 'Asfaltada', material: 'aglomerado',
         caudalMax: 0.20, habitantesMax: 3000, fugas: 0.05,
-        costeRelativo: 3.0, color: '#94a3b8' },
+        costeRelativo: 4.5, color: '#94a3b8' },
       { id: 'calzada', nombre: 'Doble calzada', material: 'hormigón',
         caudalMax: 0.60, habitantesMax: 9000, fugas: 0.01,
-        costeRelativo: 9.0, color: '#e2e8f0' }
+        costeRelativo: 12, color: '#e2e8f0' }
     ]
   },
 
