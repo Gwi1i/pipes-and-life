@@ -200,10 +200,14 @@ function sembrarSenales(celdas, azar){
 /** El núcleo SIN RESOLVER más cercano a (col,fila). Es la brújula de las
  *  señales, calculada EN VIVO: cuando ese pueblo se incorpora, la señal pasa
  *  sola a apuntar al siguiente. */
-export function nucleoMasCercano(celdas, col, fila){
+export function nucleoMasCercano(celdas, col, fila, soloOcultos = false){
   let mejor = null, mejorD = Infinity;
   recorrer(celdas, (celda, c, f) => {
     if(celda.hallazgo !== 'pueblo' || celda.resuelto) return;
+    // Con soloOcultos, un pueblo ya a la vista no cuenta: la señal guía la
+    // EXPLORACIÓN, y señalar lo que ya se ve es un cartel jubilado
+    // (petición del autor jugando)
+    if(soloOcultos && !celda.oculta) return;
     const d = Math.hypot(c - col, f - fila);
     if(d < mejorD){
       mejorD = d;

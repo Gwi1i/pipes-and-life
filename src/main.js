@@ -503,7 +503,7 @@ function procesarAcciones(){
           // descubrir unos segundos ("yo quiero ir, no adivinar" — jugadora
           // de trance). El cartel dibujado ya apunta, pero de fino no se ve.
           if(celda.hallazgo === 'senal' && escena.senalarRumbo){
-            const obj = nucleoMasCercano(estado.mapa, col, fila);
+            const obj = nucleoMasCercano(estado.mapa, col, fila, true);
             if(obj) escena.senalarRumbo(col, fila, obj.c, obj.f);
           }
         } else {
