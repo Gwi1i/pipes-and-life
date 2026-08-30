@@ -307,7 +307,10 @@ function procesarAcciones(){
           break;
         }
         estado.pagar(coste);
-        flotar(sel.col, sel.fila, -coste);
+        // La linea no viene de una seleccion: el numero flota de su punto
+        // medio (ReferenceError 'sel is not defined', cazado por el autor)
+        const medioR = tub.camino[Math.floor(tub.camino.length / 2)];
+        flotar(medioR.col, medioR.fila, -coste);
         const antes = diametro(tub.dn, red).nombre;
         tub.dn = destino;
         tub.coste = (tub.coste || 0) + coste;
@@ -377,7 +380,8 @@ function procesarAcciones(){
                     Ojo: lo que colgaba de ella quedará sin conectar.`)) break;
         estado.tuberias.splice(estado.tuberias.indexOf(tub), 1);
         estado.dinero += recupera;
-        flotar(sel.col, sel.fila, recupera);
+        const medioQ = tub.camino[Math.floor(tub.camino.length / 2)];
+        flotar(medioQ.col, medioQ.fila, recupera);
         estado.anotar(t`Línea de ${R.nombre.toLowerCase()} levantada: ${formatear(recupera)} € de material recuperado.`, 'info');
         avisar(t`Línea levantada.`);
         sonido.picar();
