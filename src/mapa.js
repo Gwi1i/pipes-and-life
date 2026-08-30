@@ -1016,7 +1016,10 @@ export function costeTrazado(celdas, trazado, dn, red = 'abastecimiento'){
  */
 export function costeRenovar(celdas, tuberia, dn, red = 'abastecimiento'){
   const bruto = costeTrazado(celdas, tuberia.camino, dn, red);
-  return Math.round(bruto * (1 - CONFIG.tuberia.valorRecuperado));
+  // La obra fija: cuadrilla y maquina cuestan lo mismo vengan a 5 casillas
+  // o a 50. Sin ella, renovar una linea corta era calderilla (min 4, bot).
+  return Math.round(bruto * (1 - CONFIG.tuberia.valorRecuperado))
+       + CONFIG.tuberia.renovacionObraFija;
 }
 
 /* ================================================================
