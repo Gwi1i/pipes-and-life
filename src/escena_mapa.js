@@ -1105,7 +1105,7 @@ export class EscenaMapa extends Escena {
           // una señal, el núcleo sin resolver más cercano — su brújula.
           this.dibujarHallazgo(celda, x, y, t,
             celda.hallazgo === 'senal'
-              ? nucleoMasCercano(estado.mapa, c, f)
+              ? nucleoMasCercano(estado.mapa, c, f, true)
               : this.habitantesDe(celda, estado, c, f));
         // EL NOMBRE, bajo el caserío: el mapa es el selector de pueblos
         // (las pestañas no escalaban) y un selector necesita rótulos. Solo
@@ -1163,6 +1163,11 @@ export class EscenaMapa extends Escena {
     const ctx = this.ctx;
     const col = CONFIG.hallazgos.color[celda.hallazgo] || '#ffffff';
     const cx = x + t / 2, cy = y + t / 2;
+
+    // Una señal cuyo pueblo YA ESTÁ A LA VISTA se retira del mapa entera:
+    // su trabajo era guiar hasta él (petición del autor). La casilla queda
+    // normal y el hallazgo deja de dibujarse, como las ruinas atendidas.
+    if(celda.hallazgo === 'senal' && !extra) return;
 
     // Una ruina atendida YA NO ESTÁ: o te la has llevado al almacén o la has
     // puesto en marcha y ahora hay una construcción encima. Seguir pintando el
@@ -1675,9 +1680,40 @@ export class EscenaMapa extends Escena {
         continue;
       }
       const conectadas = lineasConectadas(estado, clave);
+      // El sentido del agua sale de la DISTANCIA POR LA RED (BFS desde los
+      // pueblos por las casillas con tubería de esta red): el agua de
+      // abastecimiento fluye hacia distancias menores. La brújula euclídea
+      // anterior se equivocaba en las cadenas — el autor vio un tramo
+      // depósito→bombeo con el agua cuesta arriba.
+      const celdasRed = new Set();
+      for(const { tuberia } of conectadas)
+        for(const q of tuberia.camino) celdasRed.add(q.col + ',' + q.fila);
+      const dist = new Map();
+      const cola = [];
+      for(const pb of nucleos){
+        dist.set(pb.col + ',' + pb.fila, 0);
+        cola.push([pb.col, pb.fila]);
+      }
+      while(cola.length){
+        const [c, f] = cola.shift();
+        const d = dist.get(c + ',' + f);
+        for(const [dc, df] of [[1,0],[-1,0],[0,1],[0,-1]]){
+          const k = (c + dc) + ',' + (f + df);
+          if(!celdasRed.has(k) || dist.has(k)) continue;
+          dist.set(k, d + 1);
+          cola.push([c + dc, f + df]);
+        }
+      }
       for(const { tuberia } of conectadas){
         const cam = tuberia.camino;
-        const haciaElFinal = distNucleo(cam[cam.length - 1]) <= distNucleo(cam[0]);
+        const dA = dist.get(cam[0].col + ',' + cam[0].fila);
+        const dB = dist.get(cam[cam.length - 1].col + ',' + cam[cam.length - 1].fila);
+        // Hacia el final del camino si el final queda MÁS CERCA del pueblo
+        // por la red; si la red no da la respuesta (tramos raros), la
+        // brújula euclídea de antes sigue de respaldo
+        const haciaElFinal = (dA !== undefined && dB !== undefined && dA !== dB)
+          ? dB < dA
+          : distNucleo(cam[cam.length - 1]) <= distNucleo(cam[0]);
         // Abastecimiento: hacia el pueblo. Las redes que EVACÚAN, al revés.
         const sentido = (clave === 'abastecimiento') === haciaElFinal ? 1 : -1;
         this._vivas.set(tuberia, sentido);
