@@ -733,6 +733,12 @@ export const CONFIG = {
       velocidad: 26,        // marcha de la raya, px/s a zoom 1
       cadaSegundos: 1       // cada cuánto se re-mira si la red sigue limitada
     },
+    /* EL CAMIÓN de la basura recorriendo las carreteras conectadas: la
+       "gota" de la red de residuos (lo echó de menos el autor). Rueda del
+       pueblo hacia el vertedero, que es el viaje del residuo. */
+    camionVial: {
+      velocidad: 22         // px/s a zoom 1 — trota, no corre
+    },
     /* LA FLECHA de la señal de camino al clicarla: línea dorada marchante
        hacia el pueblo por descubrir. "Yo quiero ir, no adivinar" (jugadora
        de trance dixit). */
