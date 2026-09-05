@@ -31,7 +31,7 @@ Todo es gratis; el alta y el botón de publicar son tuyos, como siempre.
 > treat ends up in it. Your first pumping station retires your finger: from
 > then on, every click is a decision. Made by a real waterworks professional
 > in Navarre, Spain: the trade details are true. Free, no ads, English and
-> Spanish. AI-assisted build (code and card illustrations), disclosed.
+> Spanish. AI-assisted build: the code was written by an AI under my direction; illustrations, voice and music are AI-generated; design and water knowledge are mine. Disclosed.
 
 ## 2. IncrementalDB — la base de datos
 
@@ -63,8 +63,9 @@ Todo es gratis; el alta y el botón de publicar son tuyos, como siempre.
 > browser) and Newgrounds, English and Spanish, free, no ads.
 >
 > itch: https://gwiii.itch.io/pipes-and-life
-> Disclosure for your Gen AI badge: built with AI assistance (code and the
-> card illustrations); the map art and the water logic are mine.
+> Disclosure for your Gen AI badge: the code was written by an AI assistant
+> (Claude) under my direction; illustrations, voice and music are
+> AI-generated. The design and the water knowledge are mine.
 >
 > Thanks for the newsletter — the 2025 survey was a genuinely useful read for
 > a developer.

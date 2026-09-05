@@ -45,8 +45,9 @@ condiciones en Newgrounds; CrazyGames tiene revisión.
 > water, the game did its job.
 >
 > Free, no ads, plays in the browser. English and Spanish.
-> Built with AI assistance (Claude); card illustrations are AI-generated,
-> the map art and code are hand-made.
+> Built with an AI assistant (Claude) that wrote the code under my
+> direction; card illustrations, voice and music are AI-generated. The
+> design and the water knowledge are mine.
 
 ## CrazyGames (más tráfico, con revisión)
 
