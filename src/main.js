@@ -19,6 +19,7 @@ import { celdaEn, clicarCasilla, clicsParaDestapar, puedeColocar,
          costeSondeo, claseAcuifero, edadAños, bautizarObra,
          nombreDeNucleo, conjuntoDeRed } from './mapa.js';
 import { avanzar, bombear, costeCuadrilla, nivelMaxPieza, requisitosAutobomba,
+         clicsAutoPorSeg,
          poderExpansion, servicioActivo, costeAmpliarVertedero,
          capacidadVaso, faseActual, faltanParaFase, capacidad,
          incorporarPueblo, canonIncorporacion, costeAmpliarPieza,
@@ -136,6 +137,10 @@ let multaZECAvisada = false;   // para anunciar la multa solo al empezar
 let clicsBombeo = [];
 let desbordeAvisado = false;
 function golpeDeBomba(px, py, col, fila){
+  // SINCLIC: con un BOMBEO conectado, el dedo esta jubilado — la bomba
+  // trabaja sola y el clic pasa a hacer lo que hace en todas partes:
+  // seleccionar. Una sola puerta para el pueblo, la pieza y la espaciadora.
+  if(clicsAutoPorSeg(estado.activo, estado) > 0) return;
   const ahora = performance.now();
   clicsBombeo = clicsBombeo.filter(x => ahora - x < 1000);
   if(clicsBombeo.length >= CONFIG.bombeo.maxClicsPorSegundo) return;
@@ -1757,6 +1762,19 @@ function bucle(ahora){
 
   if(resultado.serviciosNuevos && resultado.serviciosNuevos.length){
     for(const clave of resultado.serviciosNuevos) contarHito(clave);
+  }
+
+  // LA JUBILACIÓN DEL DEDO (sinclic): la primera bomba conectada releva al
+  // clic para siempre. Tarjeta una vez, y la fiesta sobre la bomba que se
+  // queda con el trabajo — el premio de automatizar sabe a gloria porque
+  // recuerdas el trabajo (lección de Botting). No interrumpe a la guía:
+  // espera a que el paso activo termine.
+  if(!estado.hitosVistos.includes('jubilacion')
+     && !pasoActual(estado)
+     && clicsAutoPorSeg(estado.activo, estado) > 0){
+    const bomba = estado.construcciones.find(o => o.tipo === 'bomba');
+    if(bomba) escena.celebrarIncorporacion(bomba.col, bomba.fila);
+    contarHito('jubilacion');
   }
   // Los logros se comprueban SIEMPRE, no solo al abrir un servicio: son el
   // premio a haber resuelto el problema, y eso pasa cuando el jugador quiere.

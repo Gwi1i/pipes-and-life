@@ -19,7 +19,8 @@ import { capacidad, demandaMedia, caudalCaptacion, costeCuadrilla, nivelMaxPieza
          llenadoVaso, capacidadVaso, costeAmpliarVertedero,
          nivelMasa, pozosPorMasa, caudalPozo, caudalSostenible,
          desgloseProduccion, tasaFugasRed, costeAmpliarPieza,
-         escalonCaserio, costeEstudio, veteraniaAlTrasladarse } from './simulacion.js';
+         escalonCaserio, costeEstudio, veteraniaAlTrasladarse,
+         clicsAutoPorSeg, litrosPorClic } from './simulacion.js';
 import { legado, nivelVentaja, costeVentaja, regionActual,
          epocaActual } from './legado.js';
 import { formatear } from './util.js';
@@ -1186,7 +1187,10 @@ export class UI {
                 sin clicar. Lo que llega tras estiaje, tubería y fugas lo
                 desglosa «De dónde sale el agua».`;
       case 'bomba':
-        return t`Suma <b>${formatear(nivel * P.bomba)} L</b> a cada clic de bombeo.`;
+        // SINCLIC: la bomba trabaja sola — hablarle al jugador de "clics"
+        // tras jubilarle el dedo era contradecir la tarjeta del relevo
+        // (fosil cazado por el probador frio 3)
+        return t`Impulsa <b>${formatear(nivel * P.bomba)} L</b> en cada golpe de bomba (${CONFIG.sinclic.ritmo}/s, automáticos).`;
       case 'deposito':
         return t`Añade <b>${formatear(nivel * P.deposito)} L</b> de capacidad de reserva.`;
       case 'potabilizadora':
@@ -1690,6 +1694,15 @@ export class UI {
   /* ---------------- FUNCIÓN ESPECIAL: AUTO-BOMBEO (del pueblo activo) ------ */
 
   construirPremium(){
+    // SINCLIC: el auto-bombeo llega solo con la primera bomba — la funcion
+    // especial que lo vendia ya no significa nada y su bloque se esconde.
+    const bloque = document.getElementById('premium');
+    if(bloque){
+      bloque.hidden = true;
+      if(bloque.parentElement?.tagName === 'SECTION') bloque.parentElement.hidden = true;
+    }
+    return;
+    // eslint-disable-next-line no-unreachable
     const P = CONFIG.premium.autobomba;
     document.getElementById('premium').innerHTML = `
       <button class="premium" data-accion="activarAutobomba" id="premium-autobomba">
@@ -1704,6 +1717,8 @@ export class UI {
   }
 
   refrescarPremium(estado){
+    return;   // SINCLIC: sin bloque premium que refrescar
+    // eslint-disable-next-line no-unreachable
     const P = CONFIG.premium.autobomba;
     const p = estado.activo;
     const bt = document.getElementById('premium-autobomba');
@@ -2026,7 +2041,12 @@ export class UI {
     // Y del CONJUNTO entero: la producción es de la red compartida, así que
     // compararla con la demanda de UN pueblo mentía en cuanto dos bebían de
     // la misma tubería (lo cazó el autor con su segundo pueblo).
-    const caudal = caudalCaptacion(p, estado, resultado.estiaje || 1);
+    // SINCLIC: el caudal del bombeo automatico tambien es "Produce" — tras
+    // el relevo, la bomba trabajaba y el HUD decia 0,00 (probador frio 3).
+    // Mismo cambio de escala accion→mundo que usa avanzar(), a la inversa.
+    const autoLps = clicsAutoPorSeg(p, estado) * litrosPorClic(p, estado)
+                  / (3600 * CONFIG.economia.horasPorSegundo);
+    const caudal = caudalCaptacion(p, estado, resultado.estiaje || 1) + autoLps;
     const demanda = this.demandaDelConjunto(estado, p);
     const fmtLs = v => v < 10 ? v.toFixed(2) : formatear(Math.round(v));
     this.fijar('hud-produccion', fmtLs(caudal) + ' / ' + fmtLs(demanda) + ' L/s',

@@ -621,6 +621,33 @@ selecciona si es tuyo, destapa si esta en niebla, bombea si es el pueblo. (La
 tira de ENGRASAR se fue con el desgaste; no queda ningún botón de acción fuera
 del mapa.)
 
+**SINCLIC: el clic se JUBILA con la primera bomba (decisión del autor,
+05/09/2026, tras jugarlo: "me gusta más, es más dinámico").** Al arrancar
+bombeas a mano — clic en el pueblo o espaciadora — y esa fatiga es
+deliberada: es lo que hace que la automatización sepa a premio (lección de
+Game About Botting: la progresión es quitarte un trabajo que antes
+sufriste). En cuanto hay un BOMBEO conectado en el conjunto de red del pueblo,
+`clicsAutoPorSeg()` devuelve `CONFIG.sinclic.ritmo` (4 golpes/s) y la
+bomba trabaja sola para siempre; el clic pasa a hacer lo que hace en todas
+partes: seleccionar. LA REGLA DEL REPARTO ES LA DEL DEDO
+(`conjuntosDeBombeo()` en mapa.js, cacheado en `estado._conjuntos` por
+paso): `ritmo` golpes/s POR CONJUNTO — la mancha de tubería de agua con
+sus pueblos —, cada golpe al pueblo más sediento del conjunto, ANTES del
+consumo, en `avanzar()`. Repartir por pueblo fue un fallo medido: ×N
+pueblos de agua, fase 3 en 77 min contra 148, todos servidos y sin
+tensión; y un pueblo en una red aislada sin bomba también bombeaba. Con
+la regla del dedo y ritmo 4 (el "jugador aplicado" del bot) la curva es
+la de referencia exacta: fase 2 a los 58, fase 3 a los 148. El bot de
+medida honra la puerta: no clica donde la bomba ya trabaja.
+UNA sola puerta, arriba de `golpeDeBomba()` — vale para el pueblo, la
+pieza y la espaciadora. El momento se celebra con el hito `jubilacion`
+("La bomba te releva", lámina `h_jubilacion.jpg`) y fiesta sobre la
+bomba; el paso 'bombear' de la guía PROMETE el relevo; el HUD «Produce»
+suma el caudal automático (`clicsAutoPorSeg × litrosPorClic`) y la ficha
+del bombeo lo dice con números. Los probadores fríos lo llamaron "el mejor
+momento de la partida". El auto-bombeo premium quedó OCULTO (ver abajo):
+sería vender lo que la primera bomba regala.
+
 **LA CARTA DEL TAJO: el "¿y ahora qué?" contestado.** La tarjeta fija de
 arriba del lateral (`panel-tajo`) enseña UN solo paso siguiente, mascado y
 con botón — la respuesta al muro de la media partida ("hay que dárselo
@@ -1023,11 +1050,13 @@ offline: sería injusto), y el riesgo sube con la instalación por RAÍZ del nú
 de piezas, no en línea recta: multiplicando por el número salían averías en
 cadena con solo dos piezas.
 
-**Auto-bombeo = función especial, no una mejora.** Vive en `CONFIG.premium`, no
-en `CONFIG.mejoras`. Es un booleano por pueblo (`pueblo.autobombaActivo`), no un
-nivel. Se activa con `requisitosAutobomba(pueblo)` + pago alto. El campo
-`desbloqueoExterno` es el gancho para una futura vía de anuncio/pago: NO hay pago
-ni anuncio real implementado, y no se debe simular uno falso.
+**Auto-bombeo premium: OCULTO desde el sinclic, no borrado.** Vive en
+`CONFIG.premium` (booleano por pueblo, `pueblo.autobombaActivo`,
+`requisitosAutobomba(pueblo)` + pago alto). Con la primera bomba jubilando
+el clic gratis, el bloque premium dejó de tener sentido y la UI no lo
+pinta; el código y el gancho `desbloqueoExterno` se quedan para una futura
+vía de anuncio/pago sobre OTRA cosa (aceleradores, offline). NO hay pago ni
+anuncio real implementado, y no se debe simular uno falso.
 
 **COMARCAS: la estructura de partidas.** El TRASLADO DE CONCESIÓN (desde fase
 `comarcas.faseParaTrasladarse`, en Mancomunidad): la partida se borra, el
