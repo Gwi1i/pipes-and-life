@@ -31,7 +31,7 @@ ofrece (la regla 5 exige la divulgación; va además en el texto).
 >
 > About me: I work in water supply for a rural association in Navarre, Spain. Everything in the game — why a hamlet is the hardest place to serve, why two wells on one aquifer yield the same as one, why you never renew half a pipeline — is the real thing. If you finish a session knowing something about your own tap water, the game did its job.
 >
-> AI disclosure: built with AI assistance (Claude) for code and the card illustrations; the map art and the water logic are mine.
+> AI disclosure: built with an AI assistant (Claude) that wrote the code under my direction; card illustrations, voice and music are AI-generated. The design, the water logic and every decision about what the game says are mine.
 >
 > What I'd love to hear: does the handover moment land for you? And is the hand-pumping stretch before it too long, too short, or about right?
 
