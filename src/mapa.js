@@ -1092,6 +1092,65 @@ export function construccionesConectadas(estado, red = 'abastecimiento'){
       && pegadaA(visitadas, o.col, o.fila));
 }
 
+/**
+ * SINCLIC: los CONJUNTOS de bombeo. Cada mancha de tubería de agua con sus
+ * pueblos (sobre ella o pegados) es un conjunto, y la bomba automática da
+ * `sinclic.ritmo` golpes por segundo POR CONJUNTO — no por pueblo —, cada
+ * golpe al pueblo más sediento del conjunto: la misma regla que el clic
+ * manual (conjuntoDeRed). Repartir por pueblo era un fallo medido con el
+ * bot: multiplicaba el agua por el número de pueblos y dejaba la partida al
+ * doble de velocidad (fase 3 en 77 min contra ~148), con todos servidos y
+ * sin tensión — y un pueblo en una red aislada sin bomba también bombeaba,
+ * porque la cuenta de bombas era global. Aquí no: cada red necesita su
+ * bombeo. `bombas` son NIVELES conectados y no averiados, como en
+ * inventarioConectado.
+ */
+export function conjuntosDeBombeo(estado){
+  const M = CONFIG.mapaMundo;
+  const clave = (c, f) => f * M.cols + c;
+  const conTuberia = new Set();
+  for(const tb of estado.tuberias || []){
+    if(redDe(tb) !== 'abastecimiento') continue;
+    for(const q of tb.camino) conTuberia.add(clave(q.col, q.fila));
+  }
+  const conjuntos = [];
+  for(const p of estado.pueblos || []){
+    if(!p.desbloqueado || p.col == null) continue;
+    // La mancha de este pueblo: su casilla y todo lo que alcanza por tubería
+    const celdas = new Set([clave(p.col, p.fila)]);
+    const cola = [[p.col, p.fila]];
+    while(cola.length){
+      const [c, f] = cola.pop();
+      for(const [dc, df] of [[1,0],[-1,0],[0,1],[0,-1]]){
+        const nc = c + dc, nf = f + df;
+        if(nc < 0 || nf < 0 || nc >= M.cols || nf >= M.filas) continue;
+        const k = clave(nc, nf);
+        if(celdas.has(k) || !conTuberia.has(k)) continue;
+        celdas.add(k); cola.push([nc, nf]);
+      }
+    }
+    // Todos los conjuntos que toca se funden en uno (un pueblo puede ser el
+    // puente entre dos manchas que hasta entonces iban por separado)
+    const tocados = conjuntos.filter(cj => { for(const k of celdas) if(cj.celdas.has(k)) return true; return false; });
+    if(!tocados.length){ conjuntos.push({ pueblos: [p], celdas }); continue; }
+    const hogar = tocados[0];
+    hogar.pueblos.push(p);
+    for(const k of celdas) hogar.celdas.add(k);
+    for(const otro of tocados.slice(1)){
+      hogar.pueblos.push(...otro.pueblos);
+      for(const k of otro.celdas) hogar.celdas.add(k);
+      conjuntos.splice(conjuntos.indexOf(otro), 1);
+    }
+  }
+  for(const cj of conjuntos){
+    cj.bombas = (estado.construcciones || [])
+      .filter(o => o.tipo === 'bomba' && !averiaEn(estado, o.col, o.fila)
+                && pegadaA(cj.celdas, o.col, o.fila))
+      .reduce((suma, o) => suma + (o.nivel || 1), 0);
+  }
+  return conjuntos;
+}
+
 /** La definición del tipo de yacimiento de una celda (poblado, fósiles...). */
 export function tipoYacimiento(celda){
   const T = CONFIG.arqueologia.tipos;

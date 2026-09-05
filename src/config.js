@@ -96,7 +96,13 @@ export const CONFIG = {
      Botting): el premio de automatizar solo sabe a gloria si recuerdas el
      trabajo. Desde entonces el cuello es la instalacion, no el clic. */
   sinclic: {
-    ritmo: 1.5              // golpes de bomba por segundo, automaticos, con bomba
+    /* Golpes de bomba por segundo, automaticos, POR CONJUNTO de red con bomba
+       (no por pueblo: eso multiplicaba el agua por el numero de pueblos y
+       dejaba la partida al doble de velocidad). 4 es el "jugador aplicado"
+       del bot de medida, y clava la curva de referencia sin dedo: fase 2 a
+       los 58 min y fase 3 a los 148 (medido 05/09/2026; con 1.5 la partida
+       se estancaba en un pueblo, con 3 la fase 2 caia a los 84). */
+    ritmo: 4
   },
 
   /* ---------- LA BOMBA (el clic principal) ---------- */

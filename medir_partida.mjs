@@ -23,7 +23,7 @@ import { avanzar, bombear, costeAmpliarPieza, nivelMaxPieza, costeCuadrilla,
          servicioActivo, redEstrangula,
          redDelPueblo, requisitosAutobomba, faseActual,
          incorporarPueblo, canonIncorporacion,
-         veteraniaAlTrasladarse, nivelCaserio } from './src/simulacion.js';
+         veteraniaAlTrasladarse, nivelCaserio, clicsAutoPorSeg } from './src/simulacion.js';
 import { puedeColocar, costeTrazado, costeRenovar, celdaEn,
          escalaDeRed, nivelDiametro } from './src/mapa.js';
 
@@ -125,7 +125,9 @@ export async function medir(pasoSeg = 0.25, maxMin = 240, informar = () => {}){
     const p = estado.activo;
 
     // --- clicar: 4 por segundo si falta agua (un jugador aplicado) ---
-    if(p.agua < 6000) bombear(p, estado);
+    // (SINCLIC: con la bomba jubilando el dedo, el jugador ya no puede clicar
+    // — el bot tampoco, o mediría agua que nadie puede meter)
+    if(p.agua < 6000 && clicsAutoPorSeg(p, estado) <= 0) bombear(p, estado);
 
     res = avanzar(estado, pasoSeg);
     seg += pasoSeg;

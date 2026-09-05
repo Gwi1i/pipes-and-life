@@ -626,9 +626,19 @@ del mapa.)
 bombeas a mano — clic en el pueblo o espaciadora — y esa fatiga es
 deliberada: es lo que hace que la automatización sepa a premio (lección de
 Game About Botting: la progresión es quitarte un trabajo que antes
-sufriste). En cuanto hay un BOMBEO conectado, `clicsAutoPorSeg()` devuelve
-`CONFIG.sinclic.ritmo` (1,5 golpes/s) y la bomba trabaja sola para
-siempre; el clic pasa a hacer lo que hace en todas partes: seleccionar.
+sufriste). En cuanto hay un BOMBEO conectado en el conjunto de red del pueblo,
+`clicsAutoPorSeg()` devuelve `CONFIG.sinclic.ritmo` (4 golpes/s) y la
+bomba trabaja sola para siempre; el clic pasa a hacer lo que hace en todas
+partes: seleccionar. LA REGLA DEL REPARTO ES LA DEL DEDO
+(`conjuntosDeBombeo()` en mapa.js, cacheado en `estado._conjuntos` por
+paso): `ritmo` golpes/s POR CONJUNTO — la mancha de tubería de agua con
+sus pueblos —, cada golpe al pueblo más sediento del conjunto, ANTES del
+consumo, en `avanzar()`. Repartir por pueblo fue un fallo medido: ×N
+pueblos de agua, fase 3 en 77 min contra 148, todos servidos y sin
+tensión; y un pueblo en una red aislada sin bomba también bombeaba. Con
+la regla del dedo y ritmo 4 (el "jugador aplicado" del bot) la curva es
+la de referencia exacta: fase 2 a los 58, fase 3 a los 148. El bot de
+medida honra la puerta: no clica donde la bomba ya trabaja.
 UNA sola puerta, arriba de `golpeDeBomba()` — vale para el pueblo, la
 pieza y la espaciadora. El momento se celebra con el hito `jubilacion`
 ("La bomba te releva", lámina `h_jubilacion.jpg`) y fiesta sobre la

@@ -22,7 +22,7 @@ import { CONFIG } from './config.js';
 import { limitar } from './util.js';
 import { inventarioConectado, cuelloDeBotella, construccionesConectadas,
          celdaEn, nombreDeNucleo, tipoYacimiento, claseAcuifero,
-         masasDelMapa, fugasDe } from './mapa.js';
+         masasDelMapa, fugasDe, conjuntosDeBombeo } from './mapa.js';
 import { nivelVentaja } from './legado.js';
 // Solo para los TEXTOS de los requisitos del auto-bombeo: la etiqueta t los
 // traduce sin sacarlos de aquí. La lógica no depende del idioma para nada.
@@ -637,7 +637,19 @@ export function redEstrangula(pueblo, estado){
 // jubila el clic para siempre. Sin bomba, bombeas tu: el arranque manual es
 // lo que hace que la automatizacion sepa a premio (leccion de Botting).
 export function clicsAutoPorSeg(pueblo, estado){
-  return (piezas(estado).bomba || 0) > 0 ? CONFIG.sinclic.ritmo : 0;
+  const cj = conjuntoDe(pueblo, estado);
+  return cj && cj.bombas > 0 ? CONFIG.sinclic.ritmo : 0;
+}
+// Los conjuntos de bombeo se cachean por paso como el resto de recuentos de
+// red; fuera de avanzar() (la puerta del clic, el HUD, el hito) se calculan
+// si aún no hay paso dado.
+function conjuntosBombeo(estado){
+  if(!estado) return [];
+  if(!estado._conjuntos) estado._conjuntos = conjuntosDeBombeo(estado);
+  return estado._conjuntos;
+}
+function conjuntoDe(pueblo, estado){
+  return conjuntosBombeo(estado).find(cj => cj.pueblos.includes(pueblo)) || null;
 }
 
 /**
@@ -807,9 +819,9 @@ function avanzarPueblo(estado, p, dt, dtHoras, punta, estiaje, frenoCrec, lluvia
   // La instalación se gasta con el tiempo; el personal de mantenimiento lo frena
   const ef = eficiencia(p);
   const prodCaptacion = caudalCaptacion(p, estado, estiaje) * ef * 3600 * dtHoras;
-  const prodAuto = clicsAutoPorSeg(p, estado) * litrosPorClic(p, estado) * dt;
+  // (El bombeo automático del sinclic entra en avanzar(), por conjunto.)
   const antes = p.agua;
-  p.agua = Math.min(cap, p.agua + prodCaptacion + prodAuto);
+  p.agua = Math.min(cap, p.agua + prodCaptacion);
   const entrada = p.agua - antes;
 
   // Salida: consumo con la punta horaria
@@ -930,7 +942,7 @@ function avanzarPueblo(estado, p, dt, dtHoras, punta, estiaje, frenoCrec, lluvia
       servicio, demandaAhora: dem * punta, punta, estiaje,
       prodLps: dt > 0 ? entrada / dt : 0,
       produciendo: entrada > 0.0001,
-      bombeoAuto: prodAuto > 0.0001,
+      bombeoAuto: clicsAutoPorSeg(p, estado) > 0,
       averiada: (estado.averias || []).length > 0,
       eficiencia: ef,
       saneamiento: servicioActivo(p, 'saneamiento'),
@@ -979,6 +991,21 @@ export function avanzar(estado, dt){
   estado._conectadoSan = estado._conectadoRed.saneamiento;
   estado._red          = estado._redes.abastecimiento;
   estado._redSan       = estado._redes.saneamiento;
+  // SINCLIC: la bomba automática reparte como repartía el dedo — `ritmo`
+  // golpes por segundo POR CONJUNTO de red con bomba, cada golpe al pueblo
+  // más sediento del conjunto (la regla de golpeDeBomba). Va ANTES del
+  // consumo, como el clic entraba antes de que el pueblo bebiera.
+  estado._conjuntos = conjuntosDeBombeo(estado);
+  for(const cj of estado._conjuntos){
+    if(cj.bombas <= 0) continue;
+    const sedientos = cj.pueblos
+      .filter(pb => pb.agua < capacidad(pb, estado) - 0.001)
+      .sort((a, b) => a.agua / capacidad(a, estado) - b.agua / capacidad(b, estado));
+    const obj = sedientos[0];
+    if(!obj) continue;   // todos llenos: la bomba no derrama, se para
+    obj.agua = Math.min(capacidad(obj, estado),
+      obj.agua + CONFIG.sinclic.ritmo * dt * litrosPorClic(obj, estado));
+  }
   const dtHoras = dt * eco.horasPorSegundo;
   const punta = coefHora(estado.horas);
   const estiaje = factorEstiaje(estado.horas);
