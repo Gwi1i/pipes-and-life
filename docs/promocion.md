@@ -176,8 +176,8 @@ I've attached a couple of screenshots. Thanks for reading!
 |---|---|---|
 | Web (GitHub Pages) | https://gwi1i.github.io/pipes-and-life/ | La rama `clicker`; se actualiza con `git push` |
 | itch.io | https://gwiii.itch.io/pipes-and-life | Página principal: devlogs, GIF de portada, zip de `hacer_zip.bat` |
-| Newgrounds | PENDIENTE DE APUNTAR (el autor lo tiene) | Publicado el 04/09; casilla de IA marcada |
-| galaxy.click | PENDIENTE DE APUNTAR (el autor lo tiene) | Enviado el 05/09 con `?sincontador`; sin verificar hasta que pase Oversight |
+| Newgrounds | https://www.newgrounds.com/ (buscar "Pipes and Life" en Games) | Publicado el 04/09, en juicio de la comunidad; casilla de IA marcada. La ficha propia se apunta cuando el buscador la enseñe |
+| galaxy.click | https://galaxy.click/ (buscar "Pipes and Life") | Enviado el 05/09 con `?sincontador`; sin verificar hasta que pase Oversight. La ficha propia se apunta al verificarse |
 | Código | https://github.com/Gwi1i/pipes-and-life | Público |
 | Correo | pipesandlifegame@gmail.com | El remitente de todo |
 | Contador | https://gwi.goatcounter.com | Público; galaxy va sin contar a propósito |
