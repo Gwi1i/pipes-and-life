@@ -67,6 +67,11 @@ export function iniciar(){
   // ?nocontar en la dirección = noContarme() sin consola: en el móvil del
   // autor no hay consola que valga, y sus pruebas ensuciaban la medición.
   // Basta entrar UNA vez así; queda guardado como en el ordenador.
+  // ?sincontador en la dirección = mudo SOLO en esta carga, sin tocar el
+  // navegador de nadie: es el enlace que damos a galaxy.click, que es "sin
+  // rastreadores" por principio y enlaza en vez de alojar. (Distinto de
+  // ?nocontar, que excluye ESE navegador para siempre — eso es para el autor.)
+  if(location.search.includes('sincontador')) return;
   if(location.search.includes('nocontar')) noContarme();
   if(excluido()) return;                            // el navegador del autor
   activa = true;
