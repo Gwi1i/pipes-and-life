@@ -177,7 +177,7 @@ I've attached a couple of screenshots. Thanks for reading!
 | Web (GitHub Pages) | https://gwi1i.github.io/pipes-and-life/ | La rama `clicker`; se actualiza con `git push` |
 | itch.io | https://gwiii.itch.io/pipes-and-life | Página principal: devlogs, GIF de portada, zip de `hacer_zip.bat` |
 | Newgrounds | https://www.newgrounds.com/ (buscar "Pipes and Life" en Games) | Publicado el 04/09, en juicio de la comunidad; casilla de IA marcada. La ficha propia se apunta cuando el buscador la enseñe |
-| galaxy.click | https://galaxy.click/ (buscar "Pipes and Life") | Enviado el 05/09 con `?sincontador`; sin verificar hasta que pase Oversight. La ficha propia se apunta al verificarse |
+| galaxy.click | — | RECHAZADO el 05/09/2026 sin motivo ("no encaja en el sitio; no reenviar"). Su formulario avisa de que aceptan muchos menos juegos con IA generativa: casi seguro es eso. Se respeta: no se reenvía |
 | Código | https://github.com/Gwi1i/pipes-and-life | Público |
 | Correo | pipesandlifegame@gmail.com | El remitente de todo |
 | Contador | https://gwi.goatcounter.com | Público; galaxy va sin contar a propósito |
@@ -214,7 +214,7 @@ semáforo entre fases.
 - [ ] Correo a iAgua (sección 2)
 - [ ] Correo a prensa local (sección 3)
 - [ ] Hilo en Mediavida › desarrollo de juegos (cuenta nueva, español)
-- [x] galaxy.click (enviado el 05/09/2026; pendiente de verificación)
+- [x] galaxy.click (enviado el 05/09/2026; RECHAZADO el mismo día, sin motivo — política de IA; no reenviar)
 - [ ] La carta fuerte técnica: "Show HN" en Hacker News — el ángulo
       "juego sin dependencias, sin framework y sin motor, hecho por un
       técnico de aguas" es justo lo que allí funciona. Guardarla para
