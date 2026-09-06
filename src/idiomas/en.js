@@ -475,6 +475,17 @@ export const EN = {
     },
 
     hitos: {
+      comarcaEntera: {
+        titulo: 'The whole district',
+        pasa: 'All thirty-six villages drink from your network. Not one golden ' +
+              'hamlet is left on the map: every tap in the district is yours.',
+        hacer: 'Keep managing if you like — the water never rests — or ' +
+               'RELOCATE from the Association tab: a completed district ' +
+               'carries its seniority with a bonus.',
+        porque: 'This is what a water association exists for: that the hamlet ' +
+                'of forty neighbours gets the same tap as the city. In real ' +
+                'life, people like you do this, and nobody sees it. You did.'
+      },
       arqueologia: {
         titulo: 'A dig site has surfaced',
         pasa: 'Clearing the land has revealed buried remains: there is ' +
@@ -863,6 +874,14 @@ export const EN = {
      frase original empezaba con espacio (t` · estiaje`), el valor inglés
      debe traerlo también. */
   frases: {
+    '{0} habitantes servidos · {1} casillas de red · {2} {3} de oficio':
+      '{0} residents served · {1} tiles of network · {2} {3} in the trade',
+    'año': 'year',
+    'años': 'years',
+    'La comarca entera: los 36 pueblos beben de tu red.':
+      'The whole district: all 36 villages drink from your network.',
+    'Pues ya está: treinta y seis pueblos con el grifo abierto. En cuarenta años de oficio no vi a nadie llevar el agua a todos. Enhorabuena, jefe. Y ahora... a mantenerlo, que eso no sale en las fotos.':
+      'Well, that is that: thirty-six villages with the tap open. In forty years in the trade I never saw anyone bring water to all of them. Congratulations, boss. And now... keep it running; that part never makes the photos.',
 
     /* --- Las curas del probador frío --- */
     '{0} casillas · {1} €': '{0} tiles · {1} €',

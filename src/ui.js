@@ -494,6 +494,19 @@ export class UI {
     document.getElementById('hito-pasa').textContent = h.pasa;
     document.getElementById('hito-hacer').textContent = h.hacer;
     document.getElementById('hito-porque').textContent = h.porque;
+    // La tarjeta del FINAL lleva las cifras de la partida: es la única que
+    // habla de lo hecho, no de lo que viene.
+    const cifras = document.getElementById('hito-cifras');
+    if(cifras){
+      cifras.hidden = id !== 'comarcaEntera';
+      if(id === 'comarcaEntera'){
+        const hab = Math.round(estado.pueblos.reduce((s, p) => s + (p.habitantes || 0), 0));
+        const tramos = (estado.tuberias || []).reduce((s, tb) => s + tb.camino.length, 0);
+        const anios = Math.max(1, Math.round(estado.horas / CONFIG.tiempo.horasPorAño));
+        const unidad = anios === 1 ? t`año` : t`años`;
+        cifras.textContent = t`${formatear(hab)} habitantes servidos · ${tramos} casillas de red · ${anios} ${unidad} de oficio`;
+      }
+    }
   }
 
   /* ---------------- LA CARTA DEL TAJO ---------------- */

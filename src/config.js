@@ -1816,7 +1816,33 @@ export const CONFIG = {
      momento en que el jugador se lo está preguntando.
 
      `img` es `assets/h_<id>.jpg`; si no está, la tarjeta sale igual sin imagen. */
+  /* ---------- EL FINAL: la comarca entera ----------
+     Los 36 núcleos incorporados. La encuesta plusone 2025 (1.141 jugadores):
+     "el juego tiene un final" es lo más popular del género; este juego tendía
+     a infinito sin una meta visible. La ceremonia: la cámara se abre hasta
+     abarcar la comarca y la fiesta recorre los pueblos en el orden en que
+     entraron; después, la tarjeta (logro) y Manuel. Nada se borra: seguir o
+     trasladarse, con la veteranía premiada. */
+  final: {
+    porPueblo: 0.35,          // s entre fiesta y fiesta (36 pueblos ≈ 13 s)
+    remate: 1.6,              // s de calma tras la última fiesta, antes de la tarjeta
+    encogerPorSegundo: 0.55,  // cuánto se abre la cámara por segundo (fracción del zoom)
+    bonusVeterania: 0.5       // +50% de veteranía al trasladarse con la comarca entera
+  },
+
   hitos: {
+    comarcaEntera: {
+      logro: true,
+      titulo: 'La comarca entera',
+      pasa: 'Los treinta y seis pueblos beben de tu red. No queda un caserío ' +
+            'dorado en el mapa: cada grifo de la comarca es tuyo.',
+      hacer: 'Sigue gestionando si quieres — el agua no descansa — o ' +
+             'TRASLÁDATE desde Mancomunidad: la comarca completa se lleva la ' +
+             'veteranía con premio.',
+      porque: 'Una mancomunidad existe para esto: que la aldea de cuarenta ' +
+              'vecinos tenga el mismo grifo que la ciudad. En la vida real lo ' +
+              'hace gente como tú, y nadie lo ve. Tú sí lo has visto.'
+    },
     /* --- Las PRIMERAS VECES (petición del autor): cuando el jugador
        descubre algo nuevo por primera vez, tarjeta con su sonido contando
        qué está pasando. Una vez cada una, como todos los hitos. --- */

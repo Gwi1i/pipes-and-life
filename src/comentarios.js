@@ -149,7 +149,13 @@ const COMENTARIOS = [
   {
     id: 'chPunta', animo: null, chascarrillo: true,
     cuando: (e, res) => (res.punta || 1) > 1.6,
-    texto: t`Hora punta: medio pueblo duchándose a la vez. Para esto está el depósito, que el río no entiende de prisas.`}
+    texto: t`Hora punta: medio pueblo duchándose a la vez. Para esto está el depósito, que el río no entiende de prisas.`},
+  // EL FINAL: la comarca entera. Manuel lo dice una vez, cuando la tarjeta
+  // ya se ha cerrado. No se re-arma: la condición no se apaga nunca.
+  {
+    id: 'comarcaEntera', animo: 'bien',
+    cuando: (e) => (e.hitosVistos || []).includes('comarcaEntera') && !e.hitoPendiente,
+    texto: t`Pues ya está: treinta y seis pueblos con el grifo abierto. En cuarenta años de oficio no vi a nadie llevar el agua a todos. Enhorabuena, jefe. Y ahora... a mantenerlo, que eso no sale en las fotos.`},
 ];
 
 let ultimaVez = null;        // reloj real del último comentario (segundos)

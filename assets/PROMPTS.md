@@ -904,3 +904,17 @@ Genera primero **una** (p. ej. `casa1.png`), suéltala aquí, pon el juego en
 *Estilo C* y mírala en su sitio. Si te gusta cómo encaja, sigue con el resto con
 el mismo estilo. Si el tamaño o el recorte no cuadran, avísame y ajusto las
 proporciones en `escena_assets.js`.
+
+
+## La comarca entera (`l_comarcaEntera.jpg`) — el FINAL
+
+Sale cuando los 36 pueblos están incorporados. Es un LOGRO (tarjeta verde,
+prefijo `l_`): la comarca vista desde arriba, viva, y quien la ha hecho
+posible sin salir en la foto.
+
+### `l_comarcaEntera.jpg`
+> Genera una imagen: un valle de montaña al atardecer visto desde lo alto,
+> con decenas de pueblos pequeños encendiendo sus luces, unidos por hilos de
+> agua que brillan entre ellos como una red; en primer plano, de espaldas y
+> pequeño, un operario de aguas con su chaleco mirando el valle con las manos
+> en los bolsillos; sensación de trabajo terminado y de calma, *(+ coletilla)*

@@ -1058,6 +1058,30 @@ pinta; el código y el gancho `desbloqueoExterno` se quedan para una futura
 vía de anuncio/pago sobre OTRA cosa (aceleradores, offline). NO hay pago ni
 anuncio real implementado, y no se debe simular uno falso.
 
+**EL FINAL: la comarca entera (06/09/2026, el cierre de la versión 1).**
+Los 36 núcleos incorporados disparan la CEREMONIA (`tickFinal` en main.js,
+transitoria: no se guarda, si se recarga a medias vuelve a salir entera):
+la cámara se abre hasta `zoomMin` centrada en la comarca y la fiesta
+recorre los pueblos en el orden en que entraron (`CONFIG.final`:
+porPueblo, remate, encogerPorSegundo); al acabar, la tarjeta
+`comarcaEntera` (es LOGRO: verde, lámina `l_comarcaEntera.jpg`) con las
+CIFRAS de la partida (`#hito-cifras`, solo esta tarjeta habla de lo hecho),
+y Manuel se despide sin irse (comentario `comarcaEntera`, con voz). Nada se
+borra: seguir gestionando, o trasladarse con la veteranía premiada
+(`final.bonusVeterania`, aplicado en la acción `trasladarse`). Salió de la
+encuesta plusone 2025 ("el juego tiene un final" es lo más popular del
+género) y del pre-mortem (docs/premortem.md). No arranca con la guía o una
+tarjeta abiertas. El contador lo cuenta solo: `/hito/comarcaEntera` es la
+métrica de "lo terminó".
+
+**ESTADO DEL PROYECTO (06/09/2026): versión 1, TERMINADA.** Decisión del
+autor tras el pre-mortem: el juego se cierra con el final y la energía pasa
+a La Gota (C:\gota, juego educativo para colegios). No se añaden mecánicas
+ni se sostiene calendario de promoción; se contesta a quien escriba y el
+parte del lunes sigue solo. Las mecánicas en recámara (minijuegos de
+saneamiento y pluviales, pozo ilegal, mini-captación) quedan documentadas
+en memoria por si algún día vuelve con ganas.
+
 **COMARCAS: la estructura de partidas.** El TRASLADO DE CONCESIÓN (desde fase
 `comarcas.faseParaTrasladarse`, en Mancomunidad): la partida se borra, el
 LEGADO (`src/legado.js`, clave `redHidraulica_legado`) sobrevive con la
