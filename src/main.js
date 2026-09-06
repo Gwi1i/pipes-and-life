@@ -801,7 +801,11 @@ function procesarAcciones(){
 
       case 'trasladarse': {
         if(faseActual(estado) < CONFIG.comarcas.faseParaTrasladarse) break;
-        const ganada = Math.max(estado.mejorVeterania || 0, veteraniaAlTrasladarse(estado));
+        // La comarca ENTERA se lleva la veteranía con premio: el final es la
+        // puerta natural al traslado, y tiene que notarse.
+        const base = Math.max(estado.mejorVeterania || 0, veteraniaAlTrasladarse(estado));
+        const ganada = estado.hitosVistos.includes('comarcaEntera')
+          ? Math.round(base * (1 + CONFIG.final.bonusVeterania)) : base;
         if(!confirm(t`¿Trasladarse a otra comarca? La red, la caja y los pueblos SE QUEDAN.
                     Te llevas ${ganada} de veteranía y el expediente completo.`)) break;
         legado.comarca += 1;
@@ -1665,6 +1669,34 @@ function contarHito(id, imagen){
 }
 
 /**
+ * LA CEREMONIA DEL FINAL. Transitoria (no se guarda: si se recarga a medias,
+ * la condición vuelve a saltar y se repite entera — mejor que perdérsela).
+ * La cámara se abre hasta el zoom mínimo centrada en la comarca, y la fiesta
+ * salta de pueblo en pueblo cada `final.porPueblo` segundos; tras el remate,
+ * la tarjeta. Métodos de escena con guarda, como manda la trampa de la caché.
+ */
+let final = null;
+function tickFinal(dt){
+  if(!final) return;
+  const C = CONFIG.final, M = CONFIG.mapaMundo;
+  final.t += dt;
+  if(escena.zoom > M.zoomMin){
+    escena.zoom = Math.max(M.zoomMin, escena.zoom * (1 - C.encogerPorSegundo * dt));
+  }
+  if(escena.centrarEn) escena.centrarEn(estado, M.cols / 2, M.filas / 2);
+  while(final.idx < final.orden.length && final.t >= final.idx * C.porPueblo){
+    const p = final.orden[final.idx++];
+    if(escena.celebrarIncorporacion) escena.celebrarIncorporacion(p.col, p.fila);
+    if(final.idx % 6 === 0) sonido.pueblo();
+  }
+  if(final.idx >= final.orden.length
+     && final.t >= final.orden.length * C.porPueblo + C.remate){
+    final = null;
+    contarHito('comarcaEntera');
+  }
+}
+
+/**
  * CUÁNDO SE HA CONSEGUIDO CADA LOGRO.
  *
  * Las condiciones viven aquí y no en `config.js` porque config no importa nada
@@ -1719,6 +1751,7 @@ let resultado = { servicio: 0, prodLps: 0, contaminacion: 0, suciedad: 0 };
 function bucle(ahora){
   const dt = Math.min((ahora - ultimo) / 1000, 0.1);
   ultimo = ahora;
+  tickFinal(dt);
 
   procesarAcciones();
   resultado = avanzar(estado, dt);
@@ -1775,6 +1808,16 @@ function bucle(ahora){
     const bomba = estado.construcciones.find(o => o.tipo === 'bomba');
     if(bomba) escena.celebrarIncorporacion(bomba.col, bomba.fila);
     contarHito('jubilacion');
+  }
+
+  // EL FINAL: los 36 incorporados. Primero la ceremonia (cámara abriéndose
+  // y la fiesta pueblo a pueblo, en el orden en que entraron) y, al acabar,
+  // la tarjeta. Una vez por comarca, como todo hito; nada se borra.
+  if(!final && !estado.hitosVistos.includes('comarcaEntera')
+     && !pasoActual(estado) && !estado.hitoPendiente && estado.pueblos.length > 1
+     && estado.pueblos.every(p => p.desbloqueado)){
+    final = { t: 0, idx: 0, orden: estado.pueblos.filter(p => p.col != null) };
+    estado.anotar(t`La comarca entera: los 36 pueblos beben de tu red.`, 'ok');
   }
   // Los logros se comprueban SIEMPRE, no solo al abrir un servicio: son el
   // premio a haber resuelto el problema, y eso pasa cuando el jugador quiere.
